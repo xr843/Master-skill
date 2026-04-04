@@ -1,6 +1,6 @@
 """
 Skill Writer — creates and updates teacher skill directories.
-Adapted from colleague-skill's skill_writer.py for Buddhist teacher context.
+Adapted from colleague-skill's skill_writer.py for Buddhist master context.
 """
 
 import json
@@ -17,7 +17,7 @@ except ImportError:
 
 
 SKILL_MD_TEMPLATE = """---
-name: teacher_{slug}
+name: master_{slug}
 description: 依据{name}（{tradition}{school}）的教学风格与教义体系
 user-invocable: true
 ---

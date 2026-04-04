@@ -1,5 +1,5 @@
 ---
-name: teacher_zhiyi
+name: master_zhiyi
 description: 依据智顗大师（汉传天台宗）的教学风格与教义体系
 user-invocable: true
 ---

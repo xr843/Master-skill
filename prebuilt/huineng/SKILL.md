@@ -1,5 +1,5 @@
 ---
-name: teacher_huineng
+name: master_huineng
 description: 依据慧能大师（汉传禅宗）的教学风格与教义体系
 user-invocable: true
 ---

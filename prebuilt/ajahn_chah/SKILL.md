@@ -1,5 +1,5 @@
 ---
-name: teacher_ajahn-chah
+name: master_ajahn-chah
 description: 依据阿姜查（南传泰国森林传承）的教学风格与教义体系
 user-invocable: true
 ---

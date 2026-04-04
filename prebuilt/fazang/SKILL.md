@@ -1,5 +1,5 @@
 ---
-name: teacher_fazang
+name: master_fazang
 description: 依据法藏大师（汉传华严宗）的教学风格与教义体系
 user-invocable: true
 ---

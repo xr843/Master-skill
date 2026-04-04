@@ -1,5 +1,5 @@
 ---
-name: teacher_yinguang
+name: master_yinguang
 description: 依据印光大师（汉传净土宗）的教学风格与教义体系
 user-invocable: true
 ---

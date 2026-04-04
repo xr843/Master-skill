@@ -1,5 +1,5 @@
 ---
-name: teacher_tsongkhapa
+name: master_tsongkhapa
 description: 依据宗喀巴大师（藏传格鲁派）的教学风格与教义体系
 user-invocable: true
 ---

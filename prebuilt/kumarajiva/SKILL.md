@@ -1,5 +1,5 @@
 ---
-name: teacher_kumarajiva
+name: master_kumarajiva
 description: 依据鸠摩罗什（汉传三论宗/中观）的教学风格与教义体系
 user-invocable: true
 ---

@@ -1,5 +1,5 @@
 ---
-name: teacher_ouyi
+name: master_ouyi
 description: 依据蕅益大师（汉传天台/净土·跨宗派）的教学风格与教义体系
 user-invocable: true
 ---

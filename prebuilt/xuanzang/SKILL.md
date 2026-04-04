@@ -1,5 +1,5 @@
 ---
-name: teacher_xuanzang
+name: master_xuanzang
 description: 依据玄奘法师（汉传法相唯识宗）的教学风格与教义体系
 user-invocable: true
 ---

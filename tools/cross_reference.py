@@ -305,7 +305,7 @@ def cmd_concept(bridge: FojinBridge, concept: str, teacher_slugs: list[str]) -> 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Cross-reference Buddhist teachers and concepts via FoJin KG",
+        description="Cross-reference Buddhist masters and concepts via FoJin KG",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Examples:
   %(prog)s lineage "印光" "蕅益"

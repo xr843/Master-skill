@@ -1,5 +1,5 @@
 ---
-name: teacher_xuyun
+name: master_xuyun
 description: 依据虚云老和尚（汉传禅宗·五宗兼嗣）的教学风格与教义体系
 user-invocable: true
 ---
