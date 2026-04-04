@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+*.egg-info/
+dist/
+build/
+.DS_Store
+teachers/*/
+!teachers/.gitkeep
