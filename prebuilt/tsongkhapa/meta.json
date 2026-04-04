@@ -1,0 +1,21 @@
+{
+  "name": "宗喀巴大师",
+  "name_bo": "ཙོང་ཁ་པ",
+  "slug": "tsongkhapa",
+  "tradition": "藏传",
+  "school": "格鲁派",
+  "era": "1357-1419",
+  "languages": ["bo", "zh", "sa"],
+  "fojin_entity_id": null,
+  "sources": [
+    {"type": "text", "title": "菩提道次第广论 (Lam Rim Chen Mo)"},
+    {"type": "text", "title": "密宗道次第广论 (sNgags Rim Chen Mo)"},
+    {"type": "text", "title": "入中论善显密意疏"},
+    {"type": "text", "title": "辨了不了义善说藏论"},
+    {"type": "text", "title": "三主要道 (Lam gTso rNam gSum)"}
+  ],
+  "version": "1.0.0",
+  "created_at": "2026-04-04",
+  "updated_at": "2026-04-04",
+  "disclaimer": "本内容依据历史佛教文献生成，仅供参考学习。如需正式修行指导，请亲近善知识。"
+}
