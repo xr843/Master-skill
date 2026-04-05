@@ -35,7 +35,7 @@
 
 ---
 
-> **v0.2 更新**：新增 `/compare-masters` 多法师对比命令；RAG 检索每位法师使用传承专属查询词，获得精准的 FoJin text_id 引用。
+> **v0.3 更新**：全面架构重构——渐进式披露（SKILL.md < 100 行）、CBETA 经文溯源（provenance frontmatter）、离线经文片段（sources/）、自动化保真度测试（fidelity.jsonl）、NPX 一键安装、cite.py/query.py 离线工具链。
 
 ---
 
@@ -52,11 +52,14 @@
 ## 特性
 
 - **预置八位汉传祖师大德**：涵盖唯识、中观、禅、天台、华严、净土、跨宗派七大核心宗派，开箱即用
+- **经文溯源（Provenance）**：每位祖师附 CBETA ID、FoJin text ID，所有教义断言强制附经证引用
+- **离线经文片段**：`sources/` 目录收录核心经典关键段落，FoJin 不可用时仍可离线引用
+- **渐进式披露**：SKILL.md < 100 行（决策树 + Quick Ref），references/ 和 sources/ 按需加载，节省 70% context
+- **自动化保真度测试**：每位祖师 `tests/fidelity.jsonl` 5 条 Q&A，验证引用和关键词覆盖
+- **NPX 一键安装**：`npx master-skill install zhiyi` 直接部署到 Claude Code
+- **离线工具链**：`scripts/cite.py`（CBETA 引用查询）、`scripts/query.py`（离线语义检索）、`scripts/validate.py`（frontmatter linter）
 - **FoJin 数据桥**：接入 [fojin.app](https://fojin.app) 的 503 个数据源、10K+ 文本、678K+ 语义向量和 31K 实体知识图谱
-- **AgentSkills 标准**：遵循 AgentSkills 规范，可作为子技能被其他 Agent 调用
-- **双模输出**：每位法师生成 `teaching.md`（教义体系）和 `voice.md`（说法风格）两份文件
-- **增量进化**：已生成的法师可追加新经文材料进行增量合并，角色持续完善
-- **版本管理**：内置版本号与时间戳，支持回滚到任意历史版本
+- **AgentSkills 标准**：遵循 [Anthropic Agent Skills](https://github.com/anthropics/skills) 规范，渐进式披露、决策树、黑盒脚本模式
 
 ---
 
@@ -64,12 +67,24 @@
 
 ### 安装
 
-**Claude Code**
+**NPX 一键安装（推荐）**
+
+```bash
+# 安装指定祖师
+npx master-skill install zhiyi fazang huineng
+
+# 安装全部 8 位
+npx master-skill install --all
+
+# 查看可用祖师
+npx master-skill list
+```
+
+**Claude Code（手动）**
 
 ```bash
 git clone https://github.com/xr843/Master-skill ~/Master-skill
 cd ~/Master-skill && pip install -r requirements.txt
-# 注册 skills（符号链接到 ~/.claude/skills/）
 for d in prebuilt/*/; do ln -sf "$(pwd)/$d" ~/.claude/skills/"$(basename $d)"; done
 ln -sf "$(pwd)" ~/.claude/skills/create-master
 ```
@@ -79,23 +94,8 @@ ln -sf "$(pwd)" ~/.claude/skills/create-master
 ```bash
 git clone https://github.com/xr843/Master-skill ~/Master-skill
 cd ~/Master-skill && pip install -r requirements.txt
-# 注册 skills（符号链接到 ~/.codex/skills/）
 for d in prebuilt/*/; do ln -sf "$(pwd)/$d" ~/.codex/skills/"$(basename $d)"; done
 ln -sf "$(pwd)" ~/.codex/skills/create-master
-```
-
-**OpenClaw**
-
-```bash
-git clone https://github.com/xr843/Master-skill ~/.openclaw/workspace/skills/create-master
-cd ~/.openclaw/workspace/skills/create-master && pip install -r requirements.txt
-```
-
-**手动安装**
-
-```bash
-git clone https://github.com/xr843/Master-skill
-cd Master-skill && pip install -r requirements.txt
 ```
 
 ### 使用预置法师
@@ -204,39 +204,34 @@ cd Master-skill && pip install -r requirements.txt
 
 ```
 用户请求
-    │
-    ▼
-SKILL.md (AgentSkills 入口)
-    │
-    ├─ 预置法师 ──────────────────────► prebuilt/{slug}/
-    │                                        ├── SKILL.md
-    │                                        ├── teaching.md
-    │                                        ├── voice.md
-    │                                        └── meta.json
-    │
-    └─ 自定义生成
-          │
-          ├─ prompts/intake.md          (信息录入)
-          │
-          ├─ tools/sutra_collector.py
-          │       │
-          │       └──► FoJin API ───► 知识图谱 + 语义检索 + 经文文本
-          │
-          ├─ prompts/sutra_analyzer.md  (教义分析)
-          ├─ prompts/voice_analyzer.md  (风格分析)
-          ├─ prompts/teaching_builder.md
-          ├─ prompts/voice_builder.md
-          │
-          ├─ tools/master_builder.py    (角色构建)
-          ├─ tools/skill_writer.py      (文件写入)
-          └─ tools/version_manager.py  (版本管理)
-                │
-                ▼
-          masters/{slug}/
-              ├── SKILL.md
-              ├── teaching.md
-              ├── voice.md
-              └── meta.json
+    |
+    v
+SKILL.md (AgentSkills 入口, <100行)
+    |
+    +-- 预置法师 --> prebuilt/{slug}/
+    |                   +-- SKILL.md          (决策树+Quick Ref)
+    |                   +-- meta.json
+    |                   +-- references/       (按需加载)
+    |                   |   +-- teaching.md
+    |                   |   +-- voice.md
+    |                   +-- sources/          (离线经文片段)
+    |                   |   +-- *.md (CBETA)
+    |                   +-- tests/
+    |                       +-- fidelity.jsonl
+    |
+    +-- 工具链
+    |   +-- scripts/validate.py         (frontmatter linter)
+    |   +-- scripts/cite.py             (CBETA 引用查询)
+    |   +-- scripts/query.py            (离线语义检索)
+    |   +-- scripts/test-fidelity.py    (保真度测试)
+    |   +-- bin/cli.mjs                 (NPX installer)
+    |
+    +-- 自定义生成
+          +-- prompts/                   (信息录入+分析)
+          +-- tools/sutra_collector.py
+          |       +---> FoJin API ---> 知识图谱 + 语义检索
+          +-- tools/master_builder.py    (角色构建)
+          +-- tools/skill_writer.py      (文件写入)
 ```
 
 ---
@@ -273,9 +268,11 @@ Master-skill 通过 `tools/fojin_bridge.py` 接入 FoJin API，实现：
 
 ## 贡献指南
 
-欢迎提交新的预置法师（请在 `prebuilt/` 目录下按已有格式创建）、修正文献来源错误，或改进工具链。
+欢迎提交新的预置法师、修正文献来源错误、补充经文片段，或改进工具链。
 
-提交前请确认：文献来源可追溯，内容忠实于佛教经典文献，无宗派偏见。
+新增祖师需遵循 v0.3 架构：`prebuilt/<name>/` 下包含 SKILL.md（<100行，含 provenance frontmatter）、references/、sources/、tests/fidelity.jsonl。提交前运行 `python3 scripts/validate.py --strict` 确保 0 errors。
+
+提交前请确认：文献来源可追溯至 CBETA，内容忠实于佛教经典文献，无宗派偏见。
 
 ---
 
