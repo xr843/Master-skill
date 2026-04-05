@@ -295,6 +295,8 @@ OpenClaw 用户：
 | 版本管理 | `${CLAUDE_SKILL_DIR}/tools/version_manager.py` |
 | 来源验证 | `${CLAUDE_SKILL_DIR}/tools/verify_sources.py` |
 
+**直接访问 FoJin API**：当 `rag_query.py` 不够用时（如需要 KG 深度遍历、跨词典分组对比），参考 `${CLAUDE_SKILL_DIR}/references/fojin-api.md`，直接用 Python 调用 FoJin REST API。
+
 ## 敏感性边界
 
 **不做：**
