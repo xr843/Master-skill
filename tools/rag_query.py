@@ -16,7 +16,7 @@ import os
 # Ensure tools/ is on the path so we can import fojin_bridge
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from fojin_bridge import create_bridge
+from fojin_bridge import create_bridge, FojinUnavailableError
 
 
 def format_search_results(data: dict) -> str:
@@ -215,6 +215,14 @@ def main():
 
     try:
         args.func(args)
+    except FojinUnavailableError:
+        print("[FoJin API 当前不可用]")
+        print("无法检索真实经文。法师将仅基于预置 teaching.md 回答。")
+        print("建议：")
+        print("- 稍后重试")
+        print("- 检查网络连接")
+        print("- 或在 fojin.app 直接查阅原典")
+        sys.exit(0)
     except ConnectionError as e:
         print(f"[错误] 无法连接 FoJin API: {e}", file=sys.stderr)
         sys.exit(1)

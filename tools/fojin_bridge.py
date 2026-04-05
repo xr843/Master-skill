@@ -7,10 +7,16 @@ Two modes:
 """
 
 import json
+import logging
 import os
 from typing import Optional
 
 import requests
+
+
+class FojinUnavailableError(Exception):
+    """Raised when FoJin API is unreachable. Callers should handle gracefully."""
+    pass
 
 
 class FojinBridge:
@@ -108,11 +114,21 @@ class FojinBridge:
     # ── Helpers ──────────────────────────────────────────────
 
     def _get(self, path: str, params: Optional[dict] = None) -> dict:
-        """Make GET request to FoJin API."""
+        """Make GET request to FoJin API.
+
+        Raises:
+            FojinUnavailableError: When FoJin is unreachable (connection/timeout)
+            requests.HTTPError: On 4xx/5xx responses
+        """
         url = f"{self.base_url}{path}"
-        resp = self.session.get(url, params=params, timeout=30)
-        resp.raise_for_status()
-        return resp.json()
+        try:
+            resp = self.session.get(url, params=params, timeout=30)
+            resp.raise_for_status()
+            return resp.json()
+        except requests.ConnectionError as e:
+            raise FojinUnavailableError(f"FoJin API unreachable: {e}") from e
+        except requests.Timeout as e:
+            raise FojinUnavailableError(f"FoJin API timeout: {e}") from e
 
     def test_connection(self) -> bool:
         """Test if FoJin API is reachable."""

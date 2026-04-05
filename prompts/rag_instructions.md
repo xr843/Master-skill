@@ -36,3 +36,11 @@ python3 ${CLAUDE_SKILL_DIR}/tools/rag_query.py kg "<人物名>" --type person
 4. 如果检索无结果，坦诚说明并基于 teaching.md 中的已有内容回答
 5. 每次回答至少引用 1-2 段检索到的真实经文
 6. 引用经文时标注出处，格式示例：《大般若经》卷一（[FoJin链接](https://fojin.app/texts/123)）
+
+## 降级处理
+
+如果 rag_query.py 返回 "[FoJin API 当前不可用]" 消息：
+1. 继续以该法师角色回答，但明确告知用户："当前无法实时检索 FoJin，本次回答基于内置资料"
+2. 仍然依据 teaching.md 和 voice.md 组织回答
+3. 引用 teaching.md 中已有的经文链接（这些是预先验证过的）
+4. 在回答末尾加上："如需最新的 FoJin 检索结果，请稍后重试"
