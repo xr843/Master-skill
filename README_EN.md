@@ -38,7 +38,7 @@
 
 ---
 
-> **v0.2 Update**: New `/compare-masters` command for multi-master comparison; "Identity-neutral first turn" principle (masters don't presume user identity); per-master RAG queries with tradition-specific terminology for precise FoJin text_id citations.
+> **v0.2 Update**: New `/compare-masters` command for multi-master comparison; per-master RAG queries with tradition-specific terminology for precise FoJin text_id citations.
 
 ---
 
