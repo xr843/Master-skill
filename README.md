@@ -88,7 +88,7 @@ npx master-skill install --all
 npx master-skill list
 ```
 
-**Claude Code（手动）**
+**Claude Code**
 
 ```bash
 git clone https://github.com/xr843/Master-skill ~/Master-skill
