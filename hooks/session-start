@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Master-skill session-start hook
+# Injects available masters list into conversation context on session start.
+# Compatible with Claude Code, Cursor, and Copilot CLI.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGIN_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Build masters list from prebuilt/ directory
+MASTERS_LIST=""
+for dir in "$PLUGIN_ROOT"/prebuilt/*/; do
+    [ -d "$dir" ] || continue
+    name=$(basename "$dir")
+    [ "$name" = "compare" ] && continue
+    skill_file="$dir/SKILL.md"
+    if [ -f "$skill_file" ]; then
+        # Extract lineage from frontmatter
+        lineage=$(grep '^lineage:' "$skill_file" 2>/dev/null | head -1 | sed 's/^lineage: *//' || echo "")
+        if [ -n "$lineage" ]; then
+            MASTERS_LIST="${MASTERS_LIST}  /${name} — ${lineage}\n"
+        fi
+    fi
+done
+
+# Build the context message
+CONTEXT="Master-skill plugin loaded. Available Buddhist masters:
+${MASTERS_LIST}  /compare-masters — multi-tradition comparison
+  /create-master — generate new master from FoJin knowledge graph
+
+All doctrinal responses include CBETA citations linked to fojin.app."
+
+# Escape for JSON embedding
+CONTEXT_ESCAPED=$(echo "$CONTEXT" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" 2>/dev/null || echo "\"$CONTEXT\"")
+
+# Platform detection and output format
+if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
+    # Cursor format
+    echo "{\"additional_context\": $CONTEXT_ESCAPED}"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -z "${COPILOT_CLI:-}" ]; then
+    # Claude Code format
+    echo "{\"hookSpecificOutput\": {\"additionalContext\": $CONTEXT_ESCAPED}}"
+else
+    # Copilot CLI / SDK standard format
+    echo "{\"additionalContext\": $CONTEXT_ESCAPED}"
+fi

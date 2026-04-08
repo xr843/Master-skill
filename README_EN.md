@@ -76,39 +76,33 @@ No installation required — try all pre-built masters directly in your browser:
 
 ### Installation
 
+**NPX (recommended)**
+
+```bash
+npx master-skill install --all    # Install all 8 masters
+npx master-skill list             # List available masters
+```
+
 **Claude Code**
 
 ```bash
 git clone https://github.com/xr843/Master-skill ~/Master-skill
 cd ~/Master-skill && pip install -r requirements.txt
-# Register skills (symlink to ~/.claude/skills/)
 for d in prebuilt/*/; do ln -sf "$(pwd)/$d" ~/.claude/skills/"$(basename $d)"; done
 ln -sf "$(pwd)" ~/.claude/skills/create-master
 ```
 
-**Codex CLI**
+**Cursor** — Clone the repo; Cursor auto-detects `.cursor-plugin/plugin.json`.
 
-```bash
-git clone https://github.com/xr843/Master-skill ~/Master-skill
-cd ~/Master-skill && pip install -r requirements.txt
-# Register skills (symlink to ~/.codex/skills/)
-for d in prebuilt/*/; do ln -sf "$(pwd)/$d" ~/.codex/skills/"$(basename $d)"; done
-ln -sf "$(pwd)" ~/.codex/skills/create-master
+**OpenCode** — Add to `opencode.json`:
+
+```json
+{"plugin": ["master-skill@git+https://github.com/xr843/Master-skill.git"]}
 ```
 
-**OpenClaw**
+**Codex CLI** — See [.codex/INSTALL.md](.codex/INSTALL.md)
 
-```bash
-git clone https://github.com/xr843/Master-skill ~/.openclaw/workspace/skills/create-master
-cd ~/.openclaw/workspace/skills/create-master && pip install -r requirements.txt
-```
-
-**Manual**
-
-```bash
-git clone https://github.com/xr843/Master-skill
-cd Master-skill && pip install -r requirements.txt
-```
+**Gemini CLI** — Auto-discovered via `gemini-extension.json` and `GEMINI.md`.
 
 ### Use a Pre-built Master
 

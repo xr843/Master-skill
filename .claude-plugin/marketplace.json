@@ -1,0 +1,20 @@
+{
+  "name": "master-skill",
+  "description": "Chinese Buddhist Master AI Skills — 8 historical masters with source-cited teachings",
+  "owner": {
+    "name": "xr843",
+    "email": "xr843@users.noreply.github.com"
+  },
+  "plugins": [
+    {
+      "name": "master-skill",
+      "description": "Chinese Buddhist Master AI teaching personas — 8 prebuilt masters with CBETA-cited doctrinal responses, RAG-grounded in FoJin knowledge graph",
+      "version": "0.3.0",
+      "source": "./",
+      "author": {
+        "name": "xr843",
+        "email": "xr843@users.noreply.github.com"
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 {
   "name": "master-skill",
   "version": "0.3.0",
+  "type": "module",
   "description": "Chinese Buddhist Master AI Skills — RAG-grounded, source-cited, fidelity-tested",
   "bin": {
     "master-skill": "./bin/cli.mjs"
@@ -8,5 +9,5 @@
   "keywords": ["claude-skills", "agent-skills", "buddhism", "ai-persona", "rag", "digital-humanities"],
   "license": "MIT",
   "repository": {"type": "git", "url": "https://github.com/xr843/Master-skill"},
-  "files": ["bin/", "prebuilt/", "scripts/"]
+  "files": ["bin/", "prebuilt/", "scripts/", "hooks/", ".claude-plugin/", ".cursor-plugin/", ".codex/", ".opencode/"]
 }

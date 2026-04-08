@@ -1,0 +1,22 @@
+{
+  "name": "master-skill",
+  "description": "Chinese Buddhist Master AI teaching personas — 8 prebuilt masters with CBETA-cited doctrinal responses, RAG-grounded in FoJin knowledge graph",
+  "version": "0.3.0",
+  "author": {
+    "name": "xr843",
+    "email": "xr843@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/xr843/Master-skill",
+  "repository": "https://github.com/xr843/Master-skill",
+  "license": "MIT",
+  "keywords": [
+    "buddhism",
+    "chinese-buddhism",
+    "ai-persona",
+    "digital-humanities",
+    "rag",
+    "cbeta",
+    "fojin",
+    "agent-skills"
+  ]
+}

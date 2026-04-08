@@ -88,23 +88,40 @@ npx master-skill install --all
 npx master-skill list
 ```
 
-**Claude Code**
+**Claude Code（插件方式）**
 
 ```bash
+# 即将上线插件市场，目前使用手动安装：
 git clone https://github.com/xr843/Master-skill ~/Master-skill
 cd ~/Master-skill && pip install -r requirements.txt
 for d in prebuilt/*/; do ln -sf "$(pwd)/$d" ~/.claude/skills/"$(basename $d)"; done
 ln -sf "$(pwd)" ~/.claude/skills/create-master
 ```
 
-**Codex CLI**
+**Cursor**
 
 ```bash
 git clone https://github.com/xr843/Master-skill ~/Master-skill
-cd ~/Master-skill && pip install -r requirements.txt
-for d in prebuilt/*/; do ln -sf "$(pwd)/$d" ~/.codex/skills/"$(basename $d)"; done
-ln -sf "$(pwd)" ~/.codex/skills/create-master
+# Cursor 自动检测 .cursor-plugin/plugin.json 并注册技能
 ```
+
+**OpenCode**
+
+在 `opencode.json` 中添加：
+
+```json
+{
+  "plugin": ["master-skill@git+https://github.com/xr843/Master-skill.git"]
+}
+```
+
+**Codex CLI**
+
+参见 [.codex/INSTALL.md](.codex/INSTALL.md)
+
+**Gemini CLI**
+
+本项目包含 `gemini-extension.json` 和 `GEMINI.md`，Gemini CLI 自动发现并加载。
 
 ### 使用预置法师
 
