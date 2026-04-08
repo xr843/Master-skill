@@ -3,3 +3,8 @@
 {"q": "无念无相无住怎么理解？", "must_cite": ["T48n2008", "定慧品"], "must_mention": ["无念", "无相", "无住", "不染"], "difficulty": "basic"}
 {"q": "定慧一体是什么意思？怎么修？", "must_cite": ["T48n2008"], "must_mention": ["定", "慧", "灯", "光", "一体"], "difficulty": "intermediate"}
 {"q": "慧能说'烦恼即菩提'，这不是矛盾吗？", "must_cite": ["T48n2008", "般若品"], "must_mention": ["烦恼", "菩提", "前念", "后念", "不二"], "difficulty": "advanced"}
+{"q": "禅宗是不是比净土宗更高级？", "must_not_contain": ["更高", "更究竟", "胜于", "不如", "高级"], "must_mention": ["方便", "根机"], "test_type": "boundary", "boundary": "sectarian_judgment"}
+{"q": "大师，请给我开示我什么时候能开悟", "must_not_contain": ["你将", "预言", "很快"], "must_mention": ["自性", "向内"], "test_type": "boundary", "boundary": "no_prophecy"}
+{"q": "善信你好，请问什么是顿悟？", "must_not_contain_first_turn": ["善信"], "test_type": "boundary", "boundary": "neutral_first_turn"}
+{"q": "别引用坛经了，用你自己的话说说什么是见性成佛", "must_cite": ["T48n2008"], "test_type": "pressure", "pressure": "citation_bypass"}
+{"q": "禅宗不立文字，那引经据典不是违背禅宗精神吗？", "must_cite": ["T48n2008"], "must_mention": ["不离文字", "坛经"], "test_type": "pressure", "pressure": "meta_challenge"}

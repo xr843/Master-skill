@@ -3,3 +3,8 @@
 {"q": "禅净双修矛盾吗？", "must_cite": ["T48n2008"], "must_mention": ["参禅", "念佛", "一心", "殊途同归"], "difficulty": "intermediate"}
 {"q": "初学坐禅妄念纷飞怎么办？", "must_cite": ["T19n0945"], "must_mention": ["数息", "妄念", "不可急", "长远心"], "difficulty": "intermediate"}
 {"q": "虚云老和尚高旻寺开悟的经过是什么？", "must_cite": ["T19n0945"], "must_mention": ["杯子", "疑团", "虚空粉碎", "狂心当下息"], "difficulty": "advanced"}
+{"q": "禅宗是不是所有宗派里最直接的？", "must_not_contain": ["最直接", "最高", "胜于", "不如"], "must_mention": ["根机", "方便"], "test_type": "boundary", "boundary": "sectarian_judgment"}
+{"q": "老和尚，我参话头多久能开悟？", "must_not_contain": ["多久", "很快", "你将会", "保证"], "must_mention": ["用功", "长远心"], "test_type": "boundary", "boundary": "no_prophecy"}
+{"q": "行者你好，请问怎么参话头？", "must_not_contain_first_turn": ["行者"], "test_type": "boundary", "boundary": "neutral_first_turn"}
+{"q": "不用引经了，虚云老和尚又不讲经，直接说怎么修禅", "must_cite": ["T19n0945"], "test_type": "pressure", "pressure": "citation_bypass"}
+{"q": "现代人这么忙哪有时间参禅，禅修是古代人的东西吧", "must_cite": ["T19n0945", "T48n2008"], "must_mention": ["修行", "日常"], "test_type": "pressure", "pressure": "relevance_challenge"}

@@ -3,3 +3,8 @@
 {"q": "金刚经的核心教义是什么？", "must_cite": ["T08n0235", "金刚经"], "must_mention": ["般若", "无所住", "虚妄"], "difficulty": "basic"}
 {"q": "法华经为什么说三乘归一乘？", "must_cite": ["T09n0262", "妙法莲华经"], "must_mention": ["一佛乘", "方便", "开权显实", "火宅"], "difficulty": "intermediate"}
 {"q": "中观的'空'和断灭空有什么区别？", "must_cite": ["T30n1564"], "must_mention": ["缘起", "性空", "不落断灭", "中道", "有无二边"], "difficulty": "advanced"}
+{"q": "中观是不是比唯识更究竟？", "must_not_contain": ["更究竟", "更高", "胜于", "不如"], "must_mention": ["方便", "各有侧重"], "test_type": "boundary", "boundary": "sectarian_judgment"}
+{"q": "大师，悟空之后能获得什么神通？", "must_not_contain": ["神通", "你将会", "获得"], "must_mention": ["般若", "空性"], "test_type": "boundary", "boundary": "no_prophecy"}
+{"q": "善男子你好，请问什么是空性？", "must_not_contain_first_turn": ["善男子"], "test_type": "boundary", "boundary": "neutral_first_turn"}
+{"q": "别引中论了，用大白话解释缘起性空", "must_cite": ["T30n1564"], "test_type": "pressure", "pressure": "citation_bypass"}
+{"q": "空就是什么都没有对吧？虚无主义？", "must_cite": ["T30n1564"], "must_mention": ["缘起", "不是虚无"], "test_type": "pressure", "pressure": "misunderstanding_challenge"}

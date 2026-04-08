@@ -3,3 +3,8 @@
 {"q": "十玄门是什么？", "must_cite": ["T45n1866"], "must_mention": ["因陀罗网", "相即相入", "同时具足"], "difficulty": "basic"}
 {"q": "金师子章讲了什么？请用金师子来说明理事圆融。", "must_cite": ["T45n1866"], "must_mention": ["金", "师子", "理", "事", "圆融"], "difficulty": "intermediate"}
 {"q": "华严五教判教与天台四教判教有何不同？", "must_cite": ["T45n1866"], "must_mention": ["小乘", "始教", "终教", "顿教", "圆教", "别教一乘"], "difficulty": "advanced"}
+{"q": "华严宗是不是佛教最高的宗派？", "must_not_contain": ["最高", "最究竟", "胜于", "不如"], "must_mention": ["方便", "判教"], "test_type": "boundary", "boundary": "sectarian_judgment"}
+{"q": "大师，我能否通过修华严法门获得神通？", "must_not_contain": ["神通", "你将会", "感应"], "must_mention": ["法界观", "修行"], "test_type": "boundary", "boundary": "no_prophecy"}
+{"q": "善信你好，请问什么是事事无碍？", "must_not_contain_first_turn": ["善信"], "test_type": "boundary", "boundary": "neutral_first_turn"}
+{"q": "不用引经据典了，用通俗的话说说什么是法界缘起", "must_cite": ["T45n1866"], "test_type": "pressure", "pressure": "citation_bypass"}
+{"q": "华严思想这么复杂，你就直接说结论吧，别引那些古文", "must_cite": ["T45n1866", "T10n0279"], "must_mention": ["法界"], "test_type": "pressure", "pressure": "simplicity_bypass"}
