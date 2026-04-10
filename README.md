@@ -35,7 +35,9 @@
 
 ---
 
-> **v0.3 更新**：全面架构重构——渐进式披露（SKILL.md < 100 行）、CBETA 经文溯源（provenance frontmatter）、离线经文片段（sources/）、自动化保真度测试（fidelity.jsonl）、NPX 一键安装、cite.py/query.py 离线工具链。
+> **v0.3 更新**：全面架构重构——CBETA 经文溯源（provenance frontmatter）、离线经文片段（sources/）、自动化保真度测试（fidelity.jsonl）、NPX 一键安装、cite.py/query.py 离线工具链。
+>
+> **v0.3 后续迭代**：`/create-master` 生成管线新增二阶段独立审查（教义准确性 → 风格一致性）、HARD-GATE 铁律（无 CBETA 引证不得写入）、多平台插件支持（Claude Code / Cursor / Codex / OpenCode / Gemini CLI 五端统一）、session-start hook 自动注入法师列表、8 位预置法师的 pressure tests 与 CI 验证流水线。
 
 ---
 
@@ -62,8 +64,11 @@
 - **预置八位汉传祖师大德**：涵盖唯识、中观、禅、天台、华严、净土、跨宗派七大核心宗派，开箱即用
 - **经文溯源（Provenance）**：每位祖师附 CBETA ID、FoJin text ID，所有教义断言强制附经证引用
 - **离线经文片段**：`sources/` 目录收录核心经典关键段落，FoJin 不可用时仍可离线引用
-- **渐进式披露**：SKILL.md < 100 行（决策树 + Quick Ref），references/ 和 sources/ 按需加载，节省 70% context
-- **自动化保真度测试**：每位祖师 `tests/fidelity.jsonl` 5 条 Q&A，验证引用和关键词覆盖
+- **渐进式披露**：SKILL.md 以决策树 + Quick Ref 为主，`references/`、`sources/` 按需加载，Context 随查随取
+- **HARD-GATE 铁律**：`/create-master` 与预置法师内置红线——无 CBETA 引证的教义断言不得写入、不得捏造经号、不得为虚构人物建角色
+- **二阶段独立审查**：生成管线在写入前强制经过"教义准确性 → 风格一致性"两轮独立审查，FAIL 自动修复最多 2 轮
+- **自动化保真度测试**：每位祖师 `tests/fidelity.jsonl` 5 条 Q&A，验证引用和关键词覆盖；CI 在每次推送时 dry-run 验证
+- **多平台统一插件**：Claude Code、Cursor、Codex CLI、OpenCode、Gemini CLI 共用一份 `prebuilt/`，session-start hook 跨平台注入法师列表
 - **NPX 一键安装**：`npx master-skill install zhiyi` 直接部署到 Claude Code
 - **离线工具链**：`scripts/cite.py`（CBETA 引用查询）、`scripts/query.py`（离线语义检索）、`scripts/validate.py`（frontmatter linter）
 - **FoJin 数据桥**：接入 [fojin.app](https://fojin.app) 的 503 个数据源、10K+ 文本、678K+ 语义向量和 31K 实体知识图谱
@@ -125,7 +130,7 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 
 ### 使用预置法师
 
-在支持 AgentSkills 的环境（Claude Code / Codex CLI / OpenClaw）中直接调用：
+在支持 AgentSkills 的环境（Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI）中直接调用：
 
 ```
 /xuanzang       — 玄奘法师（法相唯识宗）
@@ -231,32 +236,45 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 用户请求
     |
     v
-SKILL.md (AgentSkills 入口, <100行)
+session-start hook ──> 自动注入法师列表（5 端统一）
+    |
+    v
+SKILL.md (AgentSkills 入口：决策树 + Quick Ref)
     |
     +-- 预置法师 --> prebuilt/{slug}/
-    |                   +-- SKILL.md          (决策树+Quick Ref)
-    |                   +-- meta.json
+    |                   +-- SKILL.md          (决策树 + <HARD-GATE> 铁律)
+    |                   +-- meta.json         (version / lineage / provenance)
     |                   +-- references/       (按需加载)
     |                   |   +-- teaching.md
     |                   |   +-- voice.md
     |                   +-- sources/          (离线经文片段)
-    |                   |   +-- *.md (CBETA)
+    |                   |   +-- *.md (CBETA 段落)
     |                   +-- tests/
-    |                       +-- fidelity.jsonl
+    |                       +-- fidelity.jsonl  (保真度样例, CI dry-run)
     |
     +-- 工具链
     |   +-- scripts/validate.py         (frontmatter linter)
     |   +-- scripts/cite.py             (CBETA 引用查询)
     |   +-- scripts/query.py            (离线语义检索)
     |   +-- scripts/test-fidelity.py    (保真度测试)
+    |   +-- scripts/validate-fidelity.py
     |   +-- bin/cli.mjs                 (NPX installer)
     |
-    +-- 自定义生成
-          +-- prompts/                   (信息录入+分析)
-          +-- tools/sutra_collector.py
-          |       +---> FoJin API ---> 知识图谱 + 语义检索
-          +-- tools/master_builder.py    (角色构建)
-          +-- tools/skill_writer.py      (文件写入)
+    +-- 自定义生成 (/create-master, 带 HARD-GATE)
+          +-- Step 1-2  prompts/intake.md → tools/sutra_collector.py
+          |             └─> FoJin API (KG + 语义检索 + 文本)
+          +-- Step 3    prompts/{sutra,voice}_analyzer.md → 两阶段分析
+          +-- Step 3.5  二阶段独立审查 ──┬─ prompts/doctrine_reviewer.md
+          |                             └─ prompts/voice_reviewer.md
+          +-- Step 4-5  tools/master_builder.py → tools/skill_writer.py
+                        └─> tools/verify_sources.py (写入前最终验证)
+
+多平台插件统一入口：
+  .claude-plugin/    → Claude Code      (hooks/run-hook.cmd → session-start)
+  .cursor-plugin/    → Cursor           (hooks/hooks-cursor.json)
+  .codex/            → Codex CLI        (.codex/INSTALL.md)
+  .opencode/         → OpenCode         (opencode.json 引用)
+  gemini-extension.json → Gemini CLI    (GEMINI.md 自动加载)
 ```
 
 ---
@@ -291,11 +309,35 @@ Master-skill 通过 `tools/fojin_bridge.py` 接入 FoJin API，实现：
 
 ---
 
+## 常见问题
+
+**Q：FoJin API 不可达时还能用吗？**
+
+能。每位预置法师的 `prebuilt/<name>/sources/` 收录了该法师核心经典的关键段落（离线经文片段）。FoJin 不可用时，法师会降级到离线模式并在回答中声明"当前使用离线片段"。`/create-master` 管线遇到 API 故障会提示用户切换手动输入模式，由用户粘贴经文原文继续生成。
+
+**Q：CBETA 引用格式是什么样的？怎么验证？**
+
+所有 CBETA 引证必须带 `Txxn####` 形式的经号（例如《妙法蓮華經》→ `T9n262`）。`scripts/validate.py` 会检查 frontmatter 的 `sources` 字段格式；`tools/verify_sources.py` 在写入前会逐条核对 FoJin `text_id` 的有效性，失效链接自动降级为 FoJin 搜索链接，不会留下死链。
+
+**Q：`npx master-skill install` 执行失败、报 ENOTEMPTY 或权限错误怎么办？**
+
+先清理 `~/.claude/skills/master-<name>/` 残留目录再重试。如果是 npm 缓存问题，`npm cache clean --force` 后重跑 NPX。Windows 用户请在 Git Bash 或 WSL 中执行，避免 cmd.exe 的路径转义问题。
+
+**Q：生成的法师内容和历史记载不符，怎么纠正？**
+
+直接在对话中告诉法师"他不会这样说话"或"他应该更严厉一些"。`/create-master` 的纠正模式会识别纠正类型（教义纠正 → 追加到 `teaching.md`；风格纠正 → 追加到 `voice.md`），以 `## Correction` 块形式记录并自动递增 patch 版本号。纠正记录的优先级高于分析生成的内容。
+
+**Q：如何贡献一位新的预置法师？**
+
+见下方「贡献指南」。基本流程：遵循 v0.3 目录结构生成 `prebuilt/<name>/`、跑通 `scripts/validate.py --strict`、补齐 `tests/fidelity.jsonl` 的 5 条以上样例，然后提 PR。
+
+---
+
 ## 贡献指南
 
 欢迎提交新的预置法师、修正文献来源错误、补充经文片段，或改进工具链。
 
-新增祖师需遵循 v0.3 架构：`prebuilt/<name>/` 下包含 SKILL.md（<100行，含 provenance frontmatter）、references/、sources/、tests/fidelity.jsonl。提交前运行 `python3 scripts/validate.py --strict` 确保 0 errors。
+新增祖师需遵循 v0.3 架构：`prebuilt/<name>/` 下包含 SKILL.md（含 provenance frontmatter 与决策树）、`references/teaching.md` 与 `references/voice.md`（按需加载）、`sources/*.md`（离线经文片段）、`tests/fidelity.jsonl`（5 条以上 Q&A 保真度样例）。提交前运行 `python3 scripts/validate.py --strict` 确保 0 errors，并让 CI 的保真度 dry-run 通过。
 
 提交前请确认：文献来源可追溯至 CBETA，内容忠实于佛教经典文献，无宗派偏见。
 

@@ -38,7 +38,9 @@
 
 ---
 
-> **v0.2 Update**: New `/compare-masters` command for multi-master comparison; per-master RAG queries with tradition-specific terminology for precise FoJin text_id citations.
+> **v0.3 Update**: Full architecture rebuild — CBETA provenance in frontmatter, offline source passages (`sources/`), automated fidelity tests (`fidelity.jsonl`), one-command NPX installer, and offline toolchain (`cite.py` / `query.py`).
+>
+> **Post-v0.3 iterations**: `/create-master` pipeline now enforces a two-stage independent review (doctrinal accuracy → voice consistency), HARD-GATE rules (no CBETA citation → no write), multi-platform plugin support across Claude Code / Cursor / Codex / OpenCode / Gemini CLI, a session-start hook that auto-injects the master list, plus pressure tests and CI validation for all 8 prebuilt masters.
 
 ---
 
@@ -63,12 +65,17 @@ No installation required — try all pre-built masters directly in your browser:
 ## Features
 
 - **8 pre-built Chinese Buddhist masters**: across Yogacara, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, and cross-tradition — ready to use out of the box
+- **Provenance enforcement**: Every master ships with CBETA IDs and FoJin text IDs in frontmatter; every doctrinal claim must carry a scriptural citation
+- **Offline source passages**: `sources/` captures key passages from each master's core canon, so citations still work when FoJin is unreachable
+- **Progressive disclosure**: SKILL.md is a decision tree + quick reference; `references/` and `sources/` are loaded on demand to keep context lean
+- **HARD-GATE discipline**: Both `/create-master` and every prebuilt master embed hard rules — no unverified CBETA ID, no uncited doctrinal claim, no fictional personas
+- **Two-stage independent review**: The generation pipeline forces a "doctrinal accuracy → voice consistency" review before write; FAIL triggers up to 2 rounds of automatic repair
+- **Automated fidelity tests**: Each master's `tests/fidelity.jsonl` holds 5+ Q&A samples validating citations and keyword coverage; CI runs a dry-run on every push
+- **Unified multi-platform plugin**: Claude Code, Cursor, Codex CLI, OpenCode, and Gemini CLI share one `prebuilt/` tree, with a session-start hook injecting the master list on every platform
+- **NPX one-shot install**: `npx master-skill install zhiyi` drops skills straight into Claude Code
+- **Offline toolchain**: `scripts/cite.py` (CBETA lookup), `scripts/query.py` (offline semantic search), `scripts/validate.py` (frontmatter linter)
 - **FoJin data bridge**: Connected to [fojin.app](https://fojin.app) with 503 data sources, 10K+ texts, 678K+ semantic embeddings, and a 31K-entity knowledge graph
-- **Runtime RAG retrieval**: Answers grounded in real Buddhist texts via FoJin semantic search, not just LLM training data
-- **AgentSkills standard**: Compliant with the AgentSkills specification; can be invoked as a sub-skill by other agents
-- **Dual-mode output**: Each master generates both `teaching.md` (doctrinal system) and `voice.md` (teaching style)
-- **Incremental evolution**: Existing masters can be enhanced by appending new source texts via incremental merging
-- **Version management**: Built-in versioning with timestamps, supporting rollback to any prior version
+- **AgentSkills standard**: Compliant with [Anthropic Agent Skills](https://github.com/anthropics/skills) — progressive disclosure, decision trees, black-box script pattern
 
 ---
 
@@ -106,7 +113,7 @@ ln -sf "$(pwd)" ~/.claude/skills/create-master
 
 ### Use a Pre-built Master
 
-In any AgentSkills-compatible environment (Claude Code / Codex CLI / OpenClaw):
+In any AgentSkills-compatible environment (Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI):
 
 ```
 /xuanzang       — Master Xuanzang (Yogacara)
@@ -118,6 +125,24 @@ In any AgentSkills-compatible environment (Claude Code / Codex CLI / OpenClaw):
 /ouyi           — Master Ouyi (Tiantai / Pure Land, cross-tradition)
 /xuyun          — Master Xuyun (Chan, Five Houses)
 ```
+
+### Compare Masters
+
+Ask the same question to 2-3 masters in parallel and surface the differences between traditions:
+
+```
+# Auto-pick relevant masters
+/compare-masters what is emptiness
+
+# Manually pick masters (recommended for precise results)
+/compare-masters how to read the Heart Sutra --masters xuanzang,huineng,zhiyi
+
+# Natural-language triggers
+compare Huineng and Yinguang on nianfo
+how do Chan and Pure Land differ on practice
+```
+
+**Selection logic**: the command first tries to extract keywords from the question and match them against each master's core concepts; if nothing matches strongly, it falls back to topic mapping (nianfo / meditation / Yogacara-Madhyamaka / classification, etc.). **If the auto-pick feels off, use `--masters` to override.**
 
 ### Generate a Custom Master
 
@@ -193,37 +218,45 @@ Invoke: `/xuyun`
 User request
     |
     v
-SKILL.md (AgentSkills entry point)
+session-start hook ──> auto-injects master list (5 platforms, unified)
     |
-    +-- Pre-built masters ----------------> prebuilt/{slug}/
-    |                                        +-- SKILL.md
-    |                                        +-- teaching.md
-    |                                        +-- voice.md
-    |                                        +-- meta.json
+    v
+SKILL.md (AgentSkills entry: decision tree + quick reference)
     |
-    +-- Custom generation
-          |
-          +-- prompts/intake.md          (information intake)
-          |
-          +-- tools/sutra_collector.py
-          |       |
-          |       +--> FoJin API ---> knowledge graph + semantic search + text
-          |
-          +-- prompts/sutra_analyzer.md  (doctrinal analysis)
-          +-- prompts/voice_analyzer.md  (style analysis)
-          +-- prompts/teaching_builder.md
-          +-- prompts/voice_builder.md
-          |
-          +-- tools/master_builder.py    (persona construction)
-          +-- tools/skill_writer.py      (file writing)
-          +-- tools/version_manager.py   (version management)
-                |
-                v
-          masters/{slug}/
-              +-- SKILL.md
-              +-- teaching.md
-              +-- voice.md
-              +-- meta.json
+    +-- Pre-built masters --> prebuilt/{slug}/
+    |                           +-- SKILL.md          (decision tree + <HARD-GATE>)
+    |                           +-- meta.json         (version / lineage / provenance)
+    |                           +-- references/       (loaded on demand)
+    |                           |   +-- teaching.md
+    |                           |   +-- voice.md
+    |                           +-- sources/          (offline CBETA passages)
+    |                           |   +-- *.md
+    |                           +-- tests/
+    |                               +-- fidelity.jsonl  (CI dry-run samples)
+    |
+    +-- Offline toolchain
+    |   +-- scripts/validate.py         (frontmatter linter)
+    |   +-- scripts/cite.py             (CBETA lookup)
+    |   +-- scripts/query.py            (offline semantic search)
+    |   +-- scripts/test-fidelity.py    (fidelity runner)
+    |   +-- scripts/validate-fidelity.py
+    |   +-- bin/cli.mjs                 (NPX installer)
+    |
+    +-- Custom generation (/create-master, HARD-GATE enforced)
+          +-- Step 1-2  prompts/intake.md → tools/sutra_collector.py
+          |             └─> FoJin API (KG + semantic search + text)
+          +-- Step 3    prompts/{sutra,voice}_analyzer.md → two-stage analysis
+          +-- Step 3.5  two-stage independent review ──┬─ prompts/doctrine_reviewer.md
+          |                                            └─ prompts/voice_reviewer.md
+          +-- Step 4-5  tools/master_builder.py → tools/skill_writer.py
+                        └─> tools/verify_sources.py (final pre-write check)
+
+Unified multi-platform manifests:
+  .claude-plugin/      → Claude Code    (hooks/run-hook.cmd → session-start)
+  .cursor-plugin/      → Cursor         (hooks/hooks-cursor.json)
+  .codex/              → Codex CLI      (.codex/INSTALL.md)
+  .opencode/           → OpenCode       (referenced from opencode.json)
+  gemini-extension.json → Gemini CLI    (auto-loaded with GEMINI.md)
 ```
 
 ---
@@ -262,11 +295,37 @@ All citations include traceable FoJin links to ensure transparency of sources.
 
 ---
 
+## Troubleshooting
+
+**Q: Does it still work when the FoJin API is unreachable?**
+
+Yes. Each prebuilt master ships with `prebuilt/<name>/sources/` — key passages from that master's core canon, stored offline. When FoJin is down, the master degrades to offline mode and declares "currently running on offline passages" in the reply. The `/create-master` pipeline asks the user to switch to manual-input mode when the API fails, so you can paste source text and continue.
+
+**Q: What does a valid CBETA citation look like, and how is it verified?**
+
+Every CBETA citation must carry a `Txxn####` identifier (for example, the Lotus Sutra is `T9n262`). `scripts/validate.py` lints the frontmatter `sources` block; `tools/verify_sources.py` checks every FoJin `text_id` against the live API before writing. Broken links are downgraded to FoJin search URLs — no dead references make it into the final file.
+
+**Q: `npx master-skill install` fails with ENOTEMPTY or a permission error — what now?**
+
+Clean up any leftover `~/.claude/skills/master-<name>/` directories before retrying. For npm-cache weirdness, run `npm cache clean --force` and rerun NPX. Windows users should execute from Git Bash or WSL to avoid cmd.exe path-escaping issues.
+
+**Q: The generated master says things that don't match the historical record — how do I correct it?**
+
+Just tell the master in-chat: "he wouldn't phrase it like that" or "he should sound more stern." The `/create-master` correction mode classifies the fix (doctrinal → appended to `teaching.md`; stylistic → appended to `voice.md`), writes it as a `## Correction` block with timestamp, and bumps the patch version. Correction blocks take priority over analysis-generated content at runtime.
+
+**Q: How do I contribute a new prebuilt master?**
+
+See "Contributing" below. The short version: follow the v0.3 layout under `prebuilt/<name>/`, pass `scripts/validate.py --strict` with zero errors, ship at least 5 fidelity Q&A samples in `tests/fidelity.jsonl`, then open a PR.
+
+---
+
 ## Contributing
 
-Contributions are welcome: new pre-built masters (follow the format in `prebuilt/`), corrections to source attributions, or improvements to the toolchain.
+Contributions are welcome: new prebuilt masters, corrections to source attributions, offline passage additions, or toolchain improvements.
 
-Before submitting, please verify: sources are traceable, content is faithful to historical documents, and no sectarian bias is introduced.
+New masters must follow the v0.3 layout: `prebuilt/<name>/` containing SKILL.md (with provenance frontmatter and a decision tree), `references/teaching.md` and `references/voice.md` (loaded on demand), `sources/*.md` (offline CBETA passages), and `tests/fidelity.jsonl` (5+ Q&A fidelity samples). Run `python3 scripts/validate.py --strict` for zero errors, and make sure the CI fidelity dry-run passes before opening a PR.
+
+Before submitting, verify that sources trace back to CBETA, content is faithful to historical documents, and no sectarian bias is introduced.
 
 ---
 
