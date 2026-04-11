@@ -24,6 +24,8 @@ PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 
 REQUIRED_FIELDS = {"name", "description"}
 RECOMMENDED_FIELDS = {"version", "license", "lineage", "dates", "sources", "citation_format"}
+# Fields not applicable to meta-skills (aggregate/comparison skills with no single lineage)
+META_SKILL_EXCLUDED = {"lineage", "dates", "sources", "citation_format"}
 MAX_DESCRIPTION_CHARS = 500
 MAX_SKILL_LINES = 500
 
@@ -104,7 +106,10 @@ def lint_master(master_dir: Path, strict: bool = False) -> list[str]:
             issues.append(f"[ERROR] {name}: missing required field '{field}'")
 
     # --- Recommended fields ---
+    kind = fm.get("kind", "master")
     for field in RECOMMENDED_FIELDS:
+        if kind == "meta-skill" and field in META_SKILL_EXCLUDED:
+            continue
         if field not in fm:
             issues.append(f"[WARN]  {name}: missing recommended field '{field}'")
 
@@ -126,21 +131,23 @@ def lint_master(master_dir: Path, strict: bool = False) -> list[str]:
                     issues.append(f"[WARN]  {name}: sources[{i}] missing 'title' or 'cbeta_id'")
 
     # --- Directory structure checks ---
-    refs_dir = master_dir / "references"
-    sources_dir = master_dir / "sources"
+    # Meta-skills (e.g. compare-masters) borrow from other masters and have no own corpus
+    if kind != "meta-skill":
+        refs_dir = master_dir / "references"
+        sources_dir = master_dir / "sources"
 
-    if not refs_dir.exists():
-        issues.append(f"[WARN]  {name}: missing references/ directory")
-    else:
-        if not (refs_dir / "voice.md").exists():
-            issues.append(f"[WARN]  {name}: missing references/voice.md")
-        if not (refs_dir / "teaching.md").exists():
-            issues.append(f"[WARN]  {name}: missing references/teaching.md")
+        if not refs_dir.exists():
+            issues.append(f"[WARN]  {name}: missing references/ directory")
+        else:
+            if not (refs_dir / "voice.md").exists():
+                issues.append(f"[WARN]  {name}: missing references/voice.md")
+            if not (refs_dir / "teaching.md").exists():
+                issues.append(f"[WARN]  {name}: missing references/teaching.md")
 
-    if not sources_dir.exists():
-        issues.append(f"[WARN]  {name}: missing sources/ directory")
-    elif not list(sources_dir.glob("*.md")):
-        issues.append(f"[WARN]  {name}: sources/ directory is empty")
+        if not sources_dir.exists():
+            issues.append(f"[WARN]  {name}: missing sources/ directory")
+        elif not list(sources_dir.glob("*.md")):
+            issues.append(f"[WARN]  {name}: sources/ directory is empty")
 
     # --- Check for tests ---
     tests_dir = master_dir / "tests"
