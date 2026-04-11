@@ -28,13 +28,42 @@
 </p>
 
 <p align="center">
+  <a href="#try-it-now-browser-first">Browser</a> ·
   <a href="#seriousness-statement">Statement</a> ·
   <a href="#features">Features</a> ·
-  <a href="#quick-start">Install</a> ·
+  <a href="#developer-installation">Install</a> ·
   <a href="#pre-built-masters">Masters</a> ·
   <a href="#relationship-to-fojin">FoJin</a> ·
   <a href="README.md">中文</a>
 </p>
+
+---
+
+## Try It Now (Browser-First)
+
+> **Most users don't need to install anything.** Buddhist students, researchers, and curious readers can use every master directly in a web browser.
+
+### 👉 [Open fojin.app/chat](https://fojin.app/chat)
+
+On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bottom-left and pick one of the 8 pre-built masters to start chatting.
+
+- No install, no signup
+- `/compare-masters` multi-master comparison works the same way
+- Live citation retrieval backed by FoJin's 503 sources and 678K+ semantic embeddings
+- Every answer carries a CBETA source ID
+
+**Not sure which master to ask?** Start here:
+
+| Your situation | Suggested master |
+|---|---|
+| "My mind is scattered, I can't sit still" | `/xuyun` `/zhiyi` (huatou / śamatha-vipaśyanā) |
+| "I can't follow the logic of the sutras" | `/xuanzang` (Yogācāra precision) |
+| "I've studied for years but feel stuck" | `/yinguang` (plain, sincere nianfo) |
+| "I want to understand emptiness" | `/kumarajiva` `/huineng` (Madhyamaka / direct pointing) |
+| "I want a systematic view of Huayan / Tiantai" | `/fazang` `/zhiyi` (classification and metaphysics) |
+| "I'm torn between Chan and Pure Land" | `/ouyi` (cross-tradition synthesis) |
+
+> Developers and Claude Code / Cursor users should skip to [Developer Installation](#developer-installation) to use the masters as terminal AgentSkills.
 
 ---
 
@@ -51,14 +80,6 @@ An AgentSkills-standard generator for AI personas based on historical Buddhist m
 ## Seriousness Statement
 
 This project is built out of respect for Buddhist traditions. All content is generated faithfully from historical documents. It makes no doctrinal judgments and claims no sectarian authority. Generated content is intended for study and reference only. For formal practice guidance, please seek out a qualified master and rely on genuine, living instruction.
-
----
-
-## Online Demo
-
-No installation required — try all pre-built masters directly in your browser:
-
-**[fojin.app/chat](https://fojin.app/chat)** — Open the AI Q&A page, select a master from the "法师模式" dropdown (bottom-left), and start chatting.
 
 ---
 
@@ -79,7 +100,10 @@ No installation required — try all pre-built masters directly in your browser:
 
 ---
 
-## Quick Start
+## Developer Installation
+
+> 👤 **Just want to try it?** Use [fojin.app/chat](https://fojin.app/chat) in your browser and skip this section entirely.
+> 🛠️ **This section is for**: Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI users who want to invoke `/xuanzang`, `/huineng`, etc. directly as terminal AgentSkills.
 
 ### Installation
 
