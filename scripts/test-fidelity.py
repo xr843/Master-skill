@@ -110,7 +110,12 @@ def check_response(response: str, test_case: dict, is_first_turn: bool = True) -
     }
 
 
-def run_tests(master_name: str, dry_run: bool = False, model: str = "claude-sonnet-4-6") -> dict:
+def run_tests(
+    master_name: str,
+    dry_run: bool = False,
+    model: str = "claude-sonnet-4-6",
+    max_tests: int | None = None,
+) -> dict:
     """Run fidelity tests for a master. Returns summary."""
     master_dir = PREBUILT_DIR / master_name
     if not master_dir.exists():
@@ -119,6 +124,16 @@ def run_tests(master_name: str, dry_run: bool = False, model: str = "claude-sonn
     tests = load_tests(master_dir)
     if not tests:
         return {"error": f"No fidelity.jsonl found for '{master_name}'"}
+
+    if max_tests is not None and max_tests > 0:
+        # Prefer easier/basic tests when capping — smoke suite should hit
+        # the reliable floor, not the advanced stress cases.
+        tests = sorted(
+            tests,
+            key=lambda t: {"basic": 0, "intermediate": 1, "advanced": 2}.get(
+                t.get("difficulty", "intermediate"), 1
+            ),
+        )[:max_tests]
 
     results: list[dict] = []
 
@@ -218,6 +233,12 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Show test cases without calling API")
     parser.add_argument("--model", type=str, default="claude-sonnet-4-6", help="Claude model to use")
     parser.add_argument("--json", action="store_true", help="Output as JSON")
+    parser.add_argument(
+        "--max-tests",
+        type=int,
+        default=None,
+        help="Cap the number of fixtures per master (smoke runs in CI use 1)",
+    )
     args = parser.parse_args()
 
     if not args.master and not args.all:
@@ -236,7 +257,9 @@ def main():
         print(f"\n{'='*50}")
         print(f"Testing: {master}")
         print(f"{'='*50}")
-        result = run_tests(master, dry_run=args.dry_run, model=args.model)
+        result = run_tests(
+            master, dry_run=args.dry_run, model=args.model, max_tests=args.max_tests
+        )
         all_results.append(result)
 
         if not args.json and "error" not in result:

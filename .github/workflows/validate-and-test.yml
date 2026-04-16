@@ -38,8 +38,77 @@ jobs:
       - name: Dry-run fidelity tests
         run: python scripts/test-fidelity.py --all --dry-run
 
-  fidelity:
-    name: Fidelity tests (API)
+  fidelity-smoke:
+    name: Fidelity smoke (1 master × 1 fixture)
+    runs-on: ubuntu-latest
+    needs: validate
+    # Cost cap: one basic-difficulty question per PR, Sonnet 4.6 pricing
+    # with ~10k-token system prompt → under $0.05/PR. Forks have no secret
+    # access — treat missing secret as advisory pass so external PRs can land.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install anthropic requests pypinyin
+
+      - name: Pick smoke target
+        id: pick
+        run: |
+          # If the PR touches a specific prebuilt master, smoke-test that one.
+          # Otherwise rotate by day-of-year so coverage stays uniform across 8.
+          BASE="${{ github.base_ref || 'main' }}"
+          CHANGED=$(git diff --name-only "origin/${BASE}...HEAD" 2>/dev/null \
+            | grep -oP 'prebuilt/\K[^/]+' | grep -v '^compare$' | head -n1 || true)
+          if [ -z "$CHANGED" ]; then
+            MASTERS=(xuanzang kumarajiva huineng zhiyi fazang yinguang ouyi xuyun)
+            IDX=$(( $(date +%j) % 8 ))
+            CHANGED=${MASTERS[$IDX]}
+          fi
+          echo "master=$CHANGED" >> "$GITHUB_OUTPUT"
+          echo "Smoke target: $CHANGED"
+
+      - name: Run fidelity smoke
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "::warning::ANTHROPIC_API_KEY not configured — smoke is advisory on this run (expected on forks)."
+            echo '{"skipped": true, "reason": "no_api_key"}' > fidelity-smoke.json
+            exit 0
+          fi
+          python scripts/test-fidelity.py \
+            --master "${{ steps.pick.outputs.master }}" \
+            --max-tests 1 \
+            --json > fidelity-smoke.json
+          python - <<'PY'
+          import json, sys
+          with open("fidelity-smoke.json") as f:
+              data = json.load(f)
+          # --master returns a single-element list
+          r = data[0] if isinstance(data, list) else data
+          failed = r.get("failed", 0)
+          total = r.get("total", 0)
+          print(f"Fidelity smoke: {total - failed}/{total} passed for {r.get('master', '?')}")
+          sys.exit(1 if failed else 0)
+          PY
+
+      - name: Upload smoke results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fidelity-smoke-${{ github.run_id }}
+          path: fidelity-smoke.json
+          if-no-files-found: ignore
+
+  fidelity-full:
+    name: Fidelity tests — full suite (manual only)
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
     needs: validate
