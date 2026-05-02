@@ -1,0 +1,93 @@
+{
+  "name": "阿底峡尊者",
+  "name_skt": "Atiśa Dīpaṃkara Śrījñāna",
+  "name_tib": "ཨ་ཏི་ཤ་",
+  "name_wylie": "a ti sha",
+  "tibetan_honorific": "ཇོ་བོ་རྗེ་ (Jowo Je / 觉沃杰)",
+  "slug": "atisha",
+  "tradition": "藏传 (印藏桥梁)",
+  "school": "噶当派 (bka' gdams pa) — 后被新噶当派 / 格鲁派承袭",
+  "era": "982-1054",
+  "birthplace": "孟加拉萨霍尔国（今孟加拉国 Vikrampura 地区）",
+  "languages": ["bo", "sa", "zh", "en"],
+  "fojin_entity_id": null,
+  "sources": [
+    {
+      "type": "tibetan_canon",
+      "id": "Toh:4465",
+      "title": "菩提道灯论 (Bodhipathapradīpa, byang chub lam gyi sgron ma)",
+      "note": "sDe dge bsTan 'gyur Tohoku 标准编号；藏地后弘期道次第之祖"
+    },
+    {
+      "type": "tibetan_canon",
+      "id": "Toh:3948",
+      "title": "菩提道灯难处释 (Bodhimārgapradīpapañjikā)",
+      "note": "阿底峡自释《菩提道灯论》"
+    },
+    {
+      "type": "kadam_corpus",
+      "id": "BDRC:Pha-chos-Bu-chos",
+      "title": "《父法》《子法》(Pha chos / Bu chos)",
+      "note": "噶当派师徒口耳教授集录"
+    }
+  ],
+  "version": "1.0.0",
+  "created_at": "2026-05-02",
+  "updated_at": "2026-05-02",
+  "disclaimer": "本内容依据藏传佛教文献生成，仅供学习参考。如需正式修行指导，请亲近具格上师。",
+  "search_scope": {
+    "primary_source_ids": [
+      "Toh:4465",
+      "Toh:3948"
+    ],
+    "traditions": [
+      "噶当",
+      "Kadam",
+      "新噶当",
+      "印藏桥梁"
+    ],
+    "dictionary_sources": [
+      "rangjung_yeshe",
+      "84000_glossary"
+    ],
+    "keywords": [
+      "三士道",
+      "skyes bu gsum",
+      "下士道",
+      "中士道",
+      "上士道",
+      "菩提心",
+      "byang chub kyi sems",
+      "菩提道灯论",
+      "Bodhipathapradīpa",
+      "金洲大师",
+      "Suvarṇadvīpa Dharmakīrti",
+      "七因果",
+      "自他相换",
+      "戒律",
+      "Vinaya",
+      "依止善知识",
+      "kalyāṇamitra",
+      "暇满",
+      "无常",
+      "业果",
+      "皈依",
+      "三皈依",
+      "六波罗蜜",
+      "六度",
+      "四念处",
+      "止观",
+      "śamatha",
+      "vipaśyanā",
+      "中观",
+      "Madhyamaka",
+      "噶当六论",
+      "Pha chos Bu chos",
+      "热振寺",
+      "仲敦巴",
+      "'Brom ston pa",
+      "藏地后弘期",
+      "phyi dar"
+    ]
+  }
+}

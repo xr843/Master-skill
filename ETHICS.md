@@ -23,16 +23,19 @@
 
 ### Tier A — 公有领域 (Public Domain, 可直接收录)
 
-适用于圆寂已超过各主要司法辖区著作权保护期的历代祖师。本项目当前预置法师中以下 9 位属于此类：
+适用于圆寂已超过各主要司法辖区著作权保护期的历代祖师。本项目当前预置法师中以下 12 位属于此类：
 
 | 法师 | 生卒 | 圆寂距今 | 状态 |
 |------|------|---------|------|
 | 鸠摩罗什 | 344–413 | > 1600 年 | 公有领域 |
+| 觉音 (Buddhaghosa) | 5 世纪 | > 1500 年 | 公有领域；PTS edition 与 SuttaCentral 公开 |
 | 智顗 | 538–597 | > 1400 年 | 公有领域 |
 | 玄奘 | 602–664 | > 1360 年 | 公有领域 |
 | 慧能 | 638–713 | > 1310 年 | 公有领域 |
 | 法藏 | 643–712 | > 1310 年 | 公有领域 |
+| 阿底峡 (Atiśa) | 982–1054 | > 970 年 | 公有领域；藏文版引自 BDRC 公开元数据 + Toh 4465 标准编号 |
 | 米拉日巴 | 1052–1135 | > 890 年 | 公有领域；藏文 mGur 'bum / rNam thar 引自 BDRC 公开元数据 |
+| 宗喀巴 (Tsongkhapa) | 1357–1419 | > 600 年 | 公有领域；gsung 'bum 全集 BDRC.io 检索可得 |
 | 蕅益 | 1599–1655 | > 370 年 | 公有领域 |
 | 印光 | 1861–1940 | > 85 年 | 中国 / 台湾著作权已过期（死后 50 年）；美国部分早期文集已过期 |
 | 虚云 | 1840–1959 | > 65 年 | 中国 / 台湾著作权已过期（死后 50 年）|
@@ -54,6 +57,7 @@
 | 太虚 | 1890–1947 | 1997 年已过期 → 可视为 Tier A |
 | 弘一 | 1880–1942 | 1992 年已过期 → 可视为 Tier A |
 | 阿姜查 (Ajahn Chah) | 1918–1992 | 约 2042 年（多数司法辖区）|
+| 马哈希尊者 (Mahasi Sayadaw) | 1904–1982 | 约 2032–2052 年（多数司法辖区）|
 | 宣化 | 1918–1995 | 约 2045 年 |
 | 印顺 | 1906–2005 | 约 2055 年 |
 | 圣严 | 1930–2009 | 约 2059 年 |
@@ -87,7 +91,25 @@
 - 项目仅用主旨摘要，不做整段译文复制
 - 项目能在出现异议时 24 小时内移除相关内容
 
-阿姜查目前是本项目唯一适用此特例的 Tier B 法师。其他 Tier B 法师按"严格收录政策"处理。
+**特例（续）：马哈希尊者（Mahasi Sayadaw, 1904–1982）—— 同一框架下的第二位 Tier B 法师**
+
+马哈希尊者的开示由其僧团（Mahasi Sasana Yeiktha 缅甸总部 + 国际禅修中心网络）与 BPS Sri Lanka (佛教出版社协会) 共同维护，以**严格非营利、教学用途分发**：
+- *Manual of Insight* (Wisdom Publications, 2016 — Vipassana Metta Foundation Translation Committee 译)
+- *The Progress of Insight* (BPS Sri Lanka Wheel No. 280, 1965)
+- *Practical Vipassanā Meditation Exercises* (Mahasi Sasana Yeiktha 1971，多语言译本)
+- *A Discourse on Mālukyaputta Sutta / Dhammacakka Sutta / etc.* (BPS Sri Lanka 单经讲解集)
+
+本项目对马哈希尊者 master 的收录规则**与阿姜查同款**：
+1. **不引用整段译文** —— 仅做`主旨摘要`（参 `prebuilt/mahasi-sayadaw/sources/teachings-excerpts.md` 的 ⚠️ 引用警示节）
+2. **不代笔虚构对话** —— 任何"马哈希尊者曾说 X"必须能在上述出版物中追溯，由 SKILL.md HARD-GATE `NO FABRICATED QUOTES` 强制
+3. **核心禅修概念依巴利经典与《清净道论》** —— 四念处、出入息念、戒定慧、七清净十六观智等以 SuttaCentral + PTS Vism 为主源（公有领域）
+4. **额外特别 guardrail：NO_ATTAINMENT_JUDGMENT** —— AI **绝不可** 对个体作证果判定或观智阶位确认；这是马哈希教学体系特有最高 guardrail（其"初果可证"号召容易诱发自我印证之执，AI 必须严守此线）
+5. **若 Mahasi Sasana Yeiktha 任何官方机构提出异议，立即转入 takedown 流程**（详见 §6）
+6. **作为社区学习与跨传统对比工具，不作为商业产品的训练数据源**
+
+此特例适用条件**与阿姜查相同**——主要弟子机构网络已明确以非营利、教学用途授权译丛分发；项目仅用主旨摘要；项目能在出现异议时 24 小时内移除相关内容。
+
+阿姜查 + 马哈希尊者目前是本项目仅有的 2 位适用此特例的 Tier B 法师。其他 Tier B 法师按"严格收录政策"处理。
 
 ### Tier C — 拒绝收录 (Never Admit)
 
@@ -121,6 +143,20 @@ Master-skill 是**文献辅助工具**，不是**修行权威**。以下行为 A
 **硬性规则（已写入每位法师 `voice.md` Layer 0）：**
 - 遇到以上场景，AI 一律回答："此问题超出 AI 教学角色能力范围。建议亲近有戒律与传承的善知识当面请益。"
 - 并视情况引用《四十二章经》"慎勿信汝意，汝意不可信"等相关经证
+
+### 派系中立 — 跨传统与传统内皆适用
+
+不评判优劣的政策同时覆盖以下三层：
+- **三大传统之间**：汉传 / 藏传 / 南传。各传承皆是佛陀正法的不同面向，不论高下
+- **传统内宗派之间**：藏传四派（宁玛、萨迦、噶举、格鲁）；汉传八宗（天台、华严、禅、净、唯识、三论、律、密）；南传部派
+- **传统内禅修流派之间**（v0.5 新增明示）：上座部内观法 ——
+  - 缅甸 Mahasi 标记法（mahasi-sayadaw skill）
+  - 缅甸 Pa-Auk 止观次第法
+  - Goenka / Vipassana International Academy 法
+  - 泰国森林禅林派（ajahn-chah skill）
+  - 各派契机不同、所重不同，AI **不得**做出"X 法更究竟 / 更直接 / 更快"等比较优劣判断
+  
+此规则在每位 master 自身的 SKILL.md HARD-GATE 中以 NO_SECTARIAN_JUDGMENT 强制；本节为项目层面的总则。
 
 如发现预置法师在以上场景中"越界回答"，请 [立即提交 Issue](https://github.com/xr843/Master-skill/issues/new?labels=boundary-violation) 标 `boundary-violation`。此类 Issue 视为 **P0 安全事项**，优先于所有 feature 工作处理。
 

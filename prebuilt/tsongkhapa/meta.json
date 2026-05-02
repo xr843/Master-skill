@@ -1,0 +1,106 @@
+{
+  "name": "宗喀巴大师",
+  "name_skt": "Tsongkhapa Lobsang Drakpa",
+  "name_tib": "ཙོང་ཁ་པ་བློ་བཟང་གྲགས་པ་",
+  "name_wylie": "tsong kha pa blo bzang grags pa",
+  "honorific": "རྗེ་རིན་པོ་ཆེ་ (Je Rinpoche)",
+  "slug": "tsongkhapa",
+  "tradition": "藏传",
+  "school": "格鲁派 (dge lugs pa, '善规派') — 由其改革噶当派建立",
+  "era": "1357-1419",
+  "birthplace": "青海宗喀（'宗喀巴'即'宗喀人'之意，今西宁附近）",
+  "languages": ["bo", "sa", "zh", "en"],
+  "fojin_entity_id": null,
+  "sources": [
+    {
+      "type": "tibetan_canon",
+      "id": "BDRC:gsung-bum",
+      "title": "宗喀巴全集 (gsung 'bum / Collected Works)",
+      "note": "BDRC.io 检索 'tsong kha pa' 获取实际 W-number 与卷次"
+    },
+    {
+      "type": "tibetan_treatise",
+      "id": "Lam-rim-chen-mo",
+      "title": "菩提道次第广论 (Lam rim chen mo)",
+      "note": "格鲁派根本论；汉译有法尊法师本，英译 Snow Lion 三册本"
+    },
+    {
+      "type": "tibetan_treatise",
+      "id": "sNgags-rim-chen-mo",
+      "title": "密宗道次第广论 (sNgags rim chen mo)",
+      "note": "密法次第总论；与上者非同一卷"
+    },
+    {
+      "type": "tibetan_treatise",
+      "id": "Drang-nges-legs-bshad-snying-po",
+      "title": "辨了不了义善说藏论 (Drang nges legs bshad snying po)",
+      "note": "中观正见判摄"
+    },
+    {
+      "type": "tibetan_treatise",
+      "id": "Lam-gtso-rnam-gsum",
+      "title": "三主要道 (Lam gtso rnam gsum)",
+      "note": "道次第三句偈核心"
+    }
+  ],
+  "version": "1.0.0",
+  "created_at": "2026-05-02",
+  "updated_at": "2026-05-02",
+  "disclaimer": "本内容依据藏传佛教文献生成，仅供学习参考。如需正式修行指导，请亲近具格上师。",
+  "search_scope": {
+    "primary_source_ids": [
+      "BDRC:gsung-bum",
+      "Lam-rim-chen-mo",
+      "Drang-nges-legs-bshad-snying-po"
+    ],
+    "traditions": [
+      "格鲁",
+      "Gelug",
+      "新噶当",
+      "应成中观"
+    ],
+    "dictionary_sources": [
+      "rangjung_yeshe",
+      "84000_glossary"
+    ],
+    "keywords": [
+      "三主要道",
+      "lam gtso rnam gsum",
+      "菩提道次第",
+      "lam rim",
+      "下士道",
+      "中士道",
+      "上士道",
+      "出离心",
+      "nges 'byung",
+      "菩提心",
+      "byang chub kyi sems",
+      "清净见",
+      "应成中观",
+      "dbu ma thal 'gyur ba",
+      "缘起性空",
+      "无自性",
+      "ngo bo nyid med pa",
+      "戒律",
+      "三聚戒",
+      "别解脱戒",
+      "菩萨戒",
+      "密咒戒",
+      "闻思修",
+      "甘丹寺",
+      "格鲁派",
+      "因明",
+      "量论",
+      "辨了不了义",
+      "入中论善显密意疏",
+      "月称",
+      "Candrakīrti",
+      "仁达瓦",
+      "Rendawa",
+      "默朗钦摩",
+      "贾曹杰",
+      "克主杰",
+      "宗喀巴全集"
+    ]
+  }
+}

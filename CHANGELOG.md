@@ -25,6 +25,38 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ---
 
+## [0.5.0] — 2026-05-02
+
+**Second cross-tradition expansion — 藏传 / 南传 each grow from 1 master to 3 (15 total).**
+
+This release fills out the major figures of each non-Chinese tradition that v0.4 introduced. Combined with the parallel `xr843/fojin` release synchronizing the chat surface, fojin.app/chat 法师模式 now offers 15 masters across all three Buddhist traditions.
+
+### Added
+- **`atisha` — 阿底峡尊者 Atiśa Dīpaṃkara** (982-1054). 噶当派 Kadam school founder, 印藏桥梁 (Indo-Tibetan bridge). Sources: Toh 4465 *Bodhipathapradīpa* (《菩提道灯论》) + Toh 3948 self-commentary + 噶当派《父法·子法》(*Pha chos / Bu chos*) oral lineage. Coverage: 三士道 (three scopes), 菩提心 (七因果 / 自他相换 from Dharmakīrti of Suvarṇadvīpa), 戒律严持, 噶当六论, 依止善知识. HARD-GATE: NO_ESOTERIC_INSTRUCTION + NO_ANACHRONISTIC_ATTRIBUTION (don't project later Gelug analytical Madhyamaka onto Atiśa's era).
+- **`tsongkhapa` — 宗喀巴大师 Je Rinpoche** (1357-1419). 格鲁派 Gelug founder, basis of the Dalai Lama / Panchen Lama lineages. Sources: 宗喀巴全集 *gsung 'bum* (BDRC searchable) — 《菩提道次第广论》(*Lam rim chen mo*), 《密宗道次第广论》(*sNgags rim chen mo*), 《辨了不了义善说藏论》, 《入中论善显密意疏》, 《三主要道》. Coverage: 三主要道 (出离心 / 菩提心 / 清净见), lamrim, 应成中观正见 (Madhyamaka prasaṅgika), 三聚戒, 闻思修, 五部大论辩论传统. HARD-GATE: NO_ESOTERIC_INSTRUCTION + NO_CROSS_SCHOOL_CONTAMINATION (don't blend Dzogchen / Mahāmudrā into Gelug positions) + NO_UNVERIFIED_BDRC_W_NUMBERS (use descriptive guidance instead of fabricated W-IDs).
+- **`buddhaghosa` — 觉音尊者** (5th century). 上座部 Theravāda commentarial summit. Sources: PTS edition Visuddhimagga (《清净道论》) + four Nikāya aṭṭhakathā (Sumaṅgalavilāsinī DN-Comm / Papañcasūdanī MN-Comm / Sāratthappakāsinī SN-Comm / Manorathapūraṇī AN-Comm) + Vinaya commentary Samantapāsādikā + Abhidhamma commentaries (Atthasālinī, Sammohavinodanī). Coverage: 戒定慧三学 structure, 四十种业处 kammaṭṭhāna, 七清净十六观智, 缘起十二支 with three-life-two-causations interpretation, 阿毗达摩 paramattha-dhamma vs paññatti distinction, 六义诠释 commentarial method. HARD-GATE: NO_MAHAYANA_CONTAMINATION + NO_MAHAVIHARA_PRIMACY_OVERSTATEMENT.
+- **`mahasi-sayadaw` — 马哈希尊者 Mahāsi Sayādaw U Sobhana** (1904-1982). 缅甸 Burmese Vipassanā tradition (Mahasi Method). Sources: *Manual of Insight* (Wisdom Publications 2016 English ed) + *The Progress of Insight* (BPS Sri Lanka Wheel No. 280) + *Practical Vipassanā Meditation Exercises* (Mahasi Sasana Yeiktha) + Pali Canon (SC) + Visuddhimagga. Coverage: 标记法 Noting Method, 腹部起伏 rising-falling primary object, 七清净十六观智 progress, 刹那定 khaṇika-samādhi & 毗婆舍那禅那 vipassanā-jhāna, '初果可证' ethos, MN 10 Satipaṭṭhāna foundation. HARD-GATE: NO_FABRICATED_QUOTES + **NO_ATTAINMENT_JUDGMENT** (the strictest guardrail in this release — Mahasi's "stages of insight" framework is infamous for inducing self-attainment delusions; AI is forbidden from confirming any individual's observed jhāna stage / fruition).
+- **`scripts/validate-fidelity.py`** boundary registry now accepts `no_esoteric_instruction` and existing `no_fabricated_dialogue` for Tibetan / Theravāda masters.
+
+### Changed
+- All 4 plugin manifests (`package.json`, `.claude-plugin/{plugin,marketplace}.json`, `.cursor-plugin/plugin.json`, `gemini-extension.json`) bump from `0.4.0` → `0.5.0` with description updated from "10 prebuilt masters" → "15 prebuilt masters".
+- `SKILL.md` (project-level) preset list reorganized: 汉传 (8) + 藏传 (3: Atiśa → Tsongkhapa → Milarepa, 时代倒序) + 南传 (3: Buddhaghosa → Mahasi Sayadaw → Ajahn Chah).
+- `README.md` + `README_EN.md` situational guidance table extended with cross-tradition rows for the 4 new entries; new master cards added with their respective provenance / HARD-GATE notes.
+- `prebuilt/compare/SKILL.md` topic mapping fallback table extended with rows that pair the new masters into cross-tradition / cross-school comparisons (e.g., '空性' now pairs Tsongkhapa with Kumārajīva, Madhyamaka prasaṅgika vs early Sanlun translation).
+
+### Ethics
+- **Tier A** (Public Domain) table grows from 8 → 11 masters: Atiśa (982-1054) + Tsongkhapa (1357-1419) + Buddhaghosa (5th century) join — all well past any modern jurisdiction's copyright term.
+- **Tier B 特例 (special case)** section adds Mahasi Sayadaw (1904-1982) as the second special-case Theravāda master under the Forest Sangha-style rationale already codified for Ajahn Chah: works distributed non-commercially by Mahasi Sasana Yeiktha + BPS Sri Lanka under teaching-use policy; summary-only use; HARD-GATE enforced provenance; 24h takedown commitment.
+- Declared sectarian-judgment policy explicitly extends to **Theravāda intra-tradition meditation lineages** (Mahasi vs Pa-Auk vs Goenka vs Thai Forest) — no superiority claims permitted between contemporary methods.
+
+### Notes
+- `fidelity.jsonl` test counts: atisha 12, tsongkhapa 12, buddhaghosa 13, mahasi-sayadaw 13. All four masters' tests cover boundary cases for sectarian judgment, no-prophecy, neutral first-turn — plus master-specific guardrails (esoteric instruction refusal for atisha/tsongkhapa, attainment-judgment refusal for mahasi-sayadaw).
+- Validation: `python scripts/validate.py --strict` → ✅ 15 masters; `python scripts/validate-fidelity.py` → ✅ all valid; `pytest tests/` → ✅ 31 passed, 6 skipped.
+- The two Tibetan masters (atisha, tsongkhapa) intentionally use descriptive BDRC guidance ("BDRC: 见宗喀巴 gsung 'bum") rather than fabricated W-numbers, because mid-task BDRC.io verification was not feasible and prior versions of these prompts had collisions (W29193 was mistakenly assigned to two different works in the fojin draft). Toh (Tohoku) numbers are kept where they're well-attested in 藏学界 (e.g., Toh 4465 for *Bodhipathapradīpa*).
+- Compare-masters meta-skill picks up the new entries automatically via `MASTERS` registry; existing topic mappings extended in this release.
+
+---
+
 ## [0.4.0] — 2026-05-02
 
 **Cross-tradition expansion: from "Chinese Buddhist" to "Buddhist" — the project name now matches its scope.**
