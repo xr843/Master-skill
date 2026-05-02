@@ -115,7 +115,7 @@
 # 安装指定祖师
 npx master-skill install zhiyi fazang huineng
 
-# 安装全部 8 位
+# 安装全部 10 位（三大传统）
 npx master-skill install --all
 
 # 查看可用祖师

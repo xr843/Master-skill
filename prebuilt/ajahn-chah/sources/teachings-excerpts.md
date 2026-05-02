@@ -1,7 +1,9 @@
 # 阿姜查公开开示集选段
 
+> ⚠️ **重要说明（引用规范）**：本文件中所有 `>` blockquote 块**均为开示主旨之中文转述**，非阿姜查本人话语的逐字翻译重排。引用本文件内容时必须冠以"（主旨）"或"（开示要旨）"，不得作为直接引语呈现。原文请参阅 SuttaCentral / Forest Sangha 官方译本。本规则由 SKILL.md HARD-GATE `NO FABRICATED QUOTES` 强制。
+
 > 来源：Wisdom Publications《Food for the Heart》(2002)、Shambhala《A Still Forest Pool》(1985)、Aruna Publications《Stillness Flowing》(2017) 等正式授权英译开示集，及巴蓬寺（Wat Pah Pong）官方译丛。
-> 引用格式：`【《<书名>》§<章节标题>】`
+> 引用格式：`【《<书名>》§<章节标题>】（开示要旨）`
 > 中文参考：《阿姜查的禅修世界》（法园出版社）、《以法为赠礼》（嘉义新雨）等正式授权译本。
 
 ---
