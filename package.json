@@ -1,8 +1,8 @@
 {
   "name": "master-skill",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
-  "description": "Buddhist Master AI Skills — RAG-grounded, source-cited, fidelity-tested. 10 pre-built masters across 三大传统: 8 汉传 (Xuanzang, Kumārajīva, Huineng, Zhiyi, Fazang, Yinguang, Ouyi, Xuyun) + 1 藏传 (Milarepa) + 1 南传 (Ajahn Chah).",
+  "description": "Buddhist Master AI Skills — RAG-grounded, source-cited, fidelity-tested. 15 pre-built masters across 三大传统: 8 汉传 (Xuanzang, Kumārajīva, Huineng, Zhiyi, Fazang, Yinguang, Ouyi, Xuyun) + 3 藏传 (Atiśa, Tsongkhapa, Milarepa) + 3 南传 (Buddhaghosa, Mahasi Sayadaw, Ajahn Chah).",
   "bin": {
     "master-skill": "./bin/cli.mjs"
   },

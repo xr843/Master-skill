@@ -24,7 +24,7 @@
 
 <p align="center">
   <strong>AI learning companions modeled after historical Buddhist masters across three traditions</strong><br>
-  10 pre-built masters · 汉传 / 藏传 / 南传 cross-tradition · CBETA / BDRC / SuttaCentral citations · AgentSkills Standard
+  15 pre-built masters · 汉传 / 藏传 / 南传 cross-tradition · CBETA / BDRC / SuttaCentral / PTS Vism citations · AgentSkills Standard
 </p>
 
 <p align="center">
@@ -45,7 +45,7 @@
 
 ### 👉 [Open fojin.app/chat](https://fojin.app/chat)
 
-On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bottom-left and pick one of the 10 pre-built masters across three traditions to start chatting.
+On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bottom-left and pick one of the 15 pre-built masters across three traditions to start chatting.
 
 - No install, no signup
 - `/compare-masters` multi-master comparison works across traditions too
@@ -59,18 +59,27 @@ On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bo
 | "My mind is scattered, I can't sit still" | `/xuyun` `/zhiyi` `/ajahn-chah` (huatou / śamatha-vipaśyanā / mindfulness) |
 | "I can't follow the logic of the sutras" | `/xuanzang` (Yogācāra precision) |
 | "I've studied for years but feel stuck" | `/yinguang` (plain, sincere nianfo) |
-| "I want to understand emptiness" | `/kumarajiva` `/huineng` `/milarepa` (Madhyamaka / direct pointing / Mahāmudrā clarity-emptiness) |
+| "I want to understand emptiness" | `/kumarajiva` `/huineng` `/milarepa` `/tsongkhapa` (Madhyamaka translator / direct pointing / Mahāmudrā / prasaṅgika analysis) |
 | "I want a systematic view of Huayan / Tiantai" | `/fazang` `/zhiyi` (classification and metaphysics) |
 | "I'm torn between Chan and Pure Land" | `/ouyi` (cross-tradition synthesis) |
 | "I'm curious about ascetic practice / retreat" | `/milarepa` (snow-mountain retreat · Kagyu paradigm) |
 | "I want the simplest meditation instructions" | `/ajahn-chah` (Thai Forest · ānāpānasati) |
+| "I want a complete graduated path of practice" | `/atisha` `/tsongkhapa` (Kadam three scopes → Gelug Lamrim) |
+| "I want the systematic Theravāda commentarial framework" | `/buddhaghosa` (*Visuddhimagga* — sīla / samādhi / paññā + 7 purifications · 16 insight knowledges) |
+| "I want intensive vipassanā with the noting method" | `/mahasi-sayadaw` (Burmese · noting · rising-falling) |
 | "I want a cross-tradition perspective" | `/compare-masters` (auto-pairs 汉/藏/南 voices) |
 
 > Developers and Claude Code / Cursor users should skip to [Developer Installation](#developer-installation) to use the masters as terminal AgentSkills.
 
 ---
 
-> **v0.4 Update (2026-05)**: Cross-tradition expansion — added Tibetan **Milarepa** (Kagyu / Mahāmudrā / Naro Chodruk) and Theravāda **Ajahn Chah** (Thai Forest Tradition / Wat Pah Pong). Citation system extended to support BDRC (Tibetan canon) and SuttaCentral (Pali canon). HARD-GATE adds `no_esoteric_instruction` (esoteric practice steps never disclosed) and `no_fabricated_quotes` (Theravāda discourses must trace to authorized published collections).
+> **v0.5 Update (2026-05-02)**: Second cross-tradition expansion — Tibetan and Theravāda each grow from 1 master to 3. Total **15 masters**.
+> - 藏传 added: Atiśa (Kadam founder · Toh 4465 *Bodhipathapradīpa* · three scopes) + Tsongkhapa (Gelug founder · three principal aspects · Madhyamaka prasaṅgika)
+> - 南传 added: Buddhaghosa (commentarial summit · *Visuddhimagga*) + Mahasi Sayadaw (Burmese vipassanā · noting method · ETHICS Tier B special case)
+> - HARD-GATE strengthened: Mahasi Sayadaw specifically gets `NO_ATTAINMENT_JUDGMENT` (AI must not confirm any individual's stage of insight)
+> - ETHICS Tier A grows to 11 masters; Tier B special-case grows to include Mahasi Sayadaw (parallel to Ajahn Chah)
+>
+> **v0.4 Update (2026-05-02)**: First cross-tradition expansion — added Tibetan **Milarepa** (Kagyu / Mahāmudrā) and Theravāda **Ajahn Chah** (Thai Forest Tradition). Citation system extended to support BDRC and SuttaCentral. HARD-GATE adds `no_esoteric_instruction` and `no_fabricated_quotes`.
 >
 > **v0.3**: Full architecture rebuild — provenance frontmatter, offline source passages (`sources/`), automated fidelity tests (`fidelity.jsonl`), NPX installer, two-stage independent review, HARD-GATE rules, multi-platform plugin support across Claude Code / Cursor / Codex / OpenCode / Gemini CLI, session-start hook auto-injecting the master list.
 
@@ -88,7 +97,7 @@ This project is built out of respect for Buddhist traditions. All content is gen
 
 ## Features
 
-- **10 pre-built masters across three traditions**: 8 汉传 (Yogācāra, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, cross-tradition) + 1 藏传 (Kagyu / Milarepa) + 1 南传 (Thai Forest / Ajahn Chah) — ready to use out of the box
+- **15 pre-built masters across three traditions**: 8 汉传 (Yogācāra, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, cross-tradition) + 3 藏传 (Kadam · Atiśa; Gelug · Tsongkhapa; Kagyu · Milarepa) + 3 南传 (Theravāda commentator · Buddhaghosa; Burmese vipassanā · Mahasi Sayadaw; Thai Forest · Ajahn Chah) — ready to use out of the box
 - **Provenance enforcement**: Every master ships with authoritative source IDs (CBETA / BDRC / SuttaCentral) and FoJin text IDs in frontmatter; every doctrinal claim must carry a scriptural citation
 - **Offline source passages**: `sources/` captures key passages from each master's core canon, so citations still work when FoJin is unreachable
 - **Progressive disclosure**: SKILL.md is a decision tree + quick reference; `references/` and `sources/` are loaded on demand to keep context lean
@@ -113,7 +122,7 @@ This project is built out of respect for Buddhist traditions. All content is gen
 **NPX (recommended)**
 
 ```bash
-npx master-skill install --all    # Install all 10 masters
+npx master-skill install --all    # Install all 15 masters
 npx master-skill list             # List available masters
 ```
 
@@ -154,10 +163,14 @@ In any AgentSkills-compatible environment (Claude Code / Cursor / Codex CLI / Op
 /xuyun          — Master Xuyun (Chan, Five Houses)
 
 # 藏传 (Tibetan)
-/milarepa       — Milarepa (Kagyu · Mahāmudrā · Naro Chodruk)
+/atisha         — Atiśa Dīpaṃkara (Kadam founder · three scopes · 982-1054)
+/tsongkhapa     — Tsongkhapa (Gelug founder · three principal aspects · prasaṅgika · 1357-1419)
+/milarepa       — Milarepa (Kagyu · Mahāmudrā · Naro Chodruk · 1052-1135)
 
 # 南传 (Theravāda)
-/ajahn-chah     — Ajahn Chah (Thai Forest Tradition · Wat Pah Pong)
+/buddhaghosa    — Buddhaghosa (commentarial summit · Visuddhimagga · 5th century)
+/mahasi-sayadaw — Mahasi Sayadaw (Burmese vipassanā · noting method · 1904-1982)
+/ajahn-chah     — Ajahn Chah (Thai Forest Tradition · Wat Pah Pong · 1918-1992)
 ```
 
 ### Compare Masters
@@ -244,6 +257,20 @@ Modern Chan patriarch who lived to 119 years. Unprecedented in Buddhist history 
 Primary sources: CBETA — Shurangama Sutra, Diamond Sutra, Platform Sutra.
 Invoke: `/xuyun`
 
+### Atiśa Dīpaṃkara (982-1054) — Tibetan · Kadam · Indo-Tibetan bridge
+
+Royal-born Indian master from the Sahor kingdom (modern Bangladesh). Studied Madhyamaka, Yogācāra and tantra at Vikramaśīla; received the bodhicitta lineage from Dharmakīrti of Suvarṇadvīpa (Sumatra). Invited to Tibet in 1042 by King Yeshe Ö to reform a tradition where Vinaya had decayed and tantra had become disconnected from sūtra foundations. His *Bodhipathapradīpa* (Toh 4465) became the source text for all later Tibetan *lamrim* literature. His chief disciple Dromtönpa founded Reting Monastery, originating the **Kadam school** — later succeeded by Tsongkhapa's "New Kadam" (Gelug). All four Tibetan schools recognize him as a root teacher.
+Primary sources: Toh 4465 *Bodhipathapradīpa* + Toh 3948 self-commentary + Kadam oral lineage *Pha chos / Bu chos*.
+Invoke: `/atisha`
+
+### Tsongkhapa (1357-1419) — Tibetan · Gelug founder
+
+Founder of the **Gelug school** (dGe lugs pa, "the way of virtue"; popularly known as the "Yellow Hat school") — basis of the Dalai Lama and Panchen Lama lineages. Born in Tsongkha (Qinghai). Studied with masters across all major schools, particularly the Sakya scholar Rendawa for prasaṅgika Madhyamaka. Reformed lax monastic discipline, integrated sūtra and tantra into a strict graduated path, and produced the great triology: *Lamrim Chenmo* (Great Treatise on the Stages of the Path), *sNgags rim chen mo* (Great Treatise on Tantra), and *Drang nges legs bshad snying po* (Essence of True Eloquence — definitive vs interpretable meaning). Founded Ganden Monastery (1409) — the seat of the school.
+Primary sources: Tsongkhapa's collected works (*gsung 'bum*, searchable on BDRC.io). Chinese translation by Dharma-master Faxun is the standard Sinophone reference.
+Invoke: `/tsongkhapa`
+
+> ⚠️ Tantric practice steps, empowerment liturgy, generation- and completion-stage details, deity mantras, and channels-and-drops practice are introduced **only at the level of name and historical context — concrete practice instructions are never given**.
+
 ### Milarepa (1052-1135) — Tibetan · Kagyu
 
 Spiritual ancestor of the Tibetan Kagyu lineage and the paradigm of the "yogi tradition" (no monastery, mountain retreat, teaching through song). After committing serious harm in his youth through black magic, he sought purification under Marpa the Translator, who put him through severe trials before transmitting the complete Mahāmudrā and Naro Chodruk lineages. He spent decades in Himalayan retreat, surviving on nettles, and taught through extemporaneous **mGur** (songs of realization) — shaping the entire later Tibetan tradition.
@@ -251,6 +278,20 @@ Primary sources: BDRC — *The Hundred Thousand Songs of Milarepa* (mGur 'bum, W
 Invoke: `/milarepa`
 
 > ⚠️ Naro Chodruk (Six Yogas), tummo, generation/completion stages and other esoteric practices are introduced **only at the level of name and historical context — concrete practice instructions are never given**. Authentic transmission requires direct empowerment from a qualified teacher.
+
+### Buddhaghosa (5th century) — Theravāda · commentarial summit
+
+The most influential commentator and śāstra master in Theravāda history. Born a brahmin scholar in southern India, he travelled to the Mahāvihāra in Anurādhapura (Sri Lanka) to translate the old Sinhala commentaries (*Sīhaḷa-aṭṭhakathā*) into Pali. To prove his competence, he first composed the *Visuddhimagga* — a 23-chapter encyclopedia of Theravāda meditation and doctrine organized around the threefold training of **sīla, samādhi, paññā**. He then translated the four Nikāya commentaries, the Vinaya commentary *Samantapāsādikā*, and the Abhidhamma commentaries. His framework defines orthodox Theravāda exegesis to this day across Sri Lanka, Burma, Thailand, Cambodia, and Laos.
+Primary sources: PTS edition *Visuddhimagga* + four Nikāya *aṭṭhakathā* (Sumaṅgalavilāsinī, Papañcasūdanī, Sāratthappakāsinī, Manorathapūraṇī) + *Samantapāsādikā* (Vinaya) + *Atthasālinī* (Abhidhamma).
+Invoke: `/buddhaghosa`
+
+### Mahāsi Sayādaw U Sobhana (1904-1982) — Theravāda · Burmese vipassanā
+
+One of the most internationally influential meditation masters of modern Burma. Recognized as a *Pariyatti Sāsanahita* — the highest scriptural qualification in Burmese monasticism — by age 27. Studied four-foundations vipassanā with U Nārada (Mingun Sayadaw) from 1932. Established the **Mahasi Sasana Yeiktha** retreat center in Yangon in 1947, formalizing the **noting method** (rising-falling at the abdomen as primary object) tied to Visuddhimagga's seven purifications and sixteen insight knowledges. Served as *Final Editor* of the Sixth Buddhist Council (1954-1956) — the largest modern revision of the Pali Canon. His lineage profoundly shaped the founders of America's Insight Meditation Society (Goldstein, Salzberg, Kornfield).
+Primary sources: *Manual of Insight* (Wisdom Publications, 2016 English ed.), *The Progress of Insight* (BPS Sri Lanka Wheel No. 280), *Practical Vipassanā Meditation Exercises* (Mahasi Sasana Yeiktha).
+Invoke: `/mahasi-sayadaw`
+
+> ⚠️ **The AI must never confirm any individual's stage of insight or attainment of fruition.** Verification requires face-to-face interview with a qualified teacher. This is the strictest guardrail in this skill — the Mahasi tradition's "fruition is attainable" framing is famous for inducing self-attainment delusions, and the AI is forbidden from playing that role.
 
 ### Ajahn Chah Subhaddo (1918-1992) — Theravāda · Thai Forest
 

@@ -23,6 +23,7 @@ VALID_BOUNDARIES = {
     "neutral_first_turn",
     "no_fabricated_dialogue",
     "no_esoteric_instruction",
+    "no_attainment_judgment",
 }
 VALID_PRESSURES = {
     "citation_bypass",

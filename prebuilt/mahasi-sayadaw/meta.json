@@ -1,0 +1,119 @@
+{
+  "name": "马哈希尊者",
+  "name_burmese": "မဟာစည်ဆရာတော် ဦးသောဘန",
+  "name_pali": "Mahāsi Sayādaw U Sobhana",
+  "lay_name": "U Thein Han",
+  "slug": "mahasi-sayadaw",
+  "tradition": "南传",
+  "school": "上座部·缅甸内观传统 (Burmese Vipassanā / Mahasi Method)",
+  "era": "1904-1982",
+  "birthplace": "缅甸下缅甸 Seikkhun 村",
+  "languages": ["my", "pi", "en", "zh"],
+  "fojin_entity_id": null,
+  "ethics_tier": "B-special-case",
+  "ethics_note": "1904-1982 在大多数司法辖区版权未到期（约 2042-2052）。本项目按 Master-skill ETHICS.md Tier B 特例条款收录：(1) 仅作主旨摘要，不引用整段译文；(2) NO_FABRICATED_QUOTES 强制；(3) 鸟瞰式介绍标记法概念，不替代具格禅师面授；(4) 24 小时 takedown 承诺。出版方 Forest Sangha / BPS Sri Lanka / Wisdom Publications / Mahasi Sasana Yeiktha 任何官方机构异议立即移除。",
+  "sources": [
+    {
+      "type": "compiled_teaching",
+      "id": "Mahasi:ManualOfInsight",
+      "title": "Manual of Insight (Vipassanā Shu Nyan)",
+      "note": "1944 缅文巨著，2016 Wisdom Publications 英译（Vipassana Metta Foundation Translation Committee）"
+    },
+    {
+      "type": "compiled_teaching",
+      "id": "Mahasi:ProgressOfInsight",
+      "title": "The Progress of Insight (Visuddhiñāṇa-kathā)",
+      "note": "1965 巴利+英译，BPS Sri Lanka Wheel No. 280"
+    },
+    {
+      "type": "compiled_teaching",
+      "id": "Mahasi:PracticalVipassana",
+      "title": "Practical Vipassanā Meditation Exercises",
+      "note": "1971 缅文，Mahasi Sasana Yeiktha 多语译本"
+    },
+    {
+      "type": "compiled_teaching",
+      "id": "Mahasi:DiscoursesOnSuttas",
+      "title": "Mahasi Sayadaw 单经讲解集",
+      "note": "Mālukyaputta Sutta / Dhammacakka Sutta / Sallekha Sutta 等开示集，BPS Sri Lanka"
+    },
+    {
+      "type": "pali_canon",
+      "id": "SuttaCentral",
+      "title": "巴利三藏 (Sutta Piṭaka)",
+      "note": "MN 10 Satipaṭṭhāna 为禅修根本依据"
+    },
+    {
+      "type": "pali_treatise",
+      "id": "PTS:Vism",
+      "title": "清净道论 (Visuddhimagga)",
+      "note": "觉音论著；马哈希内观法所依七清净十六观智之根本论典"
+    }
+  ],
+  "version": "1.0.0",
+  "created_at": "2026-05-02",
+  "updated_at": "2026-05-02",
+  "disclaimer": "本内容依据上座部巴利经典与马哈希尊者公开开示集生成，仅供学习参考。如需正式禅修指导，请亲近具格禅师。",
+  "search_scope": {
+    "primary_source_ids": [
+      "Mahasi:ManualOfInsight",
+      "Mahasi:ProgressOfInsight",
+      "Mahasi:PracticalVipassana",
+      "SuttaCentral",
+      "PTS:Vism"
+    ],
+    "traditions": [
+      "上座部",
+      "Theravāda",
+      "缅甸内观",
+      "Burmese Vipassanā",
+      "Mahasi Method"
+    ],
+    "dictionary_sources": [
+      "pts_dictionary",
+      "suttacentral_glossary"
+    ],
+    "keywords": [
+      "马哈希",
+      "Mahasi",
+      "Sayadaw",
+      "标记法",
+      "Noting Method",
+      "腹部起伏",
+      "rising falling",
+      "正念",
+      "sati",
+      "毗婆舍那",
+      "vipassanā",
+      "内观",
+      "四念处",
+      "satipaṭṭhāna",
+      "MN 10",
+      "出入息念",
+      "ānāpānasati",
+      "MN 118",
+      "七清净",
+      "satta visuddhi",
+      "十六观智",
+      "soḷasa-vipassanā-ñāṇa",
+      "刹那定",
+      "khaṇika-samādhi",
+      "毗婆舍那禅那",
+      "vipassanā-jhāna",
+      "行舍智",
+      "saṅkhārupekkhā-ñāṇa",
+      "三法印",
+      "anicca dukkha anatta",
+      "Mahasi Sasana Yeiktha",
+      "巴蓬寺",
+      "Wat Pah Pong",
+      "六结集",
+      "Chaṭṭha Saṅgāyana",
+      "U Nārada",
+      "Mingun Sayadaw",
+      "Insight Meditation Society",
+      "IMS",
+      "缅甸内观禅"
+    ]
+  }
+}

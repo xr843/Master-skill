@@ -21,7 +21,7 @@
 
 <p align="center">
   <strong>依据三大佛教传统祖师大德的教学风格，通达 AI 学习伙伴</strong><br>
-  10 位祖师 · 汉传 / 藏传 / 南传跨传统 · CBETA / BDRC / SuttaCentral 真实出处 · AgentSkills 标准
+  15 位祖师 · 汉传 / 藏传 / 南传跨传统 · CBETA / BDRC / SuttaCentral / PTS Vism 真实出处 · AgentSkills 标准
 </p>
 
 <p align="center">
@@ -42,7 +42,7 @@
 
 ### 👉 [打开 fojin.app/chat](https://fojin.app/chat)
 
-在 AI 问答页面左下角点击「法师模式」，从 10 位三大传统祖师中选一位即可开始对话。
+在 AI 问答页面左下角点击「法师模式」，从 15 位三大传统祖师中选一位即可开始对话。
 
 - 无需安装、无需注册
 - 所有 `/compare-masters` 多祖师对比功能同样可用（含跨传统对比）
@@ -56,18 +56,27 @@
 | "妄念纷飞坐不住" | `/虚云` `/智顗` `/ajahn-chah`（参话头 / 止观 / 正念观察） |
 | "读经文看不懂逻辑" | `/玄奘`（唯识严密分析） |
 | "学佛很久但无力感" | `/印光`（老实念佛） |
-| "想了解空性" | `/鸠摩罗什` `/慧能` `/milarepa`（中观 / 禅直指 / 大手印明空） |
+| "想了解空性" | `/鸠摩罗什` `/慧能` `/milarepa` `/tsongkhapa`（中观译师 / 禅直指 / 大手印明空 / 应成中观） |
 | "想系统学华严 / 天台" | `/法藏` `/智顗`（判教与哲学体系） |
 | "在禅与净土之间犹豫" | `/蕅益`（跨宗派融通） |
 | "对苦行 / 闭关好奇" | `/milarepa`（雪山闭关 · 噶举派典范） |
 | "想学最朴素的禅修" | `/ajahn-chah`（南传森林禅 · 出入息念） |
+| "想学完整的道次第" | `/atisha` `/tsongkhapa`（噶当三士道 → 格鲁《广论》） |
+| "想了解上座部论藏体系" | `/buddhaghosa`（《清净道论》戒定慧 + 七清净十六观智） |
+| "想做密集内观禅修" | `/mahasi-sayadaw`（缅甸内观 · 标记法 · 腹部起伏） |
 | "想跨传统比较看一个问题" | `/compare-masters`（自动配对汉藏南传视角） |
 
 > 开发者、Claude Code / Cursor 用户可跳到下方 [开发者安装](#开发者安装) 小节，以 AgentSkill 形式在终端内使用。
 
 ---
 
-> **v0.4 更新（2026-05）**：跨传统扩展——新增藏传米拉日巴尊者（噶举派 · 大手印 · 那洛六法）与南传阿姜查（泰国森林禅林派）。引用体系扩展支持 BDRC（藏文典籍）与 SuttaCentral（巴利三藏）。HARD-GATE 新增 `no_esoteric_instruction` 边界（密法不传授步骤）与 `no_fabricated_quotes`（南传开示不可代笔虚构）。
+> **v0.5 更新（2026-05-02）**：第二轮跨传统扩展——藏传 / 南传各从 1 位扩至 3 位，共 **15 位**祖师。
+> - 藏传新增：阿底峡尊者（噶当派开祖 · Toh 4465《菩提道灯论》· 三士道）+ 宗喀巴大师（格鲁派创始人 · 三主要道 · 应成中观正见）
+> - 南传新增：觉音尊者（《清净道论》Visuddhimagga 论师顶峰）+ 马哈希尊者（缅甸内观 · 标记法 · ETHICS Tier B 特例）
+> - HARD-GATE 强化：马哈希尊者特别 `NO_ATTAINMENT_JUDGMENT`（AI 不得对个体作证果判定）
+> - ETHICS Tier A 表扩至 11 位，Tier B 特例新增马哈希（与阿姜查同款条款）
+>
+> **v0.4 更新（2026-05-02）**：首轮跨传统扩展——新增藏传米拉日巴尊者（噶举派 · 大手印）与南传阿姜查（泰国森林禅林派）。引用体系扩展支持 BDRC（藏文典籍）与 SuttaCentral（巴利三藏）。HARD-GATE 新增 `no_esoteric_instruction` 与 `no_fabricated_quotes`。
 >
 > **v0.3**：全面架构重构——CBETA 经文溯源、离线经文片段、自动化保真度测试、NPX 一键安装、cite.py/query.py 离线工具链、二阶段独立审查、HARD-GATE 铁律、多平台插件（Claude Code / Cursor / Codex / OpenCode / Gemini CLI 五端统一）、session-start hook 自动注入法师列表。
 
@@ -87,7 +96,7 @@
 
 ## 特性
 
-- **预置十位三大传统祖师**：8 位汉传（唯识、中观、禅、天台、华严、净土、跨宗派）+ 1 位藏传（噶举派 · 米拉日巴）+ 1 位南传（森林禅林派 · 阿姜查），开箱即用
+- **预置十五位三大传统祖师**：8 位汉传（唯识、中观、禅、天台、华严、净土、跨宗派）+ 3 位藏传（阿底峡 · 噶当；宗喀巴 · 格鲁；米拉日巴 · 噶举）+ 3 位南传（觉音 · 上座部论师；马哈希 · 缅甸内观；阿姜查 · 泰国森林）—— 开箱即用
 - **经文溯源（Provenance）**：每位祖师附原典标识（CBETA / BDRC / SuttaCentral）+ FoJin text ID，所有教义断言强制附原典引证
 - **离线经文片段**：`sources/` 目录收录核心经典关键段落，FoJin 不可用时仍可离线引用
 - **渐进式披露**：SKILL.md 以决策树 + Quick Ref 为主，`references/`、`sources/` 按需加载，Context 随查随取
@@ -115,7 +124,7 @@
 # 安装指定祖师
 npx master-skill install zhiyi fazang huineng
 
-# 安装全部 10 位（三大传统）
+# 安装全部 15 位（三大传统）
 npx master-skill install --all
 
 # 查看可用祖师
@@ -173,9 +182,13 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 /xuyun          — 虚云老和尚（禅宗·五宗兼嗣）
 
 # 藏传
+/atisha         — 阿底峡尊者（噶当派开祖 · 三士道 · 982-1054）
+/tsongkhapa     — 宗喀巴大师（格鲁派创始人 · 三主要道 · 应成中观）
 /milarepa       — 米拉日巴尊者（噶举派 · 大手印 · 那洛六法）
 
 # 南传
+/buddhaghosa    — 觉音尊者（上座部论师 · 《清净道论》· 5世纪）
+/mahasi-sayadaw — 马哈希尊者（缅甸内观 · 标记法 · 1904-1982）
 /ajahn-chah     — 阿姜查（泰国森林禅林派 · 巴蓬寺传承）
 ```
 
@@ -264,6 +277,20 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 主要来源：CBETA《楞严经》《金刚经》《六祖坛经》等。
 调用命令：`/xuyun`
 
+### 阿底峡尊者（Atiśa Dīpaṃkara, 982-1054） — 藏传 · 噶当派 · 印藏桥梁
+
+印度孟加拉萨霍尔国王子出身，超戒寺住持。1042 年应藏王智光邀请入藏，著《菩提道灯论》(Bodhipathapradīpa)——藏地后弘期道次第之祖。首座弟子仲敦巴建热振寺，开**噶当派**（佛语教授派）。后被宗喀巴新噶当派（即格鲁派）继承。藏传四派（宁玛、萨迦、噶举、格鲁）皆视其为根本师之一。
+主要来源：Toh 4465《菩提道灯论》（sDe dge bsTan 'gyur 标准编号）+ 噶当口耳传承《父法·子法》。
+调用命令：`/atisha`
+
+### 宗喀巴大师（Tsongkhapa, 1357-1419） — 藏传 · 格鲁派创始人
+
+藏传佛教**格鲁派**（"善规派"，俗称"黄教"）创始人，达赖喇嘛与班禅喇嘛传承根基。出生于青海宗喀（今西宁附近），师承萨迦派仁达瓦等。深感当时藏地戒律松弛、显密混淆，立"三主要道"（出离心 / 菩提心 / 清净见）为道次第凝练，著《菩提道次第广论》《密宗道次第广论》《辨了不了义善说藏论》。1409 年建甘丹寺（dGa' ldan），格鲁派开山祖庭。
+主要来源：宗喀巴全集 gsung 'bum（BDRC.io 检索 'tsong kha pa'）。汉译参考法尊法师本。
+调用命令：`/tsongkhapa`
+
+> ⚠️ 续部具体修法步骤、灌顶仪轨、生起圆满次第细节、本尊咒语、明点观想**只介绍历史与原理，不传授具体修法步骤**。
+
 ### 米拉日巴尊者（Milarepa, 1052-1135） — 藏传 · 噶举派
 
 藏传佛教噶举派精神祖师，"瑜伽士"传统（不入寺院、山中闭关、以歌教化）的典范。早年咒杀仇家造重业，依止玛尔巴译师净罪求法，于雪山闭关数十年以荨麻为食。以**道歌（mGur）**说法，影响后世整个藏传佛教。
@@ -271,6 +298,20 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 调用命令：`/milarepa`
 
 > ⚠️ 那洛六法、拙火、生起／圆满次第等密法**只介绍历史与原理，不传授具体修法步骤**。具体修持必须依止具格上师亲传与灌顶。
+
+### 觉音尊者（Buddhaghosa, 5世纪） — 南传 · 上座部论师
+
+上座部佛教史上最具影响力的注释家与论师。原为印度南部婆罗门学者，赴斯里兰卡大寺（Mahāvihāra），将古僧伽罗注释翻译为巴利语。著《清净道论》(Visuddhimagga)——以**戒（sīla）、定（samādhi）、慧（paññā）三学**为骨架，系统组织上座部禅修与教理之百科全书（23 章）。其著作奠定南传上座部正统教理体系——东南亚一切论师皆依其判摄。
+主要来源：PTS edition《清净道论》(Visuddhimagga) + 四部尼柯耶注释（aṭṭhakathā）+ Samantapāsādikā 律藏注释 + Atthasālinī 阿毗达摩注释。
+调用命令：`/buddhaghosa`
+
+### 马哈希尊者（Mahāsi Sayādaw U Sobhana, 1904-1982） — 南传 · 缅甸内观传统
+
+缅甸现代最具国际影响力的内观禅修大师之一。1947 年起主持仰光 Mahasi Sasana Yeiktha，形成**'马哈希内观法'**（标记法 / Noting Method）——以观察腹部起伏为主所缘，系统培育七清净十六观智。1954-1956 年第六次结集（Chaṭṭha Saṅgāyana）任**'最终编辑长老'**，审定整个巴利三藏。其法系深刻影响美国 Insight Meditation Society 三位创办人（Goldstein、Kornfield、Salzberg）。
+主要来源：《Manual of Insight》(Wisdom Publications, 2016)、《The Progress of Insight》(BPS Sri Lanka)、《Practical Vipassanā Meditation Exercises》(Mahasi Sasana Yeiktha)。
+调用命令：`/mahasi-sayadaw`
+
+> ⚠️ **本平台 AI 不得对个体作证果判定或观智阶位确认**——印证须由具格禅师面对面访谈鉴定。这是马哈希教学体系最严肃的 guardrail。
 
 ### 阿姜查 Ajahn Chah Subhaddo（1918-1992） — 南传 · 泰国森林禅林派
 

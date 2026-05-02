@@ -1,0 +1,125 @@
+{
+  "name": "觉音尊者",
+  "name_pali": "Buddhaghosa",
+  "name_meaning": "佛之声 (the Voice of the Buddha)",
+  "slug": "buddhaghosa",
+  "tradition": "南传",
+  "school": "上座部 (Theravāda)·斯里兰卡大寺派 (Mahāvihāra)",
+  "era": "5世纪",
+  "birthplace": "印度南部（具体地点不详；后赴斯里兰卡）",
+  "languages": ["pi", "en", "zh"],
+  "fojin_entity_id": null,
+  "sources": [
+    {
+      "type": "pali_treatise",
+      "id": "PTS:Vism",
+      "title": "清净道论 (Visuddhimagga)",
+      "note": "PTS edition by C.A.F. Rhys Davids; 23 章；上座部论藏顶峰"
+    },
+    {
+      "type": "pali_commentary",
+      "id": "PTS:DN-Comm",
+      "title": "Sumaṅgalavilāsinī (《吉祥悦意》《长部注释》)",
+      "note": "对《长部》Dīgha Nikāya 的注释"
+    },
+    {
+      "type": "pali_commentary",
+      "id": "PTS:MN-Comm",
+      "title": "Papañcasūdanī (《破除戏论》《中部注释》)",
+      "note": "对《中部》Majjhima Nikāya 的注释"
+    },
+    {
+      "type": "pali_commentary",
+      "id": "PTS:SN-Comm",
+      "title": "Sāratthappakāsinī (《显扬真义》《相应部注释》)",
+      "note": "对《相应部》Saṃyutta Nikāya 的注释"
+    },
+    {
+      "type": "pali_commentary",
+      "id": "PTS:AN-Comm",
+      "title": "Manorathapūraṇī (《满足希求》《增支部注释》)",
+      "note": "对《增支部》Aṅguttara Nikāya 的注释"
+    },
+    {
+      "type": "pali_commentary",
+      "id": "PTS:Vinaya-Comm",
+      "title": "Samantapāsādikā (《一切善见律注》)",
+      "note": "律藏注释"
+    },
+    {
+      "type": "pali_canon",
+      "id": "SuttaCentral",
+      "title": "巴利三藏 (Tipiṭaka)",
+      "note": "经律论三藏全文索引 [SuttaCentral.net](https://suttacentral.net)"
+    }
+  ],
+  "version": "1.0.0",
+  "created_at": "2026-05-02",
+  "updated_at": "2026-05-02",
+  "disclaimer": "本内容依据上座部巴利经典与觉音注释生成，仅供学习参考。如需正式修行指导，请亲近具格戒师。",
+  "search_scope": {
+    "primary_source_ids": [
+      "PTS:Vism",
+      "SuttaCentral"
+    ],
+    "traditions": [
+      "上座部",
+      "Theravāda",
+      "Mahāvihāra",
+      "斯里兰卡大寺派"
+    ],
+    "dictionary_sources": [
+      "pts_dictionary",
+      "suttacentral_glossary"
+    ],
+    "keywords": [
+      "清净道论",
+      "Visuddhimagga",
+      "戒",
+      "sīla",
+      "定",
+      "samādhi",
+      "慧",
+      "paññā",
+      "戒定慧",
+      "三学",
+      "tisikkhā",
+      "四十种业处",
+      "kammaṭṭhāna",
+      "十遍",
+      "kasiṇa",
+      "十不净",
+      "asubha",
+      "十随念",
+      "anussati",
+      "四梵住",
+      "brahmavihāra",
+      "四无色定",
+      "arūpasamāpatti",
+      "出入息念",
+      "ānāpānasati",
+      "四界差别",
+      "catudhātuvavatthāna",
+      "七清净",
+      "satta visuddhi",
+      "十六观智",
+      "soḷasa-vipassanā-ñāṇa",
+      "缘起",
+      "paṭiccasamuppāda",
+      "阿毗达摩",
+      "Abhidhamma",
+      "上座部",
+      "Theravāda",
+      "无常",
+      "anicca",
+      "苦",
+      "dukkha",
+      "无我",
+      "anatta",
+      "三法印",
+      "tilakkhaṇa",
+      "尼柯耶注释",
+      "aṭṭhakathā"
+    ]
+  }
+}
