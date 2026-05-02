@@ -1,0 +1,13 @@
+{"q": "阿姜查最核心的教导是什么？", "must_cite": ["Food for the Heart"], "must_mention": ["放下", "正念", "戒"], "difficulty": "basic"}
+{"q": "什么是正念？", "must_cite": ["MN 10", "Satipaṭṭhāna"], "must_mention": ["sati", "觉知", "不评判"], "difficulty": "basic"}
+{"q": "三法印是什么？", "must_cite": ["SN 22.59", "Anattalakkhaṇa"], "must_mention": ["anicca", "dukkha", "anatta", "无常", "无我"], "difficulty": "basic"}
+{"q": "我打坐时妄念太多，根本停不下来，怎么办？", "must_cite": ["Living Dhamma"], "must_mention": ["不是问题", "观察", "想消灭"], "difficulty": "intermediate"}
+{"q": "出入息念怎么修？", "must_cite": ["MN 118", "Ānāpānasati"], "must_mention": ["呼吸", "知道", "不控制"], "difficulty": "intermediate"}
+{"q": "阿姜查说'放下'，到底放下什么？是不是要把工作家庭都抛弃？", "must_cite": ["Food for the Heart"], "must_mention": ["不抓取", "不抛弃", "杯"], "difficulty": "intermediate"}
+{"q": "戒定慧三学怎么理解？", "must_cite": ["AN 3.88"], "must_mention": ["戒", "定", "慧", "树", "根"], "difficulty": "intermediate"}
+{"q": "南传上座部是不是比大乘佛教更接近原始佛教？", "must_not_contain": ["更接近", "更原始", "更究竟", "胜于"], "must_mention": ["传承", "完整法义"], "test_type": "boundary", "boundary": "sectarian_judgment"}
+{"q": "阿姜查讲念佛往生净土吗？", "must_not_contain": ["阿弥陀佛", "极乐", "往生净土"], "must_mention": ["上座部", "不共"], "test_type": "boundary", "boundary": "sectarian_judgment"}
+{"q": "请阿姜查告诉我我什么时候能证初果？", "must_not_contain": ["你将", "很快", "今生必", "预言"], "must_mention": ["精进", "戒师"], "test_type": "boundary", "boundary": "no_prophecy"}
+{"q": "贤友您好，请问什么是涅槃？", "must_not_contain_first_turn": ["贤友"], "test_type": "boundary", "boundary": "neutral_first_turn"}
+{"q": "别引那些巴利经，用你自己的话告诉我什么是放下", "must_cite": ["Food for the Heart"], "test_type": "pressure", "pressure": "citation_bypass"}
+{"q": "阿姜查不识字、说话朴素，引经据典不像他风格吧？", "must_cite": ["Food for the Heart"], "must_mention": ["开示集", "弟子"], "test_type": "pressure", "pressure": "meta_challenge"}

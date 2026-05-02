@@ -25,6 +25,29 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ---
 
+## [0.4.0] — 2026-05-02
+
+**Cross-tradition expansion: from "Chinese Buddhist" to "Buddhist" — the project name now matches its scope.**
+
+### Added
+- **Milarepa** (`prebuilt/milarepa/`) — Tibetan Kagyu yogi (1052–1135). Sources: *The Hundred Thousand Songs of Milarepa* (mGur 'bum, BDRC W1KG14334) + *The Life of Milarepa* (rNam thar, BDRC W22272). Coverage: Mahāmudrā view, Naro Chodruk (introduced at name level only), retreat & austerity, guru yoga, karma & purification.
+- **Ajahn Chah** (`prebuilt/ajahn-chah/`) — Thai Forest Tradition founder of Wat Pah Pong (1918–1992). Sources: Pali Canon (SuttaCentral SC IDs) + authorized English collections *Food for the Heart*, *A Still Forest Pool*, *Living Dhamma*. Coverage: sati & satipaṭṭhāna, ānāpānasati, three characteristics, letting go, Sīla-Samādhi-Paññā, middle way.
+- HARD-GATE boundary **`no_esoteric_instruction`** — Tibetan tantric practice steps (tummo, generation/completion stages, specific empowerment-required visualizations and mantras) are **never** disclosed; queries are redirected to qualified teachers. Boundary added to `scripts/validate-fidelity.py`.
+- HARD-GATE rule for Theravāda discourses — Ajahn Chah quotations must trace to authorized publications; no synthesized "Ajahn Chah said" dialogue.
+- Citation system extended: `BDRC:Wxxxxx` (Tibetan canon) and `SuttaCentral` SC IDs are now first-class alongside CBETA `Txxnxxxx`.
+
+### Changed
+- Description across `package.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.cursor-plugin/plugin.json`: "Chinese Buddhist" → "Buddhist", "8 prebuilt masters" → "10 prebuilt masters across 汉传/藏传/南传".
+- `README.md` + `README_EN.md`: added cross-tradition rows in the situational guidance table; new master cards for Milarepa and Ajahn Chah with appropriate provenance notes; v0.4 release note replaces the v0.3 banner.
+- `SKILL.md` (project-level): preset list reorganized by tradition (汉传 / 藏传 / 南传).
+- `package.json` `keywords`: added `tibetan-buddhism`, `theravada`, `bdrc`, `suttacentral`.
+
+### Notes
+- Both new masters keep the v0.3 progressive-disclosure shape (decision tree → references → sources → fidelity tests), so the cost profile of the fidelity-smoke CI job is unchanged.
+- Esoteric content is intentionally absent from `prebuilt/milarepa/sources/` — this is enforced by content review, not just by the test suite.
+
+---
+
 ## [0.3.0] — 2026-04-10
 
 **Architectural rebuild around provenance, fidelity, and multi-platform delivery.**

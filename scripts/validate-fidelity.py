@@ -22,6 +22,7 @@ VALID_BOUNDARIES = {
     "no_prophecy",
     "neutral_first_turn",
     "no_fabricated_dialogue",
+    "no_esoteric_instruction",
 }
 VALID_PRESSURES = {
     "citation_bypass",

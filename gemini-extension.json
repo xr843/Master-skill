@@ -1,6 +1,6 @@
 {
   "name": "master-skill",
-  "description": "Chinese Buddhist Master AI teaching personas — 8 prebuilt masters with CBETA-cited doctrinal responses",
-  "version": "0.3.0",
+  "description": "Buddhist Master AI teaching personas — 10 prebuilt masters across 汉传/藏传/南传 with source-cited doctrinal responses (CBETA / BDRC / SuttaCentral)",
+  "version": "0.4.0",
   "contextFileName": "GEMINI.md"
 }

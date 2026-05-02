@@ -36,9 +36,14 @@ verified_at: 2026-04-06
 | 唯识 / 中观 / 空有 | xuanzang + kumarajiva | 唯识 vs 中观 |
 | 判教 / 圆融 / 止观 | zhiyi + fazang | 天台 vs 华严 |
 | 修行次第 / 综合法门 | ouyi + yinguang | 综合 vs 专修 |
-| 戒律 / 行持 / 日常 | xuyun + yinguang | 禅门戒律 vs 净土行持 |
-| 般若 / 空性 | kumarajiva + huineng | 中观 vs 禅宗 |
+| 戒律 / 行持 / 日常 | xuyun + yinguang + ajahn-chah | 禅门戒律 vs 净土行持 vs 上座部律仪 |
+| 般若 / 空性 | kumarajiva + huineng + milarepa | 中观 · 禅宗直指 · 大手印明空 |
 | 心识 / 阿赖耶 | xuanzang + huineng | 唯识分析 vs 禅宗直指 |
+| 苦行 / 闭关 / 山中修行 | xuyun + milarepa | 汉传禅门头陀 vs 藏传瑜伽士传统 |
+| 正念 / 观心 / 觉知 | huineng + ajahn-chah + xuyun | 禅宗自性 vs 南传 sati vs 参话头 |
+| 出离心 / 暇满 / 无常 | yinguang + milarepa + ajahn-chah | 净土 · 噶举 · 上座部三大传统对比 |
+| 上师 / 善知识 / 依止 | xuyun + milarepa | 汉传亲近善知识 vs 藏传上师瑜伽 |
+| 三大传统对比（明确要求） | huineng + milarepa + ajahn-chah | 禅 · 大手印 · 森林禅，最经典三方对照 |
 | 其他 | kumarajiva + yinguang | 中观 + 净土两大传统 |
 
 ## 工作流程
@@ -223,7 +228,9 @@ verified_at: 2026-04-06
 5. **首轮身份中立**：同各 master skill 的规则
 6. **回答末尾**附："如需深入学习，可在 FoJin (fojin.app) 查阅原典。"
 
-## 可用祖师（8 位）
+## 可用祖师（10 位 · 三大传统）
+
+### 汉传
 
 | slug | 名称 | 宗派 |
 |------|------|------|
@@ -236,11 +243,31 @@ verified_at: 2026-04-06
 | xuanzang | 玄奘法师 | 法相唯识 |
 | kumarajiva | 鸠摩罗什 | 中观 |
 
+### 藏传
+
+| slug | 名称 | 传承 |
+|------|------|------|
+| milarepa | 米拉日巴尊者 | 噶举派（大手印 / 那洛六法） |
+
+### 南传
+
+| slug | 名称 | 传承 |
+|------|------|------|
+| ajahn-chah | 阿姜查 | 上座部（泰国森林禅林派） |
+
+## 跨传统对比注意事项
+
+- 跨传统对比时，**先建立共同语境再展示差异**（"三大传统都强调无常／苦／苦的止息，而具体进路不同……"），避免营造对立感
+- 不在跨传统对比中论"哪个传承更究竟"——三大传统皆是佛陀正法的不同面向
+- 涉及密法时（藏传一侧），仅介绍义理，不传授具体步骤；这是 milarepa skill 自身 HARD-GATE 的延伸
+- 涉及 Ajahn Chah 引述时，必须可追溯至公开开示集（Food for the Heart / A Still Forest Pool / Living Dhamma），不可自行编造对话
+
 ## 禁忌
 
 - 不说"某位法师的观点更正确"
 - 不虚构法师之间的直接辩论（历史上不存在的对话）
-- 不夸大宗派差异
+- 不夸大宗派或传统之间的差异
+- 跨传统对比中不引入"X 传更究竟 / 更原始 / 更直接"等比较级判断
 
 ## Scripts（可选辅助工具）
 

@@ -23,8 +23,8 @@
 </p>
 
 <p align="center">
-  <strong>AI learning companions modeled after historical Chinese Buddhist masters</strong><br>
-  8 pre-built Chinese Buddhist masters · Real FoJin text citations · AgentSkills Standard
+  <strong>AI learning companions modeled after historical Buddhist masters across three traditions</strong><br>
+  10 pre-built masters · 汉传 / 藏传 / 南传 cross-tradition · CBETA / BDRC / SuttaCentral citations · AgentSkills Standard
 </p>
 
 <p align="center">
@@ -45,31 +45,34 @@
 
 ### 👉 [Open fojin.app/chat](https://fojin.app/chat)
 
-On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bottom-left and pick one of the 8 pre-built masters to start chatting.
+On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bottom-left and pick one of the 10 pre-built masters across three traditions to start chatting.
 
 - No install, no signup
-- `/compare-masters` multi-master comparison works the same way
+- `/compare-masters` multi-master comparison works across traditions too
 - Live citation retrieval backed by FoJin's 503 sources and 678K+ semantic embeddings
-- Every answer carries a CBETA source ID
+- Every answer carries an authoritative source ID (CBETA for 汉传, BDRC for 藏传, SuttaCentral for 南传)
 
 **Not sure which master to ask?** Start here:
 
 | Your situation | Suggested master |
 |---|---|
-| "My mind is scattered, I can't sit still" | `/xuyun` `/zhiyi` (huatou / śamatha-vipaśyanā) |
+| "My mind is scattered, I can't sit still" | `/xuyun` `/zhiyi` `/ajahn-chah` (huatou / śamatha-vipaśyanā / mindfulness) |
 | "I can't follow the logic of the sutras" | `/xuanzang` (Yogācāra precision) |
 | "I've studied for years but feel stuck" | `/yinguang` (plain, sincere nianfo) |
-| "I want to understand emptiness" | `/kumarajiva` `/huineng` (Madhyamaka / direct pointing) |
+| "I want to understand emptiness" | `/kumarajiva` `/huineng` `/milarepa` (Madhyamaka / direct pointing / Mahāmudrā clarity-emptiness) |
 | "I want a systematic view of Huayan / Tiantai" | `/fazang` `/zhiyi` (classification and metaphysics) |
 | "I'm torn between Chan and Pure Land" | `/ouyi` (cross-tradition synthesis) |
+| "I'm curious about ascetic practice / retreat" | `/milarepa` (snow-mountain retreat · Kagyu paradigm) |
+| "I want the simplest meditation instructions" | `/ajahn-chah` (Thai Forest · ānāpānasati) |
+| "I want a cross-tradition perspective" | `/compare-masters` (auto-pairs 汉/藏/南 voices) |
 
 > Developers and Claude Code / Cursor users should skip to [Developer Installation](#developer-installation) to use the masters as terminal AgentSkills.
 
 ---
 
-> **v0.3 Update**: Full architecture rebuild — CBETA provenance in frontmatter, offline source passages (`sources/`), automated fidelity tests (`fidelity.jsonl`), one-command NPX installer, and offline toolchain (`cite.py` / `query.py`).
+> **v0.4 Update (2026-05)**: Cross-tradition expansion — added Tibetan **Milarepa** (Kagyu / Mahāmudrā / Naro Chodruk) and Theravāda **Ajahn Chah** (Thai Forest Tradition / Wat Pah Pong). Citation system extended to support BDRC (Tibetan canon) and SuttaCentral (Pali canon). HARD-GATE adds `no_esoteric_instruction` (esoteric practice steps never disclosed) and `no_fabricated_quotes` (Theravāda discourses must trace to authorized published collections).
 >
-> **Post-v0.3 iterations**: `/create-master` pipeline now enforces a two-stage independent review (doctrinal accuracy → voice consistency), HARD-GATE rules (no CBETA citation → no write), multi-platform plugin support across Claude Code / Cursor / Codex / OpenCode / Gemini CLI, a session-start hook that auto-injects the master list, plus pressure tests and CI validation for all 8 prebuilt masters.
+> **v0.3**: Full architecture rebuild — provenance frontmatter, offline source passages (`sources/`), automated fidelity tests (`fidelity.jsonl`), NPX installer, two-stage independent review, HARD-GATE rules, multi-platform plugin support across Claude Code / Cursor / Codex / OpenCode / Gemini CLI, session-start hook auto-injecting the master list.
 
 ---
 
@@ -85,8 +88,8 @@ This project is built out of respect for Buddhist traditions. All content is gen
 
 ## Features
 
-- **8 pre-built Chinese Buddhist masters**: across Yogacara, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, and cross-tradition — ready to use out of the box
-- **Provenance enforcement**: Every master ships with CBETA IDs and FoJin text IDs in frontmatter; every doctrinal claim must carry a scriptural citation
+- **10 pre-built masters across three traditions**: 8 汉传 (Yogācāra, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, cross-tradition) + 1 藏传 (Kagyu / Milarepa) + 1 南传 (Thai Forest / Ajahn Chah) — ready to use out of the box
+- **Provenance enforcement**: Every master ships with authoritative source IDs (CBETA / BDRC / SuttaCentral) and FoJin text IDs in frontmatter; every doctrinal claim must carry a scriptural citation
 - **Offline source passages**: `sources/` captures key passages from each master's core canon, so citations still work when FoJin is unreachable
 - **Progressive disclosure**: SKILL.md is a decision tree + quick reference; `references/` and `sources/` are loaded on demand to keep context lean
 - **HARD-GATE discipline**: Both `/create-master` and every prebuilt master embed hard rules — no unverified CBETA ID, no uncited doctrinal claim, no fictional personas
@@ -110,7 +113,7 @@ This project is built out of respect for Buddhist traditions. All content is gen
 **NPX (recommended)**
 
 ```bash
-npx master-skill install --all    # Install all 8 masters
+npx master-skill install --all    # Install all 10 masters
 npx master-skill list             # List available masters
 ```
 
@@ -140,6 +143,7 @@ ln -sf "$(pwd)" ~/.claude/skills/create-master
 In any AgentSkills-compatible environment (Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI):
 
 ```
+# 汉传 (Chinese)
 /xuanzang       — Master Xuanzang (Yogacara)
 /kumarajiva     — Kumarajiva (Madhyamaka / Sanlun)
 /huineng        — Master Huineng (Chan, Sixth Patriarch)
@@ -148,6 +152,12 @@ In any AgentSkills-compatible environment (Claude Code / Cursor / Codex CLI / Op
 /yinguang       — Master Yinguang (Pure Land)
 /ouyi           — Master Ouyi (Tiantai / Pure Land, cross-tradition)
 /xuyun          — Master Xuyun (Chan, Five Houses)
+
+# 藏传 (Tibetan)
+/milarepa       — Milarepa (Kagyu · Mahāmudrā · Naro Chodruk)
+
+# 南传 (Theravāda)
+/ajahn-chah     — Ajahn Chah (Thai Forest Tradition · Wat Pah Pong)
 ```
 
 ### Compare Masters
@@ -233,6 +243,20 @@ Invoke: `/ouyi`
 Modern Chan patriarch who lived to 119 years. Unprecedented in Buddhist history for holding dharma transmission in all five houses of Chan (Linji, Caodong, Guiyang, Yunmen, Fayan). Restored six major ancestral monasteries. Advocated hua-tou investigation, honest practice, and harmonizing Chan with Pure Land.
 Primary sources: CBETA — Shurangama Sutra, Diamond Sutra, Platform Sutra.
 Invoke: `/xuyun`
+
+### Milarepa (1052-1135) — Tibetan · Kagyu
+
+Spiritual ancestor of the Tibetan Kagyu lineage and the paradigm of the "yogi tradition" (no monastery, mountain retreat, teaching through song). After committing serious harm in his youth through black magic, he sought purification under Marpa the Translator, who put him through severe trials before transmitting the complete Mahāmudrā and Naro Chodruk lineages. He spent decades in Himalayan retreat, surviving on nettles, and taught through extemporaneous **mGur** (songs of realization) — shaping the entire later Tibetan tradition.
+Primary sources: BDRC — *The Hundred Thousand Songs of Milarepa* (mGur 'bum, W1KG14334) and *The Life of Milarepa* (rNam thar, W22272).
+Invoke: `/milarepa`
+
+> ⚠️ Naro Chodruk (Six Yogas), tummo, generation/completion stages and other esoteric practices are introduced **only at the level of name and historical context — concrete practice instructions are never given**. Authentic transmission requires direct empowerment from a qualified teacher.
+
+### Ajahn Chah Subhaddo (1918-1992) — Theravāda · Thai Forest
+
+One of the most internationally influential masters of the Thai Forest Tradition. Renowned for strict Vinaya observance, four-foundations-of-mindfulness practice, and plain, life-grounded teaching style. His Western disciples (Ajahn Sumedho, Ajahn Pasanno, Ajahn Amaro and others) established Abhayagiri (California), Amaravati (UK), Cittaviveka (UK) and other branch monasteries, carrying the forest tradition to the West. Most-quoted line: *"If you let go a little, you have a little peace; if you let go completely, you have complete peace."*
+Primary sources: Pali Canon (SuttaCentral) + authorized English collections — *Food for the Heart*, *A Still Forest Pool*, *Living Dhamma*.
+Invoke: `/ajahn-chah`
 
 ---
 
