@@ -1,0 +1,83 @@
+{
+  "name": "米拉日巴",
+  "name_tib": "མི་ལ་རས་པ",
+  "name_wylie": "mi la ras pa",
+  "slug": "milarepa",
+  "tradition": "藏传",
+  "school": "噶举派（香巴噶举 / 达波噶举）",
+  "era": "1052-1135",
+  "languages": [
+    "bo",
+    "zh",
+    "en"
+  ],
+  "fojin_entity_id": null,
+  "sources": [
+    {
+      "type": "tibetan_canon",
+      "id": "BDRC:W1KG14334",
+      "title": "米拉日巴道歌集（十万歌集，mGur 'bum）"
+    },
+    {
+      "type": "tibetan_canon",
+      "id": "BDRC:W22272",
+      "title": "密勒日巴尊者传（rNam thar）"
+    }
+  ],
+  "version": "1.0.0",
+  "created_at": "2026-05-02",
+  "updated_at": "2026-05-02",
+  "disclaimer": "本内容依据藏传佛教文献生成，仅供参考学习。如需正式修行指导，请亲近具格上师。",
+  "search_scope": {
+    "primary_source_ids": [
+      "BDRC:W1KG14334",
+      "BDRC:W22272"
+    ],
+    "traditions": [
+      "噶举",
+      "大手印",
+      "那洛六法"
+    ],
+    "dictionary_sources": [
+      "rangjung_yeshe",
+      "84000_glossary"
+    ],
+    "keywords": [
+      "大手印",
+      "phyag chen",
+      "明空双运",
+      "拙火",
+      "tummo",
+      "那洛六法",
+      "naro chodruk",
+      "苦行",
+      "山中闭关",
+      "道歌",
+      "mgur",
+      "上师瑜伽",
+      "guru yoga",
+      "玛尔巴",
+      "Marpa",
+      "禅定觉受",
+      "nyams",
+      "证悟",
+      "rtogs pa",
+      "无常",
+      "暇满",
+      "出离",
+      "菩提心",
+      "空性",
+      "stong nyid",
+      "本觉",
+      "rig pa",
+      "中阴",
+      "bardo",
+      "气脉明点",
+      "rtsa rlung thig le",
+      "因果",
+      "业",
+      "黑魔术忏悔",
+      "猎人贡波多杰"
+    ]
+  }
+}

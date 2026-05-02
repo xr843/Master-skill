@@ -20,8 +20,8 @@
 </p>
 
 <p align="center">
-  <strong>依据历代汉传祖师大德的教学风格，通达 AI 学习伙伴</strong><br>
-  8 位汉传祖师大德 · FoJin 真实经文出处 · AgentSkills 标准
+  <strong>依据三大佛教传统祖师大德的教学风格，通达 AI 学习伙伴</strong><br>
+  10 位祖师 · 汉传 / 藏传 / 南传跨传统 · CBETA / BDRC / SuttaCentral 真实出处 · AgentSkills 标准
 </p>
 
 <p align="center">
@@ -38,35 +38,38 @@
 
 ## 立即体验（浏览器直接使用）
 
-> **大多数用户无需安装任何工具** —— 汉传佛教学习者、研究者、只想了解某位祖师思想的普通读者，都可以直接在浏览器里用。
+> **大多数用户无需安装任何工具** —— 佛教学习者、研究者、只想了解某位祖师思想的普通读者，都可以直接在浏览器里用。
 
 ### 👉 [打开 fojin.app/chat](https://fojin.app/chat)
 
-在 AI 问答页面左下角点击「法师模式」，从 8 位汉传祖师中选一位即可开始对话。
+在 AI 问答页面左下角点击「法师模式」，从 10 位三大传统祖师中选一位即可开始对话。
 
 - 无需安装、无需注册
-- 所有 `/compare-masters` 多祖师对比功能同样可用
+- 所有 `/compare-masters` 多祖师对比功能同样可用（含跨传统对比）
 - 内置 FoJin 的 503 个数据源、678K+ 语义向量做实时经证检索
-- 每条回答附 CBETA 经号原文出处
+- 每条回答附原典出处（CBETA 经号 / BDRC 藏文典籍号 / SuttaCentral 巴利经号）
 
 **如果你不确定该找谁问，可以这样开始：**
 
 | 你的状况 | 推荐法师 |
 |---|---|
-| "妄念纷飞坐不住" | `/虚云` `/智顗`（参话头 / 止观） |
+| "妄念纷飞坐不住" | `/虚云` `/智顗` `/ajahn-chah`（参话头 / 止观 / 正念观察） |
 | "读经文看不懂逻辑" | `/玄奘`（唯识严密分析） |
 | "学佛很久但无力感" | `/印光`（老实念佛） |
-| "想了解空性" | `/鸠摩罗什` `/慧能`（中观 / 禅直指） |
+| "想了解空性" | `/鸠摩罗什` `/慧能` `/milarepa`（中观 / 禅直指 / 大手印明空） |
 | "想系统学华严 / 天台" | `/法藏` `/智顗`（判教与哲学体系） |
 | "在禅与净土之间犹豫" | `/蕅益`（跨宗派融通） |
+| "对苦行 / 闭关好奇" | `/milarepa`（雪山闭关 · 噶举派典范） |
+| "想学最朴素的禅修" | `/ajahn-chah`（南传森林禅 · 出入息念） |
+| "想跨传统比较看一个问题" | `/compare-masters`（自动配对汉藏南传视角） |
 
 > 开发者、Claude Code / Cursor 用户可跳到下方 [开发者安装](#开发者安装) 小节，以 AgentSkill 形式在终端内使用。
 
 ---
 
-> **v0.3 更新**：全面架构重构——CBETA 经文溯源（provenance frontmatter）、离线经文片段（sources/）、自动化保真度测试（fidelity.jsonl）、NPX 一键安装、cite.py/query.py 离线工具链。
+> **v0.4 更新（2026-05）**：跨传统扩展——新增藏传米拉日巴尊者（噶举派 · 大手印 · 那洛六法）与南传阿姜查（泰国森林禅林派）。引用体系扩展支持 BDRC（藏文典籍）与 SuttaCentral（巴利三藏）。HARD-GATE 新增 `no_esoteric_instruction` 边界（密法不传授步骤）与 `no_fabricated_quotes`（南传开示不可代笔虚构）。
 >
-> **v0.3 后续迭代**：`/create-master` 生成管线新增二阶段独立审查（教义准确性 → 风格一致性）、HARD-GATE 铁律（无 CBETA 引证不得写入）、多平台插件支持（Claude Code / Cursor / Codex / OpenCode / Gemini CLI 五端统一）、session-start hook 自动注入法师列表、8 位预置法师的 pressure tests 与 CI 验证流水线。
+> **v0.3**：全面架构重构——CBETA 经文溯源、离线经文片段、自动化保真度测试、NPX 一键安装、cite.py/query.py 离线工具链、二阶段独立审查、HARD-GATE 铁律、多平台插件（Claude Code / Cursor / Codex / OpenCode / Gemini CLI 五端统一）、session-start hook 自动注入法师列表。
 
 ---
 
@@ -84,8 +87,8 @@
 
 ## 特性
 
-- **预置八位汉传祖师大德**：涵盖唯识、中观、禅、天台、华严、净土、跨宗派七大核心宗派，开箱即用
-- **经文溯源（Provenance）**：每位祖师附 CBETA ID、FoJin text ID，所有教义断言强制附经证引用
+- **预置十位三大传统祖师**：8 位汉传（唯识、中观、禅、天台、华严、净土、跨宗派）+ 1 位藏传（噶举派 · 米拉日巴）+ 1 位南传（森林禅林派 · 阿姜查），开箱即用
+- **经文溯源（Provenance）**：每位祖师附原典标识（CBETA / BDRC / SuttaCentral）+ FoJin text ID，所有教义断言强制附原典引证
 - **离线经文片段**：`sources/` 目录收录核心经典关键段落，FoJin 不可用时仍可离线引用
 - **渐进式披露**：SKILL.md 以决策树 + Quick Ref 为主，`references/`、`sources/` 按需加载，Context 随查随取
 - **HARD-GATE 铁律**：`/create-master` 与预置法师内置红线——无 CBETA 引证的教义断言不得写入、不得捏造经号、不得为虚构人物建角色
@@ -159,6 +162,7 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 在支持 AgentSkills 的环境（Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI）中直接调用：
 
 ```
+# 汉传
 /xuanzang       — 玄奘法师（法相唯识宗）
 /kumarajiva     — 鸠摩罗什（三论宗/中观）
 /huineng        — 慧能大师（禅宗六祖）
@@ -167,6 +171,12 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 /yinguang       — 印光大师（净土宗）
 /ouyi           — 蕅益大师（天台/净土·跨宗派）
 /xuyun          — 虚云老和尚（禅宗·五宗兼嗣）
+
+# 藏传
+/milarepa       — 米拉日巴尊者（噶举派 · 大手印 · 那洛六法）
+
+# 南传
+/ajahn-chah     — 阿姜查（泰国森林禅林派 · 巴蓬寺传承）
 ```
 
 ### 多法师对比
@@ -253,6 +263,20 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 近代禅宗泰斗，世寿一百二十岁，一身兼嗣禅门五宗（临济、曹洞、沩仰、云门、法眼）法脉——佛教史上绝无仅有。复兴六大祖庭，历经清末、民国、新中国三个时代。主张参话头、老实修行、禅净双修。
 主要来源：CBETA《楞严经》《金刚经》《六祖坛经》等。
 调用命令：`/xuyun`
+
+### 米拉日巴尊者（Milarepa, 1052-1135） — 藏传 · 噶举派
+
+藏传佛教噶举派精神祖师，"瑜伽士"传统（不入寺院、山中闭关、以歌教化）的典范。早年咒杀仇家造重业，依止玛尔巴译师净罪求法，于雪山闭关数十年以荨麻为食。以**道歌（mGur）**说法，影响后世整个藏传佛教。
+主要来源：BDRC《米拉日巴道歌集》（W1KG14334，《十万歌集》mGur 'bum）、《密勒日巴尊者传》（W22272）。
+调用命令：`/milarepa`
+
+> ⚠️ 那洛六法、拙火、生起／圆满次第等密法**只介绍历史与原理，不传授具体修法步骤**。具体修持必须依止具格上师亲传与灌顶。
+
+### 阿姜查 Ajahn Chah Subhaddo（1918-1992） — 南传 · 泰国森林禅林派
+
+泰国森林禅林派最具国际影响力的禅师之一。以巴利戒律严格持守、四念处禅修、朴素生活化教学著称。其英语弟子（阿姜苏美多、阿姜帕沙诺等）建立了无畏山林、阿马罗筏底、奇泰罗等海外分院，将森林禅林派传至欧美。代表名言："如果你少放下一点，你就少一点苦。"
+主要来源：巴利三藏（SuttaCentral）+ 公开开示集《Food for the Heart》《A Still Forest Pool》《Living Dhamma》。
+调用命令：`/ajahn-chah`
 
 ---
 

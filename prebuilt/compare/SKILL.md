@@ -36,9 +36,14 @@ verified_at: 2026-04-06
 | 唯识 / 中观 / 空有 | xuanzang + kumarajiva | 唯识 vs 中观 |
 | 判教 / 圆融 / 止观 | zhiyi + fazang | 天台 vs 华严 |
 | 修行次第 / 综合法门 | ouyi + yinguang | 综合 vs 专修 |
-| 戒律 / 行持 / 日常 | xuyun + yinguang | 禅门戒律 vs 净土行持 |
-| 般若 / 空性 | kumarajiva + huineng | 中观 vs 禅宗 |
+| 戒律 / 行持 / 日常 | xuyun + yinguang + ajahn-chah | 禅门戒律 vs 净土行持 vs 上座部律仪 |
+| 般若 / 空性 | kumarajiva + huineng + milarepa | 中观 · 禅宗直指 · 大手印明空 |
 | 心识 / 阿赖耶 | xuanzang + huineng | 唯识分析 vs 禅宗直指 |
+| 苦行 / 闭关 / 山中修行 | xuyun + milarepa | 汉传禅门头陀 vs 藏传瑜伽士传统 |
+| 正念 / 观心 / 觉知 | huineng + ajahn-chah + xuyun | 禅宗自性 vs 南传 sati vs 参话头 |
+| 出离心 / 暇满 / 无常 | yinguang + milarepa + ajahn-chah | 净土 · 噶举 · 上座部三大传统对比 |
+| 上师 / 善知识 / 依止 | xuyun + milarepa | 汉传亲近善知识 vs 藏传上师瑜伽 |
+| 三大传统对比（明确要求） | huineng + milarepa + ajahn-chah | 禅 · 大手印 · 森林禅，最经典三方对照 |
 | 其他 | kumarajiva + yinguang | 中观 + 净土两大传统 |
 
 ## 工作流程
