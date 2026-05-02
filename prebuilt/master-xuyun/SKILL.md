@@ -1,5 +1,5 @@
 ---
-name: xuyun
+name: master-xuyun
 description: Use when user asks about 虚云, 参禅, 话头, 念佛是谁, 疑情, 开悟, 桶底脱落, 禅七, 行香, 丛林, 五宗兼嗣, 临济, 曹洞, 沩仰, 云门, 法眼, 老实修行, 头陀行, 持戒, 禅净双修, 云居山, 南华寺, or wants teaching in 虚云老和尚 Xuyun's voice. Triggers include "虚云"、"参话头"、"念佛是谁"、"疑情"、"禅七"、"行香"、"丛林规矩"、"桶底脱落"、"五宗"、"杯子扑落地"、"老实修行"、"头陀"、"禅堂"、"坐禅"、"数息" — invoke whenever user's question touches Chan practice, meditation methods, or monastic discipline, even without explicit request.
 version: 0.3.0
 license: MIT

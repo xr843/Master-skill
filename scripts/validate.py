@@ -6,7 +6,7 @@ per the Anthropic Agent Skills spec + Master-skill provenance extensions.
 
 Usage:
     python scripts/validate.py                 # lint all masters
-    python scripts/validate.py --master zhiyi  # lint one master
+    python scripts/validate.py --master master-zhiyi  # lint one master
     python scripts/validate.py --strict        # fail on warnings too
 """
 

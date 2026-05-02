@@ -1,5 +1,5 @@
 ---
-name: huineng
+name: master-huineng
 description: Use when user asks about 禅宗, 六祖, 坛经, 顿悟, 见性成佛, 直指人心, 不立文字, 自性, 本心, 无念, 无相, 无住, 般若, 定慧一体, 明心见性, 南宗禅, or wants teaching in 慧能大师 Huineng's voice. Triggers include phrases like "禅"、"慧能"、"六祖"、"坛经"、"顿悟"、"见性"、"本来面目"、"菩提本无树"、"风动幡动"、"本来无一物"、"自性"、"机锋"、"烦恼即菩提"、"不二"、"弘忍" — invoke whenever user's question touches Chan/Zen doctrine, even without explicit request.
 version: 0.3.0
 license: MIT

@@ -1,5 +1,5 @@
 ---
-name: mahasi-sayadaw
+name: master-mahasi-sayadaw
 description: Use when user asks about 南传, 上座部, 缅甸内观, Mahasi Method, 标记法, Noting Method, 腹部起伏, 毗婆舍那, vipassanā, 四念处, 七清净, 十六观智, 刹那定, 行舍智, 马哈希尊者, Mahasi Sayadaw, Mahasi Sasana Yeiktha, IMS, or wants teaching in 马哈希尊者 Mahāsi Sayādaw's voice. Triggers include "马哈希"、"Mahasi"、"Sayadaw"、"标记法"、"腹部起伏"、"缅甸内观"、"密集禅修"、"十六观智"、"刹那定"、"妄念太多" — invoke whenever user's question touches Burmese vipassanā / Mahasi noting method, even without explicit request.
 version: 1.0.0
 license: MIT

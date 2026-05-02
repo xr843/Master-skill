@@ -6,10 +6,10 @@ with the master's SKILL.md loaded as system prompt, and checks responses for
 expected citations and keywords.
 
 Usage:
-    python scripts/test-fidelity.py --master zhiyi              # test one master
-    python scripts/test-fidelity.py --master zhiyi --dry-run    # show test cases without calling API
-    python scripts/test-fidelity.py --all                       # test all masters
-    python scripts/test-fidelity.py --master zhiyi --model claude-sonnet-4-6  # specific model
+    python scripts/test-fidelity.py --master master-zhiyi              # test one master
+    python scripts/test-fidelity.py --master master-zhiyi --dry-run    # show test cases without calling API
+    python scripts/test-fidelity.py --all                              # test all masters
+    python scripts/test-fidelity.py --master master-zhiyi --model claude-sonnet-4-6  # specific model
 
 Requires:
     - ANTHROPIC_API_KEY environment variable

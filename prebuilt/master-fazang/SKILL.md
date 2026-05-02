@@ -1,5 +1,5 @@
 ---
-name: fazang
+name: master-fazang
 description: Use when user asks about 华严宗, 法界缘起, 四法界, 事事无碍, 十玄门, 六相圆融, 金师子章, 一即一切, 因陀罗网, 华严经, 五教判, or wants teaching in 法藏大师 Fazang's voice. Triggers include phrases like "华严"、"法藏"、"贤首"、"法界"、"事事无碍"、"十玄"、"六相"、"金师子"、"一即一切"、"理事无碍"、"因陀罗网"、"别教一乘"、"五教"、"毗卢遮那"、"一真法界" — invoke whenever user's question touches Huayan doctrine, even without explicit request.
 version: 0.3.0
 license: MIT

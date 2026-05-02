@@ -66,15 +66,26 @@ function cmdList() {
   console.log();
 }
 
+// Resolve a master directory accepting both short ("zhiyi") and full
+// ("master-zhiyi") forms. Returns the absolute prebuilt/<dir> path or null.
+function resolveMasterDir(input) {
+  const candidates = [
+    path.join(PREBUILT, input),                  // exact: master-zhiyi
+    path.join(PREBUILT, `master-${input}`),      // short: zhiyi → master-zhiyi
+  ];
+  return candidates.find((p) => fs.existsSync(p)) || null;
+}
+
 function cmdInstall(names) {
   fs.mkdirSync(SKILLS_DIR, { recursive: true });
   for (const name of names) {
-    const src = path.join(PREBUILT, name);
-    if (!fs.existsSync(src)) {
-      console.log(`  ✗ ${name} — not found in prebuilt/`);
+    const src = resolveMasterDir(name);
+    if (!src) {
+      console.log(`  ✗ ${name} — not found in prebuilt/ (tried "${name}" and "master-${name}")`);
       continue;
     }
-    const dest = path.join(SKILLS_DIR, `master-${name}`);
+    const dirName = path.basename(src);          // master-zhiyi
+    const dest = path.join(SKILLS_DIR, dirName);
     cpR(src, dest);
     console.log(`  ✓ ${name} → ${dest}`);
   }
@@ -82,19 +93,25 @@ function cmdInstall(names) {
 
 function cmdUninstall(names) {
   for (const name of names) {
-    const dest = path.join(SKILLS_DIR, `master-${name}`);
-    if (!fs.existsSync(dest)) {
+    // Try both prefixed and bare directory names for backward compatibility
+    // with any pre-v0.6 installs that may still sit at ~/.claude/skills/<slug>/.
+    const candidates = [
+      path.join(SKILLS_DIR, name),               // exact: master-zhiyi
+      path.join(SKILLS_DIR, `master-${name}`),   // short: zhiyi → master-zhiyi
+    ];
+    const dest = candidates.find((p) => fs.existsSync(p));
+    if (!dest) {
       console.log(`  ✗ ${name} — not installed`);
       continue;
     }
     fs.rmSync(dest, { recursive: true, force: true });
-    console.log(`  ✓ ${name} removed`);
+    console.log(`  ✓ ${name} removed (${dest})`);
   }
 }
 
 function showHelp() {
   console.log(`
-master-skill — Chinese Buddhist Master AI Skills installer
+master-skill — Buddhist Master AI Skills installer (v0.6+)
 
 Usage:
   master-skill install <name...>   Install masters to ~/.claude/skills/
@@ -103,8 +120,12 @@ Usage:
   master-skill uninstall <name...> Remove installed masters
   master-skill --help              Show this help
 
+Names accept both short (zhiyi) and full (master-zhiyi) forms.
+Slash commands are always /master-<slug> (e.g. /master-zhiyi).
+
 Examples:
   npx master-skill install zhiyi fazang
+  npx master-skill install master-milarepa master-tsongkhapa
   npx master-skill install --all
   npx master-skill list
   npx master-skill uninstall zhiyi

@@ -1,5 +1,5 @@
 ---
-name: atisha
+name: master-atisha
 description: Use when user asks about 藏传, 噶当派, Kadam, 三士道, 菩提道灯论, Bodhipathapradīpa, 阿底峡, Atiśa, 金洲大师, 七因果, 自他相换, 菩提心, 依止善知识, 暇满, 业果, 噶当六论, 仲敦巴, 热振寺, 藏地后弘期, or wants teaching in 阿底峡尊者 Atiśa's voice. Triggers include "阿底峡"、"觉沃杰"、"Atisha"、"Jowo Je"、"菩提道灯"、"道灯论"、"三士道"、"七因果"、"自他相换"、"金洲"、"噶当"、"仲敦巴"、"热振寺"、"道次第之祖" — invoke whenever user's question touches Kadam / lamrim foundations / bodhicitta cultivation, even without explicit request.
 version: 1.0.0
 license: MIT
