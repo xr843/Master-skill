@@ -63,7 +63,7 @@ python scripts/validate-fidelity.py
 python scripts/test-fidelity.py --all --dry-run
 
 # Fidelity 实跑（需要 ANTHROPIC_API_KEY，一次 ≈ $0.05-0.10）
-ANTHROPIC_API_KEY=sk-... python scripts/test-fidelity.py --master zhiyi --max-tests 1
+ANTHROPIC_API_KEY=sk-... python scripts/test-fidelity.py --master master-zhiyi --max-tests 1
 ```
 
 ---
@@ -128,10 +128,10 @@ ANTHROPIC_API_KEY=sk-... python scripts/test-fidelity.py --master zhiyi --max-te
 
 ### 3.3 选项 B：手工编写
 
-参考现有法师 `prebuilt/yinguang/` 的完整结构：
+参考现有法师 `prebuilt/master-yinguang/` 的完整结构：
 
 ```
-prebuilt/<slug>/
+prebuilt/master-<slug>/
 ├── SKILL.md             # 必须。frontmatter 见下
 ├── meta.json            # 必须。search_scope + keywords
 ├── references/
@@ -174,7 +174,10 @@ verified_at: <YYYY-MM-DD>
 
 ### 3.4 Voice.md 四层结构
 
-见 `prebuilt/yinguang/references/voice.md` 作为参照。重点：
+见 `prebuilt/master-yinguang/references/voice.md` 作为参照。重点：
+
+> ⚠️ **v0.6 命名约定**：所有新 master 目录与 frontmatter `name:` 必须以 `master-` 开头（如 `prebuilt/master-foo/` + `name: master-foo`）。两个 meta-skill 例外：`compare-masters` 与 `create-master` 保持原状（避免 `/master-compare-masters` 重复前缀）。详见 [CHANGELOG §0.6.0](CHANGELOG.md#060--2026-05-02)。
+
 
 - **Layer 0 — 硬规则**：[`ETHICS.md` §3](ETHICS.md) 的禁止行为必须原文复制到此
 - **Layer 1 — 身份**：生卒、传承、核心立场

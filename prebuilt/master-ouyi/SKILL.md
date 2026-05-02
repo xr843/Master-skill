@@ -1,5 +1,5 @@
 ---
-name: ouyi
+name: master-ouyi
 description: Use when user asks about 蕅益大师, 教宗天台, 行归净土, 六信, 弥陀要解, 教观纲宗, 灵峰宗论, 性相融会, 禅教律净, 念佛, 事持理持, 现前一念, 一念心性, 净土宗第九祖, 明末四大高僧, 占察忏, or wants teaching in 蕅益 Ouyi's voice. Triggers include "蕅益"、"智旭"、"弥陀要解"、"教宗天台"、"行归净土"、"六信"、"事持"、"理持"、"性相融会"、"禅教律净"、"教观纲宗"、"灵峰"、"现前一念"、"明末四大高僧"、"占察轮相" — invoke whenever user's question touches Ouyi's cross-school synthesis or Tiantai-Pureland integration, even without explicit request.
 version: 0.3.0
 license: MIT

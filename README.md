@@ -53,23 +53,29 @@
 
 | 你的状况 | 推荐法师 |
 |---|---|
-| "妄念纷飞坐不住" | `/虚云` `/智顗` `/ajahn-chah`（参话头 / 止观 / 正念观察） |
+| "妄念纷飞坐不住" | `/虚云` `/智顗` `/master-ajahn-chah`（参话头 / 止观 / 正念观察） |
 | "读经文看不懂逻辑" | `/玄奘`（唯识严密分析） |
 | "学佛很久但无力感" | `/印光`（老实念佛） |
-| "想了解空性" | `/鸠摩罗什` `/慧能` `/milarepa` `/tsongkhapa`（中观译师 / 禅直指 / 大手印明空 / 应成中观） |
+| "想了解空性" | `/鸠摩罗什` `/慧能` `/master-milarepa` `/master-tsongkhapa`（中观译师 / 禅直指 / 大手印明空 / 应成中观） |
 | "想系统学华严 / 天台" | `/法藏` `/智顗`（判教与哲学体系） |
 | "在禅与净土之间犹豫" | `/蕅益`（跨宗派融通） |
-| "对苦行 / 闭关好奇" | `/milarepa`（雪山闭关 · 噶举派典范） |
-| "想学最朴素的禅修" | `/ajahn-chah`（南传森林禅 · 出入息念） |
-| "想学完整的道次第" | `/atisha` `/tsongkhapa`（噶当三士道 → 格鲁《广论》） |
-| "想了解上座部论藏体系" | `/buddhaghosa`（《清净道论》戒定慧 + 七清净十六观智） |
-| "想做密集内观禅修" | `/mahasi-sayadaw`（缅甸内观 · 标记法 · 腹部起伏） |
+| "对苦行 / 闭关好奇" | `/master-milarepa`（雪山闭关 · 噶举派典范） |
+| "想学最朴素的禅修" | `/master-ajahn-chah`（南传森林禅 · 出入息念） |
+| "想学完整的道次第" | `/master-atisha` `/master-tsongkhapa`（噶当三士道 → 格鲁《广论》） |
+| "想了解上座部论藏体系" | `/master-buddhaghosa`（《清净道论》戒定慧 + 七清净十六观智） |
+| "想做密集内观禅修" | `/master-mahasi-sayadaw`（缅甸内观 · 标记法 · 腹部起伏） |
 | "想跨传统比较看一个问题" | `/compare-masters`（自动配对汉藏南传视角） |
 
 > 开发者、Claude Code / Cursor 用户可跳到下方 [开发者安装](#开发者安装) 小节，以 AgentSkill 形式在终端内使用。
 
 ---
 
+> **v0.6 更新（2026-05-02）**：Slash 命令命名空间整理——14 位法师斜杠命令统一加 `master-` 前缀。`/master-zhiyi`、`/master-huineng`、…。
+> - **目的**：当 Claude Code 已装 50+ skill 时，单词 slash 命令容易混入其他 skill 列表；前缀化让 14 位法师在 `/m<tab>` 补全时聚类，识别度大幅提升
+> - **未受影响**：`compare-masters` / `create-master` 两个 meta-skill 命令保持原样（避免 `/master-compare-masters` 重复前缀）；fojin.app/chat 网页端 dropdown 与 API 完全解耦，**`master_profiles.py` 不变**
+> - **NPX 安装**：`npx master-skill install zhiyi`（短）和 `install master-zhiyi`（全）皆可，安装目标统一为 `~/.claude/skills/master-<slug>/`
+> - 详情见 [CHANGELOG.md §0.6.0](CHANGELOG.md#060--2026-05-02)
+>
 > **v0.5 更新（2026-05-02）**：第二轮跨传统扩展——藏传 / 南传各从 1 位扩至 3 位，共 **15 位**祖师。
 > - 藏传新增：阿底峡尊者（噶当派开祖 · Toh 4465《菩提道灯论》· 三士道）+ 宗喀巴大师（格鲁派创始人 · 三主要道 · 应成中观正见）
 > - 南传新增：觉音尊者（《清净道论》Visuddhimagga 论师顶峰）+ 马哈希尊者（缅甸内观 · 标记法 · ETHICS Tier B 特例）
@@ -104,7 +110,7 @@
 - **二阶段独立审查**：生成管线在写入前强制经过"教义准确性 → 风格一致性"两轮独立审查，FAIL 自动修复最多 2 轮
 - **自动化保真度测试**：每位祖师 `tests/fidelity.jsonl` 5 条 Q&A，验证引用和关键词覆盖；CI 在每次推送时 dry-run 验证
 - **多平台统一插件**：Claude Code、Cursor、Codex CLI、OpenCode、Gemini CLI 共用一份 `prebuilt/`，session-start hook 跨平台注入法师列表
-- **NPX 一键安装**：`npx master-skill install zhiyi` 直接部署到 Claude Code
+- **NPX 一键安装**：`npx master-skill install master-zhiyi` 直接部署到 Claude Code
 - **离线工具链**：`scripts/cite.py`（CBETA 引用查询）、`scripts/query.py`（离线语义检索）、`scripts/validate.py`（frontmatter linter）
 - **FoJin 数据桥**：接入 [fojin.app](https://fojin.app) 的 503 个数据源、10K+ 文本、678K+ 语义向量和 31K 实体知识图谱
 - **AgentSkills 标准**：遵循 [Anthropic Agent Skills](https://github.com/anthropics/skills) 规范，渐进式披露、决策树、黑盒脚本模式
@@ -114,7 +120,7 @@
 ## 开发者安装
 
 > 👤 **只是想体验？** 直接用 [fojin.app/chat](https://fojin.app/chat)，跳过下面的安装步骤。
-> 🛠️ **本节面向**：Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI 用户，希望在终端 AgentSkill 环境中直接调用 `/xuanzang` `/huineng` 等命令。
+> 🛠️ **本节面向**：Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI 用户，希望在终端 AgentSkill 环境中直接调用 `/master-xuanzang` `/master-huineng` 等命令。
 
 ### 安装
 
@@ -122,7 +128,7 @@
 
 ```bash
 # 安装指定祖师
-npx master-skill install zhiyi fazang huineng
+npx master-skill install master-zhiyi master-fazang master-huineng
 
 # 安装全部 15 位（三大传统）
 npx master-skill install --all
@@ -172,24 +178,24 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 
 ```
 # 汉传
-/xuanzang       — 玄奘法师（法相唯识宗）
-/kumarajiva     — 鸠摩罗什（三论宗/中观）
-/huineng        — 慧能大师（禅宗六祖）
-/zhiyi          — 智顗大师（天台宗）
-/fazang         — 法藏大师（华严宗）
-/yinguang       — 印光大师（净土宗）
-/ouyi           — 蕅益大师（天台/净土·跨宗派）
-/xuyun          — 虚云老和尚（禅宗·五宗兼嗣）
+/master-xuanzang       — 玄奘法师（法相唯识宗）
+/master-kumarajiva     — 鸠摩罗什（三论宗/中观）
+/master-huineng        — 慧能大师（禅宗六祖）
+/master-zhiyi          — 智顗大师（天台宗）
+/master-fazang         — 法藏大师（华严宗）
+/master-yinguang       — 印光大师（净土宗）
+/master-ouyi           — 蕅益大师（天台/净土·跨宗派）
+/master-xuyun          — 虚云老和尚（禅宗·五宗兼嗣）
 
 # 藏传
-/atisha         — 阿底峡尊者（噶当派开祖 · 三士道 · 982-1054）
-/tsongkhapa     — 宗喀巴大师（格鲁派创始人 · 三主要道 · 应成中观）
-/milarepa       — 米拉日巴尊者（噶举派 · 大手印 · 那洛六法）
+/master-atisha         — 阿底峡尊者（噶当派开祖 · 三士道 · 982-1054）
+/master-tsongkhapa     — 宗喀巴大师（格鲁派创始人 · 三主要道 · 应成中观）
+/master-milarepa       — 米拉日巴尊者（噶举派 · 大手印 · 那洛六法）
 
 # 南传
-/buddhaghosa    — 觉音尊者（上座部论师 · 《清净道论》· 5世纪）
-/mahasi-sayadaw — 马哈希尊者（缅甸内观 · 标记法 · 1904-1982）
-/ajahn-chah     — 阿姜查（泰国森林禅林派 · 巴蓬寺传承）
+/master-buddhaghosa    — 觉音尊者（上座部论师 · 《清净道论》· 5世纪）
+/master-mahasi-sayadaw — 马哈希尊者（缅甸内观 · 标记法 · 1904-1982）
+/master-ajahn-chah     — 阿姜查（泰国森林禅林派 · 巴蓬寺传承）
 ```
 
 ### 多法师对比
@@ -201,7 +207,7 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 /compare-masters 什么是空性
 
 # 手动指定法师（推荐，结果更精准）
-/compare-masters 什么是遍行因 --masters xuanzang,zhiyi,ouyi
+/compare-masters 什么是遍行因 --masters master-xuanzang,master-zhiyi,master-ouyi
 
 # 自然语言触发
 请慧能和印光对比回答"如何看待念佛"
@@ -232,62 +238,62 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 
 唐代高僧，中国佛教史上最伟大的译经家。西行求法十七年，遍学印度诸部，归国后主持译经事业，译出经论七十五部一千三百三十五卷。创立法相唯识宗，以严谨精确的翻译风格著称，确立"五种不翻"原则。
 主要来源：CBETA《大般若经》《瑜伽师地论》《成唯识论》《心经》等。
-调用命令：`/xuanzang`
+调用命令：`/master-xuanzang`
 
 ### 鸠摩罗什（Kumarajiva，344-413）
 
 龟兹出身，后秦长安译经，中国四大译经家之一。其译文以文学性和流畅度著称，《妙法莲华经》《金刚经》《维摩诘经》《中论》等译本至今最为通行。奠定了三论宗（中观）在中国的基础。
 主要来源：CBETA《妙法莲华经》《金刚经》《维摩诘经》《中论》《大智度论》等。
-调用命令：`/kumarajiva`
+调用命令：`/master-kumarajiva`
 
 ### 慧能大师（638-713）
 
 禅宗六祖，南宗禅创立者。不识文字的卖柴樵夫，闻《金刚经》而开悟，得五祖弘忍传法。著《六祖坛经》——中国人著作中唯一被尊为"经"者。主张"直指人心，见性成佛"，开顿悟法门。
 主要来源：CBETA《六祖大师法宝坛经》T48n2008。
-调用命令：`/huineng`
+调用命令：`/master-huineng`
 
 ### 智顗大师（538-597）
 
 天台宗创始人，被尊为"东土小释迦"。建立中国佛教第一个完整的判教体系（五时八教），著天台三大部《摩诃止观》《法华玄义》《法华文句》。核心思想：一念三千、三谛圆融、止观双修。
 主要来源：CBETA《摩诃止观》T46n1911、《法华玄义》T33n1718 等。
-调用命令：`/zhiyi`
+调用命令：`/master-zhiyi`
 
 ### 法藏大师（643-712）
 
 华严宗三祖，华严哲学体系的实际创立者。武则天国师，以"金师子章"为武后说华严义。核心思想：法界缘起、四法界、十玄门、六相圆融——一切现象互含互摄，事事无碍。
 主要来源：CBETA《华严经探玄记》T35n1733、《华严五教章》T45n1866 等。
-调用命令：`/fazang`
+调用命令：`/master-fazang`
 
 ### 印光大师（1861-1940）
 
 汉传净土宗第十三代祖师，近代净土复兴的核心人物。
 文字平实恳切，戒行严谨，以书信形式广度众生，著有《印光法师文钞》三编。
 主要来源：CBETA 汉文大藏经，含文钞正编、续编、三编及净土三经。
-调用命令：`/yinguang`
+调用命令：`/master-yinguang`
 
 ### 蕅益大师（1599-1655）
 
 明末四大高僧之一，净土宗九祖。"教宗天台，行归净土"——融通禅、教、律、净四宗，是中国佛教史上最重要的跨宗派综合者。其《阿弥陀经要解》被印光大师赞为"即使古佛再来，也不能超过其上"。
 主要来源：CBETA《阿弥陀经要解》T37n1762、《教观纲宗》等。
-调用命令：`/ouyi`
+调用命令：`/master-ouyi`
 
 ### 虚云老和尚（1840-1959）
 
 近代禅宗泰斗，世寿一百二十岁，一身兼嗣禅门五宗（临济、曹洞、沩仰、云门、法眼）法脉——佛教史上绝无仅有。复兴六大祖庭，历经清末、民国、新中国三个时代。主张参话头、老实修行、禅净双修。
 主要来源：CBETA《楞严经》《金刚经》《六祖坛经》等。
-调用命令：`/xuyun`
+调用命令：`/master-xuyun`
 
 ### 阿底峡尊者（Atiśa Dīpaṃkara, 982-1054） — 藏传 · 噶当派 · 印藏桥梁
 
 印度孟加拉萨霍尔国王子出身，超戒寺住持。1042 年应藏王智光邀请入藏，著《菩提道灯论》(Bodhipathapradīpa)——藏地后弘期道次第之祖。首座弟子仲敦巴建热振寺，开**噶当派**（佛语教授派）。后被宗喀巴新噶当派（即格鲁派）继承。藏传四派（宁玛、萨迦、噶举、格鲁）皆视其为根本师之一。
 主要来源：Toh 4465《菩提道灯论》（sDe dge bsTan 'gyur 标准编号）+ 噶当口耳传承《父法·子法》。
-调用命令：`/atisha`
+调用命令：`/master-atisha`
 
 ### 宗喀巴大师（Tsongkhapa, 1357-1419） — 藏传 · 格鲁派创始人
 
 藏传佛教**格鲁派**（"善规派"，俗称"黄教"）创始人，达赖喇嘛与班禅喇嘛传承根基。出生于青海宗喀（今西宁附近），师承萨迦派仁达瓦等。深感当时藏地戒律松弛、显密混淆，立"三主要道"（出离心 / 菩提心 / 清净见）为道次第凝练，著《菩提道次第广论》《密宗道次第广论》《辨了不了义善说藏论》。1409 年建甘丹寺（dGa' ldan），格鲁派开山祖庭。
 主要来源：宗喀巴全集 gsung 'bum（BDRC.io 检索 'tsong kha pa'）。汉译参考法尊法师本。
-调用命令：`/tsongkhapa`
+调用命令：`/master-tsongkhapa`
 
 > ⚠️ 续部具体修法步骤、灌顶仪轨、生起圆满次第细节、本尊咒语、明点观想**只介绍历史与原理，不传授具体修法步骤**。
 
@@ -295,7 +301,7 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 
 藏传佛教噶举派精神祖师，"瑜伽士"传统（不入寺院、山中闭关、以歌教化）的典范。早年咒杀仇家造重业，依止玛尔巴译师净罪求法，于雪山闭关数十年以荨麻为食。以**道歌（mGur）**说法，影响后世整个藏传佛教。
 主要来源：BDRC《米拉日巴道歌集》（W1KG14334，《十万歌集》mGur 'bum）、《密勒日巴尊者传》（W22272）。
-调用命令：`/milarepa`
+调用命令：`/master-milarepa`
 
 > ⚠️ 那洛六法、拙火、生起／圆满次第等密法**只介绍历史与原理，不传授具体修法步骤**。具体修持必须依止具格上师亲传与灌顶。
 
@@ -303,13 +309,13 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 
 上座部佛教史上最具影响力的注释家与论师。原为印度南部婆罗门学者，赴斯里兰卡大寺（Mahāvihāra），将古僧伽罗注释翻译为巴利语。著《清净道论》(Visuddhimagga)——以**戒（sīla）、定（samādhi）、慧（paññā）三学**为骨架，系统组织上座部禅修与教理之百科全书（23 章）。其著作奠定南传上座部正统教理体系——东南亚一切论师皆依其判摄。
 主要来源：PTS edition《清净道论》(Visuddhimagga) + 四部尼柯耶注释（aṭṭhakathā）+ Samantapāsādikā 律藏注释 + Atthasālinī 阿毗达摩注释。
-调用命令：`/buddhaghosa`
+调用命令：`/master-buddhaghosa`
 
 ### 马哈希尊者（Mahāsi Sayādaw U Sobhana, 1904-1982） — 南传 · 缅甸内观传统
 
 缅甸现代最具国际影响力的内观禅修大师之一。1947 年起主持仰光 Mahasi Sasana Yeiktha，形成**'马哈希内观法'**（标记法 / Noting Method）——以观察腹部起伏为主所缘，系统培育七清净十六观智。1954-1956 年第六次结集（Chaṭṭha Saṅgāyana）任**'最终编辑长老'**，审定整个巴利三藏。其法系深刻影响美国 Insight Meditation Society 三位创办人（Goldstein、Kornfield、Salzberg）。
 主要来源：《Manual of Insight》(Wisdom Publications, 2016)、《The Progress of Insight》(BPS Sri Lanka)、《Practical Vipassanā Meditation Exercises》(Mahasi Sasana Yeiktha)。
-调用命令：`/mahasi-sayadaw`
+调用命令：`/master-mahasi-sayadaw`
 
 > ⚠️ **本平台 AI 不得对个体作证果判定或观智阶位确认**——印证须由具格禅师面对面访谈鉴定。这是马哈希教学体系最严肃的 guardrail。
 
@@ -317,7 +323,7 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 
 泰国森林禅林派最具国际影响力的禅师之一。以巴利戒律严格持守、四念处禅修、朴素生活化教学著称。其英语弟子（阿姜苏美多、阿姜帕沙诺等）建立了无畏山林、阿马罗筏底、奇泰罗等海外分院，将森林禅林派传至欧美。代表名言："如果你少放下一点，你就少一点苦。"
 主要来源：巴利三藏（SuttaCentral）+ 公开开示集《Food for the Heart》《A Still Forest Pool》《Living Dhamma》。
-调用命令：`/ajahn-chah`
+调用命令：`/master-ajahn-chah`
 
 ---
 

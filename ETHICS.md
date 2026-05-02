@@ -80,7 +80,7 @@
 - *Stillness Flowing* (Aruna Publications, 2017)
 
 本项目对阿姜查 master 的收录规则：
-1. **不引用整段译文** —— 仅做`主旨摘要`，且明确标注为摘要性内容（参见 `prebuilt/ajahn-chah/sources/teachings-excerpts.md` 的 ⚠️ 引用警示节）
+1. **不引用整段译文** —— 仅做`主旨摘要`，且明确标注为摘要性内容（参见 `prebuilt/master-ajahn-chah/sources/teachings-excerpts.md` 的 ⚠️ 引用警示节）
 2. **不代笔虚构对话** —— 任何"阿姜查曾说 X"必须能在上述 4 部公开授权译本中追溯，由 SKILL.md HARD-GATE `NO FABRICATED QUOTES` 强制
 3. **核心教学概念依巴利经典** —— 戒定慧、三法印、四念处、出入息念等以 SuttaCentral 巴利原典为主源（公有领域）
 4. **若 Forest Sangha 任何官方机构提出异议，立即转入 takedown 流程**（详见 §6）
@@ -100,7 +100,7 @@
 - *A Discourse on Mālukyaputta Sutta / Dhammacakka Sutta / etc.* (BPS Sri Lanka 单经讲解集)
 
 本项目对马哈希尊者 master 的收录规则**与阿姜查同款**：
-1. **不引用整段译文** —— 仅做`主旨摘要`（参 `prebuilt/mahasi-sayadaw/sources/teachings-excerpts.md` 的 ⚠️ 引用警示节）
+1. **不引用整段译文** —— 仅做`主旨摘要`（参 `prebuilt/master-mahasi-sayadaw/sources/teachings-excerpts.md` 的 ⚠️ 引用警示节）
 2. **不代笔虚构对话** —— 任何"马哈希尊者曾说 X"必须能在上述出版物中追溯，由 SKILL.md HARD-GATE `NO FABRICATED QUOTES` 强制
 3. **核心禅修概念依巴利经典与《清净道论》** —— 四念处、出入息念、戒定慧、七清净十六观智等以 SuttaCentral + PTS Vism 为主源（公有领域）
 4. **额外特别 guardrail：NO_ATTAINMENT_JUDGMENT** —— AI **绝不可** 对个体作证果判定或观智阶位确认；这是马哈希教学体系特有最高 guardrail（其"初果可证"号召容易诱发自我印证之执，AI 必须严守此线）
@@ -150,10 +150,10 @@ Master-skill 是**文献辅助工具**，不是**修行权威**。以下行为 A
 - **三大传统之间**：汉传 / 藏传 / 南传。各传承皆是佛陀正法的不同面向，不论高下
 - **传统内宗派之间**：藏传四派（宁玛、萨迦、噶举、格鲁）；汉传八宗（天台、华严、禅、净、唯识、三论、律、密）；南传部派
 - **传统内禅修流派之间**（v0.5 新增明示）：上座部内观法 ——
-  - 缅甸 Mahasi 标记法（mahasi-sayadaw skill）
+  - 缅甸 Mahasi 标记法（master-mahasi-sayadaw skill）
   - 缅甸 Pa-Auk 止观次第法
   - Goenka / Vipassana International Academy 法
-  - 泰国森林禅林派（ajahn-chah skill）
+  - 泰国森林禅林派（master-ajahn-chah skill）
   - 各派契机不同、所重不同，AI **不得**做出"X 法更究竟 / 更直接 / 更快"等比较优劣判断
   
 此规则在每位 master 自身的 SKILL.md HARD-GATE 中以 NO_SECTARIAN_JUDGMENT 强制；本节为项目层面的总则。

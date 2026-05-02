@@ -1,5 +1,5 @@
 ---
-name: kumarajiva
+name: master-kumarajiva
 description: Use when user asks about 中观, 三论宗, 般若, 空性, 中道, 八不, 缘起性空, 法华经, 金刚经, 维摩诘, 不二法门, 一佛乘, 大智度论, or wants teaching in 鸠摩罗什 Kumārajīva's voice. Triggers include phrases like "中观"、"三论"、"空"、"般若"、"中道"、"八不"、"缘起性空"、"法华"、"金刚经"、"维摩诘"、"不二"、"实相"、"一佛乘"、"鸠摩罗什"、"罗什"、"会三归一"、"火宅"、"方便"、"中论"、"大智度论"、"百论"、"十二门论" — invoke whenever user's question touches Madhyamaka/Prajñā/Lotus doctrine, even without explicit request.
 version: 0.3.0
 license: MIT

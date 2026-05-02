@@ -25,6 +25,57 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ---
 
+## [0.6.0] — 2026-05-02
+
+**Slash command namespace cleanup — every master now invokable via `/master-<slug>` (was `/<slug>`).**
+
+When users have many skills installed in Claude Code (most do — 50+ in a typical setup), Buddhist master slash commands like `/atisha` and `/zhiyi` get scattered across the `/`-completion list and are hard to discover as a group. v0.6 prefixes all 14 master slash commands with `master-` so they cluster together under `/m<tab>` and clearly signal "this is a Master-skill master skill, not a generic slash command".
+
+### Breaking changes
+- **Slash commands renamed**: `/zhiyi` → `/master-zhiyi`, `/huineng` → `/master-huineng`, … all 14 masters affected. Existing automation, hotkeys, or aliases referencing the old names need updating.
+- **Directory layout renamed**: `prebuilt/<slug>/` → `prebuilt/master-<slug>/` for all 14 masters. Frontmatter `name:` field also updated. The `compare-masters` and `create-master` meta-skills are **unchanged** (they're already prefixed by their nature — no `/master-compare-masters` doublespeak).
+- **NPX installer accepts both forms**: `npx master-skill install zhiyi` (short) and `npx master-skill install master-zhiyi` (full) both work; the install destination is always `~/.claude/skills/master-<slug>/`. Backward-compatible uninstall handles legacy non-prefixed installs.
+
+### Why now
+- v0.5 just landed — the user base is essentially the maintainer + early adopters, so the breakage cost is at its lifetime minimum.
+- npm has not yet been published (NPM_TOKEN pending), so external consumers pulling from `npx master-skill@latest` will get v0.6 directly.
+- `fojin.app/chat` web frontend is **decoupled** from this rename: its master IDs in the dropdown stay as `atisha` / `huineng` / etc. (they're already grouped under "法师模式" and not at risk of conflict with other dropdowns). Backend `master_profiles.py` is unchanged. No fojin-side migration required.
+
+### Changed
+- All 14 master directories renamed (git mv preserves history).
+- Each `prebuilt/master-<slug>/SKILL.md` frontmatter `name:` updated to `master-<slug>`.
+- `prebuilt/compare/SKILL.md` master references and topic-mapping fallback table updated to use the new prefixed slugs (43 mentions).
+- `bin/cli.mjs`: `cmdInstall` / `cmdUninstall` now accept both short and full forms (resolveMasterDir helper). `showHelp` updated with v0.6+ usage examples.
+- `.github/workflows/validate-and-test.yml`: fidelity-smoke MASTERS rotation array updated to all 14 prefixed names (was 8 hardcoded汉传 only — now properly rotates across the full set).
+- `scripts/{validate,cite,query,test-fidelity}.py` `--master` argument help text examples updated.
+- All plugin manifests (`package.json`, `.claude-plugin/{plugin,marketplace}.json`, `.cursor-plugin/plugin.json`, `gemini-extension.json`) bumped to `0.6.0` with description noting the `/master-<slug>` invocation pattern.
+- `SKILL.md` (project-level) preset list with new slash names.
+- `README.md` + `README_EN.md`: situational guidance table, install snippets, and master cards updated.
+- `ETHICS.md` Tier tables: 4 slug references updated.
+
+### Migration for existing users
+If you have v0.4 or v0.5 installed via NPX:
+
+```bash
+# Remove old non-prefixed installs:
+npx master-skill@0.5 uninstall zhiyi huineng xuanzang ...
+# OR manually rm -rf ~/.claude/skills/<slug>/
+
+# Reinstall with v0.6:
+npx master-skill@latest install --all
+```
+
+Then start a new Claude Code session and use `/master-<slug>` for all invocations.
+
+### Validation
+- `python scripts/validate.py --strict` → ✅ 15 masters
+- `python scripts/validate-fidelity.py` → ✅ all valid
+- `pytest tests/` → ✅ 31 passed, 6 skipped
+- `node bin/cli.mjs list` → ✅ shows all 14 with `master-` prefix
+- `node bin/cli.mjs install zhiyi` and `node bin/cli.mjs install master-zhiyi` both resolve correctly
+
+---
+
 ## [0.5.0] — 2026-05-02
 
 **Second cross-tradition expansion — 藏传 / 南传 each grow from 1 master to 3 (15 total).**

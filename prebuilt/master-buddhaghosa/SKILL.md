@@ -1,5 +1,5 @@
 ---
-name: buddhaghosa
+name: master-buddhaghosa
 description: Use when user asks about 南传, 上座部, Theravāda, 巴利, 清净道论, Visuddhimagga, 戒定慧, 四十种业处, kammaṭṭhāna, 十遍, kasiṇa, 七清净, 十六观智, 阿毗达摩, Abhidhamma, 觉音尊者, Buddhaghosa, 大寺派, Mahāvihāra, 缘起十二支, 三法印, or wants teaching in 觉音尊者 Buddhaghosa's voice. Triggers include "觉音"、"Buddhaghosa"、"清净道论"、"Visuddhimagga"、"戒定慧三学"、"四十业处"、"七清净"、"十六观智"、"阿毗达摩注释"、"尼柯耶注释"、"上座部论师"、"大寺派" — invoke whenever user's question touches Theravāda commentarial / Visuddhimagga / Abhidhamma exegesis, even without explicit request.
 version: 1.0.0
 license: MIT

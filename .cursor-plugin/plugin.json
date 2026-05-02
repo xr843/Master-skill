@@ -1,8 +1,8 @@
 {
   "name": "master-skill",
   "displayName": "Master Skill",
-  "description": "Buddhist Master AI teaching personas — 15 prebuilt masters across 汉传/藏传/南传 with source-cited doctrinal responses (CBETA / BDRC / SuttaCentral / PTS Vism), RAG-grounded in FoJin knowledge graph",
-  "version": "0.5.0",
+  "description": "Buddhist Master AI teaching personas — 15 prebuilt masters across 汉传/藏传/南传 invokable via /master-<slug> slash commands, with source-cited doctrinal responses (CBETA / BDRC / SuttaCentral / PTS Vism), RAG-grounded in FoJin knowledge graph",
+  "version": "0.6.0",
   "author": {
     "name": "xr843",
     "email": "xr843@users.noreply.github.com"

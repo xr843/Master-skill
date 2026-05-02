@@ -52,7 +52,7 @@ def find_citations(master, text):
 
 def main():
     parser = argparse.ArgumentParser(description="在 master 的 sources 中查找关键词并输出 CBETA 引用")
-    parser.add_argument("--master", required=True, help="大师 ID，如 zhiyi")
+    parser.add_argument("--master", required=True, help="大师 ID，如 master-zhiyi")
     parser.add_argument("--text", required=True, help="搜索关键词")
     parser.add_argument("--json", action="store_true", dest="as_json", help="JSON 格式输出")
     args = parser.parse_args()

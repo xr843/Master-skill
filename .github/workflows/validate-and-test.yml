@@ -62,13 +62,16 @@ jobs:
         id: pick
         run: |
           # If the PR touches a specific prebuilt master, smoke-test that one.
-          # Otherwise rotate by day-of-year so coverage stays uniform across 8.
+          # Otherwise rotate by day-of-year so coverage stays uniform across all 14.
           BASE="${{ github.base_ref || 'main' }}"
           CHANGED=$(git diff --name-only "origin/${BASE}...HEAD" 2>/dev/null \
             | grep -oP 'prebuilt/\K[^/]+' | grep -v '^compare$' | head -n1 || true)
           if [ -z "$CHANGED" ]; then
-            MASTERS=(xuanzang kumarajiva huineng zhiyi fazang yinguang ouyi xuyun)
-            IDX=$(( $(date +%j) % 8 ))
+            MASTERS=(master-xuanzang master-kumarajiva master-huineng master-zhiyi \
+                     master-fazang master-yinguang master-ouyi master-xuyun \
+                     master-atisha master-tsongkhapa master-milarepa \
+                     master-buddhaghosa master-mahasi-sayadaw master-ajahn-chah)
+            IDX=$(( $(date +%j) % ${#MASTERS[@]} ))
             CHANGED=${MASTERS[$IDX]}
           fi
           echo "master=$CHANGED" >> "$GITHUB_OUTPUT"

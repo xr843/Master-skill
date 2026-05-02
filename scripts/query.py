@@ -54,7 +54,7 @@ def search(master, query, brief=False):
 
 def main():
     parser = argparse.ArgumentParser(description="离线检索 master 的 sources 和 references")
-    parser.add_argument("--master", required=True, help="大师 ID，如 zhiyi")
+    parser.add_argument("--master", required=True, help="大师 ID，如 master-zhiyi")
     parser.add_argument("--q", required=True, help="搜索关键词（空格分隔，OR 匹配）")
     parser.add_argument("--json", action="store_true", dest="as_json", help="JSON 格式输出")
     parser.add_argument("--brief", action="store_true", help="仅输出段标题和文件路径")
