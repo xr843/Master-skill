@@ -9,6 +9,8 @@
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/master-skill"><img src="https://img.shields.io/npm/v/master-skill.svg?label=npm&color=cb3837" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/master-skill"><img src="https://img.shields.io/npm/dm/master-skill.svg?color=cb3837" alt="npm downloads"></a>
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
   <img src="https://img.shields.io/badge/Python-3.9+-green.svg" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/Claude%20Code-Skill-purple.svg" alt="Claude Code Skill">
@@ -125,11 +127,20 @@ This project is built out of respect for Buddhist traditions. All content is gen
 
 ### Installation
 
-**NPX (recommended)**
+**NPX (recommended, no global state)**
 
 ```bash
 npx master-skill install --all    # Install all 15 masters
 npx master-skill list             # List available masters
+```
+
+**Global install (frequent use / offline-friendly)**
+
+```bash
+npm install -g master-skill            # Adds the binary to $PATH
+master-skill install master-zhiyi      # No more npx prefix
+master-skill list
+npm update -g master-skill             # Pull next minor / patch
 ```
 
 **Claude Code**

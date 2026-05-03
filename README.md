@@ -6,6 +6,8 @@
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/master-skill"><img src="https://img.shields.io/npm/v/master-skill.svg?label=npm&color=cb3837" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/master-skill"><img src="https://img.shields.io/npm/dm/master-skill.svg?color=cb3837" alt="npm downloads"></a>
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
   <img src="https://img.shields.io/badge/Python-3.9+-green.svg" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/Claude%20Code-Skill-purple.svg" alt="Claude Code Skill">
@@ -124,7 +126,7 @@
 
 ### 安装
 
-**NPX 一键安装（推荐）**
+**NPX 一键安装（推荐，无需常驻）**
 
 ```bash
 # 安装指定祖师
@@ -135,6 +137,15 @@ npx master-skill install --all
 
 # 查看可用祖师
 npx master-skill list
+```
+
+**全局安装（频繁使用 / 离线场景）**
+
+```bash
+npm install -g master-skill            # 一次性装到 $PATH
+master-skill install master-zhiyi      # 之后省掉 npx，直接调
+master-skill list
+npm update -g master-skill             # 升到下一个 minor / patch
 ```
 
 **Claude Code（插件方式）**
