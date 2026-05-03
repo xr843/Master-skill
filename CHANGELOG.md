@@ -11,6 +11,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 ## [Unreleased]
 
 ### Added
+- npm publish: `master-skill` package live on registry — `npm install -g master-skill` or `npx master-skill` now serves all three published versions (0.4.0 / 0.5.0 / 0.6.0). README badges added for npm version + monthly downloads.
 - `ETHICS.md` — AI transparency, copyright tier (A/B/C/D), religious boundary, dual-track content license, takedown channel.
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md` — community infrastructure.
 - `.github/ISSUE_TEMPLATE/` — bug report, feature request, new-master proposal, boundary-violation.
