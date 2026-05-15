@@ -61,7 +61,8 @@ jobs:
             // Reuse a single tracking issue: update the most recent open one and
             // close any older duplicates so the tracker doesn't accumulate.
             const existing = await github.paginate(github.rest.issues.listForRepo, {
-              owner, repo, state: 'open', labels: 'automated', per_page: 100,
+              owner, repo, state: 'open', labels: 'automated',
+              sort: 'created', direction: 'desc', per_page: 100,
             });
             // Match the marker, or (for pre-marker issues) the legacy title prefix.
             const tracked = existing.filter(i => !i.pull_request && (
