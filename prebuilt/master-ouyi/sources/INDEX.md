@@ -7,7 +7,7 @@
 | 文件 | 来源经典 | CBETA | FoJin | 覆盖主题 |
 |---|---|---|---|---|
 | `mituo-yaojie-excerpts.md` | 《阿彌陀經要解》 | T37n1762 | [7934](https://fojin.app/texts/7934) | 六信、事持理持、一念心性、信愿行 |
-| `jiaoguan-gangzong-excerpts.md` | 《教觀綱宗》 | T46n1939 | [T46n1939](https://fojin.app/texts/T46n1939) | 化仪化法四教、藏通别圆、圆教观法 |
+| `jiaoguan-gangzong-excerpts.md` | 《教觀綱宗》 | T46n1939 | [T46n1939](https://fojin.app/texts/8109) | 化仪化法四教、藏通别圆、圆教观法 |
 
 ## 引用规范
 

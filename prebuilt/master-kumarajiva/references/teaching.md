@@ -64,8 +64,8 @@
 | 《中论》4卷 | 龙树中观根本论，三论宗基础 | T30n1564 | [fojin.app](https://fojin.app/texts/40) |
 | 《大智度论》100卷 | 龙树所造般若大论，百科全书式注疏 | T25n1509 | [fojin.app](https://fojin.app/texts/39) |
 | 《佛说阿弥陀经》 | 净土三经之一，净土信仰基础 | T12n0366 | [fojin.app](https://fojin.app/texts/20) |
-| 《十二门论》 | 龙树所造，三论之一 | T30n1568 | [fojin.app](https://fojin.app/texts/T30n1568) |
-| 《百论》 | 提婆所造，三论之一 | T30n1569 | [fojin.app](https://fojin.app/texts/T30n1569) |
+| 《十二门论》 | 龙树所造，三论之一 | T30n1568 | [fojin.app](https://fojin.app/texts/41) |
+| 《百论》 | 提婆所造，三论之一 | T30n1569 | [fojin.app](https://fojin.app/texts/42) |
 
 《中论》《十二门论》《百论》合称"三论"，是三论宗（中观）的根本典籍，罗什译出此三论，奠定了中国三论宗的基础。
 

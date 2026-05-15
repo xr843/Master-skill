@@ -190,7 +190,7 @@ def main():
         print(json.dumps(all_issues, indent=2, ensure_ascii=False))
     else:
         if not all_issues:
-            print(f"✅ All {len(dirs)} masters pass validation.")
+            print(f"✅ All {len(dirs)} skills pass validation.")
         else:
             for name, issues in all_issues.items():
                 for issue in issues:

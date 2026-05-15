@@ -26,7 +26,7 @@
 
 <p align="center">
   <strong>AI learning companions modeled after historical Buddhist masters across three traditions</strong><br>
-  15 pre-built masters · 汉传 / 藏传 / 南传 cross-tradition · CBETA / BDRC / SuttaCentral / PTS Vism citations · AgentSkills Standard
+  14 pre-built masters · 汉传 / 藏传 / 南传 cross-tradition · CBETA / BDRC / SuttaCentral / PTS Vism citations · AgentSkills Standard
 </p>
 
 <p align="center">
@@ -47,7 +47,7 @@
 
 ### 👉 [Open fojin.app/chat](https://fojin.app/chat)
 
-On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bottom-left and pick one of the 15 pre-built masters across three traditions to start chatting.
+On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bottom-left and pick one of the 14 pre-built masters across three traditions to start chatting.
 
 - No install, no signup
 - `/compare-masters` multi-master comparison works across traditions too
@@ -81,7 +81,7 @@ On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bo
 > - **NPX installer**: both `npx master-skill install zhiyi` (short) and `install master-zhiyi` (full) work; install destination is always `~/.claude/skills/master-<slug>/`.
 > - See [CHANGELOG.md §0.6.0](CHANGELOG.md#060--2026-05-02) for full details.
 >
-> **v0.5 Update (2026-05-02)**: Second cross-tradition expansion — Tibetan and Theravāda each grow from 1 master to 3. Total **15 masters**.
+> **v0.5 Update (2026-05-02)**: Second cross-tradition expansion — Tibetan and Theravāda each grow from 1 master to 3. Total **14 masters**.
 > - 藏传 added: Atiśa (Kadam founder · Toh 4465 *Bodhipathapradīpa* · three scopes) + Tsongkhapa (Gelug founder · three principal aspects · Madhyamaka prasaṅgika)
 > - 南传 added: Buddhaghosa (commentarial summit · *Visuddhimagga*) + Mahasi Sayadaw (Burmese vipassanā · noting method · ETHICS Tier B special case)
 > - HARD-GATE strengthened: Mahasi Sayadaw specifically gets `NO_ATTAINMENT_JUDGMENT` (AI must not confirm any individual's stage of insight)
@@ -105,7 +105,7 @@ This project is built out of respect for Buddhist traditions. All content is gen
 
 ## Features
 
-- **15 pre-built masters across three traditions**: 8 汉传 (Yogācāra, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, cross-tradition) + 3 藏传 (Kadam · Atiśa; Gelug · Tsongkhapa; Kagyu · Milarepa) + 3 南传 (Theravāda commentator · Buddhaghosa; Burmese vipassanā · Mahasi Sayadaw; Thai Forest · Ajahn Chah) — ready to use out of the box
+- **14 pre-built masters across three traditions**: 8 汉传 (Yogācāra, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, cross-tradition) + 3 藏传 (Kadam · Atiśa; Gelug · Tsongkhapa; Kagyu · Milarepa) + 3 南传 (Theravāda commentator · Buddhaghosa; Burmese vipassanā · Mahasi Sayadaw; Thai Forest · Ajahn Chah) — plus a `compare-masters` multi-master comparison meta-skill, ready to use out of the box
 - **Provenance enforcement**: Every master ships with authoritative source IDs (CBETA / BDRC / SuttaCentral) and FoJin text IDs in frontmatter; every doctrinal claim must carry a scriptural citation
 - **Offline source passages**: `sources/` captures key passages from each master's core canon, so citations still work when FoJin is unreachable
 - **Progressive disclosure**: SKILL.md is a decision tree + quick reference; `references/` and `sources/` are loaded on demand to keep context lean
@@ -130,7 +130,7 @@ This project is built out of respect for Buddhist traditions. All content is gen
 **NPX (recommended, no global state)**
 
 ```bash
-npx master-skill install --all    # Install all 15 masters
+npx master-skill install --all    # Install all 14 masters
 npx master-skill list             # List available masters
 ```
 
