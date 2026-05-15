@@ -46,15 +46,46 @@ jobs:
             const output = fs.readFileSync('verify_output.txt', 'utf8');
             const failed = '${{ steps.verify.outputs.failed }}';
             const updates = '${{ steps.verify.outputs.updates }}';
+            const { owner, repo } = context.repo;
+            const marker = '<!-- verify-fojin-links -->';
 
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `[Weekly] FoJin links need update — ${updates} URLs, ${failed} missing`,
-              body: `Automated weekly link verification found changes.\n\n` +
-                    `- **URL replacements needed:** ${updates}\n` +
-                    `- **CBETA IDs not found in FoJin:** ${failed}\n\n` +
-                    `## Full output\n\n\`\`\`\n${output}\n\`\`\`\n\n` +
-                    `Run \`python3 tools/verify_sources.py --fix\` locally and commit the changes.`,
-              labels: ['maintenance', 'automated']
+            const title = `[Weekly] FoJin links need update — ${updates} URLs, ${failed} missing`;
+            const body = `${marker}\n` +
+                  `Automated weekly link verification found changes.\n\n` +
+                  `- **URL replacements needed:** ${updates}\n` +
+                  `- **CBETA IDs not found in FoJin:** ${failed}\n` +
+                  `- **Last run:** ${new Date().toISOString()}\n\n` +
+                  `## Full output\n\n\`\`\`\n${output}\n\`\`\`\n\n` +
+                  `Run \`python3 tools/verify_sources.py --fix\` locally and commit the changes.`;
+
+            // Reuse a single tracking issue: update the most recent open one and
+            // close any older duplicates so the tracker doesn't accumulate.
+            const existing = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', labels: 'automated', per_page: 100,
             });
+            // Match the marker, or (for pre-marker issues) the legacy title prefix.
+            const tracked = existing.filter(i => !i.pull_request && (
+              (i.body || '').includes(marker) ||
+              i.title.startsWith('[Weekly] FoJin links need update')
+            ));
+
+            if (tracked.length === 0) {
+              await github.rest.issues.create({
+                owner, repo, title, body, labels: ['maintenance', 'automated'],
+              });
+            } else {
+              const [keep, ...stale] = tracked;
+              await github.rest.issues.update({
+                owner, repo, issue_number: keep.number, title, body,
+              });
+              for (const dup of stale) {
+                await github.rest.issues.update({
+                  owner, repo, issue_number: dup.number, state: 'closed',
+                  state_reason: 'not_planned',
+                });
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: dup.number,
+                  body: `Superseded by #${keep.number} — consolidating into a single link-verification tracker.`,
+                });
+              }
+            }

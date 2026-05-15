@@ -23,7 +23,7 @@
 
 <p align="center">
   <strong>依据三大佛教传统祖师大德的教学风格，通达 AI 学习伙伴</strong><br>
-  15 位祖师 · 汉传 / 藏传 / 南传跨传统 · CBETA / BDRC / SuttaCentral / PTS Vism 真实出处 · AgentSkills 标准
+  14 位祖师 · 汉传 / 藏传 / 南传跨传统 · CBETA / BDRC / SuttaCentral / PTS Vism 真实出处 · AgentSkills 标准
 </p>
 
 <p align="center">
@@ -44,7 +44,7 @@
 
 ### 👉 [打开 fojin.app/chat](https://fojin.app/chat)
 
-在 AI 问答页面左下角点击「法师模式」，从 15 位三大传统祖师中选一位即可开始对话。
+在 AI 问答页面左下角点击「法师模式」，从 14 位三大传统祖师中选一位即可开始对话。
 
 - 无需安装、无需注册
 - 所有 `/compare-masters` 多祖师对比功能同样可用（含跨传统对比）
@@ -78,7 +78,7 @@
 > - **NPX 安装**：`npx master-skill install zhiyi`（短）和 `install master-zhiyi`（全）皆可，安装目标统一为 `~/.claude/skills/master-<slug>/`
 > - 详情见 [CHANGELOG.md §0.6.0](CHANGELOG.md#060--2026-05-02)
 >
-> **v0.5 更新（2026-05-02）**：第二轮跨传统扩展——藏传 / 南传各从 1 位扩至 3 位，共 **15 位**祖师。
+> **v0.5 更新（2026-05-02）**：第二轮跨传统扩展——藏传 / 南传各从 1 位扩至 3 位，共 **14 位**祖师。
 > - 藏传新增：阿底峡尊者（噶当派开祖 · Toh 4465《菩提道灯论》· 三士道）+ 宗喀巴大师（格鲁派创始人 · 三主要道 · 应成中观正见）
 > - 南传新增：觉音尊者（《清净道论》Visuddhimagga 论师顶峰）+ 马哈希尊者（缅甸内观 · 标记法 · ETHICS Tier B 特例）
 > - HARD-GATE 强化：马哈希尊者特别 `NO_ATTAINMENT_JUDGMENT`（AI 不得对个体作证果判定）
@@ -104,7 +104,7 @@
 
 ## 特性
 
-- **预置十五位三大传统祖师**：8 位汉传（唯识、中观、禅、天台、华严、净土、跨宗派）+ 3 位藏传（阿底峡 · 噶当；宗喀巴 · 格鲁；米拉日巴 · 噶举）+ 3 位南传（觉音 · 上座部论师；马哈希 · 缅甸内观；阿姜查 · 泰国森林）—— 开箱即用
+- **预置十四位三大传统祖师**：8 位汉传（唯识、中观、禅、天台、华严、净土、跨宗派）+ 3 位藏传（阿底峡 · 噶当；宗喀巴 · 格鲁；米拉日巴 · 噶举）+ 3 位南传（觉音 · 上座部论师；马哈希 · 缅甸内观；阿姜查 · 泰国森林）—— 另含 `compare-masters` 多祖师对比 meta-skill，开箱即用
 - **经文溯源（Provenance）**：每位祖师附原典标识（CBETA / BDRC / SuttaCentral）+ FoJin text ID，所有教义断言强制附原典引证
 - **离线经文片段**：`sources/` 目录收录核心经典关键段落，FoJin 不可用时仍可离线引用
 - **渐进式披露**：SKILL.md 以决策树 + Quick Ref 为主，`references/`、`sources/` 按需加载，Context 随查随取
@@ -132,7 +132,7 @@
 # 安装指定祖师
 npx master-skill install master-zhiyi master-fazang master-huineng
 
-# 安装全部 15 位（三大传统）
+# 安装全部 14 位（三大传统）
 npx master-skill install --all
 
 # 查看可用祖师
