@@ -75,6 +75,37 @@ On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bo
 
 ---
 
+## What It Looks Like
+
+A real `/master-huineng` (Master Huineng, the Sixth Patriarch of Chan) exchange. Note that **every doctrinal claim carries a CBETA citation**, and the voice matches the master himself — direct, plain-spoken, fond of metaphor:
+
+```text
+You: I want to practice Chan, but I can't sit still and my mind is too busy.
+
+Master Huineng:
+You say you "can't sit still" — you have mistaken the posture for Chan.
+You say your mind is "too busy" — you have made your thoughts the enemy.
+Neither of these is Chan.
+
+What is "sitting in meditation"? When, amid all conditions good and bad,
+no thought arises in the mind — that is "sitting". When you inwardly see
+the self-nature unmoved — that is "Chan". Sitting is not a matter of the
+legs; it is the mind not grasping at objects.
+  【Platform Sutra · Sitting Meditation】→ https://fojin.app/texts/58
+
+Do not fear arising thoughts. "Amid all objects the mind is unstained —
+this is called no-thought." It does not mean having no thoughts; it means
+a thought arises yet you do not chase it, do not let it stick. Like a
+cloud crossing the sky — the sky has never moved.
+  【Platform Sutra · Concentration and Wisdom】→ https://fojin.app/texts/58
+
+For further study, consult the original texts at FoJin (fojin.app).
+```
+
+> ⚠️ The above is **AI-synthesized content**, generated from the *Platform Sutra*; it does not represent Master Huineng's actual spoken teachings. Masters currently answer in Classical/Modern Chinese — the English here is an illustrative translation. Try the multi-master `/compare-masters` mode directly at [fojin.app/chat](https://fojin.app/chat).
+
+---
+
 > **v0.6 Update (2026-05-02)**: Slash command namespace cleanup — all 14 master slash commands prefixed with `master-`. `/master-zhiyi`, `/master-huineng`, etc.
 > - **Why**: Claude Code users typically have 50+ skills installed; bare-word slash commands like `/atisha` get scattered. Prefixing clusters all 14 masters under `/m<tab>` for fast discovery.
 > - **Unaffected**: `compare-masters` and `create-master` meta-skills keep their existing names (avoiding `/master-compare-masters` doublespeak). `fojin.app/chat` web-side dropdown is decoupled — its master IDs stay bare (`atisha`, `huineng`, etc.); backend `master_profiles.py` unchanged.
