@@ -7,12 +7,14 @@ on:
       - 'scripts/**'
       - 'prompts/**'
       - 'tools/**'
+      - '.github/workflows/validate-and-test.yml'
   pull_request:
     paths:
       - 'prebuilt/**'
       - 'scripts/**'
       - 'prompts/**'
       - 'tools/**'
+      - '.github/workflows/validate-and-test.yml'
   workflow_dispatch:
   schedule:
     # Weekly full fidelity sweep — Mondays 04:00 UTC. Per-PR CI only runs a
