@@ -21,7 +21,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - `package.json`: `engines.node`, `scripts.test`, `scripts.validate`, `publishConfig`.
 
 ### Ethics
-- Establish copyright tiers A–D; current 8 prebuilt masters confirmed Tier A (Public Domain in CN/TW as of 2026).
+- Establish copyright tiers A–D. Of the 14 prebuilt masters: **12 confirmed Tier A** (Public Domain in CN/TW as of 2026 — all 8 汉传 + 3 藏传 + Buddhaghosa), and **2 admitted as Tier B special-exception cases** (Ajahn Chah, Mahasi Sayadaw — summary-only, no full-translation quotes, non-profit teaching use, 24h takedown). See `ETHICS.md §2` for the per-master tier table.
 - Declare dual-track content licensing: code MIT, master content CC BY-NC-SA 4.0, prompts CC BY 4.0.
 
 ---
