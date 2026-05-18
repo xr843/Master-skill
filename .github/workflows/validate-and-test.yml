@@ -8,13 +8,13 @@ on:
       - 'prompts/**'
       - 'tools/**'
       - '.github/workflows/validate-and-test.yml'
+  # No paths: filter on pull_request — the "Validate" and "Fidelity smoke"
+  # jobs are branch-protection-required checks, so they must run on EVERY
+  # PR. A paths filter would skip them on docs/config-only PRs, leaving the
+  # required checks permanently pending and the PR unmergeable without an
+  # admin override. The validate job is pure structural validation (~9s, no
+  # API calls); running it on every PR is cheap.
   pull_request:
-    paths:
-      - 'prebuilt/**'
-      - 'scripts/**'
-      - 'prompts/**'
-      - 'tools/**'
-      - '.github/workflows/validate-and-test.yml'
   workflow_dispatch:
   schedule:
     # Weekly full fidelity sweep — Mondays 04:00 UTC. Per-PR CI only runs a
