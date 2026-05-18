@@ -139,7 +139,7 @@
 - **渐进式披露**：SKILL.md 以决策树 + Quick Ref 为主，`references/`、`sources/` 按需加载，Context 随查随取
 - **HARD-GATE 铁律**：`/create-master` 与预置法师内置红线——无 CBETA 引证的教义断言不得写入、不得捏造经号、不得为虚构人物建角色
 - **二阶段独立审查**：生成管线在写入前强制经过"教义准确性 → 风格一致性"两轮独立审查，FAIL 自动修复最多 2 轮
-- **自动化保真度测试**：每位祖师 `tests/fidelity.jsonl` 5 条 Q&A，验证引用和关键词覆盖；CI 在每次推送时 dry-run 验证
+- **自动化保真度测试**：每位祖师 `tests/fidelity.jsonl` 10+ 条 Q&A（`compare-masters` 元技能 18 条），验证引用和关键词覆盖；CI 在每次推送时 dry-run 验证
 - **多平台统一插件**：Claude Code、Cursor、Codex CLI、OpenCode、Gemini CLI 共用一份 `prebuilt/`，session-start hook 跨平台注入法师列表
 - **NPX 一键安装**：`npx master-skill install master-zhiyi` 直接部署到 Claude Code
 - **离线工具链**：`scripts/cite.py`（CBETA 引用查询）、`scripts/query.py`（离线语义检索）、`scripts/validate.py`（frontmatter linter）

@@ -142,7 +142,7 @@ This project is built out of respect for Buddhist traditions. All content is gen
 - **Progressive disclosure**: SKILL.md is a decision tree + quick reference; `references/` and `sources/` are loaded on demand to keep context lean
 - **HARD-GATE discipline**: Both `/create-master` and every prebuilt master embed hard rules — no unverified CBETA ID, no uncited doctrinal claim, no fictional personas
 - **Two-stage independent review**: The generation pipeline forces a "doctrinal accuracy → voice consistency" review before write; FAIL triggers up to 2 rounds of automatic repair
-- **Automated fidelity tests**: Each master's `tests/fidelity.jsonl` holds 5+ Q&A samples validating citations and keyword coverage; CI runs a dry-run on every push
+- **Automated fidelity tests**: Each master's `tests/fidelity.jsonl` holds 10+ Q&A samples (the `compare-masters` meta-skill holds 18) validating citations and keyword coverage; CI runs a dry-run on every push
 - **Unified multi-platform plugin**: Claude Code, Cursor, Codex CLI, OpenCode, and Gemini CLI share one `prebuilt/` tree, with a session-start hook injecting the master list on every platform
 - **NPX one-shot install**: `npx master-skill install master-zhiyi` drops skills straight into Claude Code
 - **Offline toolchain**: `scripts/cite.py` (CBETA lookup), `scripts/query.py` (offline semantic search), `scripts/validate.py` (frontmatter linter)
