@@ -1,6 +1,6 @@
 ---
 name: master-curriculum
-description: Use when user asks for a sequenced learning path within a Buddhist tradition — 学修次第, 先学什么, 从哪入门, 下一步读什么, curriculum, 学习计划, 路径推荐. Differs from /compare-masters (parallel opinion) and /master-debate (adversarial dialectic) by being纵向 / 时序: stage-by-stage plan keyed on tradition × level (L0-L3) → foundation → intermediate → advanced + blind spots. Trigger is planning intent — "禅宗对比" goes to /compare-masters; "禅宗从哪开始学" goes here.
+description: Use when user asks for a sequenced learning path within a Buddhist tradition — 学修次第, 先学什么, 从哪入门, 下一步读什么, curriculum, 学习计划, 路径推荐. Differs from /compare-masters (parallel opinion) and /master-debate (adversarial dialectic) by being 纵向 / 时序: stage-by-stage plan keyed on tradition × level (L0-L3) → foundation → intermediate → advanced + blind spots. Trigger is planning intent — "禅宗对比" goes to /compare-masters; "禅宗从哪开始学" goes here.
 version: 0.7.0
 license: MIT
 kind: meta-skill
@@ -30,6 +30,10 @@ verified_at: 2026-06-06
 ### 优先级 2 — 关键词匹配
 
 从用户输入抽取关键词，匹配每份 reference 顶部的 `## 触发关键词` 列表，取最高分。若用户说"什么传统都行 / 综合理论"，按 keyword density 给一份**默认推荐**而非平均加载。
+
+### 优先级 3 — 兜底（无 reference 命中）
+
+若全部 reference 关键词分数均为 0（典型例：噶举 / 米拉日巴 / 真言宗 / 黄檗 / 等暂未提供路径的传统），**不要**用任何 reference。明确告诉用户本传统尚无 curriculum 路径，并建议改用对应单 master skill（如 `/master-milarepa`）或先 `/compare-masters` 横向了解后再选定方向。禁止套用错误传统的路径。
 
 ## 输入收集（缺则反问）
 
