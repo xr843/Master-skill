@@ -1,6 +1,6 @@
 ---
 name: master-curriculum
-description: Use when user explicitly asks for a sequenced learning path within a Buddhist tradition — keywords like 学修次第, 先学什么, 从哪入门, 下一步读什么, curriculum, 学习计划, 路径推荐, 想学 X 但不知从哪开始. Differs from /compare-masters (parallel single-shot opinion) and /master-debate (adversarial dialectic) by being纵向 / 时序: stage-by-stage plan keyed on tradition × current level (L0-L3) → foundation → intermediate → advanced + likely blind spots. Trigger is the planning intent, not the topic alone — bare "禅宗对比" goes to /compare-masters; "禅宗从哪开始学" goes here.
+description: Use when user asks for a sequenced learning path within a Buddhist tradition — 学修次第, 先学什么, 从哪入门, 下一步读什么, curriculum, 学习计划, 路径推荐. Differs from /compare-masters (parallel opinion) and /master-debate (adversarial dialectic) by being纵向 / 时序: stage-by-stage plan keyed on tradition × level (L0-L3) → foundation → intermediate → advanced + blind spots. Trigger is planning intent — "禅宗对比" goes to /compare-masters; "禅宗从哪开始学" goes here.
 version: 0.7.0
 license: MIT
 kind: meta-skill
