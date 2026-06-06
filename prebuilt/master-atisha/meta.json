@@ -89,5 +89,8 @@
       "藏地后弘期",
       "phyi dar"
     ]
-  }
+  },
+  "cross_critique": [
+    { "target_master": "huineng", "position": "对禅宗顿悟：顿入心性诚为上根所行；然依止善知识、暇满业果须先建立；不立三士道径求自性，恐落空知见。", "citation": "Toh:4465" }
+  ]
 }
