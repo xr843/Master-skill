@@ -1,7 +1,7 @@
 {
   "name": "master-skill",
   "description": "Buddhist Master AI teaching personas — 14 prebuilt masters across 汉传/藏传/南传 plus 3 teaching meta-skills (compare-masters / master-debate / master-curriculum), invokable via /master-<slug> slash commands, with source-cited doctrinal responses (CBETA / BDRC / SuttaCentral / PTS Vism), RAG-grounded in FoJin knowledge graph",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "author": {
     "name": "xr843",
     "email": "xr843@users.noreply.github.com"

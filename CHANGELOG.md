@@ -26,6 +26,24 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ---
 
+## [0.7.1] — 2026-06-06
+
+### Added
+- `cross_critique` field on 10 master `meta.json` files — 16 doctrinal entries covering all 8 canonical debate pairs bidirectionally. Each entry is `{target_master, position, citation}` where citation must be in the master's own `sources[].id`.
+- `scripts/validate-cross-critique.py` — offline CI gate enforcing structure + citation reality + 8-pair coverage. 10 unit tests.
+- `prebuilt/master-debate/SKILL.md`: new 「批判点注入」 section instructing runtime to inject `cross_critique` entries into R1-R4 turns when present.
+
+### Changed
+- Version bump 0.7.0 → 0.7.1 across `package.json` + 4 plugin manifests.
+
+### Not Changed
+- master-debate 4 轮结构 / 输出框架 / 硬约束 全部不动
+- master-curriculum / compare-masters 不动
+- 单 master SKILL.md / references / sources / tests 全部不动
+- 不触发 npm publish（NPM_TOKEN 仍待重签）
+
+---
+
 ## [0.7.0] — 2026-06-06
 
 ### Added
