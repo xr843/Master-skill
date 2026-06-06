@@ -48,7 +48,7 @@
 On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bottom-left and pick one of the 15 pre-built masters across three traditions to start chatting.
 
 - No install, no signup
-- `/compare-masters` multi-master comparison works across traditions too
+- Three teaching modes available: `/compare-masters` (side-by-side comparison), `/master-debate` (4-round dialectic), `/master-curriculum` (time-sequenced study path) — all cross-tradition
 - Live citation retrieval backed by FoJin's 503 sources and 678K+ semantic embeddings
 - Every answer carries an authoritative source ID (CBETA for 汉传, BDRC for 藏传, SuttaCentral for 南传)
 
@@ -67,7 +67,7 @@ On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bo
 | "I want a complete graduated path of practice" | `/master-atisha` `/master-tsongkhapa` (Kadam three scopes → Gelug Lamrim) |
 | "I want the systematic Theravāda commentarial framework" | `/master-buddhaghosa` (*Visuddhimagga* — sīla / samādhi / paññā + 7 purifications · 16 insight knowledges) |
 | "I want intensive vipassanā with the noting method" | `/master-mahasi-sayadaw` (Burmese · noting · rising-falling) |
-| "I want a cross-tradition perspective" | `/compare-masters` (auto-pairs 汉/藏/南 voices) |
+| "I want a cross-tradition perspective" | `/compare-masters` (auto-pairs 汉/藏/南 voices) · `/master-debate` (adversarial dialectic) · `/master-curriculum` (study path by tradition) |
 
 > Developers and Claude Code / Cursor users should skip to [Developer Installation](#developer-installation) to use the masters as terminal AgentSkills.
 
@@ -179,9 +179,13 @@ In any AgentSkills-compatible environment (Claude Code / Cursor / Codex CLI / Op
 /master-ajahn-chah     — Ajahn Chah (Thai Forest Tradition · Wat Pah Pong · 1918-1992)
 ```
 
-### Compare Masters
+### Teaching Modes (v0.7)
 
-Ask the same question to 2-3 masters in parallel and surface the differences between traditions:
+- **`/compare-masters`** — multiple masters answer the same question side-by-side (horizontal, single-turn)
+- **`/master-debate`** — masters from different traditions engage in a 4-round adversarial dialectic (claim → rebut → respond → synthesize + remaining disagreements)
+- **`/master-curriculum`** — given your target tradition and current level (L0-L3), get a time-sequenced study path (foundation → intermediate → advanced + likely blind spots)
+
+**`/compare-masters` usage examples:**
 
 ```
 # Auto-pick relevant masters
