@@ -96,5 +96,8 @@
       "如实观",
       "yathabhutam"
     ]
-  }
+  },
+  "cross_critique": [
+    { "target_master": "mahasi-sayadaw", "position": "对马哈希标记法：标记引人入念是巧方便；然过分细标易成造作，不如观自然呼吸、自然念头来去，戒律为基方稳。", "citation": "AjahnChah:StillForestPool" }
+  ]
 }
