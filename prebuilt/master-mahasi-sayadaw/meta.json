@@ -115,5 +115,8 @@
       "IMS",
       "缅甸内观禅"
     ]
-  }
+  },
+  "cross_critique": [
+    { "target_master": "ajahn-chah", "position": "对森林禅：自然观察殊胜，然初学者无所依易散乱；标记法令心住于所缘，使念念分明、十六观智次第现起。", "citation": "Mahasi:ManualOfInsight" }
+  ]
 }
