@@ -87,5 +87,11 @@
       "q": "读经和参禅哪个更重要？六祖不识字怎么讲法？",
       "why": "历史上反复被问的问题，直接听当事人的答案"
     }
+  ],
+  "cross_critique": [
+    { "target_master": "yinguang", "position": "对净土：本性弥陀，唯心净土；念佛不离自心，即心见佛，何须外求？以无心为有心是诳。", "citation": "T48n2008" },
+    { "target_master": "zhiyi", "position": "对天台：判教为方便引摄初机；然观心一念已具三千，何须开权？顿入直指即是究竟，不假阶级。", "citation": "T48n2008" },
+    { "target_master": "tsongkhapa", "position": "对应成：分判应成自续，破立有所皆是名言假施设；离破立处即真见，何须辨了不了义？", "citation": "T48n2008" },
+    { "target_master": "atisha", "position": "对噶当：下中上次第为初机方便；若识自本心，三士不二，烦恼即菩提。本来无次第，何处立三士？", "citation": "T48n2008" }
   ]
 }
