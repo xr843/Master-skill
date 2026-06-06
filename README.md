@@ -6,6 +6,8 @@
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/master-skill"><img src="https://img.shields.io/npm/v/master-skill.svg?label=npm&color=cb3837" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/master-skill"><img src="https://img.shields.io/npm/dm/master-skill.svg?color=cb3837" alt="npm downloads"></a>
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
   <img src="https://img.shields.io/badge/Python-3.9+-green.svg" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/Claude%20Code-Skill-purple.svg" alt="Claude Code Skill">
@@ -21,7 +23,7 @@
 
 <p align="center">
   <strong>依据三大佛教传统祖师大德的教学风格，通达 AI 学习伙伴</strong><br>
-  15 位祖师 · 汉传 / 藏传 / 南传跨传统 · CBETA / BDRC / SuttaCentral / PTS Vism 真实出处 · AgentSkills 标准
+  14 位祖师 · 汉传 / 藏传 / 南传跨传统 · CBETA / BDRC / SuttaCentral / PTS Vism 真实出处 · AgentSkills 标准
 </p>
 
 <p align="center">
@@ -42,7 +44,7 @@
 
 ### 👉 [打开 fojin.app/chat](https://fojin.app/chat)
 
-在 AI 问答页面左下角点击「法师模式」，从 15 位三大传统祖师中选一位即可开始对话。
+在 AI 问答页面左下角点击「法师模式」，从 14 位三大传统祖师中选一位即可开始对话。
 
 - 无需安装、无需注册
 - 三种教学模式均可用：`/compare-masters` 多祖师对比、`/master-debate` 祖师辩论、`/master-curriculum` 学修路径（含跨传统）
@@ -70,13 +72,42 @@
 
 ---
 
+## 效果示例
+
+下面是一次真实的 `/master-huineng`（慧能大师）问答——注意每个教义断言都附 CBETA 经证，且回答风格贴合祖师本人（直指、平实、善用譬喻）：
+
+```text
+你：我想参禅但坐不住、念头太多，该怎么办？
+
+慧能大师：
+你说「坐不住」，是把坐姿当成了禅；你说「念头太多」，是把念头当成了
+敌人。这两样都不是禅。
+
+何名坐禅？外于一切善恶境界，心念不起，名为「坐」；内见自性不动，名
+为「禅」。坐不是腿的事，是心于境上不起执的事。
+  【《六祖大师法宝坛经·坐禅品》】→ https://fojin.app/texts/58
+
+念头来了不必怕。「于诸境上心不染，曰无念」——不是要你没有念头，是念
+起而不随它跑、不被它粘住。如云过空，空不曾动。
+  【《六祖大师法宝坛经·定慧品》】→ https://fojin.app/texts/58
+
+所以不要和念头打仗。你一对治，就又添一个念。但看念起念灭，知它无
+住，它自然歇。
+
+如需深入学习，可在 FoJin (fojin.app) 查阅原典。
+```
+
+> ⚠️ 以上为 **AI 合成内容**，依据《坛经》文献生成，不代表慧能大师亲口开示。多位法师并列回答的 `/compare-masters` 效果，可直接在 [fojin.app/chat](https://fojin.app/chat) 体验。
+
+---
+
 > **v0.6 更新（2026-05-02）**：Slash 命令命名空间整理——14 位法师斜杠命令统一加 `master-` 前缀。`/master-zhiyi`、`/master-huineng`、…。
 > - **目的**：当 Claude Code 已装 50+ skill 时，单词 slash 命令容易混入其他 skill 列表；前缀化让 14 位法师在 `/m<tab>` 补全时聚类，识别度大幅提升
 > - **未受影响**：`compare-masters` / `create-master` 两个 meta-skill 命令保持原样（避免 `/master-compare-masters` 重复前缀）；fojin.app/chat 网页端 dropdown 与 API 完全解耦，**`master_profiles.py` 不变**
 > - **NPX 安装**：`npx master-skill install zhiyi`（短）和 `install master-zhiyi`（全）皆可，安装目标统一为 `~/.claude/skills/master-<slug>/`
 > - 详情见 [CHANGELOG.md §0.6.0](CHANGELOG.md#060--2026-05-02)
 >
-> **v0.5 更新（2026-05-02）**：第二轮跨传统扩展——藏传 / 南传各从 1 位扩至 3 位，共 **15 位**祖师。
+> **v0.5 更新（2026-05-02）**：第二轮跨传统扩展——藏传 / 南传各从 1 位扩至 3 位，共 **14 位**祖师。
 > - 藏传新增：阿底峡尊者（噶当派开祖 · Toh 4465《菩提道灯论》· 三士道）+ 宗喀巴大师（格鲁派创始人 · 三主要道 · 应成中观正见）
 > - 南传新增：觉音尊者（《清净道论》Visuddhimagga 论师顶峰）+ 马哈希尊者（缅甸内观 · 标记法 · ETHICS Tier B 特例）
 > - HARD-GATE 强化：马哈希尊者特别 `NO_ATTAINMENT_JUDGMENT`（AI 不得对个体作证果判定）
@@ -102,13 +133,13 @@
 
 ## 特性
 
-- **预置十五位三大传统祖师**：8 位汉传（唯识、中观、禅、天台、华严、净土、跨宗派）+ 3 位藏传（阿底峡 · 噶当；宗喀巴 · 格鲁；米拉日巴 · 噶举）+ 3 位南传（觉音 · 上座部论师；马哈希 · 缅甸内观；阿姜查 · 泰国森林）—— 开箱即用
+- **预置十四位三大传统祖师**：8 位汉传（唯识、中观、禅、天台、华严、净土、跨宗派）+ 3 位藏传（阿底峡 · 噶当；宗喀巴 · 格鲁；米拉日巴 · 噶举）+ 3 位南传（觉音 · 上座部论师；马哈希 · 缅甸内观；阿姜查 · 泰国森林）—— 另含 `compare-masters` 多祖师对比 meta-skill，开箱即用
 - **经文溯源（Provenance）**：每位祖师附原典标识（CBETA / BDRC / SuttaCentral）+ FoJin text ID，所有教义断言强制附原典引证
 - **离线经文片段**：`sources/` 目录收录核心经典关键段落，FoJin 不可用时仍可离线引用
 - **渐进式披露**：SKILL.md 以决策树 + Quick Ref 为主，`references/`、`sources/` 按需加载，Context 随查随取
 - **HARD-GATE 铁律**：`/create-master` 与预置法师内置红线——无 CBETA 引证的教义断言不得写入、不得捏造经号、不得为虚构人物建角色
 - **二阶段独立审查**：生成管线在写入前强制经过"教义准确性 → 风格一致性"两轮独立审查，FAIL 自动修复最多 2 轮
-- **自动化保真度测试**：每位祖师 `tests/fidelity.jsonl` 5 条 Q&A，验证引用和关键词覆盖；CI 在每次推送时 dry-run 验证
+- **自动化保真度测试**：每位祖师 `tests/fidelity.jsonl` 10+ 条 Q&A（`compare-masters` 元技能 18 条），验证引用和关键词覆盖；CI 在每次推送时 dry-run 验证
 - **多平台统一插件**：Claude Code、Cursor、Codex CLI、OpenCode、Gemini CLI 共用一份 `prebuilt/`，session-start hook 跨平台注入法师列表
 - **NPX 一键安装**：`npx master-skill install master-zhiyi` 直接部署到 Claude Code
 - **离线工具链**：`scripts/cite.py`（CBETA 引用查询）、`scripts/query.py`（离线语义检索）、`scripts/validate.py`（frontmatter linter）
@@ -124,17 +155,26 @@
 
 ### 安装
 
-**NPX 一键安装（推荐）**
+**NPX 一键安装（推荐，无需常驻）**
 
 ```bash
 # 安装指定祖师
 npx master-skill install master-zhiyi master-fazang master-huineng
 
-# 安装全部 15 位（三大传统）
+# 安装全部 14 位（三大传统）
 npx master-skill install --all
 
 # 查看可用祖师
 npx master-skill list
+```
+
+**全局安装（频繁使用 / 离线场景）**
+
+```bash
+npm install -g master-skill            # 一次性装到 $PATH
+master-skill install master-zhiyi      # 之后省掉 npx，直接调
+master-skill list
+npm update -g master-skill             # 升到下一个 minor / patch
 ```
 
 **Claude Code（插件方式）**

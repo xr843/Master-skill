@@ -11,6 +11,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 ## [Unreleased]
 
 ### Added
+- npm publish: `master-skill` package live on registry — `npm install -g master-skill` or `npx master-skill` now serves all three published versions (0.4.0 / 0.5.0 / 0.6.0). README badges added for npm version + monthly downloads.
 - `ETHICS.md` — AI transparency, copyright tier (A/B/C/D), religious boundary, dual-track content license, takedown channel.
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md` — community infrastructure.
 - `.github/ISSUE_TEMPLATE/` — bug report, feature request, new-master proposal, boundary-violation.
@@ -20,7 +21,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - `package.json`: `engines.node`, `scripts.test`, `scripts.validate`, `publishConfig`.
 
 ### Ethics
-- Establish copyright tiers A–D; current 8 prebuilt masters confirmed Tier A (Public Domain in CN/TW as of 2026).
+- Establish copyright tiers A–D. Of the 14 prebuilt masters: **12 confirmed Tier A** (Public Domain in CN/TW as of 2026 — all 8 汉传 + 3 藏传 + Buddhaghosa), and **2 admitted as Tier B special-exception cases** (Ajahn Chah, Mahasi Sayadaw — summary-only, no full-translation quotes, non-profit teaching use, 24h takedown). See `ETHICS.md §2` for the per-master tier table.
 - Declare dual-track content licensing: code MIT, master content CC BY-NC-SA 4.0, prompts CC BY 4.0.
 
 ---

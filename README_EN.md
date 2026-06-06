@@ -9,6 +9,8 @@
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/master-skill"><img src="https://img.shields.io/npm/v/master-skill.svg?label=npm&color=cb3837" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/master-skill"><img src="https://img.shields.io/npm/dm/master-skill.svg?color=cb3837" alt="npm downloads"></a>
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
   <img src="https://img.shields.io/badge/Python-3.9+-green.svg" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/Claude%20Code-Skill-purple.svg" alt="Claude Code Skill">
@@ -24,7 +26,7 @@
 
 <p align="center">
   <strong>AI learning companions modeled after historical Buddhist masters across three traditions</strong><br>
-  15 pre-built masters · 汉传 / 藏传 / 南传 cross-tradition · CBETA / BDRC / SuttaCentral / PTS Vism citations · AgentSkills Standard
+  14 pre-built masters · 汉传 / 藏传 / 南传 cross-tradition · CBETA / BDRC / SuttaCentral / PTS Vism citations · AgentSkills Standard
 </p>
 
 <p align="center">
@@ -45,7 +47,7 @@
 
 ### 👉 [Open fojin.app/chat](https://fojin.app/chat)
 
-On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bottom-left and pick one of the 15 pre-built masters across three traditions to start chatting.
+On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bottom-left and pick one of the 14 pre-built masters across three traditions to start chatting.
 
 - No install, no signup
 - Three teaching modes available: `/compare-masters` (side-by-side comparison), `/master-debate` (4-round dialectic), `/master-curriculum` (time-sequenced study path) — all cross-tradition
@@ -73,13 +75,44 @@ On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bo
 
 ---
 
+## What It Looks Like
+
+A real `/master-huineng` (Master Huineng, the Sixth Patriarch of Chan) exchange. Note that **every doctrinal claim carries a CBETA citation**, and the voice matches the master himself — direct, plain-spoken, fond of metaphor:
+
+```text
+You: I want to practice Chan, but I can't sit still and my mind is too busy.
+
+Master Huineng:
+You say you "can't sit still" — you have mistaken the posture for Chan.
+You say your mind is "too busy" — you have made your thoughts the enemy.
+Neither of these is Chan.
+
+What is "sitting in meditation"? When, amid all conditions good and bad,
+no thought arises in the mind — that is "sitting". When you inwardly see
+the self-nature unmoved — that is "Chan". Sitting is not a matter of the
+legs; it is the mind not grasping at objects.
+  【Platform Sutra · Sitting Meditation】→ https://fojin.app/texts/58
+
+Do not fear arising thoughts. "Amid all objects the mind is unstained —
+this is called no-thought." It does not mean having no thoughts; it means
+a thought arises yet you do not chase it, do not let it stick. Like a
+cloud crossing the sky — the sky has never moved.
+  【Platform Sutra · Concentration and Wisdom】→ https://fojin.app/texts/58
+
+For further study, consult the original texts at FoJin (fojin.app).
+```
+
+> ⚠️ The above is **AI-synthesized content**, generated from the *Platform Sutra*; it does not represent Master Huineng's actual spoken teachings. Masters currently answer in Classical/Modern Chinese — the English here is an illustrative translation. Try the multi-master `/compare-masters` mode directly at [fojin.app/chat](https://fojin.app/chat).
+
+---
+
 > **v0.6 Update (2026-05-02)**: Slash command namespace cleanup — all 14 master slash commands prefixed with `master-`. `/master-zhiyi`, `/master-huineng`, etc.
 > - **Why**: Claude Code users typically have 50+ skills installed; bare-word slash commands like `/atisha` get scattered. Prefixing clusters all 14 masters under `/m<tab>` for fast discovery.
 > - **Unaffected**: `compare-masters` and `create-master` meta-skills keep their existing names (avoiding `/master-compare-masters` doublespeak). `fojin.app/chat` web-side dropdown is decoupled — its master IDs stay bare (`atisha`, `huineng`, etc.); backend `master_profiles.py` unchanged.
 > - **NPX installer**: both `npx master-skill install zhiyi` (short) and `install master-zhiyi` (full) work; install destination is always `~/.claude/skills/master-<slug>/`.
 > - See [CHANGELOG.md §0.6.0](CHANGELOG.md#060--2026-05-02) for full details.
 >
-> **v0.5 Update (2026-05-02)**: Second cross-tradition expansion — Tibetan and Theravāda each grow from 1 master to 3. Total **15 masters**.
+> **v0.5 Update (2026-05-02)**: Second cross-tradition expansion — Tibetan and Theravāda each grow from 1 master to 3. Total **14 masters**.
 > - 藏传 added: Atiśa (Kadam founder · Toh 4465 *Bodhipathapradīpa* · three scopes) + Tsongkhapa (Gelug founder · three principal aspects · Madhyamaka prasaṅgika)
 > - 南传 added: Buddhaghosa (commentarial summit · *Visuddhimagga*) + Mahasi Sayadaw (Burmese vipassanā · noting method · ETHICS Tier B special case)
 > - HARD-GATE strengthened: Mahasi Sayadaw specifically gets `NO_ATTAINMENT_JUDGMENT` (AI must not confirm any individual's stage of insight)
@@ -103,13 +136,13 @@ This project is built out of respect for Buddhist traditions. All content is gen
 
 ## Features
 
-- **15 pre-built masters across three traditions**: 8 汉传 (Yogācāra, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, cross-tradition) + 3 藏传 (Kadam · Atiśa; Gelug · Tsongkhapa; Kagyu · Milarepa) + 3 南传 (Theravāda commentator · Buddhaghosa; Burmese vipassanā · Mahasi Sayadaw; Thai Forest · Ajahn Chah) — ready to use out of the box
+- **14 pre-built masters across three traditions**: 8 汉传 (Yogācāra, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, cross-tradition) + 3 藏传 (Kadam · Atiśa; Gelug · Tsongkhapa; Kagyu · Milarepa) + 3 南传 (Theravāda commentator · Buddhaghosa; Burmese vipassanā · Mahasi Sayadaw; Thai Forest · Ajahn Chah) — plus a `compare-masters` multi-master comparison meta-skill, ready to use out of the box
 - **Provenance enforcement**: Every master ships with authoritative source IDs (CBETA / BDRC / SuttaCentral) and FoJin text IDs in frontmatter; every doctrinal claim must carry a scriptural citation
 - **Offline source passages**: `sources/` captures key passages from each master's core canon, so citations still work when FoJin is unreachable
 - **Progressive disclosure**: SKILL.md is a decision tree + quick reference; `references/` and `sources/` are loaded on demand to keep context lean
 - **HARD-GATE discipline**: Both `/create-master` and every prebuilt master embed hard rules — no unverified CBETA ID, no uncited doctrinal claim, no fictional personas
 - **Two-stage independent review**: The generation pipeline forces a "doctrinal accuracy → voice consistency" review before write; FAIL triggers up to 2 rounds of automatic repair
-- **Automated fidelity tests**: Each master's `tests/fidelity.jsonl` holds 5+ Q&A samples validating citations and keyword coverage; CI runs a dry-run on every push
+- **Automated fidelity tests**: Each master's `tests/fidelity.jsonl` holds 10+ Q&A samples (the `compare-masters` meta-skill holds 18) validating citations and keyword coverage; CI runs a dry-run on every push
 - **Unified multi-platform plugin**: Claude Code, Cursor, Codex CLI, OpenCode, and Gemini CLI share one `prebuilt/` tree, with a session-start hook injecting the master list on every platform
 - **NPX one-shot install**: `npx master-skill install master-zhiyi` drops skills straight into Claude Code
 - **Offline toolchain**: `scripts/cite.py` (CBETA lookup), `scripts/query.py` (offline semantic search), `scripts/validate.py` (frontmatter linter)
@@ -125,11 +158,20 @@ This project is built out of respect for Buddhist traditions. All content is gen
 
 ### Installation
 
-**NPX (recommended)**
+**NPX (recommended, no global state)**
 
 ```bash
-npx master-skill install --all    # Install all 15 masters
+npx master-skill install --all    # Install all 14 masters
 npx master-skill list             # List available masters
+```
+
+**Global install (frequent use / offline-friendly)**
+
+```bash
+npm install -g master-skill            # Adds the binary to $PATH
+master-skill install master-zhiyi      # No more npx prefix
+master-skill list
+npm update -g master-skill             # Pull next minor / patch
 ```
 
 **Claude Code**

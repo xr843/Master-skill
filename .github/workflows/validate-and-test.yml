@@ -7,12 +7,20 @@ on:
       - 'scripts/**'
       - 'prompts/**'
       - 'tools/**'
+      - '.github/workflows/validate-and-test.yml'
+  # No paths: filter on pull_request — the "Validate" and "Fidelity smoke"
+  # jobs are branch-protection-required checks, so they must run on EVERY
+  # PR. A paths filter would skip them on docs/config-only PRs, leaving the
+  # required checks permanently pending and the PR unmergeable without an
+  # admin override. The validate job is pure structural validation (~9s, no
+  # API calls); running it on every PR is cheap.
   pull_request:
-    paths:
-      - 'prebuilt/**'
-      - 'scripts/**'
-      - 'prompts/**'
-      - 'tools/**'
+  workflow_dispatch:
+  schedule:
+    # Weekly full fidelity sweep — Mondays 04:00 UTC. Per-PR CI only runs a
+    # 1-fixture smoke; this is the only run that grades all 160+ fixtures and
+    # catches regressions the smoke rotation would take 14 weeks to surface.
+    - cron: '0 4 * * 1'
 
 jobs:
   validate:
@@ -111,9 +119,9 @@ jobs:
           if-no-files-found: ignore
 
   fidelity-full:
-    name: Fidelity tests — full suite (manual only)
+    name: Fidelity tests — full suite (weekly + manual)
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     needs: validate
     steps:
       - uses: actions/checkout@v4
@@ -129,10 +137,18 @@ jobs:
       - name: Run fidelity tests
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python scripts/test-fidelity.py --all --json > fidelity-results.json
+        run: |
+          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "::warning::ANTHROPIC_API_KEY not configured — full fidelity sweep is advisory (structural validation in the validate job still gates)."
+            echo '{"skipped": true, "reason": "no_api_key"}' > fidelity-results.json
+            exit 0
+          fi
+          python scripts/test-fidelity.py --all --json > fidelity-results.json
 
       - name: Upload results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fidelity-results
           path: fidelity-results.json
+          if-no-files-found: ignore
