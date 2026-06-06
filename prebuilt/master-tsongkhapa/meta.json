@@ -102,5 +102,9 @@
       "克主杰",
       "宗喀巴全集"
     ]
-  }
+  },
+  "cross_critique": [
+    { "target_master": "huineng", "position": "对禅宗顿悟：无次第直指乃极利根所行；中根以下若不依应成正理分别自相，离名言假施设即立自性见，反成执碍。", "citation": "Lam-rim-chen-mo" },
+    { "target_master": "ouyi", "position": "对天台净土合修：教观判摄虽善，然空性正见须用应成因明遮遣自相；若未破自性见，所行虽多终为有漏。", "citation": "Drang-nges-legs-bshad-snying-po" }
+  ]
 }
