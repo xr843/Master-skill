@@ -52,6 +52,20 @@ verified_at: 2026-06-06
 
 未列出的 master 同样从 `prebuilt/master-<slug>/meta.json` 的 `name` 字段读取。
 
+## 批判点注入（v0.7.1）
+
+选定配对 (A, B) 后，runtime **必须**：
+
+1. 读 `prebuilt/master-<A>/meta.json` 的 `cross_critique`，筛选 `target_master == B` 的 entry
+2. 读 `prebuilt/master-<B>/meta.json` 的 `cross_critique`，筛选 `target_master == A` 的 entry
+3. 把筛到的 `position` 文 + 对应 `citation` 当作"本祖师对对方的标准立场"上下文注入：
+   - R1（A 立论）：A 关于 B 的立场，作为立论时区别于 B 的依据
+   - R2（B 反驳）：B 关于 A 的立场，作为反驳 A 立论的 grounding
+   - R3（A 回应）：A 再次引用本人立场
+   - R4（B 综合）：B 引用以呈现"教内余争"中的"仍异"
+
+若任一 master 的 `cross_critique` 缺对应 entry，注入留空——退回到「禁稻草人」+「引经必经查证」硬约束兜底，**不阻塞流程**。
+
 ## 轮次结构（固定 4 轮 + 综合）
 
 | 轮 | 角色 | 内容 | 引经 |
