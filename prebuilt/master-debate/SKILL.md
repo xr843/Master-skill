@@ -1,6 +1,6 @@
 ---
 name: master-debate
-description: Use when user asks about 祖师辩论, 各执一词, 谁更对, debate, 空有之争, 禅净之争, 性相之辩, 顿渐之争, 应成 vs 顿悟, or wants to see masters from different traditions adversarially engage one topic. Triggers include "辩论"、"祖师辩论"、"各执一词"、"谁更对"、"debate"、"空有之争"、"禅净之争"、"顿渐之争"、"应成 vs 自续"、"性相之辩" — invoke whenever user's question implicitly or explicitly seeks an adversarial multi-master treatment of a contested doctrinal topic.
+description: Use when user explicitly asks for an adversarial / multi-round dialectic between masters — keywords like 祖师辩论, 各执一词, 谁更对, 辩论一下, debate, 应成 vs 顿悟, 顿渐之争. Differs from /compare-masters (parallel single-round) by being adversarial 4-round (claim → rebut → respond → synthesize + 教内余争). Topical contexts where this fits include 空有 / 禅净 / 性相 / 戒律 vs 内观, but the trigger is the adversarial framing, not the topic alone — bare "禅净比较" goes to /compare-masters; "禅净辩论 / 谁的见地更究竟" goes here.
 version: 0.7.0
 license: MIT
 kind: meta-skill
@@ -34,6 +34,23 @@ verified_at: 2026-06-06
 ### 优先级 3 — 关键词匹配兜底
 
 从议题中提取关键词，与各 master 的 `meta.json.search_scope.keywords` 匹配，取 top-2 不同传统的 master。
+
+## 名称解析
+
+模板中的 `<Master A 全称>` / `<Master B 全称>` 占位符指**该祖师 `meta.json` 中的 `name` 字段**。例如：
+
+- `huineng` → 慧能大师
+- `yinguang` → 印光大师
+- `kumarajiva` → 鸠摩罗什
+- `xuanzang` → 玄奘法师
+- `zhiyi` → 智顗大师
+- `tsongkhapa` → 宗喀巴大师
+- `ajahn-chah` → 阿姜查
+- `mahasi-sayadaw` → 马哈希尊者
+- `atisha` → 阿底峡尊者
+- `ouyi` → 蕅益大师
+
+未列出的 master 同样从 `prebuilt/master-<slug>/meta.json` 的 `name` 字段读取。
 
 ## 轮次结构（固定 4 轮 + 综合）
 
