@@ -47,7 +47,7 @@
 在 AI 问答页面左下角点击「法师模式」，从 14 位三大传统祖师中选一位即可开始对话。
 
 - 无需安装、无需注册
-- 所有 `/compare-masters` 多祖师对比功能同样可用（含跨传统对比）
+- 三种教学模式均可用：`/compare-masters` 多祖师对比、`/master-debate` 祖师辩论、`/master-curriculum` 学修路径（含跨传统）
 - 内置 FoJin 的 503 个数据源、678K+ 语义向量做实时经证检索
 - 每条回答附原典出处（CBETA 经号 / BDRC 藏文典籍号 / SuttaCentral 巴利经号）
 
@@ -66,7 +66,7 @@
 | "想学完整的道次第" | `/master-atisha` `/master-tsongkhapa`（噶当三士道 → 格鲁《广论》） |
 | "想了解上座部论藏体系" | `/master-buddhaghosa`（《清净道论》戒定慧 + 七清净十六观智） |
 | "想做密集内观禅修" | `/master-mahasi-sayadaw`（缅甸内观 · 标记法 · 腹部起伏） |
-| "想跨传统比较看一个问题" | `/compare-masters`（自动配对汉藏南传视角） |
+| "想跨传统比较看一个问题" | `/compare-masters`（自动配对汉藏南传视角）· `/master-debate`（争议议题辩论）· `/master-curriculum`（按传统给学修路径） |
 
 > 开发者、Claude Code / Cursor 用户可跳到下方 [开发者安装](#开发者安装) 小节，以 AgentSkill 形式在终端内使用。
 
@@ -238,9 +238,13 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 /master-ajahn-chah     — 阿姜查（泰国森林禅林派 · 巴蓬寺传承）
 ```
 
-### 多法师对比
+### 教学模式（v0.7）
 
-同一问题由 2-3 位法师并列回答，展现宗派视角差异：
+- **`/compare-masters`** — 多位法师对同一问题的并列对比（横向 / 单轮）
+- **`/master-debate`** — 祖师就争议议题进行 4 轮交叉辩论（立论 → 反驳 → 回应 → 综合 + 教内余争）
+- **`/master-curriculum`** — 按你的传统（禅 / 净 / 天台 / 华严 / 唯识 / 中观 / 格鲁 / 上座部）与当前位置（L0-L3）给出有时序的学修路径
+
+**`/compare-masters` 用法示例：**
 
 ```
 # 自动选择相关法师

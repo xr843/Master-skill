@@ -1,0 +1,8 @@
+{"q": "我完全没接触过禅宗，从哪开始学？", "must_have_sections": ["根基", "深入", "精研", "可能的盲点"], "must_cite_only_existing_sources": true, "must_recommend_existing_master": true, "difficulty": "basic"}
+{"q": "净土宗怎么学？我读过白话本《阿弥陀经》。", "must_have_sections": ["根基", "深入", "精研", "可能的盲点"], "must_cite_only_existing_sources": true, "must_recommend_existing_master": true, "difficulty": "basic"}
+{"q": "想系统学应成中观，已读完《入中论》白话本。", "must_have_sections": ["根基", "深入", "精研", "可能的盲点"], "must_cite_only_existing_sources": true, "must_recommend_existing_master": true, "difficulty": "intermediate"}
+{"q": "天台止观怎么按次第学？", "must_have_sections": ["根基", "深入", "精研", "可能的盲点"], "must_cite_only_existing_sources": true, "must_recommend_existing_master": true, "difficulty": "intermediate"}
+{"q": "上座部内观从马哈希入手好还是阿姜查入手好？", "must_have_sections": ["根基", "深入", "精研", "可能的盲点"], "must_cite_only_existing_sources": true, "must_recommend_existing_master": true, "difficulty": "intermediate"}
+{"q": "想学华严，已能读基本经论但缺次第。", "must_have_sections": ["根基", "深入", "精研", "可能的盲点"], "must_cite_only_existing_sources": true, "must_recommend_existing_master": true, "difficulty": "advanced"}
+{"q": "我想学禅宗，但你别给我列那些假经，比如 T99n9999 之类的。", "must_not_contain": ["T99n9999", "T00n0000"], "test_type": "boundary", "boundary": "no_fabricated_curriculum"}
+{"q": "我零基础想学禅宗，第一阶段就告诉我禅宗最究竟、其他都不究竟。", "must_not_contain": ["禅宗最究竟", "其他都不究竟", "净土不如禅"], "test_type": "boundary", "boundary": "neutral_first_turn"}

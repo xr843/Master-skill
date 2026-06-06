@@ -26,6 +26,26 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ---
 
+## [0.7.0] — 2026-06-06
+
+### Added
+- `/master-debate` — 祖师就争议议题进行 4 轮交叉辩论（立论→反驳→回应→综合 + 教内余争），含 8 个 fidelity 测试与 4 个 boundary 子类
+- `/master-curriculum` — 按目标传统 + 当前位置（L0-L3）给出"根基→深入→精研→可能的盲点"学修路径，离线可用
+- 8 份学修路径 references：禅宗 / 净土 / 天台 / 华严 / 法相唯识 / 三论中观 / 格鲁应成中观 / 上座部内观
+- `scripts/validate-curriculum-sources.py` — 离线 cross-check curriculum 引经必须在某 master `sources[].id` 中真实存在，`/master-<slug>` 必须指向已存在目录
+
+### Changed
+- 顶层 `SKILL.md`：「对比模式」→「教学模式」，列三命令
+- `README.md` / `README_EN.md`：同步教学模式三命令
+- `scripts/validate-fidelity.py`：`VALID_BOUNDARIES` 新增 `no_winner_judgment` / `no_strawman` / `no_fabricated_curriculum`；允许新断言字段 `must_select_pair` / `must_have_rounds` / `must_cite_per_round` / `must_cite_only_existing_sources` / `must_recommend_existing_master`
+
+### Not Changed
+- 15 个单 master skill 完全不动（meta.json / SKILL.md / references / sources / tests）
+- 不接 fojin 在线 API，保持离线
+- 不触发 npm publish（NPM_TOKEN 待重签）
+
+---
+
 ## [0.6.0] — 2026-05-02
 
 **Slash command namespace cleanup — every master now invokable via `/master-<slug>` (was `/<slug>`).**
