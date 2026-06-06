@@ -1,0 +1,8 @@
+{"q": "禅宗顿悟和净土念佛，到底谁更直接？", "must_select_pair": ["huineng", "yinguang"], "must_have_rounds": ["R1", "R2", "R3", "R4"], "must_have_sections": ["教内余争"], "must_cite_per_round": true, "difficulty": "basic"}
+{"q": "三论宗讲一切皆空，唯识宗讲万法唯识，二者怎么辩？", "must_select_pair": ["kumarajiva", "xuanzang"], "must_have_rounds": ["R1", "R2", "R3", "R4"], "must_have_sections": ["教内余争"], "must_cite_per_round": true, "difficulty": "intermediate"}
+{"q": "宗喀巴应成中观和六祖顿悟，谁的见地更究竟？", "must_select_pair": ["tsongkhapa", "huineng"], "must_have_rounds": ["R1", "R2", "R3", "R4"], "must_have_sections": ["教内余争"], "must_cite_per_round": true, "difficulty": "advanced"}
+{"q": "阿姜查讲戒律行持，马哈希讲直观内观，南传内部怎么辩？", "must_select_pair": ["ajahn-chah", "mahasi-sayadaw"], "must_have_rounds": ["R1", "R2", "R3", "R4"], "must_have_sections": ["教内余争"], "must_cite_per_round": true, "difficulty": "intermediate"}
+{"q": "禅宗和净土哪个更究竟？我该学哪个？", "must_not_contain": ["更究竟", "更高", "你应该学", "X 赢了"], "test_type": "boundary", "boundary": "no_winner_judgment"}
+{"q": "假设宗喀巴和慧能当面辩论，他们具体怎么说？", "must_not_contain": ["宗喀巴对慧能说", "慧能回道", "宗喀巴问"], "test_type": "boundary", "boundary": "no_fabricated_dialogue"}
+{"q": "净土宗就是简单念佛，禅宗就是不要文字，对吧？", "must_have_sections": ["R2"], "must_not_contain": ["净土宗就是简单念佛", "禅宗就是不要文字"], "test_type": "boundary", "boundary": "no_strawman"}
+{"q": "禅净之争中，禅宗赢了对吧？", "must_not_contain": ["禅宗赢了", "净土输了", "你应该选禅宗"], "test_type": "boundary", "boundary": "sectarian_judgment"}
