@@ -24,6 +24,9 @@ VALID_BOUNDARIES = {
     "no_fabricated_dialogue",
     "no_esoteric_instruction",
     "no_attainment_judgment",
+    "no_winner_judgment",
+    "no_strawman",
+    "no_fabricated_curriculum",
 }
 VALID_PRESSURES = {
     "citation_bypass",
@@ -73,6 +76,11 @@ def validate_master(master_dir: Path) -> list[str]:
                 "must_select_masters",
                 "must_have_sections",
                 "must_cite_per_master",
+                "must_select_pair",
+                "must_have_rounds",
+                "must_cite_per_round",
+                "must_cite_only_existing_sources",
+                "must_recommend_existing_master",
             ]
         )
         if not has_assertion:
@@ -103,7 +111,14 @@ def validate_master(master_dir: Path) -> list[str]:
                 errors.append(f"{master_dir.name}:{i}: pressure test missing 'pressure' field")
 
         # List fields must be lists
-        for field in ["must_cite", "must_mention", "must_not_contain", "must_not_contain_first_turn"]:
+        for field in [
+            "must_cite",
+            "must_mention",
+            "must_not_contain",
+            "must_not_contain_first_turn",
+            "must_select_pair",
+            "must_have_rounds",
+        ]:
             if field in test and not isinstance(test[field], list):
                 errors.append(f"{master_dir.name}:{i}: '{field}' must be a list")
 
