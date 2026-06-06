@@ -26,9 +26,9 @@ PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 # Citation patterns
 _T_NUM = re.compile(r"T\d+n\d+[A-Za-z]?")
 _X_NUM = re.compile(r"X\d+n\d+[A-Za-z]?")
-_TOH = re.compile(r"Toh\s+\d+[A-Za-z\-]*")
+_TOH = re.compile(r"Toh[\s:]\d+[A-Za-z\-]*")
 # Compiled teaching: prefix:Title (e.g. AjahnChah:FoodForTheHeart, Mahasi:Manual)
-_COMPILED = re.compile(r"\b[A-Z][A-Za-z]+:[A-Za-z][A-Za-z0-9]+\b")
+_COMPILED = re.compile(r"\b[A-Z][A-Za-z]+:[A-Za-z][A-Za-z0-9\-]+\b")
 # Master slug (kebab-case)
 _SLUG = re.compile(r"/master-([a-z][a-z0-9\-]*)")
 
@@ -69,7 +69,6 @@ def collect_known_slugs(prebuilt: Path) -> set[str]:
     return {
         p.parent.name.removeprefix("master-")
         for p in prebuilt.glob("master-*/meta.json")
-        if (p.parent / "meta.json").exists()
     }
 
 

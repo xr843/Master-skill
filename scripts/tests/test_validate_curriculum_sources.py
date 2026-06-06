@@ -47,25 +47,25 @@ def fake_prebuilt(tmp_path):
     return prebuilt
 
 
-def test_extract_citations_finds_T_numbers(fake_prebuilt):
+def test_extract_citations_finds_T_numbers():
     vcs = _load_module()
     text = "See 《坛经》【T48n2008】 for details."
     assert "T48n2008" in vcs.extract_citations(text)
 
 
-def test_extract_citations_finds_Toh(fake_prebuilt):
+def test_extract_citations_finds_Toh():
     vcs = _load_module()
     text = "藏文藏经 Toh 21 心经..."
     assert "Toh 21" in vcs.extract_citations(text)
 
 
-def test_extract_citations_finds_compiled_teaching(fake_prebuilt):
+def test_extract_citations_finds_compiled_teaching():
     vcs = _load_module()
     text = "见 AjahnChah:FoodForTheHeart ..."
     assert "AjahnChah:FoodForTheHeart" in vcs.extract_citations(text)
 
 
-def test_extract_master_slugs(fake_prebuilt):
+def test_extract_master_slugs():
     vcs = _load_module()
     text = "推荐 master：/master-aaa ；交叉 /master-bbb 。"
     assert vcs.extract_master_slugs(text) == {"aaa", "bbb"}
@@ -106,9 +106,10 @@ def test_validate_fails_on_unknown_master_slug(fake_prebuilt):
     assert any("ghost" in e for e in errors)
 
 
-def test_validate_ignores_self_reference_to_curriculum_and_compare(fake_prebuilt):
-    """/master-curriculum and /compare-masters references inside the references
-    files are skill self-references, not master slugs — must not raise."""
+def test_validate_ignores_meta_skill_slugs(fake_prebuilt):
+    """/master-curriculum and /master-debate are meta-skills suppressed via
+    META_SKILL_SLUGS. /compare-masters never matches _SLUG (no /master- prefix),
+    so it is naturally ignored. None of these may raise validate errors."""
     vcs = _load_module()
     ref = fake_prebuilt / "master-curriculum" / "references" / "ok.md"
     ref.write_text(
@@ -117,3 +118,27 @@ def test_validate_ignores_self_reference_to_curriculum_and_compare(fake_prebuilt
     )
     errors = vcs.validate(fake_prebuilt)
     assert errors == []
+
+
+def test_validate_returns_error_when_refs_dir_missing(tmp_path):
+    vcs = _load_module()
+    prebuilt = tmp_path / "prebuilt"
+    prebuilt.mkdir()
+    # curriculum/references missing
+    errors = vcs.validate(prebuilt)
+    assert len(errors) == 1
+    assert "references dir not found" in errors[0]
+
+
+def test_extract_citations_finds_hyphenated_compiled_teaching():
+    vcs = _load_module()
+    text = "PTS:DN-Comm 注释 / BDRC:Pha-chos-Bu-chos"
+    cits = vcs.extract_citations(text)
+    assert "PTS:DN-Comm" in cits
+    assert "BDRC:Pha-chos-Bu-chos" in cits
+
+
+def test_extract_citations_finds_Toh_with_colon():
+    vcs = _load_module()
+    text = "见 Toh:3948"
+    assert "Toh:3948" in vcs.extract_citations(text)
