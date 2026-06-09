@@ -134,3 +134,22 @@ for trigger in lore_triggers:
 - 把 `lore_triggers` 补满所有 14 master——每条都需要在 sources/ 里核对真实 quote，工作量大，分多个 PR 推进。
 - runtime injector：在 `prebuilt/master-<slug>/SKILL.md` 顶部加一段"命中 lore_trigger 时执行注入"的硬规则，让所有 frontend 自动遵循。
 - fidelity 评测器接入 `signature_phrases`：在 `scripts/test-fidelity.py` 中加 must_use_signature 断言。
+
+---
+
+## 配套评测层：`tests/persona/` (v0.8)
+
+本 schema 字段不是装饰——它们被 [`tests/persona/`](../tests/persona/README.md)
+下的 [promptfoo](https://promptfoo.dev) `llm-rubric` 评测直接消费：
+
+- `signature_phrases` —— 在 `contains-any` 断言里做"是否听起来像本祖师"
+  的硬锚点。所有 `contains-any` 的 value **必须**在该 master 的
+  `signature_phrases`（或显式 curated 白名单）内，否则
+  `scripts/validate-promptfoo-configs.py` 会报错。
+- `style.qa` —— 直接被复制进 persona prompt 模板，作为答疑节奏锚点。
+  schema 改动会立即反映到评测 prompt。
+- `lore_triggers` —— 当前评测层尚未直接消费；预留给后续 runtime injector
+  落地后的"trigger 命中后回答必须包含 quote"断言。
+
+评测维度：RAW（基础指令 / 拒答能力） / SPE（本宗专属知识忠实度） /
+CUS（说话风格忠实度），详见 [tests/persona/README.md](../tests/persona/README.md)。
