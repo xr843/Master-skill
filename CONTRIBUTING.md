@@ -237,6 +237,33 @@ PR 提交后：
 
 ---
 
+## § 6 为单 master 补 `lore_triggers`（v0.8）
+
+v0.8 在 `meta.json` 引入 `lore_triggers`，让 runtime 在用户提问命中 keyword 时按需注入一段真实祖师 quote。详细 schema 见 [`docs/persona-schema.md`](docs/persona-schema.md)。
+
+补 entry 的流程：
+
+1. **先有原典**：打开 `prebuilt/master-<slug>/sources/<id>-excerpts.md`，找到一段你想暴露的真实段落。如果 excerpts 里没有合适段落，**不要为了补 entry 而新摘原典**——先开 PR 加 excerpts，再回头补 entry。
+2. **content 必须是文献原文**（可在末尾加一句"——"开头的浅释，但不得改写经文本身）。长度 80-300 字。
+3. **source_ref**：写本 master `sources[].id` 中的真实 id，可加 `#章名` 锚点（如 `T48n2008#般若品`）。validator 校对前缀。
+4. **keys**：用户最自然会用到的提问词，3-6 个为佳。OR 语义。
+5. **何时用 `selective: true`**：当 keys 容易在非本主题语境下命中（如"定慧"在大多数佛教讨论里都会出现），用 `secondary_keys` 加副词收窄。validator 强制 secondary_keys 存在时 selective 必须 true。
+6. **本地验证**：
+   ```bash
+   python scripts/validate-persona-fidelity.py
+   # 或
+   npm run validate:persona-fidelity
+   ```
+7. PR description 必须列出 entry 数 + 引用来源章节，方便 maintainer 与 excerpts 文件对照。
+
+**禁止**：
+
+- 改写经文（无论"为了易读"还是"为了简洁"）
+- 把 secondary teaching（讲记 / 现代释义）冒充原典
+- entry > 5 条/master 一次性提交（一次 PR 限制 3-5 entry，保证 reviewer 能逐条核对）
+
+---
+
 ## 问题？
 
 - 技术问题 → [Bug Report](https://github.com/xr843/Master-skill/issues/new?template=bug_report.yml)

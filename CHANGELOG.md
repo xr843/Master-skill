@@ -40,6 +40,14 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - HARD-GATE 铁律、敏感性边界规则、工具路由表、frontmatter 字段全部完整保留
 
 ### Added
+- v0.8 persona-fidelity schema: three new fields on every single-master `meta.json`.
+  - `signature_phrases` (required, 3-7 entries) — high-frequency phrases / verse keywords used as fidelity anchors. All 14 masters tagged.
+  - `style` (required, exactly three keys: `all` / `qa` / `monologue`, each 30-80 zh-Hans chars) — voice scaffolding decoupled from `references/voice.md`. Lets runtimes inject per-context tone without re-parsing free-form markdown.
+  - `lore_triggers` (optional, array of `{keys, secondary_keys?, content, source_ref, selective?}`) — conditional snippet injection. Each `content` is a verbatim quote from this master's `sources/` excerpts (no fabrication); `source_ref` must resolve to a real `sources[].id`, optionally with a `#anchor`. Seeded with 7 entries across 3 masters (huineng / xuyun / zhiyi); remaining 11 masters left as future PRs.
+- `scripts/validate-persona-fidelity.py` — offline structural validator. Wired into `scripts/validate.py` as a sub-check (skippable via `--skip-persona-fidelity` for legacy callers) and added as `npm run validate:persona-fidelity` + `npm test`.
+- 27 unit tests in `scripts/tests/test_validate_persona_fidelity.py` covering field presence, type, length bounds, `secondary_keys` / `selective` coupling, and `source_ref` resolution.
+- `docs/persona-schema.md` — schema reference + design rationale (acknowledges elizaOS characterfile + SillyTavern character_book v3 as priors).
+- `CONTRIBUTING.md` § 6 — guide for adding `lore_triggers` entries to a master.
 - npm publish: `master-skill` package live on registry — `npm install -g master-skill` or `npx master-skill` now serves all three published versions (0.4.0 / 0.5.0 / 0.6.0). README badges added for npm version + monthly downloads.
 - `ETHICS.md` — AI transparency, copyright tier (A/B/C/D), religious boundary, dual-track content license, takedown channel.
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md` — community infrastructure.
