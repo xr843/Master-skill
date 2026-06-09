@@ -25,6 +25,19 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - `docs/persona-schema.md` — new "lore_triggers content 完整性自动验证" section documenting thresholds, advisory window, and how to investigate a failure.
 - `CONTRIBUTING.md` — new "提交 lore_triggers PR 前的自检" subsection.
 
+### Security — v0.8 supply chain hardening
+- **SHA-pinned all GitHub Actions** across the four workflows (`npm-publish.yml`, `persona-fidelity.yml`, `validate-and-test.yml`, `verify-links.yml`). Every `uses:` now references a full commit SHA with a version comment, e.g.
+  ```yaml
+  - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+  ```
+  This neutralises mutable-tag attacks where a compromised maintainer could re-point `v4` at a malicious commit.
+- **Migrated npm publish to OIDC Trusted Publishing + provenance.** Removed the `NODE_AUTH_TOKEN`/`NPM_TOKEN` env wiring; `npm publish --access public --provenance` now relies on the GitHub Actions OIDC `id-token` to obtain short-lived publish credentials from npmjs.com. Consumers can verify the published tarball's build origin via `npm audit signatures`.
+- **Pinned `promptfoo` CLI version** in `persona-fidelity.yml` (`npm install -g promptfoo@0.121.14`). Dependabot bumps this on the weekly cadence — no more silent CLI surprises.
+- **Added `.github/dependabot.yml`** covering three ecosystems (`github-actions`, `npm`, `pip`) with weekly Monday PRs and `dependencies` + ecosystem labels.
+- **`SECURITY.md`**: bumped supported-version table to `0.7.x` + appended a "供应链安全" section documenting the hardening posture.
+- **Main branch protection**: required status checks expanded to include `Persona-fidelity schema + advisory eval` alongside the existing `Validate SKILL.md & fidelity structure` and `Fidelity smoke (1 master × 1 fixture)`. Applied via `gh api` after merge.
+- **Docs**: README badge row gained a one-liner pointing at SECURITY.md; CONTRIBUTING.md gained a "§ 7 依赖 PR" section explaining the Dependabot review workflow + SHA-cross-check.
+
 ### Added — v0.8 promptfoo persona-fidelity eval (RAW/SPE/CUS)
 - `tests/persona/` — new evaluation layer that consumes the v0.8 `signature_phrases` / `style` schema and grades each master persona on three dimensions borrowed from the RoleLLM / RoleBench framework:
   - **RAW** — raw instruction-following + ETHICS gates (modern politics / medical / legal / tantric overreach refusals)

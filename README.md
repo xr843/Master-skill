@@ -15,6 +15,10 @@
 </p>
 
 <p align="center">
+  <sub><em>Secured by SHA-pinned GitHub Actions · npm provenance · OIDC Trusted Publishing — see <a href="SECURITY.md">SECURITY.md</a>.</em></sub>
+</p>
+
+<p align="center">
   翻开《瑜伽师地论》百卷，不知从何读起？<br>
   想学禅宗，不知应当亲近哪位祖师？<br>
   读白话译注总隔一层，又难以直入文言？<br>
