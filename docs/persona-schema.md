@@ -153,3 +153,101 @@ for trigger in lore_triggers:
 
 评测维度：RAW（基础指令 / 拒答能力） / SPE（本宗专属知识忠实度） /
 CUS（说话风格忠实度），详见 [tests/persona/README.md](../tests/persona/README.md)。
+
+---
+
+## lore_triggers content 完整性自动验证（v0.8）
+
+### 动机
+
+PR #32 引入 `lore_triggers` schema 后，自评审过程中**手动**抓到并删除
+了一条伪造的"念佛是谁"引文（被错误归属 `T48n2008`）。下一次未必能凭
+运气拦截，所以 v0.8 后续 PR 引入了
+`scripts/validate-lore-triggers-content.py`：**每一条 `content` quote
+必须能在该 master 的 sources/excerpts 文件中高相似度地找到**，否则 CI
+报警。
+
+### 算法
+
+对每个 `prebuilt/master-<slug>/meta.json` 的每条 `lore_triggers[]`：
+
+1. 从 `content` 中抽出 quote 主体（剥掉 `——` 之后的编者注释 gloss）
+2. 在 `prebuilt/<master>/sources/*-excerpts.md` 中按 `source_ref` 的
+   CBETA id（长形 `T46n1911` 和短形 `T1911` 两种都试）优先排序候选
+3. 文本规范化：去标点 / 去空格换行 / 繁简体 30 字映射归一
+4. 计算
+   - 最长公共子串长度（LCS）
+   - SequenceMatcher 相似度比率（对长文本按 2×quote_len 滑窗）
+5. **通过条件**（满足任一即可）：
+   - LCS ≥ `min(40, 0.85 × quote_len)`（短 quote 按比例覆盖，长 quote 按绝对窗口）
+   - 或 SequenceMatcher ratio ≥ 0.75
+
+### 三态结果
+
+| 状态 | 含义 | 处理 |
+|---|---|---|
+| `PASS` | 在 sources/excerpts 找到高相似度匹配 | 无操作 |
+| `WARN` | 在 references/ 找到但 sources/excerpts 缺 | 建议补 excerpts（不阻塞 CI） |
+| `FAIL` | 两处都找不到（疑似伪造或严重不全） | 必须人工核对原典 |
+
+### 阈值取舍
+
+阈值是对 PR #32 当下 7 条真实 entry 校准出来的：
+
+- `MIN_LCS_ABS=40`：长 quote（80+ 字）只需 40 字连续匹配——容忍 CBETA
+  分段差异和编辑注释的少量改写。
+- `MIN_LCS_FRAC=0.85`：短 quote（30-50 字）必须近乎逐字匹配，避免阈值
+  对短引文过松。
+- `MIN_RATIO=0.75`：作为兜底——LCS 不达标但全文相似度高（例如多段跳跃
+  匹配）时仍能通过。
+
+### Advisory 期窗口
+
+v0.8.x **advisory 模式**：CI 打 warning 但不 block。给作者一个发现并
+修复预存量的窗口。**v0.9 起转 hard gate**。
+
+### 本地调用
+
+```bash
+# advisory 模式（与 CI 一致）
+python scripts/validate-lore-triggers-content.py
+
+# 等价 npm
+npm run validate:lore-content
+
+# 强制硬失败模式（v0.9 之前用于本地预演）
+python scripts/validate-lore-triggers-content.py --strict
+
+# 限定单 master
+python scripts/validate-lore-triggers-content.py --master master-huineng
+
+# JSON 输出（机器可读）
+python scripts/validate-lore-triggers-content.py --json
+```
+
+### 故意伪造 vs 真 quote 但 excerpts 不全
+
+validator 区分两类问题：
+
+- **真伪造**：quote 在 sources/、references/ 都找不到 → FAIL
+- **真 quote 但 sources/excerpts 不全**：能在 references/teaching.md
+  找到但 sources/excerpts 缺 → WARN（advisory 提示，建议下一个 PR 补
+  excerpts，不算"造假"）
+
+这条边界很重要——禅宗经常出现一条祖师机锋只在二手注释文献而非原典
+节选里出现的情况。WARN 比 FAIL 温和，避免把"corpus 不全"误报为"造假"。
+
+### 已知 advisory 状态（v0.8 上线时）
+
+| Master | source_ref | LCS | ratio | 状态 |
+|---|---|---|---|---|
+| huineng #0 | T48n2008#行由品 | 20 (need 17) | 0.667 | WARN（references only） |
+| huineng #1 | T48n2008#定慧品 | 29 (need 40) | 0.44 | FAIL（excerpts 节选不全） |
+| huineng #2 | T48n2008#定慧品 | 45 (need 38) | 0.667 | PASS |
+| xuyun #0   | T19n0945#卷六 | 32 (need 27) | 0.667 | PASS |
+| xuyun #1   | T48n2008#定慧品 | 49 (need 40) | 0.667 | PASS |
+| zhiyi #0   | T46n1911#卷五上 | 56 (need 40) | 0.525 | PASS |
+| zhiyi #1   | T46n1911#卷五上 | 61 (need 40) | 0.658 | PASS |
+
+两个 advisory 项均为真实坛经文字，**不是伪造**——是 sources/excerpts.md
+节选不全。后续 PR 应当补全 excerpts，使 v0.9 hard gate 启用时全部 PASS。
