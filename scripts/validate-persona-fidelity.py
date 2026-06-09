@@ -172,11 +172,19 @@ def _check_lore_triggers(slug: str, data: dict, source_ids: set[str]) -> list[st
 
 
 def validate(prebuilt: Path) -> list[str]:
-    """Run all persona-fidelity checks over the given prebuilt tree."""
+    """Run all persona-fidelity checks over the given prebuilt tree.
+
+    Meta-skills (`kind: "meta-skill"`) carry their own protocol meta.json
+    (e.g. master-debate's `debate_protocol` block) and are not single-master
+    personas — they are skipped.
+    """
     errors: list[str] = []
     for meta_path in sorted(prebuilt.glob("master-*/meta.json")):
         slug = meta_path.parent.name.removeprefix("master-")
         data = _load(meta_path)
+        # Skip meta-skills (debate, curriculum, etc.) — they don't carry persona fields.
+        if data.get("kind") == "meta-skill":
+            continue
         source_ids = {
             s.get("id") for s in data.get("sources", []) if isinstance(s, dict)
         }

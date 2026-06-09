@@ -300,3 +300,18 @@ def test_meta_skill_without_metajson_is_skipped(fake_tree, tmp_path):
     _write_master(fake_tree, "huineng", _base_meta())
     errors = vpf.validate(fake_tree)
     assert errors == []
+
+
+def test_meta_skill_with_kind_marker_is_skipped(fake_tree):
+    """master-debate carries a protocol meta.json with kind=meta-skill —
+    must not be required to declare persona fields."""
+    vpf = _load_module()
+    _write_master(fake_tree, "debate", {
+        "slug": "debate",
+        "kind": "meta-skill",
+        "debate_protocol": {"default_rounds": 4},
+    })
+    _write_master(fake_tree, "huineng", _base_meta())
+    errors = vpf.validate(fake_tree)
+    assert errors == []
+    assert not any("debate" in e for e in errors)
