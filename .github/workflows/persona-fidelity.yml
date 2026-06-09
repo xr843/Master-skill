@@ -56,8 +56,11 @@ jobs:
         # llm-rubric presence, contains-any whitelist, shared.yaml sync.
         run: python scripts/validate-promptfoo-configs.py
 
-      - name: Install promptfoo CLI
-        run: npm install -g promptfoo
+      - name: Install promptfoo CLI (pinned)
+        # Pin to the previous-week stable to avoid landing on a brand-new
+        # release that may regress YAML parsing. Bumped by Dependabot npm
+        # ecosystem (see .github/dependabot.yml).
+        run: npm install -g promptfoo@0.121.14
 
       - name: Validate promptfoo YAML schema (always)
         # Falls back gracefully if `promptfoo validate` is unavailable in this
