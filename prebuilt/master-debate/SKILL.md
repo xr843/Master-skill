@@ -65,7 +65,7 @@ verified_at: 2026-06-09
 输入：`{topic, master_A_slug, master_B_slug, max_rounds?}`
 
 1. 读 `prebuilt/master-debate/meta.json` 的 `debate_protocol`：
-   - 计算配对 key（两 slug 按字典序拼接，例：`huineng-vs-yinguang`）
+   - 计算配对 key：把两个 slug **按字典序排序**后用 `-vs-` 拼接（例：`("yinguang", "huineng")` → `huineng-vs-yinguang`；`("tsongkhapa", "huineng")` → `huineng-vs-tsongkhapa`）。注意 slug 自身可含 `-`（如 `ajahn-chah`），lookup 时 **不要** 对 key 做 `split("-vs-")` 再排序，而应该是排好序之后**才**拼接。
    - 若 `per_pair_overrides[key]` 存在 → 用其 `default_rounds`，否则用 `debate_protocol.default_rounds`（=4）
    - `max_rounds` 用户传入则取 `min(用户值, debate_protocol.max_rounds)`，否则用上一步的 default
 2. 读 `prebuilt/master-<A>/meta.json` 与 `prebuilt/master-<B>/meta.json` 的 `cross_critique`：

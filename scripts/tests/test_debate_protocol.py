@@ -108,6 +108,18 @@ def test_per_pair_keys_well_formed_and_real_slugs(protocol, known_slugs):
         assert b in known_slugs, f"per-pair key '{key}': slug '{b}' not a known master"
 
 
+def test_per_pair_keys_are_alphabetically_sorted(protocol):
+    """SKILL.md tells the orchestrator to compute the lookup key by sorting
+    the two slugs alphabetically. If a key here isn't sorted, the orchestrator
+    silently misses the override. Lock the convention in."""
+    for key in protocol["per_pair_overrides"]:
+        a, b = key.split("-vs-", 1)
+        assert a < b, (
+            f"per-pair key '{key}' must be alphabetically sorted "
+            f"('{a}' < '{b}'); orchestrators compute the key by sorting slugs."
+        )
+
+
 def test_per_pair_default_rounds_in_protocol_range(protocol):
     min_r = protocol["min_rounds"]
     max_r = protocol["max_rounds"]
