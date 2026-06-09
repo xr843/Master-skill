@@ -10,6 +10,25 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — v0.8 promptfoo persona-fidelity eval (RAW/SPE/CUS)
+- `tests/persona/` — new evaluation layer that consumes the v0.8 `signature_phrases` / `style` schema and grades each master persona on three dimensions borrowed from the RoleLLM / RoleBench framework:
+  - **RAW** — raw instruction-following + ETHICS gates (modern politics / medical / legal / tantric overreach refusals)
+  - **SPE** — specialist knowledge (school-faithful doctrine, correct citations, parable accuracy, no cross-tradition term smuggling)
+  - **CUS** — customised style fidelity (signature phrase usage, Q&A rhythm, voice rather than lecture)
+- 3 representative `promptfooconfig.yaml` files seeded as living templates: `huineng` (Chan / 汉传 / 中文), `ajahn-chah` (Thai Forest / 南传 / English), `tsongkhapa` (Gelug / 藏传 / 中文). Remaining 11 masters left for community follow-ups using the documented template.
+- `tests/persona/shared.yaml` — single source of truth for persona prompt templates. promptfoo has no `file://…#key` indirection, so configs inline the prompt; `validate-promptfoo-configs.py` enforces byte-equivalence to detect drift.
+- `scripts/validate-promptfoo-configs.py` — repo-convention validator layered on top of `promptfoo validate`:
+  - filename must be `<slug>.promptfooconfig.yaml` with a real `prebuilt/master-<slug>/` match
+  - all three dimensions (RAW / SPE / CUS) must be covered; min 4 tests per master
+  - every test must carry at least one `llm-rubric` assertion
+  - every `contains-any` value must be in the master's own `signature_phrases` or a per-master curated whitelist (blocks the "stuff arbitrary keywords into the rubric" drift mode)
+  - the inlined prompt must match `shared.yaml` for that master
+  - hooked into `scripts/validate.py` as a sub-check (skippable via `--skip-promptfoo-configs`)
+- 13 unit tests in `scripts/tests/test_validate_promptfoo_configs.py` covering filename rules, dimension coverage, llm-rubric presence, contains-any whitelisting, prompt-sync detection, and judge-provider presence.
+- `.github/workflows/persona-fidelity.yml` — new CI workflow. Always runs the schema gate (no API key needed). When `ANTHROPIC_API_KEY` is configured, runs `promptfoo eval` per master as **advisory** (`|| true`, never blocks); results uploaded as artifacts. Fork PRs and key-less runs degrade gracefully — consistent with the project's "no LLM-as-judge spend in CI" policy.
+- `tests/persona/README.md` — three-dimensional framework documentation + step-by-step guide for adding the remaining 11 masters.
+- `docs/persona-schema.md` — new "配套评测层" section linking the schema fields to the eval layer.
+
 ### Added — v0.8 master-debate refactor
 - `prebuilt/master-debate/SKILL.md` rewritten as **orchestrator + fresh-subagent** execution paradigm: every round of the debate spawns a brand-new Task subagent carrying only `{role, opponent_summary_<=80字, cross_critique_ammo}` — no prior-turn raw text. The orchestrator (caller of this skill) maintains round summaries, termination, and a final 3-line 中立观察. This lets v0.7.1 `cross_critique` ammo actually land — single-context drift was diluting it.
 - `prebuilt/master-debate/meta.json` (new): `debate_protocol` block — `default_rounds=4`, `max_rounds=6`, `min_rounds=2`, `selector=alternating`, `stop_on_consensus=false`, `subagent_isolation=true`, plus `per_pair_overrides` for all 8 canonical pairs covered bidirectionally by v0.7.1 `cross_critique` (`huineng-vs-tsongkhapa` and `ouyi-vs-tsongkhapa` default to 5 rounds; the rest 4). Pair keys use alphabetically-sorted slugs joined by `-vs-`.

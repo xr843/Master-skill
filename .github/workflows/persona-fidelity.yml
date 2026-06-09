@@ -1,0 +1,110 @@
+name: Persona Fidelity
+
+# v0.8 persona-fidelity eval pipeline.
+#
+# Two stages:
+#
+#   1. promptfooconfig schema + repo-convention validation — ALWAYS runs.
+#      No API key needed. Catches structural drift on every PR.
+#
+#   2. llm-rubric eval against the persona prompts — ADVISORY ONLY when an
+#      ANTHROPIC_API_KEY is configured. Fork PRs have no secret access, and
+#      the project's stated policy is "do not pay for LLM-as-judge in CI"
+#      until further notice. Results are uploaded as artifacts; the job
+#      never blocks the PR.
+#
+# Cost ceiling (when ANTHROPIC_API_KEY is set):
+#   3 masters × ~6 cases × 2 Opus calls (persona + judge) ≈ 36 calls
+#   At Opus 4.7 pricing (~$15/MTok in, $75/MTok out) with ~3k in + 1.5k out
+#   per call → roughly $4-5 per PR run. The weekly cron adds ~$5/wk.
+#   When the project decides to gate hard, also revisit this ceiling — e.g.
+#   downgrade the judge to a cheaper Sonnet/Haiku tier.
+#
+# When the project later flips to gating, switch the `|| true` off in the
+# eval step and remove the advisory `notice`.
+
+on:
+  pull_request:
+    paths:
+      - 'prebuilt/master-*/meta.json'
+      - 'tests/persona/**'
+      - 'scripts/validate-promptfoo-configs.py'
+      - '.github/workflows/persona-fidelity.yml'
+  schedule:
+    # Weekly full sweep — Mondays 07:00 UTC. Slightly offset from the
+    # validate-and-test fidelity sweep (04:00 UTC) so the two don't pile up.
+    - cron: '0 7 * * 1'
+  workflow_dispatch: {}
+
+jobs:
+  fidelity:
+    name: Persona-fidelity schema + advisory eval
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python deps (for repo-convention validator)
+        run: pip install pyyaml pytest
+
+      - name: Run repo-convention validator (always)
+        # This is the gate: filename convention, RAW/SPE/CUS coverage,
+        # llm-rubric presence, contains-any whitelist, shared.yaml sync.
+        run: python scripts/validate-promptfoo-configs.py
+
+      - name: Install promptfoo CLI
+        run: npm install -g promptfoo
+
+      - name: Validate promptfoo YAML schema (always)
+        # Falls back gracefully if `promptfoo validate` is unavailable in this
+        # CLI release — we still ran the repo-convention check above.
+        run: |
+          set -e
+          for cfg in tests/persona/*.promptfooconfig.yaml; do
+            echo "::group::promptfoo validate $cfg"
+            if promptfoo validate -c "$cfg"; then
+              echo "  OK"
+            else
+              echo "::warning file=$cfg::promptfoo validate exited non-zero — advisory"
+            fi
+            echo "::endgroup::"
+          done
+
+      - name: Detect ANTHROPIC_API_KEY
+        id: key
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "advisory=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::ANTHROPIC_API_KEY not set — skipping llm-rubric eval (schema validation passed; advisory by project policy)."
+          else
+            echo "advisory=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run llm-rubric eval (advisory — never blocks)
+        if: steps.key.outputs.advisory == 'false'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          mkdir -p .promptfoo-results
+          for cfg in tests/persona/*.promptfooconfig.yaml; do
+            slug=$(basename "$cfg" .promptfooconfig.yaml)
+            # `|| true` makes the eval advisory — the job never fails on
+            # rubric mismatches. Switch off when the project promotes this
+            # to a hard gate.
+            promptfoo eval -c "$cfg" \
+              -o ".promptfoo-results/${slug}.json" || true
+          done
+
+      - name: Upload eval results
+        if: steps.key.outputs.advisory == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: persona-fidelity-results-${{ github.run_id }}
+          path: .promptfoo-results/
+          if-no-files-found: ignore

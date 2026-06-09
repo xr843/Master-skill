@@ -179,6 +179,31 @@ def _run_persona_fidelity_subcheck() -> list[str]:
         return [f"persona-fidelity sub-check failed to run: {exc}"]
 
 
+def _run_promptfoo_configs_subcheck() -> list[str]:
+    """Run the persona promptfoo-config validator as a sub-check.
+
+    Skips silently if tests/persona/ does not exist (older branch state
+    predating v0.8 promptfoo work). Returns a list of error strings.
+    """
+    persona_dir = (
+        Path(__file__).resolve().parent.parent / "tests" / "persona"
+    )
+    if not persona_dir.exists():
+        return []
+    try:
+        import importlib.util
+
+        spec_path = (
+            Path(__file__).resolve().parent / "validate-promptfoo-configs.py"
+        )
+        spec = importlib.util.spec_from_file_location("vppc", spec_path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.validate(persona_dir)
+    except Exception as exc:  # pragma: no cover — surfaces to user
+        return [f"promptfoo-configs sub-check failed to run: {exc}"]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Master-skill SKILL.md linter")
     parser.add_argument("--master", type=str, help="Lint a specific master only")
@@ -188,6 +213,11 @@ def main():
         "--skip-persona-fidelity",
         action="store_true",
         help="Skip the v0.8 persona-fidelity sub-check",
+    )
+    parser.add_argument(
+        "--skip-promptfoo-configs",
+        action="store_true",
+        help="Skip the v0.8 promptfoo-configs sub-check",
     )
     args = parser.parse_args()
 
@@ -216,13 +246,22 @@ def main():
         if persona_errors:
             has_errors = True
 
+    # --- v0.8 promptfoo-configs sub-check (also full-tree only) ---
+    promptfoo_errors: list[str] = []
+    if not args.master and not args.skip_promptfoo_configs:
+        promptfoo_errors = _run_promptfoo_configs_subcheck()
+        if promptfoo_errors:
+            has_errors = True
+
     if args.json:
         out = {"skills": all_issues}
         if persona_errors:
             out["persona_fidelity"] = persona_errors
+        if promptfoo_errors:
+            out["promptfoo_configs"] = promptfoo_errors
         print(json.dumps(out, indent=2, ensure_ascii=False))
     else:
-        if not all_issues and not persona_errors:
+        if not all_issues and not persona_errors and not promptfoo_errors:
             print(f"✅ All {len(dirs)} skills pass validation.")
         else:
             for name, issues in all_issues.items():
@@ -233,10 +272,15 @@ def main():
                 print("Persona-fidelity sub-check (v0.8):")
                 for e in persona_errors:
                     print(f"  [ERROR] {e}")
+            if promptfoo_errors:
+                print()
+                print("Promptfoo-configs sub-check (v0.8):")
+                for e in promptfoo_errors:
+                    print(f"  [ERROR] {e}")
             print()
             total_errors = sum(1 for issues in all_issues.values() for i in issues if "[ERROR]" in i)
             total_warns = sum(1 for issues in all_issues.values() for i in issues if "[WARN]" in i)
-            total_errors += len(persona_errors)
+            total_errors += len(persona_errors) + len(promptfoo_errors)
             print(
                 f"Summary: {total_errors} error(s), {total_warns} warning(s) "
                 f"across {len(all_issues)} master(s)"
