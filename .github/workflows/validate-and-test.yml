@@ -49,6 +49,16 @@ jobs:
       - name: Validate cross_critique schema
         run: python scripts/validate-cross-critique.py
 
+      - name: Check platform manifest version consistency (v0.8 — hard gate)
+        run: python scripts/check-manifest-versions.py
+
+      - name: Validate lore_triggers content (v0.8 — advisory)
+        continue-on-error: true
+        run: python scripts/validate-lore-triggers-content.py
+
+      - name: Test session-start hook lineage sanitization
+        run: bash hooks/tests/test_session_start.sh
+
       - name: Run validator unit tests
         run: python -m pytest scripts/tests/ -v
 

@@ -8,6 +8,40 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Sanitize a raw `lineage:` frontmatter value before splicing into the
+# conversation context. Without normalization, an attacker who lands a
+# malicious SKILL.md (or just a benign typo) could inject control chars
+# or instruction text into the LLM system prompt.
+#
+# Rules:
+#   1. Strip ALL control chars (CR/LF, escape codes) via tr -d '[:cntrl:]'
+#   2. Pre-truncate to 240 bytes so we don't slice into a UTF-8 multibyte
+#      sequence on the next pass.
+#   3. Whitelist CJK Unified + ASCII alnum + a small punctuation set
+#      ( · _ ( ) （ ） - and space ). Backticks, dollars, quotes, slashes,
+#      etc. are all dropped.
+#   4. Collapse runs of whitespace.
+#   5. Final cap at 80 *characters* (not bytes).
+sanitize_lineage() {
+    local raw="$1"
+    # Whitelist is applied in Python because GNU sed under LC_ALL=C
+    # operates on bytes and corrupts multibyte CJK. Python re.UNICODE
+    # keeps Han characters intact.
+    printf '%s' "$raw" \
+        | tr -d '[:cntrl:]' \
+        | head -c 240 \
+        | python3 -c '
+import re, sys
+s = sys.stdin.read()
+# Whitelist: CJK Unified, ASCII alnum, fullwidth parens, space, ·, _, (, ), -
+allowed = re.compile(r"[^一-鿿0-9A-Za-z _\-·（）()]", re.UNICODE)
+s = allowed.sub("", s)
+s = re.sub(r"\s+", " ", s).strip()
+# Final char cap (not byte cap): 80 characters
+print(s[:80], end="")
+'
+}
+
 # Build masters list from prebuilt/ directory
 MASTERS_LIST=""
 for dir in "$PLUGIN_ROOT"/prebuilt/*/; do
@@ -17,9 +51,13 @@ for dir in "$PLUGIN_ROOT"/prebuilt/*/; do
     skill_file="$dir/SKILL.md"
     if [ -f "$skill_file" ]; then
         # Extract lineage from frontmatter
-        lineage=$(grep '^lineage:' "$skill_file" 2>/dev/null | head -1 | sed 's/^lineage: *//' || echo "")
+        raw_lineage=$(grep '^lineage:' "$skill_file" 2>/dev/null | head -1 | sed 's/^lineage: *//' || echo "")
+        lineage=$(sanitize_lineage "$raw_lineage")
         if [ -n "$lineage" ]; then
-            MASTERS_LIST="${MASTERS_LIST}  /${name} — ${lineage}\n"
+            # Wrap with bracketed marker so the LLM has an unambiguous
+            # boundary if a future raw lineage ever sneaks something
+            # past the sanitizer.
+            MASTERS_LIST="${MASTERS_LIST}  /${name} — [lineage:${lineage}]\n"
         fi
     fi
 done

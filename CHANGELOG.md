@@ -10,6 +10,21 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Integrity — v0.8 lore_triggers content + lineage + version drift gates
+- `scripts/validate-lore-triggers-content.py` — new validator that checks every `lore_triggers[].content` quote against the master's own `sources/*-excerpts.md` (and `references/*.md` as a soft-pass fallback). PASS requires either a longest-common-substring of `min(40, 0.85 × quote_len)` chars OR a SequenceMatcher ratio ≥ 0.75 over normalized text (punctuation stripped, traditional ↔ simplified Han folded via a hand-curated 30-char table). Catches the failure mode caught manually during PR #32 self-review (a fabricated "念佛是谁" quote falsely attributed to T48n2008) that the next PR may not catch by luck.
+  - **Advisory mode through v0.8.x**: prints warnings, exits 0. Becomes a hard gate in v0.9 so authors have a release cycle to surface and resolve any pre-existing soft mismatches.
+  - `--strict` flag for local rehearsal and the eventual v0.9 CI gate.
+  - 18 unit tests in `scripts/tests/test_validate_lore_triggers_content.py` covering normalization, LCS / ratio math, trad↔simp folding, fabricated-quote detection, the references/ soft-pass path, and CLI exit codes.
+- `scripts/check-manifest-versions.py` — new **hard-gate** validator. Collects the `version` field from `package.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json::plugins[*].version`, `.cursor-plugin/plugin.json`, `gemini-extension.json`, plus any future `.codex/*.json` / `.opencode/*.json`. Exits non-zero if any two disagree, so the kind of drift that bit PR #26 cannot land silently.
+  - 8 unit tests in `scripts/tests/test_check_manifest_versions.py`.
+- `hooks/session-start` — `sanitize_lineage()` function inserted between the raw `grep '^lineage:'` extraction and the context injection. Strips all control characters, applies a strict CJK + ASCII alnum + small punctuation whitelist (drops backticks, dollars, quotes, slashes), and caps output at 80 characters. Sanitized lineage is now wrapped in a `[lineage:…]` marker so the downstream LLM sees an unambiguous boundary if a future raw lineage ever sneaks something past the sanitizer.
+  - 9 bash assertions in `hooks/tests/test_session_start.sh` covering normal lineages, parenthetical lineages, newline / CR / ANSI-ESC injection, overlong input, and shell-metachar stripping.
+- CI: `.github/workflows/validate-and-test.yml` now runs the lore-triggers content check (`continue-on-error: true` — advisory), the manifest version-drift gate (hard), and the session-start hook tests on every PR.
+- `scripts/validate.py` — wires the two new sub-checks; `--skip-manifest-versions` / `--skip-lore-triggers-content` flags for emergency local overrides.
+- `package.json` — new `validate:lore-content`, `validate:versions`, and `test:hook` npm scripts; `npm test` extended to include the manifest version-drift gate.
+- `docs/persona-schema.md` — new "lore_triggers content 完整性自动验证" section documenting thresholds, advisory window, and how to investigate a failure.
+- `CONTRIBUTING.md` — new "提交 lore_triggers PR 前的自检" subsection.
+
 ### Security — v0.8 supply chain hardening
 - **SHA-pinned all GitHub Actions** across the four workflows (`npm-publish.yml`, `persona-fidelity.yml`, `validate-and-test.yml`, `verify-links.yml`). Every `uses:` now references a full commit SHA with a version comment, e.g.
   ```yaml

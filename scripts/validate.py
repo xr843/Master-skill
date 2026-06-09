@@ -179,6 +179,76 @@ def _run_persona_fidelity_subcheck() -> list[str]:
         return [f"persona-fidelity sub-check failed to run: {exc}"]
 
 
+def _run_manifest_versions_subcheck() -> list[str]:
+    """Run the platform-manifest version-drift gate as a sub-check.
+
+    Hard gate (not advisory): any mismatch returns a non-empty error list
+    and the parent validate.py will exit non-zero. Drift between the
+    platform manifests must be fixed before release.
+    """
+    try:
+        import importlib.util
+
+        spec_path = (
+            Path(__file__).resolve().parent / "check-manifest-versions.py"
+        )
+        spec = importlib.util.spec_from_file_location("cmv", spec_path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        versions = mod.collect_versions()
+        if not versions:
+            return []
+        unique = set(versions.values())
+        if len(unique) <= 1:
+            return []
+        lines = ["manifest version drift detected:"]
+        for path, v in sorted(versions.items()):
+            lines.append(f"    {path}: {v}")
+        return lines
+    except Exception as exc:  # pragma: no cover
+        return [f"manifest-versions sub-check failed to run: {exc}"]
+
+
+def _run_lore_triggers_content_subcheck() -> list[str]:
+    """Run the lore_triggers-content advisory validator as a sub-check.
+
+    ADVISORY for v0.8.x: this collects warning lines but never causes
+    validate.py to exit non-zero. It will become a hard gate in v0.9.
+    Callers receive a list of warning strings to print.
+    """
+    try:
+        import importlib.util
+
+        spec_path = (
+            Path(__file__).resolve().parent
+            / "validate-lore-triggers-content.py"
+        )
+        spec = importlib.util.spec_from_file_location("vltc", spec_path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        results = mod.validate(PREBUILT_DIR)
+        warnings: list[str] = []
+        for r in results:
+            if not r["passed"]:
+                warnings.append(
+                    f"{r['master']} entry[{r['entry_idx']}] "
+                    f"source_ref={r['source_ref']}: no high-similarity "
+                    f"match (best file={r['best_file']}, "
+                    f"lcs={r['best_lcs']} need {r['needed_lcs']}, "
+                    f"ratio={r['best_ratio']})"
+                )
+            elif r.get("in_references_only"):
+                warnings.append(
+                    f"{r['master']} entry[{r['entry_idx']}] "
+                    f"source_ref={r['source_ref']}: matched only in "
+                    f"references/{r['ref_file']} — consider extending "
+                    f"sources/excerpts to cover this quote"
+                )
+        return warnings
+    except Exception as exc:  # pragma: no cover
+        return [f"lore-triggers-content sub-check failed to run: {exc}"]
+
+
 def _run_promptfoo_configs_subcheck() -> list[str]:
     """Run the persona promptfoo-config validator as a sub-check.
 
@@ -219,6 +289,16 @@ def main():
         action="store_true",
         help="Skip the v0.8 promptfoo-configs sub-check",
     )
+    parser.add_argument(
+        "--skip-manifest-versions",
+        action="store_true",
+        help="Skip the v0.8 manifest version-drift gate",
+    )
+    parser.add_argument(
+        "--skip-lore-triggers-content",
+        action="store_true",
+        help="Skip the v0.8 advisory lore_triggers-content validator",
+    )
     args = parser.parse_args()
 
     if args.master:
@@ -253,15 +333,39 @@ def main():
         if promptfoo_errors:
             has_errors = True
 
+    # --- v0.8 manifest version-drift gate (full-tree only, HARD gate) ---
+    manifest_errors: list[str] = []
+    if not args.master and not args.skip_manifest_versions:
+        manifest_errors = _run_manifest_versions_subcheck()
+        if manifest_errors:
+            has_errors = True
+
+    # --- v0.8 lore_triggers-content advisory sub-check ---
+    # ADVISORY ONLY: warnings printed but never affect has_errors.
+    lore_warnings: list[str] = []
+    if not args.master and not args.skip_lore_triggers_content:
+        lore_warnings = _run_lore_triggers_content_subcheck()
+
     if args.json:
         out = {"skills": all_issues}
         if persona_errors:
             out["persona_fidelity"] = persona_errors
         if promptfoo_errors:
             out["promptfoo_configs"] = promptfoo_errors
+        if manifest_errors:
+            out["manifest_versions"] = manifest_errors
+        if lore_warnings:
+            out["lore_triggers_content_advisory"] = lore_warnings
         print(json.dumps(out, indent=2, ensure_ascii=False))
     else:
-        if not all_issues and not persona_errors and not promptfoo_errors:
+        nothing_to_report = (
+            not all_issues
+            and not persona_errors
+            and not promptfoo_errors
+            and not manifest_errors
+            and not lore_warnings
+        )
+        if nothing_to_report:
             print(f"✅ All {len(dirs)} skills pass validation.")
         else:
             for name, issues in all_issues.items():
@@ -277,10 +381,28 @@ def main():
                 print("Promptfoo-configs sub-check (v0.8):")
                 for e in promptfoo_errors:
                     print(f"  [ERROR] {e}")
+            if manifest_errors:
+                print()
+                print("Manifest version-drift gate (v0.8):")
+                for e in manifest_errors:
+                    print(f"  [ERROR] {e}")
+            if lore_warnings:
+                print()
+                print(
+                    "Lore-triggers content sub-check (v0.8, ADVISORY — "
+                    "hard gate in v0.9):"
+                )
+                for w in lore_warnings:
+                    print(f"  [WARN]  {w}")
             print()
             total_errors = sum(1 for issues in all_issues.values() for i in issues if "[ERROR]" in i)
             total_warns = sum(1 for issues in all_issues.values() for i in issues if "[WARN]" in i)
-            total_errors += len(persona_errors) + len(promptfoo_errors)
+            total_errors += (
+                len(persona_errors)
+                + len(promptfoo_errors)
+                + len(manifest_errors)
+            )
+            total_warns += len(lore_warnings)
             print(
                 f"Summary: {total_errors} error(s), {total_warns} warning(s) "
                 f"across {len(all_issues)} master(s)"

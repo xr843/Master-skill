@@ -254,7 +254,27 @@ v0.8 在 `meta.json` 引入 `lore_triggers`，让 runtime 在用户提问命中 
    # 或
    npm run validate:persona-fidelity
    ```
-7. PR description 必须列出 entry 数 + 引用来源章节，方便 maintainer 与 excerpts 文件对照。
+7. **提交 lore_triggers PR 前的自检（v0.8 起强烈建议，v0.9 起 hard gate）**：
+   ```bash
+   # advisory 模式（与 CI 一致）
+   python scripts/validate-lore-triggers-content.py --master master-<slug>
+   # 或 npm
+   npm run validate:lore-content
+
+   # 强制硬失败（在 PR 提交前本地预演 v0.9 行为）
+   python scripts/validate-lore-triggers-content.py --strict --master master-<slug>
+   ```
+   该 validator 在你的 `content` quote 上做归一化 LCS / SequenceMatcher
+   匹配，校验是否真在 `sources/*-excerpts.md` 中找得到。三态：
+
+   - `PASS`：在 sources/ 找到 → 直接提交
+   - `WARN`：仅在 references/ 找到 → 强烈建议先扩展 sources/excerpts.md
+     使 v0.9 hard gate 启用时仍 PASS
+   - `FAIL`：两处都找不到 → **必须**改 content 或扩展 excerpts；这是
+     伪造的明显信号
+
+   详细阈值与原理见 [`docs/persona-schema.md`](docs/persona-schema.md#lore_triggers-content-完整性自动验证v08)。
+8. PR description 必须列出 entry 数 + 引用来源章节，方便 maintainer 与 excerpts 文件对照。
 
 **禁止**：
 
