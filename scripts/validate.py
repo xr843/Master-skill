@@ -161,11 +161,34 @@ def lint_master(master_dir: Path, strict: bool = False) -> list[str]:
     return issues
 
 
+def _run_persona_fidelity_subcheck() -> list[str]:
+    """Run the persona-fidelity validator as a sub-check.
+
+    Imported lazily so that --master single-target lints stay fast and to
+    avoid hard-coupling the two scripts at module load time.
+    """
+    try:
+        import importlib.util
+
+        spec_path = Path(__file__).resolve().parent / "validate-persona-fidelity.py"
+        spec = importlib.util.spec_from_file_location("vpf", spec_path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.validate(PREBUILT_DIR)
+    except Exception as exc:  # pragma: no cover — surfaces to user
+        return [f"persona-fidelity sub-check failed to run: {exc}"]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Master-skill SKILL.md linter")
     parser.add_argument("--master", type=str, help="Lint a specific master only")
     parser.add_argument("--strict", action="store_true", help="Treat warnings as errors")
     parser.add_argument("--json", action="store_true", help="Output as JSON")
+    parser.add_argument(
+        "--skip-persona-fidelity",
+        action="store_true",
+        help="Skip the v0.8 persona-fidelity sub-check",
+    )
     args = parser.parse_args()
 
     if args.master:
@@ -186,19 +209,38 @@ def main():
             if any("[ERROR]" in i for i in issues):
                 has_errors = True
 
+    # --- v0.8 persona-fidelity sub-check (runs only on full-tree lints) ---
+    persona_errors: list[str] = []
+    if not args.master and not args.skip_persona_fidelity:
+        persona_errors = _run_persona_fidelity_subcheck()
+        if persona_errors:
+            has_errors = True
+
     if args.json:
-        print(json.dumps(all_issues, indent=2, ensure_ascii=False))
+        out = {"skills": all_issues}
+        if persona_errors:
+            out["persona_fidelity"] = persona_errors
+        print(json.dumps(out, indent=2, ensure_ascii=False))
     else:
-        if not all_issues:
+        if not all_issues and not persona_errors:
             print(f"✅ All {len(dirs)} skills pass validation.")
         else:
             for name, issues in all_issues.items():
                 for issue in issues:
                     print(issue)
+            if persona_errors:
+                print()
+                print("Persona-fidelity sub-check (v0.8):")
+                for e in persona_errors:
+                    print(f"  [ERROR] {e}")
             print()
             total_errors = sum(1 for issues in all_issues.values() for i in issues if "[ERROR]" in i)
             total_warns = sum(1 for issues in all_issues.values() for i in issues if "[WARN]" in i)
-            print(f"Summary: {total_errors} error(s), {total_warns} warning(s) across {len(all_issues)} master(s)")
+            total_errors += len(persona_errors)
+            print(
+                f"Summary: {total_errors} error(s), {total_warns} warning(s) "
+                f"across {len(all_issues)} master(s)"
+            )
 
     sys.exit(1 if has_errors else 0)
 

@@ -10,7 +10,8 @@
     "list": "node bin/cli.mjs list",
     "validate": "python scripts/validate.py --strict",
     "validate:fidelity": "python scripts/validate-fidelity.py",
-    "test": "python scripts/validate.py --strict && python scripts/validate-fidelity.py && python scripts/test-fidelity.py --all --dry-run",
+    "validate:persona-fidelity": "python scripts/validate-persona-fidelity.py",
+    "test": "python scripts/validate.py --strict && python scripts/validate-fidelity.py && python scripts/validate-persona-fidelity.py && python scripts/test-fidelity.py --all --dry-run",
     "test:smoke": "python scripts/test-fidelity.py --master yinguang --max-tests 1",
     "prepack": "node bin/cli.mjs list"
   },

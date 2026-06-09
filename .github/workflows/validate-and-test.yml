@@ -35,13 +35,22 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests pypinyin pyyaml
+        run: pip install requests pypinyin pyyaml pytest
 
-      - name: Lint SKILL.md frontmatter
+      - name: Lint SKILL.md frontmatter (includes v0.8 persona-fidelity sub-check)
         run: python scripts/validate.py --strict
 
       - name: Validate fidelity.jsonl structure
         run: python scripts/validate-fidelity.py
+
+      - name: Validate persona-fidelity schema (v0.8) — explicit
+        run: python scripts/validate-persona-fidelity.py
+
+      - name: Validate cross_critique schema
+        run: python scripts/validate-cross-critique.py
+
+      - name: Run validator unit tests
+        run: python -m pytest scripts/tests/ -v
 
       - name: Dry-run fidelity tests
         run: python scripts/test-fidelity.py --all --dry-run
