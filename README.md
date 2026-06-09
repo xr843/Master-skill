@@ -241,7 +241,7 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 ### 教学模式（v0.7）
 
 - **`/compare-masters`** — 多位法师对同一问题的并列对比（横向 / 单轮）
-- **`/master-debate`** — 祖师就争议议题进行 4 轮交叉辩论（立论 → 反驳 → 回应 → 综合 + 教内余争）
+- **`/master-debate`** — 祖师就争议议题做多轮交叉辩论（v0.8 起：**每轮派 fresh subagent**，只携带对方上一轮 ≤80 字摘要 + 本方 cross_critique 弹药；轮数由 `debate_protocol.per_pair_overrides` 决定，默认 4 轮，`huineng-vs-tsongkhapa` / `ouyi-vs-tsongkhapa` 默认 5 轮）
 - **`/master-curriculum`** — 按你的传统（禅 / 净 / 天台 / 华严 / 唯识 / 中观 / 格鲁 / 上座部）与当前位置（L0-L3）给出有时序的学修路径
 
 **`/compare-masters` 用法示例：**

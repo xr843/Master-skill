@@ -10,6 +10,20 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — v0.8 master-debate refactor
+- `prebuilt/master-debate/SKILL.md` rewritten as **orchestrator + fresh-subagent** execution paradigm: every round of the debate spawns a brand-new Task subagent carrying only `{role, opponent_summary_<=80字, cross_critique_ammo}` — no prior-turn raw text. The orchestrator (caller of this skill) maintains round summaries, termination, and a final 3-line 中立观察. This lets v0.7.1 `cross_critique` ammo actually land — single-context drift was diluting it.
+- `prebuilt/master-debate/meta.json` (new): `debate_protocol` block — `default_rounds=4`, `max_rounds=6`, `min_rounds=2`, `selector=alternating`, `stop_on_consensus=false`, `subagent_isolation=true`, plus `per_pair_overrides` for all 8 canonical pairs covered bidirectionally by v0.7.1 `cross_critique` (`huineng-vs-tsongkhapa` and `ouyi-vs-tsongkhapa` default to 5 rounds; the rest 4). Pair keys use alphabetically-sorted slugs joined by `-vs-`.
+- `scripts/tests/test_debate_protocol.py` — 8 unit tests: schema, range invariants (`min ≤ default ≤ max`), `subagent_isolation` flag, per-pair key well-formedness, per-pair slugs are real masters under `prebuilt/`, and **each per-pair override must be bidirectionally covered by `cross_critique` entries** (no inventing pairs v0.7.1 didn't arm).
+
+### Changed — v0.8 master-debate refactor
+- `master-debate` SKILL.md frontmatter version 0.7.0 → 0.8.0.
+
+### Not Changed — v0.8 master-debate refactor
+- 14 个 single-master `meta.json` 一字不动（避免和 PR #1 schema 扩展冲突）
+- 根 `SKILL.md` 不动（PR #3 在动）
+- `/master-curriculum` `/compare-masters` `ETHICS.md` 不动
+- 不发版 / 不打 tag — NPM 端等其他 PR 收齐再统一 0.8.0 发布
+
 ### Added
 - npm publish: `master-skill` package live on registry — `npm install -g master-skill` or `npx master-skill` now serves all three published versions (0.4.0 / 0.5.0 / 0.6.0). README badges added for npm version + monthly downloads.
 - `ETHICS.md` — AI transparency, copyright tier (A/B/C/D), religious boundary, dual-track content license, takedown channel.
