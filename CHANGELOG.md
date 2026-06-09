@@ -24,6 +24,21 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - `/master-curriculum` `/compare-masters` `ETHICS.md` 不动
 - 不发版 / 不打 tag — NPM 端等其他 PR 收齐再统一 0.8.0 发布
 
+### Changed — v0.8 root SKILL.md progressive disclosure
+- **Root `SKILL.md` split** (PR #31) — 399-line root SKILL.md → 154-line trigger / routing skeleton plus 5 on-demand `references/*.md` files. Reduces always-loaded token footprint while preserving every constraint, gate, and procedural detail. Mapping:
+  - `references/traditions.md` — 三大传统总论 / 宗派对照 / 跨传统议题路由
+  - `references/source-conventions.md` — CBETA / BDRC / SuttaCentral / PTS / Toh 引用规则与验证流程
+  - `references/ethics-runtime.md` — ETHICS.md 运行时摘要（AI 透明度 / 版权分级 / HARD-GATE / 边界场景）
+  - `references/teaching-modes.md` — `/compare-masters` vs `/master-debate` vs `/master-curriculum` 决策树
+  - `references/workflow-details.md` — Step 1-5 细则、追加 / 纠正 / 管理命令、执行优先级冲突
+- `references/README.md` — index of on-demand references with "when to load" matrix.
+
+### Not Changed — v0.8 root SKILL.md progressive disclosure
+- 14 个 single master 的 `prebuilt/<master>/SKILL.md` 与 `meta.json` — 全部不动
+- `ETHICS.md` — 治理文档保留全文不删（运行时摘要在 `references/ethics-runtime.md`）
+- `prebuilt/{compare,master-debate,master-curriculum}/SKILL.md` — 元 skill 全部不动
+- HARD-GATE 铁律、敏感性边界规则、工具路由表、frontmatter 字段全部完整保留
+
 ### Added
 - npm publish: `master-skill` package live on registry — `npm install -g master-skill` or `npx master-skill` now serves all three published versions (0.4.0 / 0.5.0 / 0.6.0). README badges added for npm version + monthly downloads.
 - `ETHICS.md` — AI transparency, copyright tier (A/B/C/D), religious boundary, dual-track content license, takedown channel.
