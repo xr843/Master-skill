@@ -1,0 +1,58 @@
+version: 2
+
+# Dependabot keeps our supply chain fresh:
+#   - github-actions: bumps the SHA-pinned actions in .github/workflows/.
+#     Dependabot writes the new SHA + a comment with the new version.
+#   - npm:            bumps the (currently empty) package.json deps + the
+#     globally-pinned promptfoo@<ver> in persona-fidelity.yml.
+#   - pip:            bumps requirements.txt (Python validators).
+#
+# All updates open weekly Monday PRs with the `dependencies` label plus an
+# ecosystem-specific label so the maintainer can filter quickly. Major-
+# version bumps are NOT auto-merged — they require explicit review.
+
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "pip"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"

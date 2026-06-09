@@ -1,8 +1,28 @@
 name: Publish to npm
 
 # Triggered on release tags (v0.3.0, v0.3.1, v1.0.0, ...) or manually.
-# First-time publish requires: Settings → Secrets → Actions → NPM_TOKEN
-# Generate at https://www.npmjs.com/settings/~/tokens (type: Automation / Granular).
+#
+# Supply-chain hardening (v0.8):
+#   - All `uses:` are pinned to a full commit SHA + version comment.
+#     Bumps are PR'd by Dependabot (see .github/dependabot.yml).
+#   - npm publish uses --provenance and OIDC Trusted Publishing.
+#     No NPM_TOKEN secret is needed (or trusted) — the GitHub OIDC
+#     id-token is exchanged at npmjs.com for short-lived publish creds.
+#
+# First-time / re-configuration setup (one-time, by repo admin):
+#   1. npmjs.com → Package "master-skill" → Settings → Trusted Publisher
+#   2. Add Trusted Publisher:
+#        Publisher: GitHub Actions
+#        Owner:     xr843
+#        Repository: Master-skill
+#        Workflow:  npm-publish.yml
+#        Environment: npm   (matches `environment.name` below)
+#   3. Confirm. From this point on, NPM_TOKEN can be deleted from
+#      repo Settings → Secrets → Actions (it is no longer used).
+#
+# Until Trusted Publisher is configured, the `Publish` step will fail
+# with a clear 401 from npm — that is the expected first-run failure;
+# fix it by completing the setup above, then re-run the release.
 
 on:
   release:
@@ -18,7 +38,7 @@ on:
 
 permissions:
   contents: read
-  # id-token needed if we move to npm provenance / trusted publishing later
+  # Required for npm provenance + OIDC Trusted Publishing.
   id-token: write
 
 jobs:
@@ -28,10 +48,10 @@ jobs:
       name: npm
       url: https://www.npmjs.com/package/master-skill
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
@@ -60,11 +80,7 @@ jobs:
 
       - name: Publish
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.dry-run == 'false')
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "::error::NPM_TOKEN secret not configured. Add it at Settings → Secrets → Actions."
-            exit 1
-          fi
-          npm publish --access public --provenance
+        # No NODE_AUTH_TOKEN / NPM_TOKEN env — authentication is via
+        # OIDC Trusted Publisher. setup-node above wrote a .npmrc that
+        # `npm publish --provenance` will use for the OIDC token exchange.
+        run: npm publish --access public --provenance

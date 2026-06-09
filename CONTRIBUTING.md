@@ -264,6 +264,33 @@ v0.8 在 `meta.json` 引入 `lore_triggers`，让 runtime 在用户提问命中 
 
 ---
 
+## § 7 依赖 PR（Dependabot 自动开）
+
+本仓库自 v0.8 起开启 [Dependabot](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates)，每周一自动开三类依赖升级 PR：
+
+| 生态 | 监控目标 |
+|------|---------|
+| `github-actions` | `.github/workflows/*.yml` 中所有 SHA-pin 的 actions |
+| `npm` | `package.json` 依赖 + workflow 中 `npm install -g promptfoo@<ver>` |
+| `pip` | `requirements.txt`（validate / fidelity 工具链） |
+
+**maintainer review 流程**（也欢迎贡献者帮忙跑）：
+
+1. **CI 必须全绿**——所有 required status checks 是依赖更新最可靠的回归信号。
+2. **SHA 真实性核对**（仅 github-actions PR）：
+   ```bash
+   gh api repos/actions/<name>/git/refs/tags/<new-version> --jq '.object.sha'
+   ```
+   与 Dependabot PR 里写的 SHA 比对，一致才合并。
+3. **major bump 不可自动合并**：major 版本通常含 breaking change，必须人工读 release note + 跑 fidelity smoke 确认行为不变。
+4. **minor / patch**：CI 绿即可合并，合并方式与本仓库其它 PR 一致——`gh pr merge --merge`（保留 commit 历史）。
+
+如需手动触发一次扫描：仓库 Settings → Code security and analysis → Dependabot → "Check for updates"。
+
+> 报告 Dependabot 误判 / 漏报：开普通 issue，标签选 `dependencies`。
+
+---
+
 ## 问题？
 
 - 技术问题 → [Bug Report](https://github.com/xr843/Master-skill/issues/new?template=bug_report.yml)

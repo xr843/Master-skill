@@ -7,8 +7,8 @@ Master-skill 以 `main` 为持续发布分支。我们仅对以下版本承诺 s
 | 版本 | 状态 |
 |------|------|
 | `main` (latest) | ✅ 持续修复 |
-| `0.3.x` | ✅ 持续修复 |
-| `< 0.3.0` | ❌ 不再维护 |
+| `0.7.x` | ✅ 持续修复 |
+| `< 0.7.0` | ❌ 不再维护 |
 
 ---
 
@@ -99,6 +99,20 @@ Master-skill 作为 AgentSkill 插件 + NPX CLI，主要关注以下安全面：
 - 负责任披露：[GitHub Security Advisory Policy](https://docs.github.com/en/code-security/security-advisories)
 - 内容安全边界：[`ETHICS.md`](ETHICS.md) §3
 - 社区安全：[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
+
+---
+
+## 供应链安全（Supply Chain Security）
+
+本仓库已实施以下供应链加固措施（v0.8 起）：
+
+- **GitHub Actions 全部 SHA pin**：所有 `uses:` 引用都锁定到完整 commit SHA + 版本注释，防止 tag 被重打（mutable tag attack）。Dependabot 每周一自动开 PR 升级。
+- **npm 发布使用 OIDC Trusted Publishing**：发版无需长期 `NPM_TOKEN` secret，改用 GitHub Actions OIDC id-token 在 npmjs.com 换取短期发布凭据。
+- **npm provenance attestation**：每次 `npm publish` 附带 sigstore 透明日志可验证的构建溯源，安装方可通过 `npm install --foreground-scripts master-skill` + `npm audit signatures` 验证。
+- **Dependabot 三生态**：`github-actions` / `npm` / `pip` 每周一统一开 PR；major bump 必须人工 review。
+- **主分支保护**：required status checks 包含 `Validate SKILL.md & fidelity structure`、`Fidelity smoke`、`Persona-fidelity schema + advisory eval`；禁止 force push 与分支删除。
+
+如需复核或质疑某条措施，欢迎在 Discussion 提出。
 
 ---
 
