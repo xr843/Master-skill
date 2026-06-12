@@ -184,7 +184,7 @@ npm update -g master-skill             # 升到下一个 minor / patch
 **Claude Code（插件方式）**
 
 ```bash
-# 即将上线插件市场，目前使用手动安装：
+# npx（上方）与 git clone 手动安装为正式发布渠道：
 git clone https://github.com/xr843/Master-skill ~/Master-skill
 cd ~/Master-skill && pip install -r requirements.txt
 for d in prebuilt/*/; do ln -sf "$(pwd)/$d" ~/.claude/skills/"$(basename $d)"; done
