@@ -1,6 +1,6 @@
 {
   "name": "master-skill",
-  "description": "Buddhist Master AI teaching personas — 15 prebuilt masters across 汉传/藏传/南传 invokable via /master-<slug> slash commands, with source-cited doctrinal responses (CBETA / BDRC / SuttaCentral / PTS Vism)",
+  "description": "Buddhist Master AI teaching personas — 14 prebuilt masters across 汉传/藏传/南传 invokable via /master-<slug> slash commands, with source-cited doctrinal responses (CBETA / BDRC / SuttaCentral / PTS Vism)",
   "version": "0.8.0",
   "contextFileName": "GEMINI.md"
 }
