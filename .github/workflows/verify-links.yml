@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests pypinyin pyyaml
+          pip install -r requirements.txt
 
       - name: Run verify_sources.py (dry run)
         id: verify

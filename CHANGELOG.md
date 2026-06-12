@@ -17,6 +17,12 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - **`--version` flag** (reads `package.json`); help text no longer hardcodes a stale "v0.6+".
 - **Name validation.** Install/uninstall names are restricted to `[A-Za-z0-9_-]`, so a path-traversal typo can never escape `prebuilt/` or `~/.claude/skills/`.
 
+### Fixed — DX & packaging
+- **npm scripts call `python3` instead of `python`.** Stock Ubuntu/Debian (and WSL) ship only `python3`, so `npm test` / `npm run validate` failed out of the box unless a venv was active. CONTRIBUTING notes the requirement.
+- **CI installs Python deps from `requirements.txt`** (`pip install -r requirements.txt …`) instead of hardcoded package lists in all four workflows. Previously dependabot bumps to `requirements.txt` (e.g. #41/#42) never reached CI at all.
+- **`files` in `package.json` now excludes `__pycache__`/`*.pyc`.** A local `npm pack` would have shipped ~47 kB of Python bytecode; the CI publish path was clean only because it runs from a fresh checkout.
+- **Docs state the fidelity-CI status honestly**: with no `ANTHROPIC_API_KEY` secret configured (currently true for the main repo, not just forks), the fidelity-smoke job is an advisory pass and the weekly full sweep grades nothing — green means structural validation. Real fidelity grading is a local / pre-release manual step (README features list, CONTRIBUTING §2 checklist).
+
 ### Added — CLI test suite + Windows CI
 - `tests/cli.test.mjs` — 14 `node:test` integration tests (zero new dependencies) covering list output, `--version`, short/full-name install, stale-file cleanup on reinstall, partial-failure exit codes, install **and uninstall** path-traversal rejection, a deterministic CRLF frontmatter fixture, `--all`, and uninstall. Run via `npm run test:cli`; also appended to `npm test`.
 - CI: new `cli-windows` job runs the same suite on `windows-latest` — the regression net that would have caught the `URL.pathname` bug at introduction.

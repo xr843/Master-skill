@@ -39,7 +39,9 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests pypinyin pyyaml pytest
+        # -r requirements.txt, not a hardcoded list — otherwise dependabot
+        # bumps to the version bounds never reach CI.
+        run: pip install -r requirements.txt pytest
 
       - name: Lint SKILL.md frontmatter (includes v0.8 persona-fidelity sub-check)
         run: python scripts/validate.py --strict
@@ -107,7 +109,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install anthropic requests pypinyin
+        run: pip install -r requirements.txt anthropic
 
       - name: Pick smoke target
         id: pick
@@ -175,7 +177,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install anthropic requests pypinyin
+        run: pip install -r requirements.txt anthropic
 
       - name: Run fidelity tests
         env:
