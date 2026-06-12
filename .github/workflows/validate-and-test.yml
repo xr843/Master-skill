@@ -7,6 +7,10 @@ on:
       - 'scripts/**'
       - 'prompts/**'
       - 'tools/**'
+      - 'bin/**'
+      - 'tests/**'
+      - 'hooks/**'
+      - 'package.json'
       - '.github/workflows/validate-and-test.yml'
   # No paths: filter on pull_request — the "Validate" and "Fidelity smoke"
   # jobs are branch-protection-required checks, so they must run on EVERY
@@ -69,9 +73,9 @@ jobs:
         run: node --test tests/cli.test.mjs
 
   # bin/cli.mjs is the one piece of code every npx user executes, and its
-  # path handling broke silently on Windows before v0.8.1 (URL.pathname gives
-  # "/C:/…"). This job is the regression net: the same node:test suite, on a
-  # native Windows runner with a CRLF-defaulting git.
+  # path handling broke silently on Windows before this fix (URL.pathname
+  # gives "/C:/…"). This job is the regression net: the same node:test suite,
+  # on a native Windows runner with a CRLF-defaulting git.
   cli-windows:
     name: CLI tests (Windows)
     runs-on: windows-latest

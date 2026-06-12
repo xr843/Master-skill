@@ -18,8 +18,9 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - **Name validation.** Install/uninstall names are restricted to `[A-Za-z0-9_-]`, so a path-traversal typo can never escape `prebuilt/` or `~/.claude/skills/`.
 
 ### Added — CLI test suite + Windows CI
-- `tests/cli.test.mjs` — 12 `node:test` integration tests (zero new dependencies) covering list output, `--version`, short/full-name install, stale-file cleanup on reinstall, partial-failure exit codes, path-traversal rejection, `--all`, and uninstall. Run via `npm run test:cli`; also appended to `npm test`.
+- `tests/cli.test.mjs` — 14 `node:test` integration tests (zero new dependencies) covering list output, `--version`, short/full-name install, stale-file cleanup on reinstall, partial-failure exit codes, install **and uninstall** path-traversal rejection, a deterministic CRLF frontmatter fixture, `--all`, and uninstall. Run via `npm run test:cli`; also appended to `npm test`.
 - CI: new `cli-windows` job runs the same suite on `windows-latest` — the regression net that would have caught the `URL.pathname` bug at introduction.
+- CI: `on.push.paths` now includes `bin/**`, `tests/**`, `hooks/**`, and `package.json` — direct pushes touching only the CLI previously triggered zero CI.
 
 ## [0.8.0] — 2026-06-12
 

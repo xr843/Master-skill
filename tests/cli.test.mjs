@@ -25,7 +25,9 @@ function run(args, env = {}) {
     });
     return { stdout, code: 0 };
   } catch (err) {
-    return { stdout: (err.stdout || "") + (err.stderr || ""), code: err.status };
+    // err.status is null when the child died to a signal — surface -1 so an
+    // assertion failure reads as "crashed", not a confusing null-vs-1 diff.
+    return { stdout: (err.stdout || "") + (err.stderr || ""), code: err.status ?? -1 };
   }
 }
 
@@ -104,6 +106,17 @@ test("install rejects path-traversal names", (t) => {
   assert.ok(!fs.existsSync(path.join(home, ".claude", "escape")));
 });
 
+test("uninstall rejects path-traversal names without touching the filesystem", (t) => {
+  const { home, env } = tmpHome(t);
+  // The victim sits where "../victim" would resolve from ~/.claude/skills/.
+  const victim = path.join(home, ".claude", "victim");
+  fs.mkdirSync(victim, { recursive: true });
+  const { stdout, code } = run(["uninstall", "../victim"], env);
+  assert.equal(code, 1);
+  assert.match(stdout, /invalid name/);
+  assert.ok(fs.existsSync(victim), "victim dir was deleted by traversal");
+});
+
 test("partial failure still installs the valid names but exits non-zero", (t) => {
   const { home, env } = tmpHome(t);
   const { code } = run(["install", "zhiyi", "no-such-master"], env);
@@ -141,4 +154,28 @@ test("install --all installs every prebuilt master", (t) => {
 test("unknown command exits non-zero", () => {
   const { code } = run(["frobnicate"]);
   assert.equal(code, 1);
+});
+
+// Deterministic CRLF coverage: the windows-latest job only exercises CRLF
+// because the repo lacks .gitattributes and the runner defaults autocrlf=true.
+// This test pins the code path on every OS by building a synthetic install
+// tree whose SKILL.md is written with \r\n line endings.
+test("list parses frontmatter from CRLF files", (t) => {
+  const tree = fs.mkdtempSync(path.join(os.tmpdir(), "master-skill-crlf-test-"));
+  t.after(() => fs.rmSync(tree, { recursive: true, force: true }));
+
+  fs.mkdirSync(path.join(tree, "bin"));
+  fs.copyFileSync(CLI, path.join(tree, "bin", "cli.mjs"));
+  fs.writeFileSync(path.join(tree, "package.json"), '{"version": "0.0.0-test"}');
+  const masterDir = path.join(tree, "prebuilt", "master-crlf");
+  fs.mkdirSync(masterDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(masterDir, "SKILL.md"),
+    "---\r\nname: master-crlf\r\ndescription: CRLF survives parsing\r\n---\r\n\r\n# body\r\n"
+  );
+
+  const stdout = execFileSync(process.execPath, [path.join(tree, "bin", "cli.mjs"), "list"], {
+    encoding: "utf8",
+  });
+  assert.match(stdout, /master-crlf\s+CRLF survives parsing/);
 });

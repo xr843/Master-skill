@@ -211,5 +211,5 @@ if (!cmd || cmd === "--help" || cmd === "-h") {
   }
 } else {
   console.log(`Unknown command: ${cmd}\nRun master-skill --help for usage.`);
-  process.exit(1);
+  process.exitCode = 1;
 }
