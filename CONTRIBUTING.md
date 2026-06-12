@@ -48,6 +48,7 @@ pip install anthropic  # 仅 fidelity 实跑需要
 # Node（用于 npx installer）
 # 需要 Node.js >= 18
 npm install -g .  # 可选，本地测试 CLI
+# 注：npm test / npm run validate 调用 `python3`（系统自带或 venv 内均可）
 ```
 
 **基本健康检查：**
@@ -80,7 +81,7 @@ ANTHROPIC_API_KEY=sk-... python scripts/test-fidelity.py --master master-zhiyi -
 
 提交 PR 前自检：
 
-- [ ] CI 绿色（validate / fidelity-smoke 必过；forks 无 API key 会 skip 并 warning，OK）
+- [ ] CI 绿色（validate 必过；fidelity-smoke 在未配置 `ANTHROPIC_API_KEY` 时为 advisory pass——目前主仓与 forks 均未配置，绿勾代表结构校验通过，实跑评分是本地/发版前手动步骤）
 - [ ] CHANGELOG.md 的 `[Unreleased]` 章节已更新（除非是纯 typo）
 - [ ] 涉及 `prebuilt/**` 的改动 → 已 review ETHICS.md §2（版权 Tier）、§3（教界边界）
 - [ ] PR description 说明**做了什么 + 为什么**，而非只列改动文件

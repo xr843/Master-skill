@@ -8,15 +8,15 @@
   },
   "scripts": {
     "list": "node bin/cli.mjs list",
-    "validate": "python scripts/validate.py --strict",
-    "validate:fidelity": "python scripts/validate-fidelity.py",
-    "validate:persona-fidelity": "python scripts/validate-persona-fidelity.py",
-    "validate:lore-content": "python scripts/validate-lore-triggers-content.py",
-    "validate:versions": "python scripts/check-manifest-versions.py",
+    "validate": "python3 scripts/validate.py --strict",
+    "validate:fidelity": "python3 scripts/validate-fidelity.py",
+    "validate:persona-fidelity": "python3 scripts/validate-persona-fidelity.py",
+    "validate:lore-content": "python3 scripts/validate-lore-triggers-content.py",
+    "validate:versions": "python3 scripts/check-manifest-versions.py",
     "test:hook": "bash hooks/tests/test_session_start.sh",
     "test:cli": "node --test tests/cli.test.mjs",
-    "test": "python scripts/validate.py --strict && python scripts/validate-fidelity.py && python scripts/validate-persona-fidelity.py && python scripts/check-manifest-versions.py && python scripts/test-fidelity.py --all --dry-run && node --test tests/cli.test.mjs",
-    "test:smoke": "python scripts/test-fidelity.py --master yinguang --max-tests 1",
+    "test": "python3 scripts/validate.py --strict && python3 scripts/validate-fidelity.py && python3 scripts/validate-persona-fidelity.py && python3 scripts/check-manifest-versions.py && python3 scripts/test-fidelity.py --all --dry-run && node --test tests/cli.test.mjs",
+    "test:smoke": "python3 scripts/test-fidelity.py --master yinguang --max-tests 1",
     "prepack": "node bin/cli.mjs list"
   },
   "keywords": [
@@ -74,6 +74,8 @@
     "ETHICS.md",
     "LICENSE",
     "README.md",
-    "README_EN.md"
+    "README_EN.md",
+    "!**/__pycache__",
+    "!**/*.pyc"
   ]
 }
