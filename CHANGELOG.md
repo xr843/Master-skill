@@ -8,7 +8,12 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ---
 
-## [Unreleased]
+## [0.8.0] — 2026-06-12
+
+### Added — v0.8 content completeness (release prep)
+- **cross_critique coverage extended to all 14 masters.** The 4 remaining masters with zero entries each gained 2 literature-grounded rebuttals: buddhaghosa (→ huineng 顿悟 vs 七清净次第, → kumarajiva 毕竟空 vs 阿毗达摩自相分别), fazang (→ xuanzang 五种姓 vs 一乘皆成, → zhiyi 同教/别教一乘之辨), milarepa (→ tsongkhapa 经院学风 vs 实修, → atisha 道次第 vs 即身成就), xuyun (→ yinguang 参究念佛者是谁, → mahasi-sayadaw 标记内观 vs 反闻自性). Every master now brings sourced ammunition into `/master-debate` — total 24 entries.
+- **huineng lore_triggers advisory warnings cleared.** `sources/tanjing-excerpts.md` gained the 得法偈 (行由品) section and the full 定慧品 passage (师示众云…定慧等学), so both `validate-lore-triggers-content.py` advisory warnings now PASS in `--strict` — ahead of the v0.9 hard gate.
+- **README**: removed the stale "即将上线插件市场" claim; npx + git clone are the official release channels (no marketplace submission planned).
 
 ### Integrity — v0.8 lore_triggers content + lineage + version drift gates
 - `scripts/validate-lore-triggers-content.py` — new validator that checks every `lore_triggers[].content` quote against the master's own `sources/*-excerpts.md` (and `references/*.md` as a soft-pass fallback). PASS requires either a longest-common-substring of `min(40, 0.85 × quote_len)` chars OR a SequenceMatcher ratio ≥ 0.75 over normalized text (punctuation stripped, traditional ↔ simplified Han folded via a hand-curated 30-char table). Catches the failure mode caught manually during PR #32 self-review (a fabricated "念佛是谁" quote falsely attributed to T48n2008) that the next PR may not catch by luck.
