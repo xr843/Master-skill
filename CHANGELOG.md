@@ -8,6 +8,19 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ---
 
+## [Unreleased]
+
+### Fixed — CLI hardening
+- **Windows path resolution.** `bin/cli.mjs` resolved its own location via `new URL(import.meta.url).pathname`, which yields `/C:/…` on Windows — every command saw an empty `prebuilt/` and `npx master-skill list` printed "No prebuilt masters found." on native Windows. Now uses `fileURLToPath`. Frontmatter parsing also accepts CRLF line endings, so descriptions survive a `core.autocrlf` checkout.
+- **Reinstall now clears the destination first.** `install` used to copy over an existing `~/.claude/skills/master-*/` without cleaning it, so files renamed or removed upstream lingered as stale skill content across upgrades.
+- **Non-zero exit codes on failure.** `install`/`uninstall` with unknown names, and `install` with no masters available, now exit 1 instead of reporting success to scripts and CI consumers.
+- **`--version` flag** (reads `package.json`); help text no longer hardcodes a stale "v0.6+".
+- **Name validation.** Install/uninstall names are restricted to `[A-Za-z0-9_-]`, so a path-traversal typo can never escape `prebuilt/` or `~/.claude/skills/`.
+
+### Added — CLI test suite + Windows CI
+- `tests/cli.test.mjs` — 12 `node:test` integration tests (zero new dependencies) covering list output, `--version`, short/full-name install, stale-file cleanup on reinstall, partial-failure exit codes, path-traversal rejection, `--all`, and uninstall. Run via `npm run test:cli`; also appended to `npm test`.
+- CI: new `cli-windows` job runs the same suite on `windows-latest` — the regression net that would have caught the `URL.pathname` bug at introduction.
+
 ## [0.8.0] — 2026-06-12
 
 ### Added — v0.8 content completeness (release prep)
