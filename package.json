@@ -14,7 +14,8 @@
     "validate:lore-content": "python scripts/validate-lore-triggers-content.py",
     "validate:versions": "python scripts/check-manifest-versions.py",
     "test:hook": "bash hooks/tests/test_session_start.sh",
-    "test": "python scripts/validate.py --strict && python scripts/validate-fidelity.py && python scripts/validate-persona-fidelity.py && python scripts/check-manifest-versions.py && python scripts/test-fidelity.py --all --dry-run",
+    "test:cli": "node --test tests/cli.test.mjs",
+    "test": "python scripts/validate.py --strict && python scripts/validate-fidelity.py && python scripts/validate-persona-fidelity.py && python scripts/check-manifest-versions.py && python scripts/test-fidelity.py --all --dry-run && node --test tests/cli.test.mjs",
     "test:smoke": "python scripts/test-fidelity.py --master yinguang --max-tests 1",
     "prepack": "node bin/cli.mjs list"
   },

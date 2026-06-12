@@ -7,6 +7,10 @@ on:
       - 'scripts/**'
       - 'prompts/**'
       - 'tools/**'
+      - 'bin/**'
+      - 'tests/**'
+      - 'hooks/**'
+      - 'package.json'
       - '.github/workflows/validate-and-test.yml'
   # No paths: filter on pull_request — the "Validate" and "Fidelity smoke"
   # jobs are branch-protection-required checks, so they must run on EVERY
@@ -64,6 +68,26 @@ jobs:
 
       - name: Dry-run fidelity tests
         run: python scripts/test-fidelity.py --all --dry-run
+
+      - name: Run CLI tests
+        run: node --test tests/cli.test.mjs
+
+  # bin/cli.mjs is the one piece of code every npx user executes, and its
+  # path handling broke silently on Windows before this fix (URL.pathname
+  # gives "/C:/…"). This job is the regression net: the same node:test suite,
+  # on a native Windows runner with a CRLF-defaulting git.
+  cli-windows:
+    name: CLI tests (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: "20"
+
+      - name: Run CLI tests
+        run: node --test tests/cli.test.mjs
 
   fidelity-smoke:
     name: Fidelity smoke (1 master × 1 fixture)
