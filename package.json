@@ -64,8 +64,6 @@
     "prebuilt/",
     "scripts/",
     "hooks/",
-    "!**/__pycache__",
-    "!**/*.pyc",
     ".claude-plugin/",
     ".cursor-plugin/",
     ".codex/",
@@ -76,6 +74,8 @@
     "ETHICS.md",
     "LICENSE",
     "README.md",
-    "README_EN.md"
+    "README_EN.md",
+    "!**/__pycache__",
+    "!**/*.pyc"
   ]
 }

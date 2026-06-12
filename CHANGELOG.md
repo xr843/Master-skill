@@ -19,8 +19,8 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ### Fixed — DX & packaging
 - **npm scripts call `python3` instead of `python`.** Stock Ubuntu/Debian (and WSL) ship only `python3`, so `npm test` / `npm run validate` failed out of the box unless a venv was active. CONTRIBUTING notes the requirement.
-- **CI installs Python deps from `requirements.txt`** (`pip install -r requirements.txt …`) instead of hardcoded package lists in all four workflows. Previously dependabot bumps to `requirements.txt` (e.g. #41/#42) never reached CI at all.
-- **`files` in `package.json` now excludes `__pycache__`/`*.pyc`.** A local `npm pack` would have shipped ~47 kB of Python bytecode; the CI publish path was clean only because it runs from a fresh checkout.
+- **CI installs Python deps from `requirements.txt`** (`pip install -r requirements.txt …`) instead of hardcoded package lists — all 5 install sites across the three workflows that install Python deps. Previously dependabot bumps to `requirements.txt` (e.g. #41/#42) never reached CI at all.
+- **`files` in `package.json` now excludes `__pycache__`/`*.pyc`** (negations placed last, since npm only applies them to entries listed before them). A local `npm pack` would have shipped tens of kB of Python bytecode; the CI publish path was clean only because it runs from a fresh checkout.
 - **Docs state the fidelity-CI status honestly**: with no `ANTHROPIC_API_KEY` secret configured (currently true for the main repo, not just forks), the fidelity-smoke job is an advisory pass and the weekly full sweep grades nothing — green means structural validation. Real fidelity grading is a local / pre-release manual step (README features list, CONTRIBUTING §2 checklist).
 
 ### Added — CLI test suite + Windows CI
