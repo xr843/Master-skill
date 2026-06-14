@@ -10,6 +10,7 @@ Flow:
 
 import json
 import os
+import re
 from typing import Optional
 
 from fojin_bridge import FojinBridge, create_bridge
@@ -18,6 +19,42 @@ from skill_writer import create_teacher, DISCLAIMER
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "prompts")
+
+# Boundary markers wrapping any FoJin / external-sourced text before it is
+# spliced into an LLM prompt. FoJin enriches its KG from third-party-editable
+# sources (Wikidata / 维基 / BDRC), so retrieved content is untrusted input:
+# a poisoned entity description could otherwise carry instruction text straight
+# into the generation prompt (indirect prompt injection). The matching prompt
+# templates instruct the model to treat anything between these markers as data,
+# never as instructions. See prompts/sutra_analyzer.md "安全边界".
+_FENCE_OPEN = "<<<FOJIN_DATA>>>"
+_FENCE_CLOSE = "<<<END_FOJIN_DATA>>>"
+
+# Strip C0/C1 control chars (except \n and \t) plus Unicode format/bidi/
+# zero-width chars (U+200B–200F, U+2028/2029, U+202A–202E, U+2066–2069, U+FEFF)
+# so escape sequences and invisible reorderings can't smuggle hidden directives
+# or visually obscure injected text. Forged fence markers are stripped
+# separately in _fence().
+_CONTROL_CHARS = re.compile(
+    r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f"
+    r"\u200b-\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069\ufeff]"
+)
+
+
+def _fence(value: str) -> str:
+    """Wrap external/untrusted content in data boundary markers after stripping
+    control chars and any attacker-forged fence markers. Empty input stays empty
+    so absent sections render cleanly."""
+    if not value or not value.strip():
+        return value
+    cleaned = _CONTROL_CHARS.sub("", value)
+    # Strip forged markers until stable. A single pass is defeatable by
+    # overlapping markers, e.g. "<<<END_FOJIN<<<END_FOJIN_DATA>>>_DATA>>>":
+    # removing the inner complete marker rejoins the outer fragments into a
+    # fresh contiguous one. Loop until no marker substring survives.
+    while _FENCE_OPEN in cleaned or _FENCE_CLOSE in cleaned:
+        cleaned = cleaned.replace(_FENCE_OPEN, "").replace(_FENCE_CLOSE, "")
+    return f"{_FENCE_OPEN}\n{cleaned.strip()}\n{_FENCE_CLOSE}"
 
 
 def load_prompt(name: str) -> str:
@@ -62,12 +99,16 @@ def build_analysis_prompt(
     for term in data.get("terms", [])[:30]:
         terms_info += f"- {term.get('headword', '')}: {term.get('definition', '')[:100]}\n"
 
-    prompt = template.replace("{teacher_name}", teacher_name)
-    prompt = prompt.replace("{entity_info}", entity_info)
-    prompt = prompt.replace("{lineage_info}", lineage_info)
-    prompt = prompt.replace("{texts_info}", texts_info)
-    prompt = prompt.replace("{content_samples}", content_samples)
-    prompt = prompt.replace("{terms_info}", terms_info)
+    # teacher_name is operator-supplied (CLI arg), not retrieved content, so it
+    # is not fenced. Still control-char-scrubbed as cheap insurance against a
+    # future flow that sources the name from user/web input. Everything else
+    # comes from FoJin and is wrapped as data.
+    prompt = template.replace("{teacher_name}", _CONTROL_CHARS.sub("", teacher_name))
+    prompt = prompt.replace("{entity_info}", _fence(entity_info))
+    prompt = prompt.replace("{lineage_info}", _fence(lineage_info))
+    prompt = prompt.replace("{texts_info}", _fence(texts_info))
+    prompt = prompt.replace("{content_samples}", _fence(content_samples))
+    prompt = prompt.replace("{terms_info}", _fence(terms_info))
 
     return prompt
 

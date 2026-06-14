@@ -36,6 +36,12 @@ on:
     - cron: '0 7 * * 1'
   workflow_dispatch: {}
 
+# Least privilege: schema validation + advisory eval only read the repo and
+# upload artifacts. No contents/issues/PR writes needed. Pinned here so the
+# token stays read-only regardless of the repo default.
+permissions:
+  contents: read
+
 jobs:
   fidelity:
     name: Persona-fidelity schema + advisory eval

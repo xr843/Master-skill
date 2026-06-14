@@ -9,6 +9,11 @@ import sys
 
 BASE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "prebuilt")
 
+# master feeds into os.path.join(BASE, master, ...); restrict to a slug charset
+# so a value like "../../etc" can never read files outside prebuilt/. Mirrors
+# the isSafeName guard in bin/cli.mjs.
+_SAFE_MASTER = re.compile(r"^[A-Za-z0-9_-]+$")
+
 
 def parse_sections(text):
     """按 ## 标题分段，返回 [(title, body), ...]"""
@@ -56,6 +61,10 @@ def main():
     parser.add_argument("--text", required=True, help="搜索关键词")
     parser.add_argument("--json", action="store_true", dest="as_json", help="JSON 格式输出")
     args = parser.parse_args()
+
+    if not _SAFE_MASTER.match(args.master):
+        print(f"无效的 master ID：{args.master!r}（仅允许字母、数字、'-'、'_'）", file=sys.stderr)
+        sys.exit(2)
 
     results = find_citations(args.master, args.text)
 

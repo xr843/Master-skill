@@ -26,6 +26,13 @@ on:
     # catches regressions the smoke rotation would take 14 weeks to surface.
     - cron: '0 4 * * 1'
 
+# Least privilege: this workflow only reads the repo and runs tests. No job
+# needs to write contents, issues, or PRs. Pinning it here (rather than relying
+# on the repo default) keeps the GITHUB_TOKEN read-only even if the org default
+# is later widened.
+permissions:
+  contents: read
+
 jobs:
   validate:
     name: Validate SKILL.md & fidelity structure
@@ -131,8 +138,15 @@ jobs:
           echo "Smoke target: $CHANGED"
 
       - name: Run fidelity smoke
+        # SMOKE_MASTER is passed through the env, NOT interpolated as
+        # ${{ }} directly inside run: — steps.pick.outputs.master derives from
+        # PR-controlled filenames (grep 'prebuilt/\K[^/]+' can capture shell
+        # metacharacters), and ${{ }} expansion happens before the shell runs,
+        # so inlining it is a script-injection sink. Through env it is plain
+        # data the shell never re-evaluates.
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SMOKE_MASTER: ${{ steps.pick.outputs.master }}
         run: |
           if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
             echo "::warning::ANTHROPIC_API_KEY not configured — smoke is advisory on this run (expected on forks)."
@@ -140,7 +154,7 @@ jobs:
             exit 0
           fi
           python scripts/test-fidelity.py \
-            --master "${{ steps.pick.outputs.master }}" \
+            --master "$SMOKE_MASTER" \
             --max-tests 1 \
             --json > fidelity-smoke.json
           python - <<'PY'
