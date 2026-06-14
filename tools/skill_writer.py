@@ -5,6 +5,7 @@ Adapted from colleague-skill's skill_writer.py for Buddhist master context.
 
 import json
 import os
+import re
 import shutil
 from datetime import datetime
 from typing import Optional
@@ -14,6 +15,25 @@ try:
     HAS_PYPINYIN = True
 except ImportError:
     HAS_PYPINYIN = False
+
+
+# Generated teaching/voice content is LLM output derived from external FoJin
+# data. Before it is written into SKILL.md (which the agent later loads and
+# follows as instructions) strip C0/C1 control chars except \n and \t: ANSI
+# escapes / NULs serve no purpose in Buddhist-text markdown and could be used
+# to hide content or spoof a terminal. Defense-in-depth alongside the prompt-
+# level injection guards (prompts/sutra_analyzer.md, rag_instructions.md).
+_CONTROL_CHARS = re.compile(
+    r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f"
+    r"\u200b-\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069\ufeff]"
+)
+
+
+def sanitize_generated(content: str) -> str:
+    """Strip control characters from generated content before persisting."""
+    if not content:
+        return content
+    return _CONTROL_CHARS.sub("", content)
 
 
 SKILL_MD_TEMPLATE = """---
@@ -75,6 +95,8 @@ def create_teacher(
     sources: Optional[list] = None,
 ) -> str:
     """Create a new teacher skill directory."""
+    teaching_content = sanitize_generated(teaching_content)
+    voice_content = sanitize_generated(voice_content)
     slug = slugify(name)
     teacher_dir = os.path.join(base_dir, slug)
     os.makedirs(teacher_dir, exist_ok=True)
@@ -124,11 +146,11 @@ def update_teacher(teacher_dir: str, teaching_patch: Optional[str] = None, voice
 
     if teaching_patch:
         with open(os.path.join(teacher_dir, "teaching.md"), "a", encoding="utf-8") as f:
-            f.write("\n\n" + teaching_patch)
+            f.write("\n\n" + sanitize_generated(teaching_patch))
 
     if voice_patch:
         with open(os.path.join(teacher_dir, "voice.md"), "a", encoding="utf-8") as f:
-            f.write("\n\n" + voice_patch)
+            f.write("\n\n" + sanitize_generated(voice_patch))
 
     parts = version.split(".")
     parts[1] = str(int(parts[1]) + 1)
