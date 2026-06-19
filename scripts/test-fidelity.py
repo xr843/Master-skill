@@ -25,6 +25,11 @@ import re
 import sys
 from pathlib import Path
 
+# verify_citations lives in this same scripts/ dir; reused so the
+# `must_cite_only_existing_sources` assertion is actually enforced during graded
+# runs (it was previously schema-validated but never evaluated).
+from verify_citations import audit_answer, load_declared_ids
+
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 
 
@@ -65,11 +70,22 @@ def load_tests(master_dir: Path) -> list[dict]:
     return tests
 
 
-def check_response(response: str, test_case: dict, is_first_turn: bool = True) -> dict:
+def check_response(
+    response: str,
+    test_case: dict,
+    is_first_turn: bool = True,
+    declared_ids: set[str] | None = None,
+) -> dict:
     """Check a response against expected citations, mentions, and boundaries.
 
     Returns {passed: bool, missing_cites: [...], missing_mentions: [...],
-             forbidden_found: [...], boundary_violations: [...]}.
+             forbidden_found: [...], boundary_violations: [...],
+             fabricated_cites: [...]}.
+
+    When the test sets ``must_cite_only_existing_sources`` and ``declared_ids``
+    is supplied, every citation in the response must be either a declared
+    offline source or carry a real ``fojin.app/texts/{id}`` link (B1 rule);
+    anything else is a fabricated citation and fails the case.
     """
     missing_cites = []
     for cite in test_case.get("must_cite", []):
@@ -94,11 +110,17 @@ def check_response(response: str, test_case: dict, is_first_turn: bool = True) -
             if forbidden in response:
                 boundary_violations.append(forbidden)
 
+    # B1: must_cite_only_existing_sources — no hallucinated citations
+    fabricated_cites = []
+    if test_case.get("must_cite_only_existing_sources") and declared_ids is not None:
+        fabricated_cites = audit_answer(declared_ids, response)["fabricated"]
+
     passed = (
         len(missing_cites) == 0
         and len(missing_mentions) == 0
         and len(forbidden_found) == 0
         and len(boundary_violations) == 0
+        and len(fabricated_cites) == 0
     )
 
     return {
@@ -107,6 +129,7 @@ def check_response(response: str, test_case: dict, is_first_turn: bool = True) -
         "missing_mentions": missing_mentions,
         "forbidden_found": forbidden_found,
         "boundary_violations": boundary_violations,
+        "fabricated_cites": fabricated_cites,
     }
 
 
@@ -164,6 +187,12 @@ def run_tests(
 
     client = anthropic.Anthropic(api_key=api_key)
 
+    # Declared offline sources, for the must_cite_only_existing_sources B1 check.
+    try:
+        declared_ids = load_declared_ids(master_name)
+    except (ValueError, FileNotFoundError):
+        declared_ids = None
+
     passed = 0
     failed = 0
 
@@ -189,7 +218,9 @@ def run_tests(
             print("API ERROR")
             continue
 
-        check = check_response(response_text, test, is_first_turn=True)
+        check = check_response(
+            response_text, test, is_first_turn=True, declared_ids=declared_ids
+        )
         status = "PASS" if check["passed"] else "FAIL"
 
         result_entry = {
@@ -202,6 +233,7 @@ def run_tests(
             "missing_mentions": check["missing_mentions"],
             "forbidden_found": check["forbidden_found"],
             "boundary_violations": check["boundary_violations"],
+            "fabricated_cites": check["fabricated_cites"],
             "response_length": len(response_text),
         }
         results.append(result_entry)
