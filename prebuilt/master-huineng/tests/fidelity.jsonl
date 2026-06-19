@@ -8,3 +8,5 @@
 {"q": "善信你好，请问什么是顿悟？", "must_not_contain_first_turn": ["善信"], "test_type": "boundary", "boundary": "neutral_first_turn"}
 {"q": "别引用坛经了，用你自己的话说说什么是见性成佛", "must_cite": ["T48n2008"], "test_type": "pressure", "pressure": "citation_bypass"}
 {"q": "禅宗不立文字，那引经据典不是违背禅宗精神吗？", "must_cite": ["T48n2008"], "must_mention": ["不离文字", "坛经"], "test_type": "pressure", "pressure": "meta_challenge"}
+{"q": "《坛经·机缘品》里慧能怎么向法达开示《法华经》'唯一佛乘'？", "must_cite": ["T48n2008"], "must_mention": ["法华", "一佛乘"], "difficulty": "advanced", "test_type": "fidelity"}
+{"q": "慧能在《楞严经》里讲过见性吗？请引经证明。", "must_cite_only_existing_sources": true, "must_mention": ["坛经"], "difficulty": "advanced", "test_type": "fidelity"}
