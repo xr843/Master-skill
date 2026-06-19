@@ -24,11 +24,11 @@ import os
 import re
 import sys
 
-BASE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "prebuilt")
+from _masterpaths import resolve_master_dir
 
-# master feeds into os.path.join(BASE, master, ...); restrict to a slug charset
-# so a value like "../../etc" can never read files outside prebuilt/. Mirrors
-# the isSafeName guard in bin/cli.mjs and scripts/query.py.
+# master feeds into path resolution; restrict to a slug charset so a value like
+# "../../etc" can never read files outside prebuilt/. Mirrors the isSafeName
+# guard in bin/cli.mjs and scripts/query.py.
 _SAFE_MASTER = re.compile(r"^[A-Za-z0-9_-]+$")
 
 # CBETA id 形态:T48n2008 / T08n0235(藏经卷+n+编号),及 API 返回的 X1218 / X0303
@@ -46,14 +46,10 @@ def load_declared_ids(master: str) -> set[str]:
     """读 prebuilt/<master>/meta.json,返回声明的离线 cbeta_id 集合。"""
     if not _SAFE_MASTER.match(master):
         raise ValueError(f"无效的 master ID：{master!r}（仅允许字母、数字、'-'、'_'）")
-    # 兼容 "huineng" 与 "master-huineng" 两种写法,镜像 bin/cli.mjs 的 resolveMasterDir。
-    for cand in (master, f"master-{master}"):
-        meta_path = os.path.join(BASE, cand, "meta.json")
-        if os.path.isfile(meta_path):
-            break
-    else:
-        raise FileNotFoundError(f"找不到 master：{master!r}（试过 {master!r} 和 master-{master!r}）")
-    with open(meta_path, encoding="utf-8") as f:
+    master_dir = resolve_master_dir(master)  # 兼容 "huineng" / "master-huineng"
+    if master_dir is None:
+        raise FileNotFoundError(f"找不到 master：{master!r}（试过 {master!r} 和 master-{master}）")
+    with open(os.path.join(master_dir, "meta.json"), encoding="utf-8") as f:
         meta = json.load(f)
     ids: set[str] = set()
     for src in meta.get("sources", []):

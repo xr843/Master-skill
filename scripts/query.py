@@ -7,11 +7,11 @@ import os
 import re
 import sys
 
-BASE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "prebuilt")
+from _masterpaths import resolve_master_dir
 
-# master feeds into os.path.join(BASE, master, ...); restrict to a slug charset
-# so a value like "../../etc" can never read files outside prebuilt/. Mirrors
-# the isSafeName guard in bin/cli.mjs.
+# master feeds into os.path.join(...); restrict to a slug charset so a value
+# like "../../etc" can never read files outside prebuilt/. Mirrors the
+# isSafeName guard in bin/cli.mjs.
 _SAFE_MASTER = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
@@ -27,12 +27,12 @@ def parse_sections(text):
     return sections
 
 
-def search(master, query, brief=False):
+def search(master_dir, query, brief=False):
     keywords = query.split()
     results = []
 
     for subdir in ("sources", "references"):
-        dirpath = os.path.join(BASE, master, subdir)
+        dirpath = os.path.join(master_dir, subdir)
         if not os.path.isdir(dirpath):
             continue
         for fname in sorted(os.listdir(dirpath)):
@@ -69,7 +69,13 @@ def main():
         print(f"无效的 master ID：{args.master!r}（仅允许字母、数字、'-'、'_'）", file=sys.stderr)
         sys.exit(2)
 
-    results = search(args.master, args.q, args.brief)
+    master_dir = resolve_master_dir(args.master)
+    if master_dir is None:
+        print(f"找不到 master：{args.master!r}（试过 {args.master!r} 和 master-{args.master}）",
+              file=sys.stderr)
+        sys.exit(2)
+
+    results = search(master_dir, args.q, args.brief)
 
     if not results:
         print(f"未找到包含「{args.q}」的段落。")
