@@ -7,11 +7,11 @@ import os
 import re
 import sys
 
-BASE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "prebuilt")
+from _masterpaths import resolve_master_dir
 
-# master feeds into os.path.join(BASE, master, ...); restrict to a slug charset
-# so a value like "../../etc" can never read files outside prebuilt/. Mirrors
-# the isSafeName guard in bin/cli.mjs.
+# master feeds into os.path.join(...); restrict to a slug charset so a value
+# like "../../etc" can never read files outside prebuilt/. Mirrors the
+# isSafeName guard in bin/cli.mjs.
 _SAFE_MASTER = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
@@ -27,8 +27,8 @@ def parse_sections(text):
     return sections
 
 
-def find_citations(master, text):
-    sources_dir = os.path.join(BASE, master, "sources")
+def find_citations(master_dir, text):
+    sources_dir = os.path.join(master_dir, "sources")
     if not os.path.isdir(sources_dir):
         print(f"错误：找不到目录 {sources_dir}", file=sys.stderr)
         sys.exit(1)
@@ -66,7 +66,13 @@ def main():
         print(f"无效的 master ID：{args.master!r}（仅允许字母、数字、'-'、'_'）", file=sys.stderr)
         sys.exit(2)
 
-    results = find_citations(args.master, args.text)
+    master_dir = resolve_master_dir(args.master)
+    if master_dir is None:
+        print(f"找不到 master：{args.master!r}（试过 {args.master!r} 和 master-{args.master}）",
+              file=sys.stderr)
+        sys.exit(2)
+
+    results = find_citations(master_dir, args.text)
 
     if not results:
         print(f"未找到包含「{args.text}」的段落。")
