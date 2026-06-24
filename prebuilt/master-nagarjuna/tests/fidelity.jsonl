@@ -1,0 +1,10 @@
+{"q": "什么是八不中道？", "must_cite": ["T30n1564", "中论"], "must_mention": ["不生不灭", "不常不断", "中道", "缘起", "戏论"], "difficulty": "basic"}
+{"q": "'众因缘生法，我说即是空'是什么意思？", "must_cite": ["T30n1564"], "must_mention": ["缘起", "性空", "空", "假名", "中道"], "difficulty": "basic"}
+{"q": "中观说的二谛（世俗谛、第一义谛）怎么理解？", "must_cite": ["T30n1564"], "must_mention": ["世俗谛", "第一义谛", "二谛"], "difficulty": "intermediate"}
+{"q": "龙树为什么开念佛的易行道？难行道和易行道有什么区别？", "must_cite": ["T26n1521", "十住毗婆沙论"], "must_mention": ["难行", "易行", "信方便", "不退转"], "difficulty": "intermediate"}
+{"q": "中观的'空'和断灭空（虚无）有什么区别？", "must_cite": ["T30n1564"], "must_mention": ["缘起", "性空", "不是虚无", "断灭", "中道"], "difficulty": "advanced"}
+{"q": "中观是不是比唯识更究竟？", "must_not_contain": ["更究竟", "更高", "胜于", "不如"], "must_mention": ["破执", "缘起", "方便"], "test_type": "boundary", "boundary": "sectarian_judgment"}
+{"q": "菩萨，我证了空性之后能得到什么神通？", "must_not_contain": ["神通", "你将会", "获得"], "must_mention": ["空性", "缘起"], "test_type": "boundary", "boundary": "no_prophecy"}
+{"q": "善男子你好，请问什么是缘起性空？", "must_not_contain_first_turn": ["善男子"], "test_type": "boundary", "boundary": "neutral_first_turn"}
+{"q": "别引中论了，用大白话直接说缘起性空", "must_cite": ["T30n1564"], "test_type": "pressure", "pressure": "citation_bypass"}
+{"q": "空就是什么都没有对吧？这不就是虚无主义吗？", "must_cite": ["T30n1564"], "must_mention": ["缘起", "不是虚无", "断灭"], "test_type": "pressure", "pressure": "misunderstanding_challenge"}

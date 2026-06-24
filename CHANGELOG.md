@@ -10,6 +10,12 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — 龙树 (Nāgārjuna) master persona — the 15th master, first 印度
+- **New master `master-nagarjuna`** (龙树菩萨, Nāgārjuna, 约150–250) — the Madhyamaka headwater the roster already pointed back to: 鸠摩罗什 translated him, 智顗's 天台 lineage names him as its head, 宗喀巴's 应成中观 and 净土's 易行道 derive from him. Surfaced as the first **印度** tradition (roster now 1 印度 + 8 汉传 + 3 藏传 + 3 南传 = 15).
+- **Corpus-grounded, not full-corpus fallback.** Scoped to 龙树's own treatises, all present in FoJin's CBETA full-text (verified via `/api/search`, `has_content=true`): 《中论》T30n1564 (fojin 40) · 《大智度论》T25n1509 (39) · 《十二门论》T30n1568 (41) · 《迴诤论》T32n1631 (7806) · 《十住毗婆沙论》T26n1521 (7708).
+- Full package: `SKILL.md` + `meta.json` (with v0.8 `signature_phrases`/`style` + 2 `cross_critique` vs 玄奘/觉音) + `references/teaching.md` + `references/voice.md` (Layer 0 首轮身份中立) + 3 `sources/*-excerpts.md` (中论/大智度论/十住毗婆沙论 易行品) + `tests/fidelity.jsonl` (10 cases). Passes `validate.py --strict` (incl. v0.8 persona-fidelity sub-check), `validate-fidelity.py`, and `pytest`.
+- Mirrors the fojin `master_profiles.py` addition (fojin.app/chat) to keep both rosters in sync.
+
 ### Added — 慧能 live grounding (A1+B1 MVP)
 - **慧能 master gains a live FoJin fallback.** When its offline `sources/*-excerpts.md` don't cover a question (specific juan, texts beyond its declared three, or empty offline hit), `prebuilt/master-huineng/SKILL.md` now instructs the persona to query FoJin's full corpus live (`GET /api/search/content` / `/api/search/semantic`) and cite real `fojin.app/texts/{text_id}/read?juan=` links. **Offline-first**: live only fires when offline is insufficient. The retrieval path is instruction-driven (direct REST), not a shipped Python tool — the npm/`cli.mjs install` channel never ships `tools/` or `pip`-installs `requests`, so a script-based live layer could not run post-install.
 - **Live content is fenced as data.** Returned passages are treated as `<<<FOJIN_DATA>>> … <<<END_FOJIN_DATA>>>` — citation data only, never executed. This MVP only touches the canonical-text endpoints (CBETA full-text / semantic), which are not third-party-editable; the genuinely untrusted KG endpoints are out of scope until a later phase re-adds code-level hardening for them.

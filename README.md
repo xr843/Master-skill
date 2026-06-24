@@ -26,8 +26,8 @@
 </p>
 
 <p align="center">
-  <strong>依据三大佛教传统祖师大德的教学风格，通达 AI 学习伙伴</strong><br>
-  14 位祖师 · 汉传 / 藏传 / 南传跨传统 · CBETA / BDRC / SuttaCentral / PTS Vism 真实出处 · AgentSkills 标准
+  <strong>依据四大佛教传统祖师大德的教学风格，通达 AI 学习伙伴</strong><br>
+  15 位祖师 · 印度 / 汉传 / 藏传 / 南传跨传统 · CBETA / BDRC / SuttaCentral / PTS Vism 真实出处 · AgentSkills 标准
 </p>
 
 <p align="center">
@@ -48,7 +48,7 @@
 
 ### 👉 [打开 fojin.app/chat](https://fojin.app/chat)
 
-在 AI 问答页面左下角点击「法师模式」，从 14 位三大传统祖师中选一位即可开始对话。
+在 AI 问答页面左下角点击「法师模式」，从 15 位四大传统祖师中选一位即可开始对话。
 
 - 无需安装、无需注册
 - 三种教学模式均可用：`/compare-masters` 多祖师对比、`/master-debate` 祖师辩论、`/master-curriculum` 学修路径（含跨传统）
@@ -62,7 +62,7 @@
 | "妄念纷飞坐不住" | `/虚云` `/智顗` `/master-ajahn-chah`（参话头 / 止观 / 正念观察） |
 | "读经文看不懂逻辑" | `/玄奘`（唯识严密分析） |
 | "学佛很久但无力感" | `/印光`（老实念佛） |
-| "想了解空性" | `/鸠摩罗什` `/慧能` `/master-milarepa` `/master-tsongkhapa`（中观译师 / 禅直指 / 大手印明空 / 应成中观） |
+| "想了解空性" | `/master-nagarjuna` `/鸠摩罗什` `/慧能` `/master-milarepa` `/master-tsongkhapa`（中观源头 / 中观译师 / 禅直指 / 大手印明空 / 应成中观） |
 | "想系统学华严 / 天台" | `/法藏` `/智顗`（判教与哲学体系） |
 | "在禅与净土之间犹豫" | `/蕅益`（跨宗派融通） |
 | "对苦行 / 闭关好奇" | `/master-milarepa`（雪山闭关 · 噶举派典范） |
@@ -137,7 +137,7 @@
 
 ## 特性
 
-- **预置十四位三大传统祖师**：8 位汉传（唯识、中观、禅、天台、华严、净土、跨宗派）+ 3 位藏传（阿底峡 · 噶当；宗喀巴 · 格鲁；米拉日巴 · 噶举）+ 3 位南传（觉音 · 上座部论师；马哈希 · 缅甸内观；阿姜查 · 泰国森林）—— 另含 `compare-masters` 多祖师对比 meta-skill，开箱即用
+- **预置十五位四大传统祖师**：1 位印度（龙树 · 中观）+ 8 位汉传（唯识、中观、禅、天台、华严、净土、跨宗派）+ 3 位藏传（阿底峡 · 噶当；宗喀巴 · 格鲁；米拉日巴 · 噶举）+ 3 位南传（觉音 · 上座部论师；马哈希 · 缅甸内观；阿姜查 · 泰国森林）—— 另含 `compare-masters` 多祖师对比 meta-skill，开箱即用
 - **经文溯源（Provenance）**：每位祖师附原典标识（CBETA / BDRC / SuttaCentral）+ FoJin text ID，所有教义断言强制附原典引证
 - **离线经文片段**：`sources/` 目录收录核心经典关键段落，FoJin 不可用时仍可离线引用
 - **渐进式披露**：SKILL.md 以决策树 + Quick Ref 为主，`references/`、`sources/` 按需加载，Context 随查随取
@@ -165,7 +165,7 @@
 # 安装指定祖师
 npx master-skill install master-zhiyi master-fazang master-huineng
 
-# 安装全部 14 位（三大传统）
+# 安装全部 15 位（四大传统）
 npx master-skill install --all
 
 # 查看可用祖师
@@ -221,6 +221,9 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 在支持 AgentSkills 的环境（Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI）中直接调用：
 
 ```
+# 印度
+/master-nagarjuna      — 龙树菩萨（印度·中观｜八宗共祖）
+
 # 汉传
 /master-xuanzang       — 玄奘法师（法相唯识宗）
 /master-kumarajiva     — 鸠摩罗什（三论宗/中观）
@@ -281,6 +284,12 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 ---
 
 ## 预置法师
+
+### 龙树菩萨（Nāgārjuna，约150-250） — 印度 · 中观
+
+大乘中观奠基者，汉传尊为「八宗共祖」——三论、天台、净土、华严、禅皆溯源于他，藏传应成中观亦以他为根本所依。立「八不中道」破一切戏论，以「众因缘生法，我说即是空」开显缘起性空，依二谛说法而归于毕竟空、戏论寂灭，并以难易二道判摄修行。所著《中论》为后世中观学之根本论典，《大智度论》则为般若义海之百科。
+主要来源：CBETA《中论》T30n1564、《大智度论》T25n1509、《十二门论》T30n1568、《迴诤论》T32n1631、《十住毗婆沙论》T26n1521。
+调用命令：`/master-nagarjuna`
 
 ### 玄奘法师（602-664）
 
