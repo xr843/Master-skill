@@ -27,6 +27,10 @@ allowed-tools:
 
 ## 预置法师（直接调用，无需生成）
 
+**印度**
+
+- `/master-nagarjuna` — 龙树菩萨（印度·中观｜八宗共祖）
+
 **汉传**
 
 - `/master-xuanzang` — 玄奘法师（法相唯识宗）

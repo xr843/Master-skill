@@ -25,8 +25,8 @@
 </p>
 
 <p align="center">
-  <strong>AI learning companions modeled after historical Buddhist masters across three traditions</strong><br>
-  14 pre-built masters · 汉传 / 藏传 / 南传 cross-tradition · CBETA / BDRC / SuttaCentral / PTS Vism citations · AgentSkills Standard
+  <strong>AI learning companions modeled after historical Buddhist masters across four traditions</strong><br>
+  15 pre-built masters · 印度 / 汉传 / 藏传 / 南传 cross-tradition · CBETA / BDRC / SuttaCentral / PTS Vism citations · AgentSkills Standard
 </p>
 
 <p align="center">
@@ -47,7 +47,7 @@
 
 ### 👉 [Open fojin.app/chat](https://fojin.app/chat)
 
-On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bottom-left and pick one of the 14 pre-built masters across three traditions to start chatting.
+On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bottom-left and pick one of the 15 pre-built masters across four traditions to start chatting.
 
 - No install, no signup
 - Three teaching modes available: `/compare-masters` (side-by-side comparison), `/master-debate` (4-round dialectic), `/master-curriculum` (time-sequenced study path) — all cross-tradition
@@ -61,7 +61,7 @@ On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bo
 | "My mind is scattered, I can't sit still" | `/master-xuyun` `/master-zhiyi` `/master-ajahn-chah` (huatou / śamatha-vipaśyanā / mindfulness) |
 | "I can't follow the logic of the sutras" | `/master-xuanzang` (Yogācāra precision) |
 | "I've studied for years but feel stuck" | `/master-yinguang` (plain, sincere nianfo) |
-| "I want to understand emptiness" | `/master-kumarajiva` `/master-huineng` `/master-milarepa` `/master-tsongkhapa` (Madhyamaka translator / direct pointing / Mahāmudrā / prasaṅgika analysis) |
+| "I want to understand emptiness" | `/master-nagarjuna` `/master-kumarajiva` `/master-huineng` `/master-milarepa` `/master-tsongkhapa` (Madhyamaka source / Madhyamaka translator / direct pointing / Mahāmudrā / prasaṅgika analysis) |
 | "I want a systematic view of Huayan / Tiantai" | `/master-fazang` `/master-zhiyi` (classification and metaphysics) |
 | "I'm torn between Chan and Pure Land" | `/master-ouyi` (cross-tradition synthesis) |
 | "I'm curious about ascetic practice / retreat" | `/master-milarepa` (snow-mountain retreat · Kagyu paradigm) |
@@ -136,7 +136,7 @@ This project is built out of respect for Buddhist traditions. All content is gen
 
 ## Features
 
-- **14 pre-built masters across three traditions**: 8 汉传 (Yogācāra, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, cross-tradition) + 3 藏传 (Kadam · Atiśa; Gelug · Tsongkhapa; Kagyu · Milarepa) + 3 南传 (Theravāda commentator · Buddhaghosa; Burmese vipassanā · Mahasi Sayadaw; Thai Forest · Ajahn Chah) — plus a `compare-masters` multi-master comparison meta-skill, ready to use out of the box
+- **15 pre-built masters across four traditions**: 1 印度 (Madhyamaka · Nāgārjuna) + 8 汉传 (Yogācāra, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, cross-tradition) + 3 藏传 (Kadam · Atiśa; Gelug · Tsongkhapa; Kagyu · Milarepa) + 3 南传 (Theravāda commentator · Buddhaghosa; Burmese vipassanā · Mahasi Sayadaw; Thai Forest · Ajahn Chah) — plus a `compare-masters` multi-master comparison meta-skill, ready to use out of the box
 - **Provenance enforcement**: Every master ships with authoritative source IDs (CBETA / BDRC / SuttaCentral) and FoJin text IDs in frontmatter; every doctrinal claim must carry a scriptural citation
 - **Offline source passages**: `sources/` captures key passages from each master's core canon, so citations still work when FoJin is unreachable
 - **Progressive disclosure**: SKILL.md is a decision tree + quick reference; `references/` and `sources/` are loaded on demand to keep context lean
@@ -161,7 +161,7 @@ This project is built out of respect for Buddhist traditions. All content is gen
 **NPX (recommended, no global state)**
 
 ```bash
-npx master-skill install --all    # Install all 14 masters
+npx master-skill install --all    # Install all 15 masters
 npx master-skill list             # List available masters
 ```
 
@@ -200,6 +200,9 @@ ln -sf "$(pwd)" ~/.claude/skills/create-master
 In any AgentSkills-compatible environment (Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI):
 
 ```
+# 印度 (Indian)
+/master-nagarjuna      — Nāgārjuna (Indian · Madhyamaka | root of the eight schools)
+
 # 汉传 (Chinese)
 /master-xuanzang       — Master Xuanzang (Yogacara)
 /master-kumarajiva     — Kumarajiva (Madhyamaka / Sanlun)
@@ -260,6 +263,12 @@ The system will guide you through a three-step intake, then automatically collec
 ---
 
 ## Pre-built Masters
+
+### Nāgārjuna (c. 150-250) — Indian · Madhyamaka
+
+The founder of Mahāyāna Madhyamaka, revered in Chinese Buddhism as the **common patriarch of the eight schools** — Sanlun, Tiantai, Pure Land, Huayan, and Chan all trace their lineage back to him, and the Tibetan prasaṅgika Madhyamaka takes him as its root authority. He used the **eightfold negation of the middle way** to dismantle all conceptual proliferation, opened up dependent origination as emptiness with "whatever arises through conditions, that I declare to be emptiness," taught by way of the **two truths** while resolving into ultimate emptiness and the quiescence of proliferation, and distinguished the **easy and difficult paths** of practice. His *Mūlamadhyamakakārikā* is the root treatise of all later Madhyamaka study, and his *Mahāprajñāpāramitā-śāstra* is an encyclopedia of the Prajñāpāramitā teachings.
+Primary sources: CBETA — Mūlamadhyamakakārikā (T30n1564), Mahāprajñāpāramitā-śāstra (T25n1509), Dvādaśanikāya-śāstra (T30n1568), Vigrahavyāvartanī (T32n1631), Daśabhūmika-vibhāṣā (T26n1521).
+Invoke: `/master-nagarjuna`
 
 ### Master Xuanzang (602-664)
 
