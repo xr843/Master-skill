@@ -10,6 +10,12 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.9.1] — 2026-06-30
+
+### Fixed — personas no longer narrate their own setup ("法师风格已立")
+- **Suppressed process-narration leakage across all 15 personas.** When a master ran the offline→live decision (e.g. `/master-xuanzang` answering a question outside its declared `sources:`), it would prepend scaffolding like "法师风格已立。…容我先向 FoJin 检索正典" — the model verbalizing its internal "load `voice.md` / establish persona / now retrieving" steps as user-facing text. Root cause: the decision tree framed "建立人格" as an explicit step and nothing in `输出要求` forbade announcing it. Each persona's `SKILL.md` now (a) annotates the 风格对话 decision-tree branch as **internal-only** ("内化即可，勿向用户复述此步"), and (b) adds an `输出要求` item **不作过程旁白** — answer directly in the master's voice; never recite "加载/建立人格/正在检索" or declare "风格已立"; in-character one-liners for a live lookup are fine, system-style narration is not.
+- Citation honesty and the live-grounding behavior itself are unchanged — this only removes the meta-commentary. Per-master `SKILL.md` minor bump; package 0.9.0 → 0.9.1.
+
 ## [0.9.0] — 2026-06-30
 
 ### Added — FoJin live grounding rolled out to the remaining 14 masters (now all 15)

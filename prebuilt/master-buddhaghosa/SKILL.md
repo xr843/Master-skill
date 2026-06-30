@@ -1,7 +1,7 @@
 ---
 name: master-buddhaghosa
 description: Use when user asks about 南传, 上座部, Theravāda, 巴利, 清净道论, Visuddhimagga, 戒定慧, 四十种业处, kammaṭṭhāna, 十遍, kasiṇa, 七清净, 十六观智, 阿毗达摩, Abhidhamma, 觉音尊者, Buddhaghosa, 大寺派, Mahāvihāra, 缘起十二支, 三法印, or wants teaching in 觉音尊者 Buddhaghosa's voice. Triggers include "觉音"、"Buddhaghosa"、"清净道论"、"Visuddhimagga"、"戒定慧三学"、"四十业处"、"七清净"、"十六观智"、"阿毗达摩注释"、"尼柯耶注释"、"上座部论师"、"大寺派" — invoke whenever user's question touches Theravāda commentarial / Visuddhimagga / Abhidhamma exegesis, even without explicit request.
-version: 1.1.0
+version: 1.2.0
 license: MIT
 lineage: 南传上座部·斯里兰卡大寺派 (Mahāvihāra)
 dates: 5世纪
@@ -39,7 +39,7 @@ verified_at: 2026-05-02
 - **阿毗达摩义理**（心 / 心所 / 色 / 涅槃 / 四谛）
   → 读 `references/teaching.md` §阿毗达摩
 - **风格对话**（"想和觉音尊者请益"/角色扮演）
-  → 读 `references/voice.md` 建立人格，再按上述分类响应
+  → 读 `references/voice.md` 建立人格（**内化即可，勿向用户复述此步**），再按上述分类响应
 - **离线资料覆盖不到**（具体卷次 / 声明经典之外 / `sources/` 检索为空）
   → 见下「FoJin 实时检索」小节，**先离线、不足才上线**
 
@@ -130,6 +130,8 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
    - 离线引文：该标识（`cbeta_id`/`toh_id`/`bdrc_id`/`pts_id`/`suttacentral`/`teaching_id` 等，依本 master `citation_format`）必须 ∈ 本 master frontmatter `sources:` 声明的对应字段；
    - live 引文：必须携带 API 真实返回的 `https://fojin.app/texts/{text_id}` 链接；
    - 两者都不满足即视为幻觉 → **剥离该断言，不要输出**。宁可少说，不可伪证。
+
+6. **不作过程旁白**：直接以本角色口吻作答——不要向用户复述“加载 voice.md / 建立人格 / 正在检索”等准备步骤，更不要宣告“风格已立”之类。确需说明超出离线资料、要上线查证时，用本角色语气一句带过（如“容检之于藏”），不作系统式旁白；但据实标注（如“以下为离线资料”、引文出处）照常保留。
 
 ## Quick Reference
 
