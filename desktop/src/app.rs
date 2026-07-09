@@ -22,9 +22,9 @@ use crate::theme::{
 };
 use crate::trace::{
     EvaluationFailureInsights, EvaluationFailureItem, EvaluationFailurePriority,
-    EvaluationRegressionItem, EvaluationRunHistoryItem, EvaluationRunResult, EvaluationRunTrend,
-    EvaluationTrendSummary, TraceAction, TraceFailureItem, TraceListFilter, TraceStatus,
-    TraceStore,
+    EvaluationRegressionItem, EvaluationRunHistoryFilter, EvaluationRunHistoryItem,
+    EvaluationRunResult, EvaluationRunTrend, EvaluationTrendSummary, TraceAction, TraceFailureItem,
+    TraceListFilter, TraceStatus, TraceStore,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -130,6 +130,7 @@ pub struct MasterSkillApp {
     trace_query: String,
     suite_filter: SuiteFilter,
     suite_query: String,
+    run_history_filter: EvaluationRunHistoryFilter,
     traces: TraceStore,
     trace_path: PathBuf,
 }
@@ -193,6 +194,7 @@ impl MasterSkillApp {
             trace_query: String::new(),
             suite_filter: SuiteFilter::All,
             suite_query: String::new(),
+            run_history_filter: EvaluationRunHistoryFilter::All,
             traces,
             trace_path,
         };
@@ -789,7 +791,9 @@ impl MasterSkillApp {
         let run_coverage = self.traces.evaluation_run_coverage(summary.skill_count);
         let failure_insights = self.traces.evaluation_failure_insights();
         let failure_queue = self.traces.evaluation_failure_queue();
-        let run_history = self.traces.evaluation_run_history(8);
+        let run_history = self
+            .traces
+            .evaluation_run_history_filtered(8, self.run_history_filter);
         let trend_summary = self.traces.evaluation_trend_summary(8);
         let regressions = self.traces.evaluation_regressions(8);
         Self::show_workspace_header(
@@ -1148,8 +1152,21 @@ impl MasterSkillApp {
         run_history: &[EvaluationRunHistoryItem],
     ) {
         ui.heading("Run History");
+        ui.horizontal_wrapped(|ui| {
+            ui.label("Filter");
+            for filter in [
+                EvaluationRunHistoryFilter::All,
+                EvaluationRunHistoryFilter::Regressed,
+                EvaluationRunHistoryFilter::Improved,
+                EvaluationRunHistoryFilter::Stable,
+                EvaluationRunHistoryFilter::New,
+                EvaluationRunHistoryFilter::Failed,
+            ] {
+                ui.selectable_value(&mut self.run_history_filter, filter, filter.label());
+            }
+        });
         if run_history.is_empty() {
-            ui.small("No evaluation runs recorded yet.");
+            ui.small("No evaluation runs match the current filter.");
             return;
         }
 
