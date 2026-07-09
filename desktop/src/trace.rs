@@ -106,7 +106,39 @@ pub struct EvaluationCaseResult {
     pub question: String,
     pub difficulty: Option<String>,
     pub status: String,
+    pub missing_cites: Vec<String>,
+    pub missing_mentions: Vec<String>,
+    pub forbidden_found: Vec<String>,
+    pub boundary_violations: Vec<String>,
+    pub fabricated_cites: Vec<String>,
     pub trace_id: u64,
+}
+
+impl EvaluationCaseResult {
+    pub fn failure_summary(&self) -> String {
+        let mut parts = Vec::new();
+        push_detail_part(&mut parts, "missing cites", &self.missing_cites);
+        push_detail_part(&mut parts, "missing mentions", &self.missing_mentions);
+        push_detail_part(&mut parts, "forbidden", &self.forbidden_found);
+        push_detail_part(&mut parts, "boundary", &self.boundary_violations);
+        push_detail_part(&mut parts, "fabricated cites", &self.fabricated_cites);
+
+        if parts.is_empty() {
+            match self.status.as_str() {
+                "PASS" => "pass".to_string(),
+                "dry_run" => "dry-run only".to_string(),
+                value => value.to_string(),
+            }
+        } else {
+            parts.join("; ")
+        }
+    }
+}
+
+fn push_detail_part(parts: &mut Vec<String>, label: &str, values: &[String]) {
+    if !values.is_empty() {
+        parts.push(format!("{label}: {}", values.join(", ")));
+    }
 }
 
 impl TraceRecord {
@@ -209,12 +241,31 @@ fn parse_evaluation_case_results(trace_id: u64, detail: &str) -> Vec<EvaluationC
                     .and_then(serde_json::Value::as_str)
                     .map(str::to_string),
                 status: status.to_string(),
+                missing_cites: json_string_array(result, "missing_cites"),
+                missing_mentions: json_string_array(result, "missing_mentions"),
+                forbidden_found: json_string_array(result, "forbidden_found"),
+                boundary_violations: json_string_array(result, "boundary_violations"),
+                fabricated_cites: json_string_array(result, "fabricated_cites"),
                 trace_id,
             });
         }
     }
 
     case_results
+}
+
+fn json_string_array(value: &serde_json::Value, key: &str) -> Vec<String> {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(serde_json::Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn parse_evaluation_results(trace_id: u64, detail: &str) -> Vec<EvaluationRunResult> {
@@ -813,6 +864,52 @@ mod tests {
         assert_eq!(results[0].trace_id, run);
         assert_eq!(results[1].case_index, 2);
         assert_eq!(results[1].question, "顿悟怎么修？");
+    }
+
+    #[test]
+    fn summarizes_evaluation_case_failure_details_from_json_trace() {
+        let mut store = TraceStore::new(10);
+
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "master-huineng fidelity run finished",
+            r#"[
+              {
+                "master": "master-huineng",
+                "total": 1,
+                "results": [
+                  {
+                    "index": 0,
+                    "question": "什么是见性成佛？",
+                    "difficulty": "basic",
+                    "status": "FAIL",
+                    "missing_cites": ["T48n2008"],
+                    "missing_mentions": ["自性", "佛性"],
+                    "forbidden_found": ["过程旁白"],
+                    "boundary_violations": ["风格已立"],
+                    "fabricated_cites": ["T99n9999"]
+                  }
+                ]
+              }
+            ]"#,
+            Duration::from_millis(50),
+        );
+
+        let results = store.latest_evaluation_case_results_for("huineng");
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(
+            results[0].failure_summary(),
+            "missing cites: T48n2008; missing mentions: 自性, 佛性; forbidden: 过程旁白; boundary: 风格已立; fabricated cites: T99n9999"
+        );
     }
 
     #[test]

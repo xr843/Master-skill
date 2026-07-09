@@ -1253,7 +1253,7 @@ impl MasterSkillApp {
             .max_height(220.0)
             .show(ui, |ui| {
                 egui::Grid::new(format!("fidelity-case-grid-{slug}"))
-                    .num_columns(6)
+                    .num_columns(7)
                     .striped(true)
                     .min_col_width(72.0)
                     .show(ui, |ui| {
@@ -1262,6 +1262,7 @@ impl MasterSkillApp {
                         ui.strong("Cites");
                         ui.strong("Keywords");
                         ui.strong("Last Result");
+                        ui.strong("Evidence");
                         ui.strong("Prompt");
                         ui.end_row();
                         for case in cases {
@@ -1271,6 +1272,7 @@ impl MasterSkillApp {
                             ui.label(case.keyword_assertion_count.to_string());
                             if let Some(result) = case_results.get(&case.index) {
                                 ui.label(result.status.as_str());
+                                ui.label(result.failure_summary());
                             } else {
                                 ui.label(
                                     latest_result
@@ -1284,6 +1286,7 @@ impl MasterSkillApp {
                                         })
                                         .unwrap_or_else(|| "not run".to_string()),
                                 );
+                                ui.label("not run");
                             }
                             ui.label(first_line(&case.question));
                             ui.end_row();
