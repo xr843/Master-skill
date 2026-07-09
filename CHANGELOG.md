@@ -23,6 +23,12 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added `master-skill update --all` as an explicit upgrade path that reinstalls every available skill and clears stale files through the existing reinstall logic.
 - Extended CLI integration coverage from 14 to 21 tests for `doctor`, `inspect`, `update --all`, installed-state detection, and invalid inspect names.
 
+### Changed — compare-masters output contract
+- Upgraded `/compare-masters` to a fixed framework output protocol requiring `共同点`, `核心分歧`, `适用根机`, `分歧雷达`, `分歧分类`, `共通点与宗派背景`, `推荐继续追问`, and `引用来源`.
+- Updated compare fixtures to assert the new sections for normal comparison cases.
+- Added a structural validator gate so future compare fixtures cannot drop the required output sections.
+- Corrected compare roster language from 14 masters / three traditions to 15 masters / four traditions.
+
 ## [0.9.1] — 2026-06-30
 
 ### Fixed — personas no longer narrate their own setup ("法师风格已立")

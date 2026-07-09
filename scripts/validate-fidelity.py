@@ -39,6 +39,17 @@ VALID_PRESSURES = {
     "misunderstanding_challenge",
 }
 
+COMPARE_REQUIRED_SECTIONS = {
+    "共同点",
+    "核心分歧",
+    "适用根机",
+    "分歧雷达",
+    "分歧分类",
+    "共通点与宗派背景",
+    "推荐继续追问",
+    "引用来源",
+}
+
 
 def validate_master(master_dir: Path) -> list[str]:
     """Validate fidelity.jsonl for a single master. Returns list of errors."""
@@ -121,6 +132,15 @@ def validate_master(master_dir: Path) -> list[str]:
         ]:
             if field in test and not isinstance(test[field], list):
                 errors.append(f"{master_dir.name}:{i}: '{field}' must be a list")
+
+        if master_dir.name == "compare" and test_type not in {"boundary", "pressure"}:
+            sections = set(test.get("must_have_sections", []))
+            missing = sorted(COMPARE_REQUIRED_SECTIONS - sections)
+            if missing:
+                errors.append(
+                    f"{master_dir.name}:{i}: compare test missing required output "
+                    f"sections: {', '.join(missing)}"
+                )
 
     # Check coverage: should have at least one boundary test
     has_boundary = any(
