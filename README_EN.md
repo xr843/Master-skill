@@ -25,8 +25,12 @@
 </p>
 
 <p align="center">
-  <strong>AI learning companions modeled after historical Buddhist masters across four traditions</strong><br>
-  15 pre-built masters · 印度 / 汉传 / 藏传 / 南传 cross-tradition · CBETA / BDRC / SuttaCentral / PTS Vism citations · AgentSkills Standard
+  <strong>A FoJin-powered Buddhist AI persona framework</strong><br>
+  Source-grounded · Boundary-aware · Fidelity-tested · Runtime-ready · 15 masters across 印度 / 汉传 / 藏传 / 南传
+</p>
+
+<p align="center">
+  <sub>CBETA / BDRC / SuttaCentral / PTS Vism citations · AgentSkills Standard</sub>
 </p>
 
 <p align="center">
@@ -124,7 +128,7 @@ For further study, consult the original texts at FoJin (fojin.app).
 
 ---
 
-An AgentSkills-standard generator for AI personas based on historical Buddhist masters, powered by [FoJin](https://fojin.app) — a Buddhist text aggregation platform.
+Master-skill is a [FoJin](https://fojin.app)-powered Buddhist AI persona framework: grounded in primary sources, constrained by ethical boundaries, checked by fidelity tests, and packaged as runtime-ready AgentSkills for Claude Code, Cursor, Codex CLI, OpenCode, and Gemini CLI.
 
 ---
 
@@ -148,6 +152,19 @@ This project is built out of respect for Buddhist traditions. All content is gen
 - **Offline toolchain**: `scripts/cite.py` (CBETA lookup), `scripts/query.py` (offline semantic search), `scripts/validate.py` (frontmatter linter)
 - **FoJin data bridge**: Connected to [fojin.app](https://fojin.app) with 503 data sources, 10K+ texts, 678K+ semantic embeddings, and a 31K-entity knowledge graph
 - **AgentSkills standard**: Compliant with [Anthropic Agent Skills](https://github.com/anthropics/skills) — progressive disclosure, decision trees, black-box script pattern
+
+## Framework Positioning
+
+Master-skill is not a prompt pack. It is a verifiable Buddhist AI persona framework:
+
+| Dimension | Implementation |
+|---|---|
+| Source-grounded | `sources[]`, offline excerpts, FoJin live fallback, and citation self-audits per master |
+| Boundary-aware | `ETHICS.md`, per-master Layer 0 HARD-GATE rules, copyright tiers, and boundary violation reporting |
+| Fidelity-tested | `tests/fidelity.jsonl`, persona-fidelity schema, and promptfoo RAW / SPE / CUS evals |
+| Runtime-ready | `prebuilt/master-*` AgentSkills, npm CLI, multi-platform hooks, and a FoJin runtime contract |
+
+The v1.0 track prioritizes framework stability over adding more masters. See [docs/v1-framework-roadmap.md](docs/v1-framework-roadmap.md) and [docs/fojin-runtime-contract.md](docs/fojin-runtime-contract.md).
 
 ---
 

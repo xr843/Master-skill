@@ -10,6 +10,19 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Changed — framework positioning and v1.0 planning
+- Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
+- Aligned README, README_EN, npm package description, and plugin manifest descriptions with the current 15-master / four-tradition roster.
+- Rewrote `docs/PRD.md` from the obsolete `teachers/` / 汉传-only design to the current `prebuilt/master-*` architecture, persona contract, source contract, fidelity gates, and v1.0 criteria.
+- Added `docs/fojin-runtime-contract.md` to document offline-first retrieval, allowed FoJin endpoints, data fencing, citation rules, fallback behavior, and runtime boundaries.
+- Added `docs/v1-framework-roadmap.md` to make v1.0 a framework-stability milestone rather than a roster-expansion milestone.
+
+### Added — CLI runtime inspection
+- Added `master-skill doctor` to report package version, Node version, prebuilt path, Claude skills path, available skills, installed known skills, and basic local status.
+- Added `master-skill inspect <name>` to show one master's display name, slug, version, tradition, school, install state, live-grounding support, citation format, source IDs, and search keywords.
+- Added `master-skill update --all` as an explicit upgrade path that reinstalls every available skill and clears stale files through the existing reinstall logic.
+- Extended CLI integration coverage from 14 to 21 tests for `doctor`, `inspect`, `update --all`, installed-state detection, and invalid inspect names.
+
 ## [0.9.1] — 2026-06-30
 
 ### Fixed — personas no longer narrate their own setup ("法师风格已立")

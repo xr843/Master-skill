@@ -26,8 +26,13 @@
 </p>
 
 <p align="center">
-  <strong>依据四大佛教传统祖师大德的教学风格，通达 AI 学习伙伴</strong><br>
-  15 位祖师 · 印度 / 汉传 / 藏传 / 南传跨传统 · CBETA / BDRC / SuttaCentral / PTS Vism 真实出处 · AgentSkills 标准
+  <strong>FoJin 驱动的佛教 AI 祖师人格框架</strong><br>
+  有来源 · 守边界 · 可评测 · 可运行 · 15 位祖师 · 印度 / 汉传 / 藏传 / 南传跨传统
+</p>
+
+<p align="center">
+  <sub>Source-grounded · Boundary-aware · Fidelity-tested · Runtime-ready</sub><br>
+  <sub>CBETA / BDRC / SuttaCentral / PTS Vism 真实出处 · AgentSkills 标准</sub>
 </p>
 
 <p align="center">
@@ -123,7 +128,7 @@
 
 ---
 
-基于佛教经典文献的法师教学角色生成器，遵循 AgentSkills 标准，由 [FoJin](https://fojin.app) 驱动。
+Master-skill 是由 [FoJin](https://fojin.app) 驱动的佛教 AI 祖师人格框架：以真实原典为来源，以伦理边界为约束，以保真度评测为质量门槛，并以 AgentSkills 运行协议交付给 Claude Code、Cursor、Codex CLI、OpenCode 与 Gemini CLI。
 
 ---
 
@@ -149,6 +154,19 @@
 - **离线工具链**：`scripts/cite.py`（CBETA 引用查询）、`scripts/query.py`（离线语义检索）、`scripts/validate.py`（frontmatter linter）
 - **FoJin 数据桥**：接入 [fojin.app](https://fojin.app) 的 503 个数据源、10K+ 文本、678K+ 语义向量和 31K 实体知识图谱
 - **AgentSkills 标准**：遵循 [Anthropic Agent Skills](https://github.com/anthropics/skills) 规范，渐进式披露、决策树、黑盒脚本模式
+
+## 框架定位
+
+Master-skill 的核心不是"角色扮演提示词集合"，而是一个可验证的佛教 AI persona framework：
+
+| 维度 | 实现 |
+|---|---|
+| 有来源 | 每位祖师声明 `sources[]`、离线 excerpts、FoJin live fallback 与引用自审 |
+| 守边界 | `ETHICS.md`、每位祖师 Layer 0 HARD-GATE、版权 Tier 与教界越界报告机制 |
+| 可评测 | `tests/fidelity.jsonl`、persona-fidelity schema、promptfoo RAW / SPE / CUS 评测层 |
+| 可运行 | `prebuilt/master-*` AgentSkills、npm CLI、多平台 hooks、FoJin runtime contract |
+
+后续 v1.0 路线以框架稳定为优先：见 [docs/v1-framework-roadmap.md](docs/v1-framework-roadmap.md) 与 [docs/fojin-runtime-contract.md](docs/fojin-runtime-contract.md)。
 
 ---
 

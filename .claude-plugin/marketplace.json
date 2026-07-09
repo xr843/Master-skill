@@ -1,6 +1,6 @@
 {
   "name": "master-skill",
-  "description": "Buddhist Master AI Skills — 14 historical masters across 汉传/藏传/南传 plus 3 teaching meta-skills (compare / debate / curriculum), with source-cited teachings",
+  "description": "FoJin-powered Buddhist AI persona framework with 15 source-grounded masters across 印度/汉传/藏传/南传 plus compare, debate, and curriculum meta-skills",
   "owner": {
     "name": "xr843",
     "email": "xr843@users.noreply.github.com"
@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "master-skill",
-      "description": "Buddhist Master AI teaching personas — 14 prebuilt masters across 汉传/藏传/南传 plus 3 teaching meta-skills (compare-masters / master-debate / master-curriculum), invokable via /master-<slug> slash commands, with source-cited doctrinal responses (CBETA / BDRC / SuttaCentral / PTS Vism), RAG-grounded in FoJin knowledge graph",
+      "description": "FoJin-powered Buddhist AI persona framework — source-grounded, boundary-aware, fidelity-tested, runtime-ready. 15 prebuilt masters across 印度/汉传/藏传/南传 plus compare, debate, and curriculum meta-skills.",
       "version": "0.9.1",
       "source": "./",
       "author": {
