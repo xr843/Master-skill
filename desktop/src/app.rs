@@ -21,14 +21,6 @@ use crate::theme::{
 use crate::trace::{TraceStatus, TraceStore};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum DetailView {
-    Overview,
-    Sources,
-    Evaluation,
-    Runtime,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ConsoleSection {
     Overview,
     Evaluation,
@@ -61,7 +53,6 @@ pub struct MasterSkillApp {
     log_lines: Vec<String>,
     task_rx: Option<Receiver<TaskEnvelope>>,
     busy_label: Option<String>,
-    detail_view: DetailView,
     console_section: ConsoleSection,
     log_expanded: bool,
     traces: TraceStore,
@@ -111,7 +102,6 @@ impl MasterSkillApp {
             log_lines: vec!["Starting desktop manager...".to_string()],
             task_rx: None,
             busy_label: None,
-            detail_view: DetailView::Overview,
             console_section: ConsoleSection::Overview,
             log_expanded: false,
             traces: TraceStore::new(200),
@@ -660,8 +650,9 @@ impl MasterSkillApp {
             });
     }
 
-    fn show_skill_suites(&self, ui: &mut egui::Ui) {
+    fn show_skill_suites(&mut self, ui: &mut egui::Ui) {
         ui.heading("Skill Suites");
+        let rows = self.rows.clone();
         egui::ScrollArea::horizontal()
             .max_width(ui.available_width())
             .show(ui, |ui| {
@@ -669,7 +660,7 @@ impl MasterSkillApp {
                     .max_height(260.0)
                     .show(ui, |ui| {
                         egui::Grid::new("evaluation-skill-grid")
-                            .num_columns(5)
+                            .num_columns(6)
                             .striped(true)
                             .min_col_width(104.0)
                             .show(ui, |ui| {
@@ -678,14 +669,19 @@ impl MasterSkillApp {
                                 ui.strong("Kind");
                                 ui.strong("Cases");
                                 ui.strong("Status");
+                                ui.strong("Gaps");
                                 ui.end_row();
-                                for row in &self.rows {
+                                for row in rows {
                                     let level = row.quality_level();
-                                    ui.label(&row.name);
+                                    if ui.selectable_label(false, &row.name).clicked() {
+                                        self.console_section = ConsoleSection::SkillDetail;
+                                        self.start_inspect(row.slug.clone());
+                                    }
                                     ui.label(row.tradition.as_deref().unwrap_or("unspecified"));
                                     ui.label(row.kind.label());
                                     ui.label(row.fidelity_case_count.to_string());
                                     ui.colored_label(Self::quality_color(level), level.label());
+                                    ui.label(row.diagnostic_summary());
                                     ui.end_row();
                                 }
                             });
@@ -918,6 +914,102 @@ impl MasterSkillApp {
         }
     }
 
+    fn show_identity_panel(ui: &mut egui::Ui, master: &MasterInspect, kind: &str) {
+        ui.heading("Identity");
+        egui::Grid::new(format!("identity-grid-{}", master.slug))
+            .num_columns(2)
+            .show(ui, |ui| {
+                ui.label("Slug");
+                ui.label(&master.slug);
+                ui.end_row();
+                ui.label("Type");
+                ui.label(kind);
+                ui.end_row();
+                ui.label("Version");
+                ui.label(master.version.as_deref().unwrap_or("unknown"));
+                ui.end_row();
+                ui.label("Tradition");
+                ui.label(master.tradition.as_deref().unwrap_or("unspecified"));
+                ui.end_row();
+                ui.label("School");
+                ui.label(master.school.as_deref().unwrap_or("unspecified"));
+                ui.end_row();
+                ui.label("Era");
+                ui.label(master.era.as_deref().unwrap_or("unspecified"));
+                ui.end_row();
+            });
+        ui.separator();
+    }
+
+    fn show_source_contract_panel(ui: &mut egui::Ui, master: &MasterInspect, source_index: bool) {
+        ui.heading("Source Contract");
+        egui::Grid::new(format!("source-contract-grid-{}", master.slug))
+            .num_columns(2)
+            .show(ui, |ui| {
+                ui.label("Declared sources");
+                ui.label(master.sources.len().to_string());
+                ui.end_row();
+                ui.label("Source index");
+                ui.label(if source_index { "present" } else { "missing" });
+                ui.end_row();
+                ui.label("Citation format");
+                ui.label(master.citation_format.as_deref().unwrap_or("not declared"));
+                ui.end_row();
+            });
+        if !master.sources.is_empty() {
+            ui.separator();
+            for source in &master.sources {
+                ui.small(source);
+            }
+        }
+        ui.separator();
+    }
+
+    fn show_evaluation_contract_panel(
+        ui: &mut egui::Ui,
+        fidelity_count: usize,
+        quality: QualityLevel,
+        diagnostic_summary: &str,
+    ) {
+        ui.heading("Evaluation Contract");
+        egui::Grid::new("evaluation-contract-grid")
+            .num_columns(2)
+            .show(ui, |ui| {
+                ui.label("Fidelity cases");
+                ui.label(fidelity_count.to_string());
+                ui.end_row();
+                ui.label("Quality status");
+                ui.colored_label(Self::quality_color(quality), quality.label());
+                ui.end_row();
+                ui.label("Gaps");
+                ui.label(diagnostic_summary);
+                ui.end_row();
+            });
+        ui.separator();
+    }
+
+    fn show_runtime_protocol_panel(ui: &mut egui::Ui, master: &MasterInspect) {
+        ui.heading("Runtime Protocol");
+        egui::Grid::new(format!("runtime-protocol-grid-{}", master.slug))
+            .num_columns(2)
+            .show(ui, |ui| {
+                ui.label("Installed");
+                ui.label(if master.installed { "yes" } else { "no" });
+                ui.end_row();
+                ui.label("Live grounding");
+                ui.label(if master.live_grounding { "yes" } else { "no" });
+                ui.end_row();
+                ui.label("Keywords");
+                ui.label(master.search_keywords.len().to_string());
+                ui.end_row();
+            });
+        if !master.search_keywords.is_empty() {
+            ui.separator();
+            ui.label(master.search_keywords.join(", "));
+        }
+        ui.separator();
+    }
+
     fn show_selected(&mut self, ui: &mut egui::Ui, show_workspace_header: bool) {
         if show_workspace_header {
             Self::show_workspace_header(
@@ -929,24 +1021,35 @@ impl MasterSkillApp {
         }
         ui.heading("Selected Skill");
         if let Some(master) = self.selected.clone() {
-            let row_metrics = self
+            let selected_row = self
                 .rows
                 .iter()
                 .find(|row| row.slug == master.slug)
-                .map(|row| {
-                    (
-                        row.quality_level(),
-                        row.source_index_present,
-                        row.fidelity_case_count,
-                        row.kind,
-                    )
-                });
-            let quality = row_metrics
-                .map(|metrics| metrics.0)
+                .cloned();
+            let quality = selected_row
+                .as_ref()
+                .map(SkillRow::quality_level)
                 .unwrap_or(QualityLevel::Missing);
+            let source_index = selected_row
+                .as_ref()
+                .map(|row| row.source_index_present)
+                .unwrap_or(false);
+            let fidelity_count = selected_row
+                .as_ref()
+                .map(|row| row.fidelity_case_count)
+                .unwrap_or_default();
+            let kind = selected_row
+                .as_ref()
+                .map(|row| row.kind.label())
+                .unwrap_or("unknown");
+            let diagnostic_summary = selected_row
+                .as_ref()
+                .map(SkillRow::diagnostic_summary)
+                .unwrap_or_else(|| "not loaded".to_string());
+
             ui.label(master.display_name.as_deref().unwrap_or(&master.name));
             ui.horizontal(|ui| {
-                ui.colored_label(Self::quality_color(quality), quality.label());
+                Self::show_quality_badge(ui, quality);
                 ui.separator();
                 if master.installed {
                     if ui
@@ -964,98 +1067,31 @@ impl MasterSkillApp {
             });
 
             ui.separator();
-            ui.horizontal(|ui| {
-                ui.selectable_value(&mut self.detail_view, DetailView::Overview, "Overview");
-                ui.selectable_value(&mut self.detail_view, DetailView::Sources, "Sources");
-                ui.selectable_value(&mut self.detail_view, DetailView::Evaluation, "Evaluation");
-                ui.selectable_value(&mut self.detail_view, DetailView::Runtime, "Runtime");
-            });
 
-            ui.separator();
-            match self.detail_view {
-                DetailView::Overview => {
-                    egui::Grid::new("inspect-overview-grid")
-                        .num_columns(2)
-                        .show(ui, |ui| {
-                            ui.label("Slug");
-                            ui.label(&master.slug);
-                            ui.end_row();
-                            ui.label("Type");
-                            ui.label(
-                                row_metrics
-                                    .map(|metrics| metrics.3.label())
-                                    .unwrap_or("unknown"),
-                            );
-                            ui.end_row();
-                            ui.label("Version");
-                            ui.label(master.version.as_deref().unwrap_or("unknown"));
-                            ui.end_row();
-                            ui.label("Tradition");
-                            ui.label(master.tradition.as_deref().unwrap_or("unspecified"));
-                            ui.end_row();
-                            ui.label("School");
-                            ui.label(master.school.as_deref().unwrap_or("unspecified"));
-                            ui.end_row();
-                            ui.label("Era");
-                            ui.label(master.era.as_deref().unwrap_or("unspecified"));
-                            ui.end_row();
-                        });
-                }
-                DetailView::Sources => {
-                    let source_index = row_metrics.map(|metrics| metrics.1).unwrap_or(false);
-                    ui.label(format!(
-                        "Declared sources: {} | Source index: {}",
-                        master.sources.len(),
-                        if source_index { "present" } else { "missing" }
-                    ));
-                    ui.separator();
-                    if master.sources.is_empty() {
-                        ui.label("No sources declared.");
-                    } else {
-                        for source in &master.sources {
-                            ui.label(source);
-                        }
-                    }
-                }
-                DetailView::Evaluation => {
-                    let fidelity_count = row_metrics.map(|metrics| metrics.2).unwrap_or_default();
-                    egui::Grid::new("evaluation-grid")
-                        .num_columns(2)
-                        .show(ui, |ui| {
-                            ui.label("Fidelity cases");
-                            ui.label(fidelity_count.to_string());
-                            ui.end_row();
-                            ui.label("Quality status");
-                            ui.colored_label(Self::quality_color(quality), quality.label());
-                            ui.end_row();
-                        });
-                    if fidelity_count == 0 {
-                        ui.label("No fidelity suite detected for this skill.");
-                    }
-                }
-                DetailView::Runtime => {
-                    egui::Grid::new("runtime-grid")
-                        .num_columns(2)
-                        .show(ui, |ui| {
-                            ui.label("Installed");
-                            ui.label(if master.installed { "yes" } else { "no" });
-                            ui.end_row();
-                            ui.label("Live grounding");
-                            ui.label(if master.live_grounding { "yes" } else { "no" });
-                            ui.end_row();
-                            ui.label("Citation format");
-                            ui.label(master.citation_format.as_deref().unwrap_or("not declared"));
-                            ui.end_row();
-                            ui.label("Keywords");
-                            ui.label(master.search_keywords.len().to_string());
-                            ui.end_row();
-                        });
-                    if !master.search_keywords.is_empty() {
-                        ui.separator();
-                        ui.heading("Search Keywords");
-                        ui.label(master.search_keywords.join(", "));
-                    }
-                }
+            let two_columns =
+                dashboard_columns_for_width(ui.available_width()) == TwoPaneMode::TwoColumns;
+            if two_columns {
+                ui.columns(2, |columns| {
+                    Self::show_identity_panel(&mut columns[0], &master, kind);
+                    Self::show_source_contract_panel(&mut columns[0], &master, source_index);
+                    Self::show_evaluation_contract_panel(
+                        &mut columns[1],
+                        fidelity_count,
+                        quality,
+                        &diagnostic_summary,
+                    );
+                    Self::show_runtime_protocol_panel(&mut columns[1], &master);
+                });
+            } else {
+                Self::show_identity_panel(ui, &master, kind);
+                Self::show_source_contract_panel(ui, &master, source_index);
+                Self::show_evaluation_contract_panel(
+                    ui,
+                    fidelity_count,
+                    quality,
+                    &diagnostic_summary,
+                );
+                Self::show_runtime_protocol_panel(ui, &master);
             }
         } else {
             ui.label("No skill selected.");

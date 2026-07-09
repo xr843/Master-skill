@@ -174,6 +174,45 @@ impl SkillRow {
             QualityLevel::Attention
         }
     }
+
+    pub fn diagnostic_gaps(&self) -> Vec<&'static str> {
+        let mut gaps = Vec::new();
+
+        if !self.installed {
+            gaps.push("not installed");
+            return gaps;
+        }
+
+        if self.kind == SkillKind::Persona {
+            if self.source_count == 0 {
+                gaps.push("missing sources");
+            }
+            if !self.source_index_present {
+                gaps.push("missing source index");
+            }
+            if !self.has_citation_format {
+                gaps.push("missing citation format");
+            }
+            if !self.live_grounding {
+                gaps.push("live grounding off");
+            }
+        }
+
+        if self.fidelity_case_count == 0 {
+            gaps.push("missing fidelity suite");
+        }
+
+        gaps
+    }
+
+    pub fn diagnostic_summary(&self) -> String {
+        let gaps = self.diagnostic_gaps();
+        if gaps.is_empty() {
+            "complete".to_string()
+        } else {
+            gaps.join(", ")
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -493,6 +532,45 @@ mod tests {
         assert_eq!(summary.protocol_ready_count, 0);
         assert_eq!(summary.evaluation_ready_count, 1);
         assert_eq!(summary.attention_count, 0);
+    }
+
+    #[test]
+    fn reports_persona_diagnostic_gaps() {
+        let mut broken = row("huineng", "慧能大师", "汉传", true);
+        broken.live_grounding = false;
+        broken.source_count = 0;
+        broken.source_index_present = false;
+        broken.has_citation_format = false;
+        broken.fidelity_case_count = 0;
+
+        assert_eq!(
+            broken.diagnostic_gaps(),
+            vec![
+                "missing sources",
+                "missing source index",
+                "missing citation format",
+                "live grounding off",
+                "missing fidelity suite",
+            ]
+        );
+        assert_eq!(
+            broken.diagnostic_summary(),
+            "missing sources, missing source index, missing citation format, live grounding off, missing fidelity suite"
+        );
+    }
+
+    #[test]
+    fn reports_meta_skill_diagnostic_gaps_without_persona_only_requirements() {
+        let mut meta = row("curriculum", "学修路径", "", true);
+        meta.kind = SkillKind::MetaSkill;
+        meta.live_grounding = false;
+        meta.source_count = 0;
+        meta.source_index_present = false;
+        meta.has_citation_format = false;
+        meta.fidelity_case_count = 0;
+
+        assert_eq!(meta.diagnostic_gaps(), vec!["missing fidelity suite"]);
+        assert_eq!(meta.diagnostic_summary(), "missing fidelity suite");
     }
 
     #[test]

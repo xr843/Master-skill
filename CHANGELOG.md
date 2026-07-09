@@ -28,6 +28,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added a professional console shell with top-level workspace navigation, compact runtime status, skill-detail routing, and an expandable operation log.
 - Added workspace headers with contextual actions, moved evaluation validation into the workspace action bar, and added clearable run trace history.
 - Added a shared desktop visual theme and tightened sidebar information density with fixed-width quality badges, compact rows, and a ready-count summary.
+- Added diagnostic gap summaries for desktop skill quality, upgraded Skill Detail into structured contract sections, and made Evaluation Center skill rows jump to detail.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
