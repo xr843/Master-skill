@@ -1,5 +1,6 @@
 use eframe::egui;
 use master_skill_desktop::app::MasterSkillApp;
+use master_skill_desktop::fonts::install_cjk_fonts;
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
@@ -10,6 +11,9 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Master-skill Desktop Manager",
         options,
-        Box::new(|_cc| Ok(Box::new(MasterSkillApp::new()))),
+        Box::new(|cc| {
+            install_cjk_fonts(&cc.egui_ctx);
+            Ok(Box::new(MasterSkillApp::new()))
+        }),
     )
 }
