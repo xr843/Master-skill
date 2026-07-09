@@ -4,9 +4,20 @@ use std::thread;
 use anyhow::Result;
 use eframe::egui;
 
-use crate::catalog::{filter_rows, tradition_options, InstallFilter, SkillRow};
+use crate::catalog::{
+    console_summary, filter_rows, tradition_options, InstallFilter, QualityLevel, SkillDiagnostics,
+    SkillRow,
+};
 use crate::cli::CliClient;
 use crate::model::{DoctorReport, MasterInspect, SkillInventory};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum DetailView {
+    Overview,
+    Sources,
+    Evaluation,
+    Runtime,
+}
 
 pub struct MasterSkillApp {
     client: CliClient,
@@ -22,6 +33,7 @@ pub struct MasterSkillApp {
     log_lines: Vec<String>,
     task_rx: Option<Receiver<TaskResult>>,
     busy_label: Option<String>,
+    detail_view: DetailView,
 }
 
 struct Snapshot {
@@ -55,6 +67,7 @@ impl MasterSkillApp {
             log_lines: vec!["Starting desktop manager...".to_string()],
             task_rx: None,
             busy_label: None,
+            detail_view: DetailView::Overview,
         };
         app.refresh_all();
         app
@@ -63,6 +76,7 @@ impl MasterSkillApp {
     fn load_snapshot(client: &CliClient, selected_slug: Option<String>) -> Result<Snapshot> {
         let inventory = client.list()?;
         let doctor = client.doctor()?;
+        let prebuilt_dir = std::path::Path::new(&doctor.prebuilt_path);
         let resolved_slug =
             selected_slug.or_else(|| inventory.masters.first().map(|m| m.slug.clone()));
         let mut rows = Vec::with_capacity(inventory.masters.len());
@@ -73,7 +87,12 @@ impl MasterSkillApp {
             if resolved_slug.as_deref() == Some(summary.slug.as_str()) {
                 selected = Some(inspect.clone());
             }
-            rows.push(SkillRow::from_summary_and_inspect(summary, Some(&inspect)));
+            let mut row = SkillRow::from_summary_and_inspect(summary, Some(&inspect));
+            row.apply_diagnostics(SkillDiagnostics::from_prebuilt_dir(
+                prebuilt_dir,
+                &summary.slug,
+            ));
+            rows.push(row);
         }
 
         Ok(Snapshot {
@@ -254,6 +273,103 @@ impl MasterSkillApp {
         ui.label(format!("Repo: {}", self.client.repo_root().display()));
     }
 
+    fn quality_color(level: QualityLevel) -> egui::Color32 {
+        match level {
+            QualityLevel::Ready => egui::Color32::from_rgb(100, 190, 130),
+            QualityLevel::Attention => egui::Color32::from_rgb(220, 170, 80),
+            QualityLevel::Missing => egui::Color32::from_rgb(210, 100, 100),
+        }
+    }
+
+    fn show_metric_card(
+        ui: &mut egui::Ui,
+        title: &str,
+        value: impl Into<String>,
+        detail: &str,
+        healthy: bool,
+    ) {
+        let fill = if healthy {
+            egui::Color32::from_rgb(24, 42, 34)
+        } else {
+            egui::Color32::from_rgb(50, 37, 26)
+        };
+        let stroke = if healthy {
+            egui::Stroke::new(1.0, egui::Color32::from_rgb(67, 120, 88))
+        } else {
+            egui::Stroke::new(1.0, egui::Color32::from_rgb(140, 103, 55))
+        };
+
+        egui::Frame::new()
+            .fill(fill)
+            .stroke(stroke)
+            .inner_margin(egui::Margin::same(10))
+            .show(ui, |ui| {
+                ui.set_min_width(135.0);
+                ui.small(title);
+                ui.heading(value.into());
+                ui.small(detail);
+            });
+    }
+
+    fn show_dashboard(&self, ui: &mut egui::Ui) {
+        ui.heading("Console Health");
+        if let Some(report) = &self.doctor {
+            let summary = console_summary(
+                &self.rows,
+                report.available_skills,
+                &report.status,
+                report.problems.len(),
+            );
+            let total = self.rows.len().max(1);
+            ui.horizontal_wrapped(|ui| {
+                Self::show_metric_card(
+                    ui,
+                    "Runtime",
+                    if summary.runtime_ok { "OK" } else { "Review" },
+                    &format!("{} problem(s)", report.problems.len()),
+                    summary.runtime_ok,
+                );
+                Self::show_metric_card(
+                    ui,
+                    "Installation",
+                    format!("{}/{}", summary.installed_count, summary.available_count),
+                    &format!("{} missing", summary.missing_count),
+                    summary.missing_count == 0,
+                );
+                Self::show_metric_card(
+                    ui,
+                    "Sources",
+                    format!("{}/{}", summary.source_ready_count, total),
+                    "indexed source sets",
+                    summary.source_ready_count == total,
+                );
+                Self::show_metric_card(
+                    ui,
+                    "Evaluations",
+                    format!("{}/{}", summary.evaluation_ready_count, total),
+                    "fidelity suites",
+                    summary.evaluation_ready_count == total,
+                );
+                Self::show_metric_card(
+                    ui,
+                    "Protocols",
+                    format!("{}/{}", summary.protocol_ready_count, total),
+                    "grounding + citation",
+                    summary.protocol_ready_count == total,
+                );
+                Self::show_metric_card(
+                    ui,
+                    "Attention",
+                    summary.attention_count.to_string(),
+                    "skills needing review",
+                    summary.attention_count == 0,
+                );
+            });
+        } else {
+            ui.label("No runtime report loaded.");
+        }
+    }
+
     fn show_sidebar(&mut self, ui: &mut egui::Ui) {
         ui.heading("Skills");
         ui.add(
@@ -298,17 +414,13 @@ impl MasterSkillApp {
         egui::ScrollArea::vertical().show(ui, |ui| {
             for row in visible_rows {
                 let selected = self.selected_slug.as_deref() == Some(row.slug.as_str());
-                let status = if row.installed {
-                    "installed"
-                } else {
-                    "missing"
-                };
+                let quality = row.quality_level();
                 let title = row.title().to_string();
                 ui.horizontal(|ui| {
                     if ui.selectable_label(selected, row.name.clone()).clicked() {
                         self.start_inspect(row.slug.clone());
                     }
-                    ui.small(status);
+                    ui.colored_label(Self::quality_color(quality), quality.label());
                 });
                 if selected && title != row.name {
                     ui.small(title);
@@ -318,7 +430,7 @@ impl MasterSkillApp {
     }
 
     fn show_doctor(&self, ui: &mut egui::Ui) {
-        ui.heading("Runtime");
+        ui.heading("Environment");
         if let Some(report) = &self.doctor {
             egui::Grid::new("doctor-grid")
                 .num_columns(2)
@@ -341,6 +453,12 @@ impl MasterSkillApp {
                     ui.label("Skills path");
                     ui.label(&report.skills_path);
                     ui.end_row();
+                    ui.label("Other skill dirs");
+                    ui.label(report.other_installed_skill_dirs.to_string());
+                    ui.end_row();
+                    ui.label("Prebuilt path");
+                    ui.label(&report.prebuilt_path);
+                    ui.end_row();
                 });
 
             if !report.problems.is_empty() {
@@ -358,8 +476,24 @@ impl MasterSkillApp {
     fn show_selected(&mut self, ui: &mut egui::Ui) {
         ui.heading("Selected Skill");
         if let Some(master) = self.selected.clone() {
+            let row_metrics = self
+                .rows
+                .iter()
+                .find(|row| row.slug == master.slug)
+                .map(|row| {
+                    (
+                        row.quality_level(),
+                        row.source_index_present,
+                        row.fidelity_case_count,
+                    )
+                });
+            let quality = row_metrics
+                .map(|metrics| metrics.0)
+                .unwrap_or(QualityLevel::Missing);
             ui.label(master.display_name.as_deref().unwrap_or(&master.name));
             ui.horizontal(|ui| {
+                ui.colored_label(Self::quality_color(quality), quality.label());
+                ui.separator();
                 if master.installed {
                     if ui
                         .add_enabled(!self.is_busy(), egui::Button::new("Uninstall"))
@@ -375,46 +509,92 @@ impl MasterSkillApp {
                 }
             });
 
-            egui::Grid::new("inspect-grid")
-                .num_columns(2)
-                .show(ui, |ui| {
-                    ui.label("Slug");
-                    ui.label(&master.slug);
-                    ui.end_row();
-                    ui.label("Version");
-                    ui.label(master.version.as_deref().unwrap_or("unknown"));
-                    ui.end_row();
-                    ui.label("Tradition");
-                    ui.label(master.tradition.as_deref().unwrap_or("unspecified"));
-                    ui.end_row();
-                    ui.label("School");
-                    ui.label(master.school.as_deref().unwrap_or("unspecified"));
-                    ui.end_row();
-                    ui.label("Installed");
-                    ui.label(if master.installed { "yes" } else { "no" });
-                    ui.end_row();
-                    ui.label("Live grounding");
-                    ui.label(if master.live_grounding { "yes" } else { "no" });
-                    ui.end_row();
-                    ui.label("Citation format");
-                    ui.label(master.citation_format.as_deref().unwrap_or("not declared"));
-                    ui.end_row();
-                });
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.selectable_value(&mut self.detail_view, DetailView::Overview, "Overview");
+                ui.selectable_value(&mut self.detail_view, DetailView::Sources, "Sources");
+                ui.selectable_value(&mut self.detail_view, DetailView::Evaluation, "Evaluation");
+                ui.selectable_value(&mut self.detail_view, DetailView::Runtime, "Runtime");
+            });
 
             ui.separator();
-            ui.heading("Sources");
-            if master.sources.is_empty() {
-                ui.label("No sources declared.");
-            } else {
-                for source in &master.sources {
-                    ui.label(source);
+            match self.detail_view {
+                DetailView::Overview => {
+                    egui::Grid::new("inspect-overview-grid")
+                        .num_columns(2)
+                        .show(ui, |ui| {
+                            ui.label("Slug");
+                            ui.label(&master.slug);
+                            ui.end_row();
+                            ui.label("Version");
+                            ui.label(master.version.as_deref().unwrap_or("unknown"));
+                            ui.end_row();
+                            ui.label("Tradition");
+                            ui.label(master.tradition.as_deref().unwrap_or("unspecified"));
+                            ui.end_row();
+                            ui.label("School");
+                            ui.label(master.school.as_deref().unwrap_or("unspecified"));
+                            ui.end_row();
+                            ui.label("Era");
+                            ui.label(master.era.as_deref().unwrap_or("unspecified"));
+                            ui.end_row();
+                        });
                 }
-            }
-
-            if !master.search_keywords.is_empty() {
-                ui.separator();
-                ui.heading("Search Keywords");
-                ui.label(master.search_keywords.join(", "));
+                DetailView::Sources => {
+                    let source_index = row_metrics.map(|metrics| metrics.1).unwrap_or(false);
+                    ui.label(format!(
+                        "Declared sources: {} | Source index: {}",
+                        master.sources.len(),
+                        if source_index { "present" } else { "missing" }
+                    ));
+                    ui.separator();
+                    if master.sources.is_empty() {
+                        ui.label("No sources declared.");
+                    } else {
+                        for source in &master.sources {
+                            ui.label(source);
+                        }
+                    }
+                }
+                DetailView::Evaluation => {
+                    let fidelity_count = row_metrics.map(|metrics| metrics.2).unwrap_or_default();
+                    egui::Grid::new("evaluation-grid")
+                        .num_columns(2)
+                        .show(ui, |ui| {
+                            ui.label("Fidelity cases");
+                            ui.label(fidelity_count.to_string());
+                            ui.end_row();
+                            ui.label("Quality status");
+                            ui.colored_label(Self::quality_color(quality), quality.label());
+                            ui.end_row();
+                        });
+                    if fidelity_count == 0 {
+                        ui.label("No fidelity suite detected for this skill.");
+                    }
+                }
+                DetailView::Runtime => {
+                    egui::Grid::new("runtime-grid")
+                        .num_columns(2)
+                        .show(ui, |ui| {
+                            ui.label("Installed");
+                            ui.label(if master.installed { "yes" } else { "no" });
+                            ui.end_row();
+                            ui.label("Live grounding");
+                            ui.label(if master.live_grounding { "yes" } else { "no" });
+                            ui.end_row();
+                            ui.label("Citation format");
+                            ui.label(master.citation_format.as_deref().unwrap_or("not declared"));
+                            ui.end_row();
+                            ui.label("Keywords");
+                            ui.label(master.search_keywords.len().to_string());
+                            ui.end_row();
+                        });
+                    if !master.search_keywords.is_empty() {
+                        ui.separator();
+                        ui.heading("Search Keywords");
+                        ui.label(master.search_keywords.join(", "));
+                    }
+                }
             }
         } else {
             ui.label("No skill selected.");
@@ -463,6 +643,8 @@ impl eframe::App for MasterSkillApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
+                self.show_dashboard(ui);
+                ui.separator();
                 ui.columns(2, |columns| {
                     self.show_doctor(&mut columns[0]);
                     self.show_selected(&mut columns[1]);
