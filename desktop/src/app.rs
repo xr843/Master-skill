@@ -359,9 +359,9 @@ impl MasterSkillApp {
                 Self::show_metric_card(
                     ui,
                     "Sources",
-                    format!("{}/{}", summary.source_ready_count, total),
-                    "indexed source sets",
-                    summary.source_ready_count == total,
+                    format!("{}/{}", summary.source_ready_count, summary.persona_count),
+                    "persona source sets",
+                    summary.source_ready_count == summary.persona_count,
                 );
                 Self::show_metric_card(
                     ui,
@@ -373,9 +373,16 @@ impl MasterSkillApp {
                 Self::show_metric_card(
                     ui,
                     "Protocols",
-                    format!("{}/{}", summary.protocol_ready_count, total),
-                    "grounding + citation",
-                    summary.protocol_ready_count == total,
+                    format!("{}/{}", summary.protocol_ready_count, summary.persona_count),
+                    "persona grounding + citation",
+                    summary.protocol_ready_count == summary.persona_count,
+                );
+                Self::show_metric_card(
+                    ui,
+                    "Meta-skills",
+                    summary.meta_skill_count.to_string(),
+                    "workflow skills",
+                    true,
                 );
                 Self::show_metric_card(
                     ui,
@@ -474,11 +481,12 @@ impl MasterSkillApp {
                 .max_height(210.0)
                 .show(&mut columns[1], |ui| {
                     egui::Grid::new("evaluation-skill-grid")
-                        .num_columns(4)
+                        .num_columns(5)
                         .striped(true)
                         .show(ui, |ui| {
                             ui.strong("Skill");
                             ui.strong("Tradition");
+                            ui.strong("Kind");
                             ui.strong("Cases");
                             ui.strong("Status");
                             ui.end_row();
@@ -486,6 +494,7 @@ impl MasterSkillApp {
                                 let level = row.quality_level();
                                 ui.label(&row.name);
                                 ui.label(row.tradition.as_deref().unwrap_or("unspecified"));
+                                ui.label(row.kind.label());
                                 ui.label(row.fidelity_case_count.to_string());
                                 ui.colored_label(Self::quality_color(level), level.label());
                                 ui.end_row();
@@ -610,6 +619,7 @@ impl MasterSkillApp {
                         row.quality_level(),
                         row.source_index_present,
                         row.fidelity_case_count,
+                        row.kind,
                     )
                 });
             let quality = row_metrics
@@ -650,6 +660,13 @@ impl MasterSkillApp {
                         .show(ui, |ui| {
                             ui.label("Slug");
                             ui.label(&master.slug);
+                            ui.end_row();
+                            ui.label("Type");
+                            ui.label(
+                                row_metrics
+                                    .map(|metrics| metrics.3.label())
+                                    .unwrap_or("unknown"),
+                            );
                             ui.end_row();
                             ui.label("Version");
                             ui.label(master.version.as_deref().unwrap_or("unknown"));
