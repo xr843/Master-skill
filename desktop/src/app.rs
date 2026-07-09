@@ -62,6 +62,7 @@ pub struct MasterSkillApp {
     console_section: ConsoleSection,
     log_expanded: bool,
     trace_filter: TraceListFilter,
+    trace_query: String,
     traces: TraceStore,
     trace_path: PathBuf,
 }
@@ -122,6 +123,7 @@ impl MasterSkillApp {
             console_section: ConsoleSection::Overview,
             log_expanded: false,
             trace_filter: TraceListFilter::All,
+            trace_query: String::new(),
             traces,
             trace_path,
         };
@@ -1311,8 +1313,14 @@ impl MasterSkillApp {
                 ui.selectable_value(&mut self.trace_filter, filter, filter.label());
             }
         });
+        ui.add(
+            egui::TextEdit::singleline(&mut self.trace_query)
+                .hint_text("Search traces by operation, command, summary, detail, or skill"),
+        );
 
-        let recent = self.traces.recent_filtered(self.trace_filter);
+        let recent = self
+            .traces
+            .recent_matching(self.trace_filter, &self.trace_query);
         if recent.is_empty() {
             ui.label("No traces match the current filter.");
             return;
