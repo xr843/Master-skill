@@ -58,6 +58,18 @@ test("list names every prebuilt master with its description", () => {
   assert.match(stdout, /master-huineng\s+\S/);
 });
 
+test("list --json returns machine-readable master inventory", () => {
+  const { stdout, code } = run(["list", "--json"]);
+  assert.equal(code, 0);
+  const payload = JSON.parse(stdout);
+  assert.equal(payload.count, prebuiltMasters.length);
+  assert.equal(payload.masters.length, prebuiltMasters.length);
+  assert.ok(
+    payload.masters.some((master) => master.name === "master-huineng" && master.description),
+    "missing master-huineng inventory item"
+  );
+});
+
 test("--version prints the package.json version", () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(REPO, "package.json"), "utf8"));
   const { stdout, code } = run(["--version"]);
@@ -87,6 +99,19 @@ test("doctor reports local runtime paths and available skills", (t) => {
   assert.match(stdout, /Status: ok/);
 });
 
+test("doctor --json returns machine-readable runtime diagnostics", (t) => {
+  const { env } = tmpHome(t);
+  const { stdout, code } = run(["doctor", "--json"], env);
+  assert.equal(code, 0);
+  const payload = JSON.parse(stdout);
+  assert.equal(payload.packageVersion, JSON.parse(fs.readFileSync(path.join(REPO, "package.json"), "utf8")).version);
+  assert.equal(payload.nodeVersion, process.version);
+  assert.equal(payload.availableSkills, prebuiltMasters.length);
+  assert.equal(payload.installedKnownSkills, 0);
+  assert.equal(payload.status, "ok");
+  assert.deepEqual(payload.problems, []);
+});
+
 test("doctor counts installed known skills", (t) => {
   const { env } = tmpHome(t);
   run(["install", "zhiyi"], env);
@@ -106,6 +131,20 @@ test("inspect shows master metadata, sources, and live grounding", (t) => {
   assert.match(stdout, /Installed: no/);
   assert.match(stdout, /Live grounding: yes/);
   assert.match(stdout, /T48n2008/);
+});
+
+test("inspect --json returns machine-readable master metadata", (t) => {
+  const { env } = tmpHome(t);
+  const { stdout, code } = run(["inspect", "huineng", "--json"], env);
+  assert.equal(code, 0);
+  const payload = JSON.parse(stdout);
+  assert.equal(payload.name, "master-huineng");
+  assert.equal(payload.displayName, "慧能大师");
+  assert.equal(payload.slug, "huineng");
+  assert.equal(payload.tradition, "汉传");
+  assert.equal(payload.installed, false);
+  assert.equal(payload.liveGrounding, true);
+  assert.ok(payload.sources.some((source) => source.includes("T48n2008")));
 });
 
 test("inspect reflects installed state", (t) => {
