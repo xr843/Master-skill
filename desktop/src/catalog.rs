@@ -43,9 +43,28 @@ impl SkillKind {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct FidelityCase {
+    pub index: usize,
+    pub question: String,
+    pub difficulty: Option<String>,
+    pub citation_assertion_count: usize,
+    pub keyword_assertion_count: usize,
+    pub structure_assertion_count: usize,
+}
+
+impl FidelityCase {
+    pub fn total_assertion_count(&self) -> usize {
+        self.citation_assertion_count
+            + self.keyword_assertion_count
+            + self.structure_assertion_count
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct SkillDiagnostics {
     pub fidelity_case_count: usize,
+    pub fidelity_cases: Vec<FidelityCase>,
     pub source_index_present: bool,
     pub kind: SkillKind,
 }
@@ -54,17 +73,13 @@ impl SkillDiagnostics {
     pub fn from_prebuilt_dir(prebuilt_dir: &Path, slug: &str) -> Self {
         let skill_dir = prebuilt_dir.join(format!("master-{slug}"));
         let fidelity_path = skill_dir.join("tests").join("fidelity.jsonl");
-        let fidelity_case_count = fs::read_to_string(fidelity_path)
-            .map(|content| {
-                content
-                    .lines()
-                    .filter(|line| !line.trim().is_empty())
-                    .count()
-            })
-            .unwrap_or(0);
+        let fidelity_cases = fs::read_to_string(fidelity_path)
+            .map(|content| parse_fidelity_cases(&content))
+            .unwrap_or_default();
 
         Self {
-            fidelity_case_count,
+            fidelity_case_count: fidelity_cases.len(),
+            fidelity_cases,
             source_index_present: skill_dir.join("sources").join("INDEX.md").is_file(),
             kind: detect_skill_kind(&skill_dir),
         }
@@ -96,6 +111,49 @@ fn detect_skill_kind(skill_dir: &Path) -> SkillKind {
     }
 }
 
+fn parse_fidelity_cases(content: &str) -> Vec<FidelityCase> {
+    content
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .enumerate()
+        .map(|(index, line)| {
+            let value = serde_json::from_str::<serde_json::Value>(line).unwrap_or_default();
+            FidelityCase {
+                index: index + 1,
+                question: value
+                    .get("q")
+                    .or_else(|| value.get("prompt"))
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("untitled case")
+                    .to_string(),
+                difficulty: value
+                    .get("difficulty")
+                    .and_then(serde_json::Value::as_str)
+                    .map(str::to_string),
+                citation_assertion_count: json_array_len(&value, "must_cite"),
+                keyword_assertion_count: json_array_len(&value, "must_mention"),
+                structure_assertion_count: json_array_len(&value, "must_select_pair")
+                    + json_array_len(&value, "must_have_rounds")
+                    + json_array_len(&value, "must_have_sections")
+                    + usize::from(
+                        value
+                            .get("must_cite_per_round")
+                            .and_then(serde_json::Value::as_bool)
+                            .unwrap_or(false),
+                    ),
+            }
+        })
+        .collect()
+}
+
+fn json_array_len(value: &serde_json::Value, key: &str) -> usize {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_array)
+        .map(Vec::len)
+        .unwrap_or(0)
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DiagnosticOperation {
     Manual,
@@ -125,6 +183,7 @@ pub struct SkillRow {
     pub keyword_count: usize,
     pub has_citation_format: bool,
     pub fidelity_case_count: usize,
+    pub fidelity_cases: Vec<FidelityCase>,
     pub source_index_present: bool,
     pub kind: SkillKind,
 }
@@ -150,6 +209,7 @@ impl SkillRow {
                 .map(|value| !value.trim().is_empty())
                 .unwrap_or(false),
             fidelity_case_count: 0,
+            fidelity_cases: Vec::new(),
             source_index_present: false,
             kind: SkillKind::Persona,
         }
@@ -161,6 +221,7 @@ impl SkillRow {
 
     pub fn apply_diagnostics(&mut self, diagnostics: SkillDiagnostics) {
         self.fidelity_case_count = diagnostics.fidelity_case_count;
+        self.fidelity_cases = diagnostics.fidelity_cases;
         self.source_index_present = diagnostics.source_index_present;
         self.kind = diagnostics.kind;
     }
@@ -507,6 +568,7 @@ mod tests {
             keyword_count: 8,
             has_citation_format: true,
             fidelity_case_count: 4,
+            fidelity_cases: Vec::new(),
             source_index_present: true,
             kind: SkillKind::Persona,
         }
@@ -590,6 +652,33 @@ mod tests {
 
         assert!(diagnostics.source_index_present);
         assert_eq!(diagnostics.fidelity_case_count, 2);
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn reads_fidelity_case_drilldown_from_jsonl() {
+        let root = temp_dir();
+        let skill_dir = root.join("master-huineng");
+        fs::create_dir_all(skill_dir.join("tests")).unwrap();
+        fs::write(
+            skill_dir.join("tests").join("fidelity.jsonl"),
+            "{\"q\":\"什么是见性成佛？\",\"difficulty\":\"basic\",\"must_cite\":[\"T48n2008\",\"坛经\"],\"must_mention\":[\"自性\",\"佛性\"]}\n{\"q\":\"顿悟怎么修？\",\"difficulty\":\"intermediate\",\"must_cite\":[\"T48n2008\"],\"must_mention\":[\"顿悟\"]}\n",
+        )
+        .unwrap();
+
+        let diagnostics = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "huineng");
+
+        assert_eq!(diagnostics.fidelity_cases.len(), 2);
+        assert_eq!(diagnostics.fidelity_cases[0].index, 1);
+        assert_eq!(diagnostics.fidelity_cases[0].question, "什么是见性成佛？");
+        assert_eq!(
+            diagnostics.fidelity_cases[0].difficulty.as_deref(),
+            Some("basic")
+        );
+        assert_eq!(diagnostics.fidelity_cases[0].citation_assertion_count, 2);
+        assert_eq!(diagnostics.fidelity_cases[0].keyword_assertion_count, 2);
+        assert_eq!(diagnostics.fidelity_cases[0].total_assertion_count(), 4);
 
         fs::remove_dir_all(root).unwrap();
     }

@@ -7,7 +7,7 @@ use eframe::egui;
 
 use crate::catalog::{
     console_summary, evaluation_summary, filter_rows, tradition_options, DiagnosticAction,
-    DiagnosticOperation, InstallFilter, QualityLevel, SkillDiagnostics, SkillRow,
+    DiagnosticOperation, FidelityCase, InstallFilter, QualityLevel, SkillDiagnostics, SkillRow,
 };
 use crate::cli::CliClient;
 use crate::layout::{
@@ -1164,6 +1164,55 @@ impl MasterSkillApp {
         ui.separator();
     }
 
+    fn show_fidelity_cases_panel(&mut self, ui: &mut egui::Ui, slug: &str, cases: &[FidelityCase]) {
+        ui.heading("Fidelity Cases");
+        ui.horizontal(|ui| {
+            ui.label(format!("{} cases", cases.len()));
+            ui.separator();
+            if ui
+                .add_enabled(
+                    !self.is_busy() && !cases.is_empty(),
+                    egui::Button::new("Run skill dry-run"),
+                )
+                .clicked()
+            {
+                self.start_skill_fidelity_dry_run(slug.to_string());
+            }
+        });
+
+        if cases.is_empty() {
+            ui.label("No fidelity cases detected.");
+            ui.separator();
+            return;
+        }
+
+        egui::ScrollArea::vertical()
+            .max_height(220.0)
+            .show(ui, |ui| {
+                egui::Grid::new(format!("fidelity-case-grid-{slug}"))
+                    .num_columns(5)
+                    .striped(true)
+                    .min_col_width(72.0)
+                    .show(ui, |ui| {
+                        ui.strong("#");
+                        ui.strong("Difficulty");
+                        ui.strong("Cites");
+                        ui.strong("Keywords");
+                        ui.strong("Prompt");
+                        ui.end_row();
+                        for case in cases {
+                            ui.label(case.index.to_string());
+                            ui.label(case.difficulty.as_deref().unwrap_or("unspecified"));
+                            ui.label(case.citation_assertion_count.to_string());
+                            ui.label(case.keyword_assertion_count.to_string());
+                            ui.label(first_line(&case.question));
+                            ui.end_row();
+                        }
+                    });
+            });
+        ui.separator();
+    }
+
     fn show_recommended_actions_panel(&mut self, ui: &mut egui::Ui, actions: &[DiagnosticAction]) {
         ui.heading("Recommended Actions");
         if actions.is_empty() {
@@ -1261,6 +1310,10 @@ impl MasterSkillApp {
                 .as_ref()
                 .map(|row| row.fidelity_case_count)
                 .unwrap_or_default();
+            let fidelity_cases = selected_row
+                .as_ref()
+                .map(|row| row.fidelity_cases.clone())
+                .unwrap_or_default();
             let kind = selected_row
                 .as_ref()
                 .map(|row| row.kind.label())
@@ -1307,6 +1360,7 @@ impl MasterSkillApp {
                         quality,
                         &diagnostic_summary,
                     );
+                    self.show_fidelity_cases_panel(&mut columns[1], &master.slug, &fidelity_cases);
                     self.show_recommended_actions_panel(&mut columns[1], &diagnostic_actions);
                     Self::show_runtime_protocol_panel(&mut columns[1], &master);
                 });
@@ -1319,6 +1373,7 @@ impl MasterSkillApp {
                     quality,
                     &diagnostic_summary,
                 );
+                self.show_fidelity_cases_panel(ui, &master.slug, &fidelity_cases);
                 self.show_recommended_actions_panel(ui, &diagnostic_actions);
                 Self::show_runtime_protocol_panel(ui, &master);
             }
