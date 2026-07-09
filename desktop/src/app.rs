@@ -22,8 +22,8 @@ use crate::theme::{
 };
 use crate::trace::{
     EvaluationFailureInsights, EvaluationFailureItem, EvaluationFailurePriority,
-    EvaluationRunHistoryItem, EvaluationRunTrend, EvaluationTrendSummary, TraceAction, TraceStatus,
-    TraceStore,
+    EvaluationRegressionItem, EvaluationRunHistoryItem, EvaluationRunTrend, EvaluationTrendSummary,
+    TraceAction, TraceStatus, TraceStore,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -718,6 +718,7 @@ impl MasterSkillApp {
         let failure_queue = self.traces.evaluation_failure_queue();
         let run_history = self.traces.evaluation_run_history(8);
         let trend_summary = self.traces.evaluation_trend_summary(8);
+        let regressions = self.traces.evaluation_regressions(8);
         Self::show_workspace_header(
             ui,
             "Evaluation Center",
@@ -786,6 +787,9 @@ impl MasterSkillApp {
         Self::show_evaluation_trend_summary(ui, &trend_summary);
 
         ui.separator();
+        self.show_evaluation_regressions(ui, &regressions);
+
+        ui.separator();
         self.show_evaluation_failure_insights(ui, &failure_insights, &failure_queue);
 
         ui.separator();
@@ -838,6 +842,90 @@ impl MasterSkillApp {
             },
         ];
         Self::show_metric_cards(ui, &cards);
+    }
+
+    fn show_evaluation_regressions(
+        &mut self,
+        ui: &mut egui::Ui,
+        regressions: &[EvaluationRegressionItem],
+    ) {
+        ui.heading("Regression Queue");
+        if regressions.is_empty() {
+            ui.small("No regressions detected in recent evaluation runs.");
+            return;
+        }
+
+        let busy = self.is_busy();
+        let mut action_to_rerun = None;
+        let mut skill_to_open = None;
+        egui::ScrollArea::horizontal()
+            .max_width(ui.available_width())
+            .show(ui, |ui| {
+                egui::Grid::new("evaluation-regression-grid")
+                    .num_columns(6)
+                    .striped(true)
+                    .min_col_width(104.0)
+                    .show(ui, |ui| {
+                        ui.strong("Scope");
+                        ui.strong("Current");
+                        ui.strong("Previous");
+                        ui.strong("Failed Delta");
+                        ui.strong("Pass Rate Delta");
+                        ui.strong("Actions");
+                        ui.end_row();
+
+                        for item in regressions {
+                            ui.label(&item.scope);
+                            ui.label(format!(
+                                "#{} / {} failed / {}%",
+                                item.current_trace_id,
+                                item.current_failed_count,
+                                item.current_pass_rate
+                            ));
+                            ui.label(format!(
+                                "#{} / {} failed / {}%",
+                                item.previous_trace_id,
+                                item.previous_failed_count,
+                                item.previous_pass_rate
+                            ));
+                            ui.colored_label(
+                                Self::evaluation_trend_color(EvaluationRunTrend::Regressed),
+                                format!("+{}", item.failed_delta),
+                            );
+                            ui.colored_label(
+                                Self::evaluation_trend_color(EvaluationRunTrend::Regressed),
+                                format!("{} pts", item.pass_rate_delta_points),
+                            );
+                            ui.horizontal(|ui| {
+                                if ui
+                                    .add_enabled(
+                                        !busy && item.action.is_some(),
+                                        egui::Button::new("Rerun"),
+                                    )
+                                    .clicked()
+                                {
+                                    action_to_rerun = item.action.clone();
+                                }
+                                if let Some(slug) =
+                                    item.scope.strip_prefix("master-").map(str::to_string)
+                                {
+                                    if ui.button("Open").clicked() {
+                                        skill_to_open = Some(slug);
+                                    }
+                                }
+                            });
+                            ui.end_row();
+                        }
+                    });
+            });
+
+        if let Some(action) = action_to_rerun {
+            self.start_trace_action(action);
+        }
+        if let Some(slug) = skill_to_open {
+            self.console_section = ConsoleSection::SkillDetail;
+            self.start_inspect(slug);
+        }
     }
 
     fn show_evaluation_failure_insights(

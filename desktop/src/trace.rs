@@ -119,6 +119,10 @@ impl EvaluationRunHistoryItem {
         format!("{}/{} {mode}", self.passed_count, self.total_count)
     }
 
+    pub fn pass_rate_percent(&self) -> usize {
+        self.pass_rate_basis() / 100
+    }
+
     fn pass_rate_basis(&self) -> usize {
         if self.total_count == 0 {
             0
@@ -167,6 +171,20 @@ impl EvaluationTrendSummary {
             "clear"
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EvaluationRegressionItem {
+    pub scope: String,
+    pub current_trace_id: u64,
+    pub previous_trace_id: u64,
+    pub current_failed_count: usize,
+    pub previous_failed_count: usize,
+    pub failed_delta: isize,
+    pub current_pass_rate: usize,
+    pub previous_pass_rate: usize,
+    pub pass_rate_delta_points: isize,
+    pub action: Option<TraceAction>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -799,6 +817,45 @@ impl TraceStore {
         }
 
         summary
+    }
+
+    pub fn evaluation_regressions(&self, limit: usize) -> Vec<EvaluationRegressionItem> {
+        let history = self.evaluation_run_history(limit);
+        let mut regressions = Vec::new();
+
+        for index in 0..history.len() {
+            let current = &history[index];
+            if current.trend != EvaluationRunTrend::Regressed {
+                continue;
+            }
+
+            let Some(previous) = history[index + 1..]
+                .iter()
+                .find(|candidate| candidate.scope == current.scope)
+            else {
+                continue;
+            };
+
+            let current_failed_count = current.failed_count;
+            let previous_failed_count = previous.failed_count;
+            let current_pass_rate = current.pass_rate_percent();
+            let previous_pass_rate = previous.pass_rate_percent();
+
+            regressions.push(EvaluationRegressionItem {
+                scope: current.scope.clone(),
+                current_trace_id: current.trace_id,
+                previous_trace_id: previous.trace_id,
+                current_failed_count,
+                previous_failed_count,
+                failed_delta: current_failed_count as isize - previous_failed_count as isize,
+                current_pass_rate,
+                previous_pass_rate,
+                pass_rate_delta_points: current_pass_rate as isize - previous_pass_rate as isize,
+                action: current.action.clone(),
+            });
+        }
+
+        regressions
     }
 
     pub fn latest_evaluation_case_results_for(&self, slug: &str) -> Vec<EvaluationCaseResult> {
@@ -1860,6 +1917,104 @@ mod tests {
         assert_eq!(summary.new_count, 2);
         assert_eq!(summary.latest_regression_scope.as_deref(), Some("all"));
         assert_eq!(summary.health_label(), "review");
+    }
+
+    #[test]
+    fn lists_evaluation_regressions_with_previous_run_context() {
+        let mut store = TraceStore::new(10);
+
+        let old_huineng = store.begin_with_action(
+            "Running master-huineng fidelity run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            old_huineng,
+            "master-huineng fidelity run finished",
+            r#"[
+              {"master": "master-huineng", "results": [
+                {"index": 0, "question": "通过一", "status": "PASS"},
+                {"index": 1, "question": "通过二", "status": "PASS"}
+              ]}
+            ]"#,
+            Duration::from_millis(40),
+        );
+
+        let old_all = store.begin_with_action(
+            "Running fidelity run",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            old_all,
+            "fidelity run finished",
+            r#"[
+              {"master": "master-zhiyi", "results": [
+                {"index": 0, "question": "失败", "status": "FAIL"}
+              ]}
+            ]"#,
+            Duration::from_millis(45),
+        );
+
+        let new_huineng = store.begin_with_action(
+            "Running master-huineng fidelity run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            new_huineng,
+            "master-huineng fidelity run finished",
+            r#"[
+              {"master": "master-huineng", "results": [
+                {"index": 0, "question": "通过", "status": "PASS"},
+                {"index": 1, "question": "回归失败", "status": "FAIL"}
+              ]}
+            ]"#,
+            Duration::from_millis(35),
+        );
+
+        let new_all = store.begin_with_action(
+            "Running fidelity run",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            new_all,
+            "fidelity run finished",
+            r#"[
+              {"master": "master-zhiyi", "results": [
+                {"index": 0, "question": "通过", "status": "PASS"}
+              ]}
+            ]"#,
+            Duration::from_millis(50),
+        );
+
+        let regressions = store.evaluation_regressions(8);
+
+        assert_eq!(regressions.len(), 1);
+        assert_eq!(regressions[0].scope, "master-huineng");
+        assert_eq!(regressions[0].current_trace_id, new_huineng);
+        assert_eq!(regressions[0].previous_trace_id, old_huineng);
+        assert_eq!(regressions[0].current_failed_count, 1);
+        assert_eq!(regressions[0].previous_failed_count, 0);
+        assert_eq!(regressions[0].failed_delta, 1);
+        assert_eq!(regressions[0].current_pass_rate, 50);
+        assert_eq!(regressions[0].previous_pass_rate, 100);
+        assert_eq!(regressions[0].pass_rate_delta_points, -50);
+        assert_eq!(
+            regressions[0].action,
+            Some(TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string()
+            })
+        );
     }
 
     #[test]
