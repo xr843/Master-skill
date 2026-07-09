@@ -595,6 +595,17 @@ pub struct TraceSummary {
     pub last_status: Option<TraceStatus>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TraceFailureItem {
+    pub trace_id: u64,
+    pub kind: FailureKind,
+    pub label: String,
+    pub summary: String,
+    pub duration_ms: Option<u128>,
+    pub action: Option<TraceAction>,
+    pub related_skill_slug: Option<String>,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct EvaluationRunCoverage {
     pub total_skill_count: usize,
@@ -823,6 +834,26 @@ impl TraceStore {
             .rev()
             .filter(|record| record.matches_filter(filter))
             .cloned()
+            .collect()
+    }
+
+    pub fn trace_failure_queue(&self, limit: usize) -> Vec<TraceFailureItem> {
+        self.records
+            .iter()
+            .rev()
+            .filter_map(|record| {
+                let kind = record.failure_kind()?;
+                Some(TraceFailureItem {
+                    trace_id: record.id,
+                    kind,
+                    label: record.label.clone(),
+                    summary: record.summary.clone(),
+                    duration_ms: record.duration_ms,
+                    action: record.action.clone(),
+                    related_skill_slug: record.related_skill_slug().map(str::to_string),
+                })
+            })
+            .take(limit)
             .collect()
     }
 
@@ -1249,6 +1280,71 @@ mod tests {
         assert_eq!(recent[0].failure_kind(), Some(FailureKind::Install));
         assert_eq!(recent[1].failure_kind(), Some(FailureKind::Fidelity));
         assert_eq!(recent[2].failure_kind(), Some(FailureKind::Validation));
+    }
+
+    #[test]
+    fn lists_latest_failed_traces_for_recovery_queue() {
+        let mut store = TraceStore::new(10);
+
+        let validation = store.begin_with_action(
+            "Running full validation",
+            TraceAction::FullValidation,
+            Some("npm test"),
+            "Queued.",
+        );
+        store.finish_error_with_detail(
+            validation,
+            "npm test failed",
+            "validate.py failed",
+            Duration::from_millis(100),
+        );
+
+        let refresh = store.begin_with_action(
+            "Refreshing runtime data",
+            TraceAction::Refresh,
+            None::<String>,
+            "Queued.",
+        );
+        store.finish_success(
+            refresh,
+            "Runtime data refreshed.",
+            Duration::from_millis(20),
+        );
+
+        let install = store.begin_with_action(
+            "Installing master-huineng",
+            TraceAction::InstallSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("master-skill install huineng"),
+            "Queued.",
+        );
+        store.finish_error_with_detail(
+            install,
+            "install failed",
+            "failed to run master-skill CLI",
+            Duration::from_millis(30),
+        );
+
+        let queue = store.trace_failure_queue(5);
+
+        assert_eq!(queue.len(), 2);
+        assert_eq!(queue[0].trace_id, install);
+        assert_eq!(queue[0].kind, FailureKind::Install);
+        assert_eq!(queue[0].label, "Installing master-huineng");
+        assert_eq!(queue[0].summary, "install failed");
+        assert_eq!(queue[0].duration_ms, Some(30));
+        assert_eq!(queue[0].related_skill_slug.as_deref(), Some("huineng"));
+        assert_eq!(
+            queue[0].action,
+            Some(TraceAction::InstallSkill {
+                slug: "huineng".to_string()
+            })
+        );
+
+        assert_eq!(queue[1].trace_id, validation);
+        assert_eq!(queue[1].kind, FailureKind::Validation);
+        assert_eq!(queue[1].related_skill_slug, None);
     }
 
     #[test]
