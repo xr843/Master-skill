@@ -28,10 +28,26 @@ impl QualityLevel {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SkillKind {
+    Persona,
+    MetaSkill,
+}
+
+impl SkillKind {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Persona => "persona",
+            Self::MetaSkill => "meta-skill",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct SkillDiagnostics {
     pub fidelity_case_count: usize,
     pub source_index_present: bool,
+    pub kind: SkillKind,
 }
 
 impl SkillDiagnostics {
@@ -50,7 +66,33 @@ impl SkillDiagnostics {
         Self {
             fidelity_case_count,
             source_index_present: skill_dir.join("sources").join("INDEX.md").is_file(),
+            kind: detect_skill_kind(&skill_dir),
         }
+    }
+}
+
+impl Default for SkillKind {
+    fn default() -> Self {
+        Self::Persona
+    }
+}
+
+fn detect_skill_kind(skill_dir: &Path) -> SkillKind {
+    let skill_md = fs::read_to_string(skill_dir.join("SKILL.md")).unwrap_or_default();
+    let meta_json = fs::read_to_string(skill_dir.join("meta.json")).unwrap_or_default();
+    let meta_kind = serde_json::from_str::<serde_json::Value>(&meta_json)
+        .ok()
+        .and_then(|value| {
+            value
+                .get("kind")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_string)
+        });
+
+    if skill_md.contains("kind: meta-skill") || meta_kind.as_deref() == Some("meta-skill") {
+        SkillKind::MetaSkill
+    } else {
+        SkillKind::Persona
     }
 }
 
@@ -69,6 +111,7 @@ pub struct SkillRow {
     pub has_citation_format: bool,
     pub fidelity_case_count: usize,
     pub source_index_present: bool,
+    pub kind: SkillKind,
 }
 
 impl SkillRow {
@@ -93,6 +136,7 @@ impl SkillRow {
                 .unwrap_or(false),
             fidelity_case_count: 0,
             source_index_present: false,
+            kind: SkillKind::Persona,
         }
     }
 
@@ -103,11 +147,20 @@ impl SkillRow {
     pub fn apply_diagnostics(&mut self, diagnostics: SkillDiagnostics) {
         self.fidelity_case_count = diagnostics.fidelity_case_count;
         self.source_index_present = diagnostics.source_index_present;
+        self.kind = diagnostics.kind;
     }
 
     pub fn quality_level(&self) -> QualityLevel {
         if !self.installed {
             return QualityLevel::Missing;
+        }
+
+        if self.kind == SkillKind::MetaSkill {
+            return if self.fidelity_case_count > 0 {
+                QualityLevel::Ready
+            } else {
+                QualityLevel::Attention
+            };
         }
 
         if self.live_grounding
@@ -133,6 +186,8 @@ pub struct ConsoleSummary {
     pub protocol_ready_count: usize,
     pub attention_count: usize,
     pub runtime_ok: bool,
+    pub persona_count: usize,
+    pub meta_skill_count: usize,
 }
 
 pub fn console_summary(
@@ -143,9 +198,19 @@ pub fn console_summary(
 ) -> ConsoleSummary {
     let installed_count = rows.iter().filter(|row| row.installed).count();
     let missing_count = rows.len().saturating_sub(installed_count);
+    let persona_count = rows
+        .iter()
+        .filter(|row| row.kind == SkillKind::Persona)
+        .count();
+    let meta_skill_count = rows
+        .iter()
+        .filter(|row| row.kind == SkillKind::MetaSkill)
+        .count();
     let source_ready_count = rows
         .iter()
-        .filter(|row| row.source_count > 0 && row.source_index_present)
+        .filter(|row| {
+            row.kind == SkillKind::Persona && row.source_count > 0 && row.source_index_present
+        })
         .count();
     let evaluation_ready_count = rows
         .iter()
@@ -153,7 +218,9 @@ pub fn console_summary(
         .count();
     let protocol_ready_count = rows
         .iter()
-        .filter(|row| row.live_grounding && row.has_citation_format)
+        .filter(|row| {
+            row.kind == SkillKind::Persona && row.live_grounding && row.has_citation_format
+        })
         .count();
     let attention_count = rows
         .iter()
@@ -169,6 +236,8 @@ pub fn console_summary(
         protocol_ready_count,
         attention_count,
         runtime_ok: runtime_status == "ok" && problem_count == 0,
+        persona_count,
+        meta_skill_count,
     }
 }
 
@@ -292,7 +361,7 @@ mod tests {
 
     use super::{
         console_summary, evaluation_summary, filter_rows, tradition_options, EvaluationGroup,
-        InstallFilter, QualityLevel, SkillDiagnostics, SkillRow,
+        InstallFilter, QualityLevel, SkillDiagnostics, SkillKind, SkillRow,
     };
 
     fn temp_dir() -> PathBuf {
@@ -318,6 +387,7 @@ mod tests {
             has_citation_format: true,
             fidelity_case_count: 4,
             source_index_present: true,
+            kind: SkillKind::Persona,
         }
     }
 
@@ -376,6 +446,8 @@ mod tests {
         assert_eq!(summary.source_ready_count, 3);
         assert_eq!(summary.evaluation_ready_count, 3);
         assert_eq!(summary.protocol_ready_count, 3);
+        assert_eq!(summary.persona_count, 3);
+        assert_eq!(summary.meta_skill_count, 0);
         assert_eq!(summary.attention_count, 1);
         assert!(summary.runtime_ok);
     }
@@ -397,6 +469,63 @@ mod tests {
 
         assert!(diagnostics.source_index_present);
         assert_eq!(diagnostics.fidelity_case_count, 2);
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn treats_meta_skills_as_ready_when_their_fidelity_suite_exists() {
+        let mut meta = row("curriculum", "学修路径", "", true);
+        meta.kind = SkillKind::MetaSkill;
+        meta.live_grounding = false;
+        meta.source_count = 0;
+        meta.source_index_present = false;
+        meta.has_citation_format = false;
+        meta.fidelity_case_count = 8;
+
+        assert_eq!(meta.quality_level(), QualityLevel::Ready);
+
+        let summary = console_summary(&[meta], 1, "ok", 0);
+
+        assert_eq!(summary.persona_count, 0);
+        assert_eq!(summary.meta_skill_count, 1);
+        assert_eq!(summary.source_ready_count, 0);
+        assert_eq!(summary.protocol_ready_count, 0);
+        assert_eq!(summary.evaluation_ready_count, 1);
+        assert_eq!(summary.attention_count, 0);
+    }
+
+    #[test]
+    fn reads_meta_skill_kind_from_skill_frontmatter_and_meta_json() {
+        let root = temp_dir();
+        let curriculum_dir = root.join("master-curriculum");
+        fs::create_dir_all(curriculum_dir.join("tests")).unwrap();
+        fs::write(
+            curriculum_dir.join("SKILL.md"),
+            "---\nname: master-curriculum\nkind: meta-skill\n---\n",
+        )
+        .unwrap();
+        fs::write(curriculum_dir.join("tests").join("fidelity.jsonl"), "{}\n").unwrap();
+
+        let debate_dir = root.join("master-debate");
+        fs::create_dir_all(debate_dir.join("tests")).unwrap();
+        fs::write(
+            debate_dir.join("SKILL.md"),
+            "---\nname: master-debate\n---\n",
+        )
+        .unwrap();
+        fs::write(
+            debate_dir.join("meta.json"),
+            "{\n  \"kind\": \"meta-skill\"\n}\n",
+        )
+        .unwrap();
+        fs::write(debate_dir.join("tests").join("fidelity.jsonl"), "{}\n").unwrap();
+
+        let curriculum = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "curriculum");
+        let debate = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "debate");
+
+        assert_eq!(curriculum.kind, SkillKind::MetaSkill);
+        assert_eq!(debate.kind, SkillKind::MetaSkill);
 
         fs::remove_dir_all(root).unwrap();
     }
