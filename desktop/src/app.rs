@@ -20,7 +20,9 @@ use crate::model::{DoctorReport, MasterInspect, SkillInventory};
 use crate::theme::{
     apply_console_theme, sidebar_default_width, sidebar_row_height, status_badge_width,
 };
-use crate::trace::{EvaluationFailureInsights, TraceAction, TraceStatus, TraceStore};
+use crate::trace::{
+    EvaluationFailureInsights, EvaluationFailureItem, TraceAction, TraceStatus, TraceStore,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ConsoleSection {
@@ -694,6 +696,7 @@ impl MasterSkillApp {
         let summary = evaluation_summary(&self.rows);
         let run_coverage = self.traces.evaluation_run_coverage(summary.skill_count);
         let failure_insights = self.traces.evaluation_failure_insights();
+        let failure_queue = self.traces.evaluation_failure_queue();
         Self::show_workspace_header(
             ui,
             "Evaluation Center",
@@ -759,7 +762,7 @@ impl MasterSkillApp {
         Self::show_metric_cards(ui, &cards);
 
         ui.separator();
-        Self::show_evaluation_failure_insights(ui, &failure_insights);
+        self.show_evaluation_failure_insights(ui, &failure_insights, &failure_queue);
 
         ui.separator();
         let mode = dense_table_mode_for_width(ui.available_width());
@@ -775,7 +778,12 @@ impl MasterSkillApp {
         }
     }
 
-    fn show_evaluation_failure_insights(ui: &mut egui::Ui, insights: &EvaluationFailureInsights) {
+    fn show_evaluation_failure_insights(
+        &mut self,
+        ui: &mut egui::Ui,
+        insights: &EvaluationFailureInsights,
+        failure_queue: &[EvaluationFailureItem],
+    ) {
         ui.heading("Failure Insights");
         let top_failure_value = insights
             .top_failure_skill_slug
@@ -838,6 +846,72 @@ impl MasterSkillApp {
                 ui.label(insights.fabricated_cites_count.to_string());
                 ui.end_row();
             });
+
+        ui.separator();
+        self.show_evaluation_failure_queue(ui, failure_queue);
+    }
+
+    fn show_evaluation_failure_queue(
+        &mut self,
+        ui: &mut egui::Ui,
+        failure_queue: &[EvaluationFailureItem],
+    ) {
+        ui.heading("Failure Queue");
+        if failure_queue.is_empty() {
+            ui.small("No failing cases in the latest case-level evaluation results.");
+            return;
+        }
+
+        let busy = self.is_busy();
+        let mut skill_to_open = None;
+        let mut skill_to_run = None;
+        egui::ScrollArea::horizontal()
+            .max_width(ui.available_width())
+            .show(ui, |ui| {
+                egui::ScrollArea::vertical()
+                    .max_height(220.0)
+                    .show(ui, |ui| {
+                        egui::Grid::new("evaluation-failure-queue-grid")
+                            .num_columns(6)
+                            .striped(true)
+                            .min_col_width(92.0)
+                            .show(ui, |ui| {
+                                ui.strong("Skill");
+                                ui.strong("Case");
+                                ui.strong("Status");
+                                ui.strong("Question");
+                                ui.strong("Evidence");
+                                ui.strong("Actions");
+                                ui.end_row();
+
+                                for item in failure_queue {
+                                    ui.label(format!("master-{}", item.slug));
+                                    ui.label(format!("#{}", item.case_index));
+                                    ui.label(&item.status);
+                                    ui.label(&item.question);
+                                    ui.label(&item.failure_summary);
+                                    ui.horizontal(|ui| {
+                                        if ui.button("Open").clicked() {
+                                            skill_to_open = Some(item.slug.clone());
+                                        }
+                                        if ui.add_enabled(!busy, egui::Button::new("Run")).clicked()
+                                        {
+                                            skill_to_run = Some(item.slug.clone());
+                                        }
+                                    });
+                                    ui.end_row();
+                                }
+                            });
+                    });
+            });
+
+        if let Some(slug) = skill_to_open {
+            self.console_section = ConsoleSection::SkillDetail;
+            self.start_inspect(slug);
+        }
+        if let Some(slug) = skill_to_run {
+            self.start_skill_fidelity_dry_run(slug);
+        }
     }
 
     fn show_tradition_coverage(ui: &mut egui::Ui, groups: &[crate::catalog::EvaluationGroup]) {

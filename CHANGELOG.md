@@ -43,6 +43,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added per-case fidelity failure evidence summaries in Skill Detail for missing citations, missing mentions, boundary issues, forbidden text, and fabricated citations.
 - Added Evaluation Center failure insights for latest case results, including failed-case counts, pass rate, failing skills, top failure source, and failure-type distribution.
 - Refined Evaluation Center pass-rate semantics so dry-run-only case results show `N/A` instead of a misleading graded percentage.
+- Added an Evaluation Center failure queue that lists latest failing cases with evidence and direct actions to open the skill or rerun its fidelity dry-run.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
