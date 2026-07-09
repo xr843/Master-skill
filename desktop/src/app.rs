@@ -6,8 +6,8 @@ use anyhow::Result;
 use eframe::egui;
 
 use crate::catalog::{
-    console_summary, evaluation_summary, filter_rows, tradition_options, InstallFilter,
-    QualityLevel, SkillDiagnostics, SkillRow,
+    console_summary, evaluation_summary, filter_rows, tradition_options, DiagnosticAction,
+    InstallFilter, QualityLevel, SkillDiagnostics, SkillRow,
 };
 use crate::cli::CliClient;
 use crate::layout::{
@@ -988,6 +988,37 @@ impl MasterSkillApp {
         ui.separator();
     }
 
+    fn show_recommended_actions_panel(ui: &mut egui::Ui, actions: &[DiagnosticAction]) {
+        ui.heading("Recommended Actions");
+        if actions.is_empty() {
+            ui.label("No action needed.");
+            ui.separator();
+            return;
+        }
+
+        egui::Grid::new("recommended-actions-grid")
+            .num_columns(3)
+            .striped(true)
+            .min_col_width(104.0)
+            .show(ui, |ui| {
+                ui.strong("Action");
+                ui.strong("Reason");
+                ui.strong("Command");
+                ui.end_row();
+                for action in actions {
+                    ui.label(&action.title);
+                    ui.label(&action.detail);
+                    if let Some(command) = &action.command {
+                        ui.monospace(command);
+                    } else {
+                        ui.label("manual");
+                    }
+                    ui.end_row();
+                }
+            });
+        ui.separator();
+    }
+
     fn show_runtime_protocol_panel(ui: &mut egui::Ui, master: &MasterInspect) {
         ui.heading("Runtime Protocol");
         egui::Grid::new(format!("runtime-protocol-grid-{}", master.slug))
@@ -1046,6 +1077,10 @@ impl MasterSkillApp {
                 .as_ref()
                 .map(SkillRow::diagnostic_summary)
                 .unwrap_or_else(|| "not loaded".to_string());
+            let diagnostic_actions = selected_row
+                .as_ref()
+                .map(SkillRow::diagnostic_actions)
+                .unwrap_or_default();
 
             ui.label(master.display_name.as_deref().unwrap_or(&master.name));
             ui.horizontal(|ui| {
@@ -1080,6 +1115,7 @@ impl MasterSkillApp {
                         quality,
                         &diagnostic_summary,
                     );
+                    Self::show_recommended_actions_panel(&mut columns[1], &diagnostic_actions);
                     Self::show_runtime_protocol_panel(&mut columns[1], &master);
                 });
             } else {
@@ -1091,6 +1127,7 @@ impl MasterSkillApp {
                     quality,
                     &diagnostic_summary,
                 );
+                Self::show_recommended_actions_panel(ui, &diagnostic_actions);
                 Self::show_runtime_protocol_panel(ui, &master);
             }
         } else {

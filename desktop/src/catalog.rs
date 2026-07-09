@@ -97,6 +97,13 @@ fn detect_skill_kind(skill_dir: &Path) -> SkillKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DiagnosticAction {
+    pub title: String,
+    pub detail: String,
+    pub command: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SkillRow {
     pub name: String,
     pub slug: String,
@@ -212,6 +219,63 @@ impl SkillRow {
         } else {
             gaps.join(", ")
         }
+    }
+
+    pub fn diagnostic_actions(&self) -> Vec<DiagnosticAction> {
+        if !self.installed {
+            return vec![DiagnosticAction {
+                title: "Install skill".to_string(),
+                detail: "Install this skill into the local Codex/Claude skills directory."
+                    .to_string(),
+                command: Some(format!("master-skill install {}", self.slug)),
+            }];
+        }
+
+        let mut actions = Vec::new();
+        if self.kind == SkillKind::Persona {
+            if self.source_count == 0 {
+                actions.push(DiagnosticAction {
+                    title: "Add source declarations".to_string(),
+                    detail: "Declare primary textual sources in the skill metadata.".to_string(),
+                    command: None,
+                });
+            }
+            if !self.source_index_present {
+                actions.push(DiagnosticAction {
+                    title: "Create source index".to_string(),
+                    detail: "Add sources/INDEX.md so source grounding is auditable.".to_string(),
+                    command: None,
+                });
+            }
+            if !self.has_citation_format {
+                actions.push(DiagnosticAction {
+                    title: "Declare citation format".to_string(),
+                    detail: "Add the expected citation format to the skill metadata.".to_string(),
+                    command: None,
+                });
+            }
+            if !self.live_grounding {
+                actions.push(DiagnosticAction {
+                    title: "Enable live grounding".to_string(),
+                    detail: "Set the runtime grounding protocol for this persona.".to_string(),
+                    command: None,
+                });
+            }
+        }
+
+        if self.fidelity_case_count == 0 {
+            actions.push(DiagnosticAction {
+                title: "Add fidelity suite".to_string(),
+                detail: "Create tests/fidelity.jsonl, then dry-run the suite for this skill."
+                    .to_string(),
+                command: Some(format!(
+                    "python3 scripts/test-fidelity.py --master master-{} --dry-run",
+                    self.slug
+                )),
+            });
+        }
+
+        actions
     }
 }
 
@@ -571,6 +635,58 @@ mod tests {
 
         assert_eq!(meta.diagnostic_gaps(), vec!["missing fidelity suite"]);
         assert_eq!(meta.diagnostic_summary(), "missing fidelity suite");
+    }
+
+    #[test]
+    fn recommends_install_action_for_missing_skill() {
+        let missing = row("atisha", "阿底峡尊者", "藏传", false);
+
+        let actions = missing.diagnostic_actions();
+
+        assert_eq!(actions.len(), 1);
+        assert_eq!(actions[0].title, "Install skill");
+        assert_eq!(
+            actions[0].command.as_deref(),
+            Some("master-skill install atisha")
+        );
+    }
+
+    #[test]
+    fn recommends_contract_actions_for_incomplete_persona() {
+        let mut broken = row("huineng", "慧能大师", "汉传", true);
+        broken.live_grounding = false;
+        broken.source_count = 0;
+        broken.source_index_present = false;
+        broken.has_citation_format = false;
+        broken.fidelity_case_count = 0;
+
+        let actions = broken.diagnostic_actions();
+        let titles: Vec<&str> = actions.iter().map(|action| action.title.as_str()).collect();
+        let commands: Vec<Option<&str>> = actions
+            .iter()
+            .map(|action| action.command.as_deref())
+            .collect();
+
+        assert_eq!(
+            titles,
+            vec![
+                "Add source declarations",
+                "Create source index",
+                "Declare citation format",
+                "Enable live grounding",
+                "Add fidelity suite",
+            ]
+        );
+        assert_eq!(
+            commands,
+            vec![
+                None,
+                None,
+                None,
+                None,
+                Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run"),
+            ]
+        );
     }
 
     #[test]
