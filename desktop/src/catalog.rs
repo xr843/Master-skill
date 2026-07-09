@@ -97,9 +97,17 @@ fn detect_skill_kind(skill_dir: &Path) -> SkillKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub enum DiagnosticOperation {
+    Manual,
+    InstallSkill { slug: String },
+    FidelityDryRun { slug: String },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DiagnosticAction {
     pub title: String,
     pub detail: String,
+    pub operation: DiagnosticOperation,
     pub command: Option<String>,
 }
 
@@ -227,6 +235,9 @@ impl SkillRow {
                 title: "Install skill".to_string(),
                 detail: "Install this skill into the local Codex/Claude skills directory."
                     .to_string(),
+                operation: DiagnosticOperation::InstallSkill {
+                    slug: self.slug.clone(),
+                },
                 command: Some(format!("master-skill install {}", self.slug)),
             }];
         }
@@ -237,6 +248,7 @@ impl SkillRow {
                 actions.push(DiagnosticAction {
                     title: "Add source declarations".to_string(),
                     detail: "Declare primary textual sources in the skill metadata.".to_string(),
+                    operation: DiagnosticOperation::Manual,
                     command: None,
                 });
             }
@@ -244,6 +256,7 @@ impl SkillRow {
                 actions.push(DiagnosticAction {
                     title: "Create source index".to_string(),
                     detail: "Add sources/INDEX.md so source grounding is auditable.".to_string(),
+                    operation: DiagnosticOperation::Manual,
                     command: None,
                 });
             }
@@ -251,6 +264,7 @@ impl SkillRow {
                 actions.push(DiagnosticAction {
                     title: "Declare citation format".to_string(),
                     detail: "Add the expected citation format to the skill metadata.".to_string(),
+                    operation: DiagnosticOperation::Manual,
                     command: None,
                 });
             }
@@ -258,6 +272,7 @@ impl SkillRow {
                 actions.push(DiagnosticAction {
                     title: "Enable live grounding".to_string(),
                     detail: "Set the runtime grounding protocol for this persona.".to_string(),
+                    operation: DiagnosticOperation::Manual,
                     command: None,
                 });
             }
@@ -268,6 +283,9 @@ impl SkillRow {
                 title: "Add fidelity suite".to_string(),
                 detail: "Create tests/fidelity.jsonl, then dry-run the suite for this skill."
                     .to_string(),
+                operation: DiagnosticOperation::FidelityDryRun {
+                    slug: self.slug.clone(),
+                },
                 command: Some(format!(
                     "python3 scripts/test-fidelity.py --master master-{} --dry-run",
                     self.slug
@@ -463,8 +481,8 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     use super::{
-        console_summary, evaluation_summary, filter_rows, tradition_options, EvaluationGroup,
-        InstallFilter, QualityLevel, SkillDiagnostics, SkillKind, SkillRow,
+        console_summary, evaluation_summary, filter_rows, tradition_options, DiagnosticOperation,
+        EvaluationGroup, InstallFilter, QualityLevel, SkillDiagnostics, SkillKind, SkillRow,
     };
 
     fn temp_dir() -> PathBuf {
@@ -646,6 +664,12 @@ mod tests {
         assert_eq!(actions.len(), 1);
         assert_eq!(actions[0].title, "Install skill");
         assert_eq!(
+            actions[0].operation,
+            DiagnosticOperation::InstallSkill {
+                slug: "atisha".to_string()
+            }
+        );
+        assert_eq!(
             actions[0].command.as_deref(),
             Some("master-skill install atisha")
         );
@@ -662,6 +686,10 @@ mod tests {
 
         let actions = broken.diagnostic_actions();
         let titles: Vec<&str> = actions.iter().map(|action| action.title.as_str()).collect();
+        let operations: Vec<DiagnosticOperation> = actions
+            .iter()
+            .map(|action| action.operation.clone())
+            .collect();
         let commands: Vec<Option<&str>> = actions
             .iter()
             .map(|action| action.command.as_deref())
@@ -675,6 +703,18 @@ mod tests {
                 "Declare citation format",
                 "Enable live grounding",
                 "Add fidelity suite",
+            ]
+        );
+        assert_eq!(
+            operations,
+            vec![
+                DiagnosticOperation::Manual,
+                DiagnosticOperation::Manual,
+                DiagnosticOperation::Manual,
+                DiagnosticOperation::Manual,
+                DiagnosticOperation::FidelityDryRun {
+                    slug: "huineng".to_string()
+                },
             ]
         );
         assert_eq!(

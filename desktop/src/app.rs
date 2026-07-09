@@ -7,7 +7,7 @@ use eframe::egui;
 
 use crate::catalog::{
     console_summary, evaluation_summary, filter_rows, tradition_options, DiagnosticAction,
-    InstallFilter, QualityLevel, SkillDiagnostics, SkillRow,
+    DiagnosticOperation, InstallFilter, QualityLevel, SkillDiagnostics, SkillRow,
 };
 use crate::cli::CliClient;
 use crate::layout::{
@@ -303,6 +303,22 @@ impl MasterSkillApp {
         });
     }
 
+    fn start_skill_fidelity_dry_run(&mut self, slug: String) {
+        self.start_task(
+            format!("Running master-{slug} fidelity dry-run"),
+            move |client| {
+                let output = client.run_fidelity_dry_run_for(&slug)?;
+                Ok(TaskOutcome {
+                    message: summarize_command_output(
+                        &format!("master-{slug} fidelity dry-run finished"),
+                        &output,
+                    ),
+                    snapshot: None,
+                })
+            },
+        );
+    }
+
     fn start_full_validation(&mut self) {
         self.start_task("Running full validation", move |client| {
             let output = client.run_full_validation()?;
@@ -405,6 +421,16 @@ impl MasterSkillApp {
                     });
             },
         );
+    }
+
+    fn start_diagnostic_operation(&mut self, operation: DiagnosticOperation) {
+        match operation {
+            DiagnosticOperation::Manual => {
+                self.set_log("Manual action selected; edit the skill files and refresh.");
+            }
+            DiagnosticOperation::InstallSkill { slug } => self.start_install(slug),
+            DiagnosticOperation::FidelityDryRun { slug } => self.start_skill_fidelity_dry_run(slug),
+        }
     }
 
     fn show_workspace_header(
@@ -988,7 +1014,7 @@ impl MasterSkillApp {
         ui.separator();
     }
 
-    fn show_recommended_actions_panel(ui: &mut egui::Ui, actions: &[DiagnosticAction]) {
+    fn show_recommended_actions_panel(&mut self, ui: &mut egui::Ui, actions: &[DiagnosticAction]) {
         ui.heading("Recommended Actions");
         if actions.is_empty() {
             ui.label("No action needed.");
@@ -996,14 +1022,17 @@ impl MasterSkillApp {
             return;
         }
 
+        let busy = self.is_busy();
+        let mut operation_to_start = None;
         egui::Grid::new("recommended-actions-grid")
-            .num_columns(3)
+            .num_columns(4)
             .striped(true)
             .min_col_width(104.0)
             .show(ui, |ui| {
                 ui.strong("Action");
                 ui.strong("Reason");
                 ui.strong("Command");
+                ui.strong("Run");
                 ui.end_row();
                 for action in actions {
                     ui.label(&action.title);
@@ -1013,9 +1042,22 @@ impl MasterSkillApp {
                     } else {
                         ui.label("manual");
                     }
+                    match &action.operation {
+                        DiagnosticOperation::Manual => {
+                            ui.label("manual");
+                        }
+                        operation => {
+                            if ui.add_enabled(!busy, egui::Button::new("Run")).clicked() {
+                                operation_to_start = Some(operation.clone());
+                            }
+                        }
+                    }
                     ui.end_row();
                 }
             });
+        if let Some(operation) = operation_to_start {
+            self.start_diagnostic_operation(operation);
+        }
         ui.separator();
     }
 
@@ -1115,7 +1157,7 @@ impl MasterSkillApp {
                         quality,
                         &diagnostic_summary,
                     );
-                    Self::show_recommended_actions_panel(&mut columns[1], &diagnostic_actions);
+                    self.show_recommended_actions_panel(&mut columns[1], &diagnostic_actions);
                     Self::show_runtime_protocol_panel(&mut columns[1], &master);
                 });
             } else {
@@ -1127,7 +1169,7 @@ impl MasterSkillApp {
                     quality,
                     &diagnostic_summary,
                 );
-                Self::show_recommended_actions_panel(ui, &diagnostic_actions);
+                self.show_recommended_actions_panel(ui, &diagnostic_actions);
                 Self::show_runtime_protocol_panel(ui, &master);
             }
         } else {
