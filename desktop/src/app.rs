@@ -22,7 +22,8 @@ use crate::theme::{
 };
 use crate::trace::{
     EvaluationFailureInsights, EvaluationFailureItem, EvaluationFailurePriority,
-    EvaluationRunHistoryItem, EvaluationRunTrend, TraceAction, TraceStatus, TraceStore,
+    EvaluationRunHistoryItem, EvaluationRunTrend, EvaluationTrendSummary, TraceAction, TraceStatus,
+    TraceStore,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -716,6 +717,7 @@ impl MasterSkillApp {
         let failure_insights = self.traces.evaluation_failure_insights();
         let failure_queue = self.traces.evaluation_failure_queue();
         let run_history = self.traces.evaluation_run_history(8);
+        let trend_summary = self.traces.evaluation_trend_summary(8);
         Self::show_workspace_header(
             ui,
             "Evaluation Center",
@@ -781,6 +783,9 @@ impl MasterSkillApp {
         Self::show_metric_cards(ui, &cards);
 
         ui.separator();
+        Self::show_evaluation_trend_summary(ui, &trend_summary);
+
+        ui.separator();
         self.show_evaluation_failure_insights(ui, &failure_insights, &failure_queue);
 
         ui.separator();
@@ -798,6 +803,41 @@ impl MasterSkillApp {
             ui.separator();
             self.show_skill_suites(ui);
         }
+    }
+
+    fn show_evaluation_trend_summary(ui: &mut egui::Ui, summary: &EvaluationTrendSummary) {
+        ui.heading("Trend Summary");
+        let latest_regression = summary
+            .latest_regression_scope
+            .clone()
+            .unwrap_or_else(|| "none".to_string());
+        let cards = vec![
+            MetricCard {
+                title: "Trend Health",
+                value: summary.health_label().to_string(),
+                detail: format!("{} recent runs", summary.total_runs),
+                healthy: summary.regressed_count == 0,
+            },
+            MetricCard {
+                title: "Regressed",
+                value: summary.regressed_count.to_string(),
+                detail: latest_regression,
+                healthy: summary.regressed_count == 0,
+            },
+            MetricCard {
+                title: "Improved",
+                value: summary.improved_count.to_string(),
+                detail: "scopes".to_string(),
+                healthy: true,
+            },
+            MetricCard {
+                title: "Stable / New",
+                value: format!("{}/{}", summary.stable_count, summary.new_count),
+                detail: "scopes".to_string(),
+                healthy: summary.regressed_count == 0,
+            },
+        ];
+        Self::show_metric_cards(ui, &cards);
     }
 
     fn show_evaluation_failure_insights(
