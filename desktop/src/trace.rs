@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, VecDeque};
 use std::time::Duration;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -328,6 +328,20 @@ impl TraceStore {
             .find(|result| result.slug == slug)
     }
 
+    pub fn latest_evaluation_results_by_slug(&self) -> Vec<EvaluationRunResult> {
+        let mut results = BTreeMap::new();
+        for result in self
+            .records
+            .iter()
+            .rev()
+            .flat_map(TraceRecord::evaluation_results)
+        {
+            results.entry(result.slug.clone()).or_insert(result);
+        }
+
+        results.into_values().collect()
+    }
+
     pub fn clear(&mut self) {
         self.records.clear();
     }
@@ -550,6 +564,47 @@ mod tests {
         assert_eq!(result.total_count, 12);
         assert!(result.dry_run);
         assert_eq!(result.label(), "0/12 N/A");
+    }
+
+    #[test]
+    fn indexes_latest_evaluation_results_by_skill_from_full_dry_run_trace() {
+        let mut store = TraceStore::new(10);
+
+        let old_run = store.begin_with_action(
+            "Running fidelity dry-run",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --dry-run"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            old_run,
+            "fidelity dry-run finished",
+            "Testing: master-huineng\nResult: 0/8 passed (N/A)\nTesting: master-zhiyi\nResult: 0/10 passed (N/A)",
+            Duration::from_millis(40),
+        );
+
+        let new_run = store.begin_with_action(
+            "Running fidelity dry-run",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --dry-run"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            new_run,
+            "fidelity dry-run finished",
+            "Testing: master-huineng\nResult: 0/12 passed (N/A)",
+            Duration::from_millis(45),
+        );
+
+        let results = store.latest_evaluation_results_by_slug();
+
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].slug, "huineng");
+        assert_eq!(results[0].total_count, 12);
+        assert_eq!(results[0].trace_id, new_run);
+        assert_eq!(results[1].slug, "zhiyi");
+        assert_eq!(results[1].total_count, 10);
+        assert_eq!(results[1].trace_id, old_run);
     }
 
     #[test]
