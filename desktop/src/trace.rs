@@ -170,6 +170,19 @@ impl EvaluationRunHistoryItem {
             self.passed_count * 10_000 / self.total_count
         }
     }
+
+    pub fn matches_filter(&self, filter: EvaluationRunHistoryFilter) -> bool {
+        match filter {
+            EvaluationRunHistoryFilter::All => true,
+            EvaluationRunHistoryFilter::Regressed => self.trend == EvaluationRunTrend::Regressed,
+            EvaluationRunHistoryFilter::Improved => self.trend == EvaluationRunTrend::Improved,
+            EvaluationRunHistoryFilter::Stable => self.trend == EvaluationRunTrend::Stable,
+            EvaluationRunHistoryFilter::New => self.trend == EvaluationRunTrend::New,
+            EvaluationRunHistoryFilter::Failed => {
+                self.status == TraceStatus::Failed || self.failed_count > 0
+            }
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -187,6 +200,29 @@ impl EvaluationRunTrend {
             Self::Improved => "improved",
             Self::Stable => "stable",
             Self::Regressed => "regressed",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EvaluationRunHistoryFilter {
+    All,
+    Regressed,
+    Improved,
+    Stable,
+    New,
+    Failed,
+}
+
+impl EvaluationRunHistoryFilter {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::All => "All",
+            Self::Regressed => "Regressed",
+            Self::Improved => "Improved",
+            Self::Stable => "Stable",
+            Self::New => "New",
+            Self::Failed => "Failed",
         }
     }
 }
@@ -918,6 +954,17 @@ impl TraceStore {
         history
     }
 
+    pub fn evaluation_run_history_filtered(
+        &self,
+        limit: usize,
+        filter: EvaluationRunHistoryFilter,
+    ) -> Vec<EvaluationRunHistoryItem> {
+        self.evaluation_run_history(limit)
+            .into_iter()
+            .filter(|item| item.matches_filter(filter))
+            .collect()
+    }
+
     pub fn evaluation_trend_summary(&self, limit: usize) -> EvaluationTrendSummary {
         let history = self.evaluation_run_history(limit);
         let mut summary = EvaluationTrendSummary {
@@ -1159,7 +1206,10 @@ mod tests {
     use std::time::Duration;
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    use super::{FailureKind, TraceAction, TraceListFilter, TraceStatus, TraceStore};
+    use super::{
+        EvaluationRunHistoryFilter, FailureKind, TraceAction, TraceListFilter, TraceStatus,
+        TraceStore,
+    };
 
     fn temp_path(name: &str) -> PathBuf {
         let suffix = SystemTime::now()
@@ -2132,6 +2182,93 @@ mod tests {
         assert_eq!(history[2].trend.label(), "new");
         assert_eq!(history[3].trace_id, old_huineng);
         assert_eq!(history[3].trend.label(), "new");
+    }
+
+    #[test]
+    fn filters_evaluation_run_history_by_trend_and_failed_results() {
+        let mut store = TraceStore::new(10);
+
+        let old_huineng = store.begin_with_action(
+            "Running master-huineng fidelity run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            old_huineng,
+            "master-huineng fidelity run finished",
+            r#"[{"master": "master-huineng", "results": [
+              {"index": 0, "question": "失败一", "status": "FAIL"},
+              {"index": 1, "question": "失败二", "status": "FAIL"}
+            ]}]"#,
+            Duration::from_millis(40),
+        );
+
+        let old_all = store.begin_with_action(
+            "Running fidelity run",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            old_all,
+            "fidelity run finished",
+            r#"[{"master": "master-huineng", "results": [
+              {"index": 0, "question": "通过", "status": "PASS"}
+            ]}]"#,
+            Duration::from_millis(45),
+        );
+
+        let new_huineng = store.begin_with_action(
+            "Running master-huineng fidelity run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            new_huineng,
+            "master-huineng fidelity run finished",
+            r#"[{"master": "master-huineng", "results": [
+              {"index": 0, "question": "通过", "status": "PASS"},
+              {"index": 1, "question": "仍失败", "status": "FAIL"}
+            ]}]"#,
+            Duration::from_millis(35),
+        );
+
+        let new_all = store.begin_with_action(
+            "Running fidelity run",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            new_all,
+            "fidelity run finished",
+            r#"[{"master": "master-huineng", "results": [
+              {"index": 0, "question": "失败", "status": "FAIL"}
+            ]}]"#,
+            Duration::from_millis(50),
+        );
+
+        let regressed =
+            store.evaluation_run_history_filtered(4, EvaluationRunHistoryFilter::Regressed);
+        assert_eq!(regressed.len(), 1);
+        assert_eq!(regressed[0].trace_id, new_all);
+
+        let improved =
+            store.evaluation_run_history_filtered(4, EvaluationRunHistoryFilter::Improved);
+        assert_eq!(improved.len(), 1);
+        assert_eq!(improved[0].trace_id, new_huineng);
+
+        let failed = store.evaluation_run_history_filtered(4, EvaluationRunHistoryFilter::Failed);
+        assert_eq!(failed.len(), 3);
+        assert_eq!(failed[0].trace_id, new_all);
+        assert_eq!(failed[1].trace_id, new_huineng);
+        assert_eq!(failed[2].trace_id, old_huineng);
     }
 
     #[test]
