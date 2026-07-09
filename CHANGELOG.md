@@ -14,6 +14,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added a pure Rust `desktop/` app skeleton using `egui/eframe` as the first native Master-skill Desktop Manager shell.
 - Added Rust models and tests for the CLI JSON contracts consumed by the desktop app.
 - The desktop app reads the existing `master-skill` CLI rather than duplicating install, update, doctor, or inspect logic.
+- Added per-master install/uninstall actions, background command execution, busy-state feedback, and isolated-home Rust integration coverage for desktop CLI operations.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
