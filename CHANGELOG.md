@@ -21,7 +21,8 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added `master-skill doctor` to report package version, Node version, prebuilt path, Claude skills path, available skills, installed known skills, and basic local status.
 - Added `master-skill inspect <name>` to show one master's display name, slug, version, tradition, school, install state, live-grounding support, citation format, source IDs, and search keywords.
 - Added `master-skill update --all` as an explicit upgrade path that reinstalls every available skill and clears stale files through the existing reinstall logic.
-- Extended CLI integration coverage from 14 to 21 tests for `doctor`, `inspect`, `update --all`, installed-state detection, and invalid inspect names.
+- Added `--json` output for `list`, `doctor`, and `inspect` so native GUI clients can consume stable machine-readable runtime data.
+- Extended CLI integration coverage from 14 to 24 tests for `doctor`, `inspect`, `update --all`, JSON output, installed-state detection, and invalid inspect names.
 
 ### Changed — compare-masters output contract
 - Upgraded `/compare-masters` to a fixed framework output protocol requiring `共同点`, `核心分歧`, `适用根机`, `分歧雷达`, `分歧分类`, `共通点与宗派背景`, `推荐继续追问`, and `引用来源`.

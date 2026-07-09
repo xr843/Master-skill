@@ -93,15 +93,37 @@ function sourceIds(meta) {
   return meta.sources.map((s) => [s.id, s.title].filter(Boolean).join(" — "));
 }
 
+function printJson(payload) {
+  console.log(JSON.stringify(payload, null, 2));
+}
+
 // --- commands ---
 
-function cmdList() {
+function listData() {
   const masters = availableMasters();
+  return {
+    count: masters.length,
+    masters: masters.map((m) => ({
+      name: m.name,
+      slug: m.name.replace(/^master-/, ""),
+      description: m.description,
+    })),
+  };
+}
+
+function cmdList({ json = false } = {}) {
+  const data = listData();
+  if (json) {
+    printJson(data);
+    return;
+  }
+
+  const masters = data.masters;
   if (!masters.length) {
     console.log("No prebuilt masters found.");
     return;
   }
-  console.log(`\nAvailable masters (${masters.length}):\n`);
+  console.log(`\nAvailable masters (${data.count}):\n`);
   const nameW = Math.max(...masters.map((m) => m.name.length), 4);
   for (const m of masters) {
     const desc = m.description.length > 80 ? m.description.slice(0, 77) + "..." : m.description;
@@ -184,7 +206,7 @@ function cmdUninstall(names) {
   return failed;
 }
 
-function cmdDoctor() {
+function doctorData() {
   const masters = availableMasters();
   const installed = installedSkillDirs();
   const expectedInstalled = masters.filter((m) => installed.includes(m.name));
@@ -192,20 +214,45 @@ function cmdDoctor() {
     const masterDir = path.join(PREBUILT, m.name);
     return !fs.existsSync(path.join(masterDir, "SKILL.md"));
   });
+  const problems = missingSkillMd.map((m) => ({
+    code: "missing-skill-md",
+    name: m.name,
+    message: `${m.name} is missing SKILL.md`,
+  }));
+
+  return {
+    packageVersion: pkgVersion(),
+    nodeVersion: process.version,
+    prebuiltPath: PREBUILT,
+    skillsPath: SKILLS_DIR,
+    availableSkills: masters.length,
+    installedKnownSkills: expectedInstalled.length,
+    otherInstalledSkillDirs: installed.length - expectedInstalled.length,
+    status: problems.length ? "problems" : "ok",
+    problems,
+  };
+}
+
+function cmdDoctor({ json = false } = {}) {
+  const data = doctorData();
+  if (json) {
+    printJson(data);
+    return data.problems.length ? 1 : 0;
+  }
 
   console.log(`master-skill doctor\n`);
-  console.log(`Package version: ${pkgVersion()}`);
-  console.log(`Node version: ${process.version}`);
-  console.log(`Prebuilt path: ${PREBUILT}`);
-  console.log(`Claude skills path: ${SKILLS_DIR}`);
-  console.log(`Available skills: ${masters.length}`);
-  console.log(`Installed known skills: ${expectedInstalled.length}`);
-  console.log(`Other installed skill dirs: ${installed.length - expectedInstalled.length}`);
+  console.log(`Package version: ${data.packageVersion}`);
+  console.log(`Node version: ${data.nodeVersion}`);
+  console.log(`Prebuilt path: ${data.prebuiltPath}`);
+  console.log(`Claude skills path: ${data.skillsPath}`);
+  console.log(`Available skills: ${data.availableSkills}`);
+  console.log(`Installed known skills: ${data.installedKnownSkills}`);
+  console.log(`Other installed skill dirs: ${data.otherInstalledSkillDirs}`);
 
-  if (missingSkillMd.length) {
+  if (data.problems.length) {
     console.log(`\nProblems:`);
-    for (const m of missingSkillMd) {
-      console.log(`  ✗ ${m.name} is missing SKILL.md`);
+    for (const problem of data.problems) {
+      console.log(`  ✗ ${problem.message}`);
     }
     return 1;
   }
@@ -214,7 +261,34 @@ function cmdDoctor() {
   return 0;
 }
 
-function cmdInspect(name) {
+function inspectData(name) {
+  const masterDir = resolveMasterDir(name);
+  if (!masterDir) return null;
+
+  const dirName = path.basename(masterDir);
+  const skillMd = path.join(masterDir, "SKILL.md");
+  const metaPath = path.join(masterDir, "meta.json");
+  const fm = fs.existsSync(skillMd) ? parseFrontmatter(skillMd) : {};
+  const meta = fs.existsSync(metaPath) ? readJson(metaPath) : {};
+  const sources = sourceIds(meta);
+
+  return {
+    name: dirName,
+    displayName: meta.name || null,
+    slug: meta.slug || dirName.replace(/^master-/, ""),
+    version: fm.version || meta.version || null,
+    tradition: meta.tradition || null,
+    school: meta.school || null,
+    era: meta.era || null,
+    installed: fs.existsSync(path.join(SKILLS_DIR, dirName)),
+    liveGrounding: hasLiveGrounding(masterDir),
+    citationFormat: fm.citation_format || null,
+    sources,
+    searchKeywords: meta.search_scope?.keywords || [],
+  };
+}
+
+function cmdInspect(name, { json = false } = {}) {
   if (!name) {
     console.log("Usage: master-skill inspect <name>");
     return 1;
@@ -224,41 +298,38 @@ function cmdInspect(name) {
     return 1;
   }
 
-  const masterDir = resolveMasterDir(name);
-  if (!masterDir) {
+  const data = inspectData(name);
+  if (!data) {
     console.log(`  ✗ ${name} — not found in prebuilt/ (tried "${name}" and "master-${name}")`);
     return 1;
   }
 
-  const dirName = path.basename(masterDir);
-  const skillMd = path.join(masterDir, "SKILL.md");
-  const metaPath = path.join(masterDir, "meta.json");
-  const fm = fs.existsSync(skillMd) ? parseFrontmatter(skillMd) : {};
-  const meta = fs.existsSync(metaPath) ? readJson(metaPath) : {};
-  const installed = fs.existsSync(path.join(SKILLS_DIR, dirName));
-  const sources = sourceIds(meta);
+  if (json) {
+    printJson(data);
+    return 0;
+  }
 
-  console.log(`${dirName}\n`);
-  console.log(`Display name: ${meta.name || "(none)"}`);
-  console.log(`Slug: ${meta.slug || dirName.replace(/^master-/, "")}`);
-  console.log(`Version: ${fm.version || meta.version || "(unknown)"}`);
-  console.log(`Tradition: ${meta.tradition || "(unspecified)"}`);
-  console.log(`School: ${meta.school || "(unspecified)"}`);
-  console.log(`Era: ${meta.era || "(unspecified)"}`);
-  console.log(`Installed: ${installed ? "yes" : "no"}`);
-  console.log(`Live grounding: ${hasLiveGrounding(masterDir) ? "yes" : "no"}`);
-  console.log(`Citation format: ${fm.citation_format || "(not declared in SKILL frontmatter)"}`);
+  console.log(`${data.name}\n`);
+  console.log(`Display name: ${data.displayName || "(none)"}`);
+  console.log(`Slug: ${data.slug}`);
+  console.log(`Version: ${data.version || "(unknown)"}`);
+  console.log(`Tradition: ${data.tradition || "(unspecified)"}`);
+  console.log(`School: ${data.school || "(unspecified)"}`);
+  console.log(`Era: ${data.era || "(unspecified)"}`);
+  console.log(`Installed: ${data.installed ? "yes" : "no"}`);
+  console.log(`Live grounding: ${data.liveGrounding ? "yes" : "no"}`);
+  console.log(`Citation format: ${data.citationFormat || "(not declared in SKILL frontmatter)"}`);
 
-  if (sources.length) {
-    console.log(`\nSources (${sources.length}):`);
-    for (const source of sources) console.log(`  - ${source}`);
+  if (data.sources.length) {
+    console.log(`\nSources (${data.sources.length}):`);
+    for (const source of data.sources) console.log(`  - ${source}`);
   } else {
     console.log(`\nSources: none declared in meta.json`);
   }
 
-  if (meta.search_scope?.keywords?.length) {
-    const keywords = meta.search_scope.keywords.slice(0, 12).join(", ");
-    const suffix = meta.search_scope.keywords.length > 12 ? ", ..." : "";
+  if (data.searchKeywords.length) {
+    const keywords = data.searchKeywords.slice(0, 12).join(", ");
+    const suffix = data.searchKeywords.length > 12 ? ", ..." : "";
     console.log(`\nSearch keywords: ${keywords}${suffix}`);
   }
 
@@ -274,8 +345,11 @@ Usage:
   master-skill install --all       Install all available masters
   master-skill update --all        Reinstall all masters, clearing stale files
   master-skill list                List available masters
+  master-skill list --json         Print available masters as JSON
   master-skill inspect <name>      Show source/runtime metadata for one master
+  master-skill inspect <name> --json
   master-skill doctor              Check local install and runtime paths
+  master-skill doctor --json       Print diagnostics as JSON
   master-skill uninstall <name...> Remove installed masters
   master-skill --version           Print version
   master-skill --help              Show this help
@@ -298,20 +372,22 @@ Examples:
 // --- main ---
 
 const args = process.argv.slice(2);
-const cmd = args[0];
+const json = args.includes("--json");
+const positionalArgs = args.filter((arg) => arg !== "--json");
+const cmd = positionalArgs[0];
 
 if (!cmd || cmd === "--help" || cmd === "-h") {
   showHelp();
 } else if (cmd === "--version" || cmd === "-v") {
   console.log(pkgVersion());
 } else if (cmd === "list") {
-  cmdList();
+  cmdList({ json });
 } else if (cmd === "doctor") {
-  if (cmdDoctor() > 0) process.exitCode = 1;
+  if (cmdDoctor({ json }) > 0) process.exitCode = 1;
 } else if (cmd === "inspect") {
-  if (cmdInspect(args[1]) > 0) process.exitCode = 1;
+  if (cmdInspect(positionalArgs[1], { json }) > 0) process.exitCode = 1;
 } else if (cmd === "install") {
-  const rest = args.slice(1);
+  const rest = positionalArgs.slice(1);
   if (rest.includes("--all")) {
     if (cmdInstallAll("Installing") > 0) process.exitCode = 1;
   } else if (rest.length === 0) {
@@ -321,7 +397,7 @@ if (!cmd || cmd === "--help" || cmd === "-h") {
     if (cmdInstall(rest) > 0) process.exitCode = 1;
   }
 } else if (cmd === "update") {
-  const rest = args.slice(1);
+  const rest = positionalArgs.slice(1);
   if (rest.length === 1 && rest[0] === "--all") {
     if (cmdInstallAll("Updating") > 0) process.exitCode = 1;
   } else {
@@ -329,7 +405,7 @@ if (!cmd || cmd === "--help" || cmd === "-h") {
     process.exitCode = 1;
   }
 } else if (cmd === "uninstall") {
-  const rest = args.slice(1);
+  const rest = positionalArgs.slice(1);
   if (rest.length === 0) {
     console.log("Usage: master-skill uninstall <name...>");
     process.exitCode = 1;
