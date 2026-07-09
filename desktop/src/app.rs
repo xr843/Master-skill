@@ -794,10 +794,11 @@ impl MasterSkillApp {
                 title: "Pass Rate",
                 value: insights.pass_rate_label(),
                 detail: format!(
-                    "{} pass / {} dry-run",
-                    insights.pass_cases, insights.dry_run_cases
+                    "{} graded / {} dry-run",
+                    insights.graded_cases(),
+                    insights.dry_run_cases
                 ),
-                healthy: insights.failed_cases == 0 && insights.total_cases > 0,
+                healthy: insights.failed_cases == 0,
             },
             MetricCard {
                 title: "Failing Skills",

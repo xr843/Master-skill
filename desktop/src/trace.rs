@@ -372,12 +372,17 @@ pub struct EvaluationFailureInsights {
 }
 
 impl EvaluationFailureInsights {
+    pub fn graded_cases(&self) -> usize {
+        self.pass_cases + self.failed_cases
+    }
+
     pub fn pass_rate_label(&self) -> String {
-        if self.total_cases == 0 {
+        let graded_cases = self.graded_cases();
+        if graded_cases == 0 {
             return "N/A".to_string();
         }
 
-        format!("{}%", self.pass_cases * 100 / self.total_cases)
+        format!("{}%", self.pass_cases * 100 / graded_cases)
     }
 
     pub fn top_failure_label(&self) -> String {
@@ -1126,6 +1131,49 @@ mod tests {
         assert_eq!(insights.forbidden_found_count, 1);
         assert_eq!(insights.boundary_violations_count, 1);
         assert_eq!(insights.fabricated_cites_count, 0);
+    }
+
+    #[test]
+    fn keeps_pass_rate_not_applicable_for_dry_run_only_cases() {
+        let mut store = TraceStore::new(10);
+
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "master-huineng fidelity dry-run finished",
+            r#"[
+              {
+                "master": "master-huineng",
+                "results": [
+                  {
+                    "index": 0,
+                    "question": "什么是见性成佛？",
+                    "status": "dry_run"
+                  },
+                  {
+                    "index": 1,
+                    "question": "顿悟怎么修？",
+                    "status": "dry_run"
+                  }
+                ]
+              }
+            ]"#,
+            Duration::from_millis(55),
+        );
+
+        let insights = store.evaluation_failure_insights();
+
+        assert_eq!(insights.total_cases, 2);
+        assert_eq!(insights.dry_run_cases, 2);
+        assert_eq!(insights.graded_cases(), 0);
+        assert_eq!(insights.pass_rate_label(), "N/A");
     }
 
     #[test]
