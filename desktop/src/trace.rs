@@ -208,6 +208,20 @@ pub struct TraceSummary {
     pub last_status: Option<TraceStatus>,
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct EvaluationRunCoverage {
+    pub total_skill_count: usize,
+    pub run_skill_count: usize,
+    pub dry_run_count: usize,
+    pub graded_count: usize,
+}
+
+impl EvaluationRunCoverage {
+    pub fn label(&self) -> String {
+        format!("{}/{}", self.run_skill_count, self.total_skill_count)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct TraceStore {
     capacity: usize,
@@ -340,6 +354,16 @@ impl TraceStore {
         }
 
         results.into_values().collect()
+    }
+
+    pub fn evaluation_run_coverage(&self, total_skill_count: usize) -> EvaluationRunCoverage {
+        let results = self.latest_evaluation_results_by_slug();
+        EvaluationRunCoverage {
+            total_skill_count,
+            run_skill_count: results.len(),
+            dry_run_count: results.iter().filter(|result| result.dry_run).count(),
+            graded_count: results.iter().filter(|result| !result.dry_run).count(),
+        }
     }
 
     pub fn clear(&mut self) {
@@ -605,6 +629,32 @@ mod tests {
         assert_eq!(results[1].slug, "zhiyi");
         assert_eq!(results[1].total_count, 10);
         assert_eq!(results[1].trace_id, old_run);
+    }
+
+    #[test]
+    fn summarizes_evaluation_run_coverage_from_latest_results() {
+        let mut store = TraceStore::new(10);
+
+        let run = store.begin_with_action(
+            "Running fidelity dry-run",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --dry-run"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "fidelity dry-run finished",
+            "Testing: master-huineng\nResult: 0/12 passed (N/A)\nTesting: master-zhiyi\nResult: 0/10 passed (N/A)",
+            Duration::from_millis(40),
+        );
+
+        let coverage = store.evaluation_run_coverage(18);
+
+        assert_eq!(coverage.total_skill_count, 18);
+        assert_eq!(coverage.run_skill_count, 2);
+        assert_eq!(coverage.dry_run_count, 2);
+        assert_eq!(coverage.graded_count, 0);
+        assert_eq!(coverage.label(), "2/18");
     }
 
     #[test]

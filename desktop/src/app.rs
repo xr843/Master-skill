@@ -669,6 +669,7 @@ impl MasterSkillApp {
     fn show_evaluation_center(&mut self, ui: &mut egui::Ui) {
         let busy = self.is_busy();
         let summary = evaluation_summary(&self.rows);
+        let run_coverage = self.traces.evaluation_run_coverage(summary.skill_count);
         Self::show_workspace_header(
             ui,
             "Evaluation Center",
@@ -695,6 +696,16 @@ impl MasterSkillApp {
                 value: summary.case_count.to_string(),
                 detail: format!("{} skills", summary.skill_count),
                 healthy: summary.missing_suite_count == 0,
+            },
+            MetricCard {
+                title: "Run Coverage",
+                value: run_coverage.label(),
+                detail: format!(
+                    "{} dry-run / {} graded",
+                    run_coverage.dry_run_count, run_coverage.graded_count
+                ),
+                healthy: summary.skill_count > 0
+                    && run_coverage.run_skill_count == summary.skill_count,
             },
             MetricCard {
                 title: "Ready",
