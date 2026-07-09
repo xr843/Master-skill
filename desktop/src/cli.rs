@@ -63,7 +63,8 @@ impl CliClient {
             Command::new("python3")
                 .arg(self.repo_root.join("scripts").join("test-fidelity.py"))
                 .arg("--all")
-                .arg("--dry-run"),
+                .arg("--dry-run")
+                .arg("--json"),
             "failed to run fidelity dry-run",
         )
     }
@@ -74,7 +75,8 @@ impl CliClient {
                 .arg(self.repo_root.join("scripts").join("test-fidelity.py"))
                 .arg("--master")
                 .arg(format!("master-{slug}"))
-                .arg("--dry-run"),
+                .arg("--dry-run")
+                .arg("--json"),
             "failed to run skill fidelity dry-run",
         )
     }

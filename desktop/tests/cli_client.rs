@@ -42,9 +42,14 @@ fn runs_fidelity_dry_run_from_repo_root() {
     let client = CliClient::new(repo_root());
 
     let output = client.run_fidelity_dry_run().unwrap();
+    let payload: serde_json::Value = serde_json::from_str(&output).unwrap();
 
-    assert!(output.contains("Overall Summary"));
-    assert!(output.contains("master-huineng"));
+    assert!(payload.as_array().unwrap().len() > 1);
+    assert!(payload
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|suite| suite["master"] == "master-huineng"));
 }
 
 #[test]
@@ -52,7 +57,10 @@ fn runs_single_skill_fidelity_dry_run_from_repo_root() {
     let client = CliClient::new(repo_root());
 
     let output = client.run_fidelity_dry_run_for("huineng").unwrap();
+    let payload: serde_json::Value = serde_json::from_str(&output).unwrap();
+    let suites = payload.as_array().unwrap();
 
-    assert!(output.contains("Testing: master-huineng"));
-    assert!(!output.contains("Testing: master-zhiyi"));
+    assert_eq!(suites.len(), 1);
+    assert_eq!(suites[0]["master"], "master-huineng");
+    assert!(suites[0]["results"].as_array().unwrap().len() > 1);
 }

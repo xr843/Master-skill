@@ -39,6 +39,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added Evaluation Center run coverage metrics for latest suite evidence, dry-run counts, and graded counts.
 - Added persisted desktop run trace history so evaluation evidence and operation audit trails survive app restarts.
 - Fixed fidelity runner JSON mode so `--json` emits clean machine-readable output without human-readable banners.
+- Added desktop per-case fidelity result indexing from JSON dry-run traces and surfaced case-level status in Skill Detail.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
