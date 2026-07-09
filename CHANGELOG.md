@@ -35,6 +35,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added Run Trace recovery controls with rerunnable actions, related skill navigation, and failure-kind classification.
 - Added Skill Detail fidelity case drill-down with prompt, difficulty, assertion counts, and per-skill dry-run access.
 - Added Evaluation Result Index from recent fidelity dry-run traces and surfaced latest suite status beside Skill Detail cases.
+- Added latest fidelity run status to Evaluation Center skill suites using the desktop Evaluation Result Index.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.

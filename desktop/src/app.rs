@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::sync::mpsc::{channel, Receiver};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -765,6 +766,12 @@ impl MasterSkillApp {
     fn show_skill_suites(&mut self, ui: &mut egui::Ui) {
         ui.heading("Skill Suites");
         let rows = self.rows.clone();
+        let latest_results: BTreeMap<_, _> = self
+            .traces
+            .latest_evaluation_results_by_slug()
+            .into_iter()
+            .map(|result| (result.slug.clone(), result))
+            .collect();
         egui::ScrollArea::horizontal()
             .max_width(ui.available_width())
             .show(ui, |ui| {
@@ -772,7 +779,7 @@ impl MasterSkillApp {
                     .max_height(260.0)
                     .show(ui, |ui| {
                         egui::Grid::new("evaluation-skill-grid")
-                            .num_columns(6)
+                            .num_columns(7)
                             .striped(true)
                             .min_col_width(104.0)
                             .show(ui, |ui| {
@@ -780,6 +787,7 @@ impl MasterSkillApp {
                                 ui.strong("Tradition");
                                 ui.strong("Kind");
                                 ui.strong("Cases");
+                                ui.strong("Last Run");
                                 ui.strong("Status");
                                 ui.strong("Gaps");
                                 ui.end_row();
@@ -792,6 +800,12 @@ impl MasterSkillApp {
                                     ui.label(row.tradition.as_deref().unwrap_or("unspecified"));
                                     ui.label(row.kind.label());
                                     ui.label(row.fidelity_case_count.to_string());
+                                    ui.label(
+                                        latest_results
+                                            .get(&row.slug)
+                                            .map(|result| result.label())
+                                            .unwrap_or_else(|| "not run".to_string()),
+                                    );
                                     ui.colored_label(Self::quality_color(level), level.label());
                                     ui.label(row.diagnostic_summary());
                                     ui.end_row();
