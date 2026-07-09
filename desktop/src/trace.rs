@@ -343,6 +343,24 @@ impl TraceRecord {
         }
     }
 
+    pub fn matches_query(&self, query: &str) -> bool {
+        let query = query.trim().to_ascii_lowercase();
+        if query.is_empty() {
+            return true;
+        }
+
+        self.label.to_ascii_lowercase().contains(&query)
+            || self.summary.to_ascii_lowercase().contains(&query)
+            || self.detail.to_ascii_lowercase().contains(&query)
+            || self
+                .command
+                .as_ref()
+                .is_some_and(|command| command.to_ascii_lowercase().contains(&query))
+            || self
+                .related_skill_slug()
+                .is_some_and(|slug| slug.to_ascii_lowercase().contains(&query))
+    }
+
     pub fn evaluation_results(&self) -> Vec<EvaluationRunResult> {
         if !matches!(
             self.action,
@@ -833,6 +851,15 @@ impl TraceStore {
             .iter()
             .rev()
             .filter(|record| record.matches_filter(filter))
+            .cloned()
+            .collect()
+    }
+
+    pub fn recent_matching(&self, filter: TraceListFilter, query: &str) -> Vec<TraceRecord> {
+        self.records
+            .iter()
+            .rev()
+            .filter(|record| record.matches_filter(filter) && record.matches_query(query))
             .cloned()
             .collect()
     }
@@ -1402,6 +1429,65 @@ mod tests {
         let install_ops = store.recent_filtered(TraceListFilter::Install);
         assert_eq!(install_ops.len(), 1);
         assert_eq!(install_ops[0].id, install);
+    }
+
+    #[test]
+    fn searches_recent_traces_across_metadata_and_detail() {
+        let mut store = TraceStore::new(10);
+
+        let refresh = store.begin_with_action(
+            "Refreshing runtime data",
+            TraceAction::Refresh,
+            None::<String>,
+            "Queued.",
+        );
+        store.finish_success(refresh, "Runtime data refreshed.", Duration::from_millis(8));
+
+        let validation = store.begin_with_action(
+            "Running full validation",
+            TraceAction::FullValidation,
+            Some("npm test"),
+            "Queued.",
+        );
+        store.finish_error_with_detail(
+            validation,
+            "npm test failed",
+            "validate.py failed while checking manifests",
+            Duration::from_millis(12),
+        );
+
+        let fidelity = store.begin_with_action(
+            "Running master-huineng fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            fidelity,
+            "master-huineng fidelity dry-run finished",
+            "Testing: master-huineng\nResult: 0/12 passed (N/A)",
+            Duration::from_millis(20),
+        );
+
+        let huineng = store.recent_matching(TraceListFilter::All, "HUINENG");
+        assert_eq!(huineng.len(), 1);
+        assert_eq!(huineng[0].id, fidelity);
+
+        let manifest = store.recent_matching(TraceListFilter::Failed, "manifest");
+        assert_eq!(manifest.len(), 1);
+        assert_eq!(manifest[0].id, validation);
+
+        let evaluation = store.recent_matching(TraceListFilter::Evaluation, "npm");
+        assert_eq!(evaluation.len(), 1);
+        assert_eq!(evaluation[0].id, validation);
+
+        let all = store.recent_matching(TraceListFilter::All, "   ");
+        assert_eq!(all.len(), 3);
+        assert_eq!(all[0].id, fidelity);
+        assert_eq!(all[1].id, validation);
+        assert_eq!(all[2].id, refresh);
     }
 
     #[test]
