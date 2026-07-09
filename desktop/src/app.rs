@@ -11,7 +11,8 @@ use crate::catalog::{
 };
 use crate::cli::CliClient;
 use crate::layout::{
-    dashboard_columns_for_width, dense_table_mode_for_width, metric_card_width, TwoPaneMode,
+    dashboard_columns_for_width, dense_table_mode_for_width, metric_card_width,
+    metric_cards_per_row, TwoPaneMode,
 };
 use crate::model::{DoctorReport, MasterInspect, SkillInventory};
 use crate::trace::{TraceStatus, TraceStore};
@@ -61,6 +62,13 @@ struct TaskEnvelope {
     trace_id: u64,
     elapsed: Duration,
     result: TaskResult,
+}
+
+struct MetricCard {
+    title: &'static str,
+    value: String,
+    detail: String,
+    healthy: bool,
 }
 
 impl MasterSkillApp {
@@ -356,17 +364,48 @@ impl MasterSkillApp {
             egui::Stroke::new(1.0, egui::Color32::from_rgb(140, 103, 55))
         };
 
-        egui::Frame::new()
-            .fill(fill)
-            .stroke(stroke)
-            .inner_margin(egui::Margin::same(10))
-            .show(ui, |ui| {
-                ui.set_min_width(width);
-                ui.set_max_width(width);
-                ui.small(title);
-                ui.heading(value.into());
-                ui.small(detail);
+        ui.allocate_ui_with_layout(
+            egui::vec2(width, 58.0),
+            egui::Layout::top_down(egui::Align::Min),
+            |ui| {
+                egui::Frame::new()
+                    .fill(fill)
+                    .stroke(stroke)
+                    .inner_margin(egui::Margin::same(8))
+                    .show(ui, |ui| {
+                        let inner_width = (width - 18.0).max(80.0);
+                        ui.set_min_width(inner_width);
+                        ui.set_max_width(inner_width);
+                        ui.small(title);
+                        ui.heading(value.into());
+                        ui.small(detail);
+                    });
+            },
+        );
+    }
+
+    fn show_metric_cards(ui: &mut egui::Ui, cards: &[MetricCard]) {
+        let card_width = metric_card_width(ui.available_width());
+        let columns = metric_cards_per_row(
+            ui.available_width(),
+            card_width,
+            ui.spacing().item_spacing.x,
+        );
+
+        for row in cards.chunks(columns) {
+            ui.horizontal(|ui| {
+                for card in row {
+                    Self::show_metric_card(
+                        ui,
+                        card_width,
+                        card.title,
+                        card.value.clone(),
+                        &card.detail,
+                        card.healthy,
+                    );
+                }
             });
+        }
     }
 
     fn show_dashboard(&self, ui: &mut egui::Ui) {
@@ -379,65 +418,52 @@ impl MasterSkillApp {
                 report.problems.len(),
             );
             let total = self.rows.len().max(1);
-            let card_width = metric_card_width(ui.available_width());
-            ui.horizontal_wrapped(|ui| {
-                Self::show_metric_card(
-                    ui,
-                    card_width,
-                    "Runtime",
-                    if summary.runtime_ok { "OK" } else { "Review" },
-                    &format!("{} problem(s)", report.problems.len()),
-                    summary.runtime_ok,
-                );
-                Self::show_metric_card(
-                    ui,
-                    card_width,
-                    "Installation",
-                    format!("{}/{}", summary.installed_count, summary.available_count),
-                    &format!("{} missing", summary.missing_count),
-                    summary.missing_count == 0,
-                );
-                Self::show_metric_card(
-                    ui,
-                    card_width,
-                    "Sources",
-                    format!("{}/{}", summary.source_ready_count, summary.persona_count),
-                    "persona sources",
-                    summary.source_ready_count == summary.persona_count,
-                );
-                Self::show_metric_card(
-                    ui,
-                    card_width,
-                    "Evaluations",
-                    format!("{}/{}", summary.evaluation_ready_count, total),
-                    "fidelity suites",
-                    summary.evaluation_ready_count == total,
-                );
-                Self::show_metric_card(
-                    ui,
-                    card_width,
-                    "Protocols",
-                    format!("{}/{}", summary.protocol_ready_count, summary.persona_count),
-                    "persona protocols",
-                    summary.protocol_ready_count == summary.persona_count,
-                );
-                Self::show_metric_card(
-                    ui,
-                    card_width,
-                    "Meta-skills",
-                    summary.meta_skill_count.to_string(),
-                    "workflows",
-                    true,
-                );
-                Self::show_metric_card(
-                    ui,
-                    card_width,
-                    "Attention",
-                    summary.attention_count.to_string(),
-                    "needs review",
-                    summary.attention_count == 0,
-                );
-            });
+            let runtime_value = if summary.runtime_ok { "OK" } else { "Review" };
+            let cards = vec![
+                MetricCard {
+                    title: "Runtime",
+                    value: runtime_value.to_string(),
+                    detail: format!("{} problem(s)", report.problems.len()),
+                    healthy: summary.runtime_ok,
+                },
+                MetricCard {
+                    title: "Installation",
+                    value: format!("{}/{}", summary.installed_count, summary.available_count),
+                    detail: format!("{} missing", summary.missing_count),
+                    healthy: summary.missing_count == 0,
+                },
+                MetricCard {
+                    title: "Sources",
+                    value: format!("{}/{}", summary.source_ready_count, summary.persona_count),
+                    detail: "persona sources".to_string(),
+                    healthy: summary.source_ready_count == summary.persona_count,
+                },
+                MetricCard {
+                    title: "Evaluations",
+                    value: format!("{}/{}", summary.evaluation_ready_count, total),
+                    detail: "fidelity suites".to_string(),
+                    healthy: summary.evaluation_ready_count == total,
+                },
+                MetricCard {
+                    title: "Protocols",
+                    value: format!("{}/{}", summary.protocol_ready_count, summary.persona_count),
+                    detail: "protocols".to_string(),
+                    healthy: summary.protocol_ready_count == summary.persona_count,
+                },
+                MetricCard {
+                    title: "Meta-skills",
+                    value: summary.meta_skill_count.to_string(),
+                    detail: "workflows".to_string(),
+                    healthy: true,
+                },
+                MetricCard {
+                    title: "Attention",
+                    value: summary.attention_count.to_string(),
+                    detail: "needs review".to_string(),
+                    healthy: summary.attention_count == 0,
+                },
+            ];
+            Self::show_metric_cards(ui, &cards);
         } else {
             ui.label("No runtime report loaded.");
         }
@@ -447,50 +473,40 @@ impl MasterSkillApp {
         ui.heading("Evaluation Center");
         let busy = self.is_busy();
         let summary = evaluation_summary(&self.rows);
-        let card_width = metric_card_width(ui.available_width());
 
-        ui.horizontal_wrapped(|ui| {
-            Self::show_metric_card(
-                ui,
-                card_width,
-                "Fidelity Cases",
-                summary.case_count.to_string(),
-                &format!("{} skills", summary.skill_count),
-                summary.missing_suite_count == 0,
-            );
-            Self::show_metric_card(
-                ui,
-                card_width,
-                "Ready",
-                summary.ready_count.to_string(),
-                "complete",
-                summary.ready_count == summary.skill_count,
-            );
-            Self::show_metric_card(
-                ui,
-                card_width,
-                "Attention",
-                summary.attention_count.to_string(),
-                "needs review",
-                summary.attention_count == 0,
-            );
-            Self::show_metric_card(
-                ui,
-                card_width,
-                "Missing",
-                summary.missing_count.to_string(),
-                "not installed",
-                summary.missing_count == 0,
-            );
-            Self::show_metric_card(
-                ui,
-                card_width,
-                "Missing Suites",
-                summary.missing_suite_count.to_string(),
-                "no fidelity jsonl",
-                summary.missing_suite_count == 0,
-            );
-        });
+        let cards = vec![
+            MetricCard {
+                title: "Fidelity Cases",
+                value: summary.case_count.to_string(),
+                detail: format!("{} skills", summary.skill_count),
+                healthy: summary.missing_suite_count == 0,
+            },
+            MetricCard {
+                title: "Ready",
+                value: summary.ready_count.to_string(),
+                detail: "complete".to_string(),
+                healthy: summary.ready_count == summary.skill_count,
+            },
+            MetricCard {
+                title: "Attention",
+                value: summary.attention_count.to_string(),
+                detail: "needs review".to_string(),
+                healthy: summary.attention_count == 0,
+            },
+            MetricCard {
+                title: "Missing",
+                value: summary.missing_count.to_string(),
+                detail: "not installed".to_string(),
+                healthy: summary.missing_count == 0,
+            },
+            MetricCard {
+                title: "Missing Suites",
+                value: summary.missing_suite_count.to_string(),
+                detail: "complete".to_string(),
+                healthy: summary.missing_suite_count == 0,
+            },
+        ];
+        Self::show_metric_cards(ui, &cards);
 
         ui.horizontal(|ui| {
             if ui
@@ -583,52 +599,43 @@ impl MasterSkillApp {
     fn show_trace_center(&self, ui: &mut egui::Ui) {
         ui.heading("Run Trace Center");
         let summary = self.traces.summary();
-        let card_width = metric_card_width(ui.available_width());
-        ui.horizontal_wrapped(|ui| {
-            Self::show_metric_card(
-                ui,
-                card_width,
-                "Traces",
-                summary.total.to_string(),
-                "recent operations",
-                summary.failed == 0,
-            );
-            Self::show_metric_card(
-                ui,
-                card_width,
-                "Running",
-                summary.running.to_string(),
-                "active task",
-                summary.running <= 1,
-            );
-            Self::show_metric_card(
-                ui,
-                card_width,
-                "Succeeded",
-                summary.succeeded.to_string(),
-                "completed",
-                true,
-            );
-            Self::show_metric_card(
-                ui,
-                card_width,
-                "Failed",
-                summary.failed.to_string(),
-                "needs review",
-                summary.failed == 0,
-            );
-            Self::show_metric_card(
-                ui,
-                card_width,
-                "Last",
-                summary
+        let cards = vec![
+            MetricCard {
+                title: "Traces",
+                value: summary.total.to_string(),
+                detail: "recent ops".to_string(),
+                healthy: summary.failed == 0,
+            },
+            MetricCard {
+                title: "Running",
+                value: summary.running.to_string(),
+                detail: "active task".to_string(),
+                healthy: summary.running <= 1,
+            },
+            MetricCard {
+                title: "Succeeded",
+                value: summary.succeeded.to_string(),
+                detail: "completed".to_string(),
+                healthy: true,
+            },
+            MetricCard {
+                title: "Failed",
+                value: summary.failed.to_string(),
+                detail: "needs review".to_string(),
+                healthy: summary.failed == 0,
+            },
+            MetricCard {
+                title: "Last",
+                value: summary
                     .last_status
                     .map(TraceStatus::label)
-                    .unwrap_or("none"),
-                "latest operation",
-                summary.last_status != Some(TraceStatus::Failed),
-            );
-        });
+                    .unwrap_or("none")
+                    .to_string(),
+                detail: "latest".to_string(),
+                healthy: summary.last_status != Some(TraceStatus::Failed),
+            },
+        ];
+        Self::show_metric_cards(ui, &cards);
 
         ui.separator();
         let recent = self.traces.recent();
