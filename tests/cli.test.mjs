@@ -275,6 +275,29 @@ test("unknown command exits non-zero", () => {
   assert.equal(code, 1);
 });
 
+test("fidelity runner --json emits parseable JSON without text banners", () => {
+  const stdout = execFileSync(
+    "python3",
+    [
+      path.join(REPO, "scripts", "test-fidelity.py"),
+      "--master",
+      "master-huineng",
+      "--dry-run",
+      "--json",
+      "--max-tests",
+      "1",
+    ],
+    { encoding: "utf8" }
+  );
+
+  const payload = JSON.parse(stdout);
+  assert.equal(payload.length, 1);
+  assert.equal(payload[0].master, "master-huineng");
+  assert.equal(payload[0].total, 1);
+  assert.equal(payload[0].results.length, 1);
+  assert.equal(payload[0].results[0].status, "dry_run");
+});
+
 // Deterministic CRLF coverage: the windows-latest job only exercises CRLF
 // because the repo lacks .gitattributes and the runner defaults autocrlf=true.
 // This test pins the code path on every OS by building a synthetic install
