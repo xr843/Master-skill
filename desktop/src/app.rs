@@ -23,7 +23,7 @@ use crate::theme::{
 use crate::trace::{
     EvaluationFailureInsights, EvaluationFailureItem, EvaluationFailurePriority,
     EvaluationRegressionItem, EvaluationRunHistoryItem, EvaluationRunTrend, EvaluationTrendSummary,
-    TraceAction, TraceStatus, TraceStore,
+    TraceAction, TraceListFilter, TraceStatus, TraceStore,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -61,6 +61,7 @@ pub struct MasterSkillApp {
     busy_label: Option<String>,
     console_section: ConsoleSection,
     log_expanded: bool,
+    trace_filter: TraceListFilter,
     traces: TraceStore,
     trace_path: PathBuf,
 }
@@ -120,6 +121,7 @@ impl MasterSkillApp {
             busy_label: None,
             console_section: ConsoleSection::Overview,
             log_expanded: false,
+            trace_filter: TraceListFilter::All,
             traces,
             trace_path,
         };
@@ -1292,9 +1294,23 @@ impl MasterSkillApp {
         Self::show_metric_cards(ui, &cards);
 
         ui.separator();
-        let recent = self.traces.recent();
+        ui.horizontal_wrapped(|ui| {
+            ui.label("Filter");
+            for filter in [
+                TraceListFilter::All,
+                TraceListFilter::Running,
+                TraceListFilter::Succeeded,
+                TraceListFilter::Failed,
+                TraceListFilter::Evaluation,
+                TraceListFilter::Install,
+            ] {
+                ui.selectable_value(&mut self.trace_filter, filter, filter.label());
+            }
+        });
+
+        let recent = self.traces.recent_filtered(self.trace_filter);
         if recent.is_empty() {
-            ui.label("No traces recorded yet.");
+            ui.label("No traces match the current filter.");
             return;
         }
 

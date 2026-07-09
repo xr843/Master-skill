@@ -50,6 +50,23 @@ impl TraceAction {
             | Self::FullValidation => None,
         }
     }
+
+    fn is_evaluation(&self) -> bool {
+        matches!(
+            self,
+            Self::FidelityDryRunAll | Self::FidelityDryRunSkill { .. } | Self::FullValidation
+        )
+    }
+
+    fn is_install_operation(&self) -> bool {
+        matches!(
+            self,
+            Self::InstallSkill { .. }
+                | Self::UninstallSkill { .. }
+                | Self::InstallAll
+                | Self::UpdateAll
+        )
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -67,6 +84,29 @@ impl FailureKind {
             Self::Fidelity => "fidelity",
             Self::Install => "install",
             Self::Runtime => "runtime",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TraceListFilter {
+    All,
+    Running,
+    Succeeded,
+    Failed,
+    Evaluation,
+    Install,
+}
+
+impl TraceListFilter {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::All => "All",
+            Self::Running => "Running",
+            Self::Succeeded => "Succeeded",
+            Self::Failed => "Failed",
+            Self::Evaluation => "Evaluation",
+            Self::Install => "Install",
         }
     }
 }
@@ -284,6 +324,22 @@ impl TraceRecord {
                 "{}\n{}\n{}",
                 self.label, self.summary, self.detail
             )),
+        }
+    }
+
+    pub fn matches_filter(&self, filter: TraceListFilter) -> bool {
+        match filter {
+            TraceListFilter::All => true,
+            TraceListFilter::Running => self.status == TraceStatus::Running,
+            TraceListFilter::Succeeded => self.status == TraceStatus::Succeeded,
+            TraceListFilter::Failed => self.status == TraceStatus::Failed,
+            TraceListFilter::Evaluation => {
+                self.action.as_ref().is_some_and(TraceAction::is_evaluation)
+            }
+            TraceListFilter::Install => self
+                .action
+                .as_ref()
+                .is_some_and(TraceAction::is_install_operation),
         }
     }
 
@@ -761,6 +817,15 @@ impl TraceStore {
         self.records.iter().rev().cloned().collect()
     }
 
+    pub fn recent_filtered(&self, filter: TraceListFilter) -> Vec<TraceRecord> {
+        self.records
+            .iter()
+            .rev()
+            .filter(|record| record.matches_filter(filter))
+            .cloned()
+            .collect()
+    }
+
     pub fn latest_evaluation_result_for(&self, slug: &str) -> Option<EvaluationRunResult> {
         self.records
             .iter()
@@ -1036,7 +1101,7 @@ mod tests {
     use std::time::Duration;
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    use super::{FailureKind, TraceAction, TraceStatus, TraceStore};
+    use super::{FailureKind, TraceAction, TraceListFilter, TraceStatus, TraceStore};
 
     fn temp_path(name: &str) -> PathBuf {
         let suffix = SystemTime::now()
@@ -1184,6 +1249,63 @@ mod tests {
         assert_eq!(recent[0].failure_kind(), Some(FailureKind::Install));
         assert_eq!(recent[1].failure_kind(), Some(FailureKind::Fidelity));
         assert_eq!(recent[2].failure_kind(), Some(FailureKind::Validation));
+    }
+
+    #[test]
+    fn filters_recent_traces_by_status_and_operation_class() {
+        let mut store = TraceStore::new(10);
+
+        let refresh = store.begin_with_action(
+            "Refreshing runtime data",
+            TraceAction::Refresh,
+            None::<String>,
+            "Queued.",
+        );
+        store.finish_success(refresh, "Runtime data refreshed.", Duration::from_millis(8));
+
+        let install = store.begin_with_action(
+            "Installing master-huineng",
+            TraceAction::InstallSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("master-skill install huineng"),
+            "Queued.",
+        );
+        store.finish_error(install, "install failed", Duration::from_millis(12));
+
+        let fidelity = store.begin_with_action(
+            "Running master-huineng fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run"),
+            "Queued.",
+        );
+        store.finish_success(fidelity, "fidelity finished", Duration::from_millis(20));
+
+        let validation = store.begin_with_action(
+            "Running full validation",
+            TraceAction::FullValidation,
+            Some("npm test"),
+            "Queued.",
+        );
+
+        let failed = store.recent_filtered(TraceListFilter::Failed);
+        assert_eq!(failed.len(), 1);
+        assert_eq!(failed[0].id, install);
+
+        let running = store.recent_filtered(TraceListFilter::Running);
+        assert_eq!(running.len(), 1);
+        assert_eq!(running[0].id, validation);
+
+        let evaluation = store.recent_filtered(TraceListFilter::Evaluation);
+        assert_eq!(evaluation.len(), 2);
+        assert_eq!(evaluation[0].id, validation);
+        assert_eq!(evaluation[1].id, fidelity);
+
+        let install_ops = store.recent_filtered(TraceListFilter::Install);
+        assert_eq!(install_ops.len(), 1);
+        assert_eq!(install_ops[0].id, install);
     }
 
     #[test]
