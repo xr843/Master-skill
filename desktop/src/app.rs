@@ -4,22 +4,29 @@ use std::thread;
 use anyhow::Result;
 use eframe::egui;
 
+use crate::catalog::{filter_rows, tradition_options, InstallFilter, SkillRow};
 use crate::cli::CliClient;
-use crate::model::{DoctorReport, MasterInspect, SkillInventory, SkillSummary};
+use crate::model::{DoctorReport, MasterInspect, SkillInventory};
 
 pub struct MasterSkillApp {
     client: CliClient,
     inventory: Option<SkillInventory>,
+    rows: Vec<SkillRow>,
     doctor: Option<DoctorReport>,
     selected: Option<MasterInspect>,
     selected_slug: Option<String>,
+    search_query: String,
+    install_filter: InstallFilter,
+    tradition_filter: Option<String>,
     log: String,
+    log_lines: Vec<String>,
     task_rx: Option<Receiver<TaskResult>>,
     busy_label: Option<String>,
 }
 
 struct Snapshot {
     inventory: SkillInventory,
+    rows: Vec<SkillRow>,
     doctor: DoctorReport,
     selected_slug: Option<String>,
     selected: Option<MasterInspect>,
@@ -37,10 +44,15 @@ impl MasterSkillApp {
         let mut app = Self {
             client: CliClient::default(),
             inventory: None,
+            rows: Vec::new(),
             doctor: None,
             selected: None,
             selected_slug: None,
+            search_query: String::new(),
+            install_filter: InstallFilter::All,
+            tradition_filter: None,
             log: "Starting desktop manager...".to_string(),
+            log_lines: vec!["Starting desktop manager...".to_string()],
             task_rx: None,
             busy_label: None,
         };
@@ -53,13 +65,20 @@ impl MasterSkillApp {
         let doctor = client.doctor()?;
         let resolved_slug =
             selected_slug.or_else(|| inventory.masters.first().map(|m| m.slug.clone()));
-        let selected = match resolved_slug.as_deref() {
-            Some(slug) => Some(client.inspect(slug)?),
-            None => None,
-        };
+        let mut rows = Vec::with_capacity(inventory.masters.len());
+        let mut selected = None;
+
+        for summary in &inventory.masters {
+            let inspect = client.inspect(&summary.slug)?;
+            if resolved_slug.as_deref() == Some(summary.slug.as_str()) {
+                selected = Some(inspect.clone());
+            }
+            rows.push(SkillRow::from_summary_and_inspect(summary, Some(&inspect)));
+        }
 
         Ok(Snapshot {
             inventory,
+            rows,
             doctor,
             selected_slug: resolved_slug,
             selected,
@@ -68,18 +87,28 @@ impl MasterSkillApp {
 
     fn apply_snapshot(&mut self, snapshot: Snapshot) {
         self.inventory = Some(snapshot.inventory);
+        self.rows = snapshot.rows;
         self.doctor = Some(snapshot.doctor);
         self.selected_slug = snapshot.selected_slug;
         self.selected = snapshot.selected;
+    }
+
+    fn set_log(&mut self, message: impl Into<String>) {
+        let message = message.into();
+        self.log = message.clone();
+        self.log_lines.push(message);
+        if self.log_lines.len() > 200 {
+            self.log_lines.remove(0);
+        }
     }
 
     fn refresh_all(&mut self) {
         match Self::load_snapshot(&self.client, self.selected_slug.clone()) {
             Ok(snapshot) => {
                 self.apply_snapshot(snapshot);
-                self.log = "Runtime data refreshed.".to_string();
+                self.set_log("Runtime data refreshed.");
             }
-            Err(err) => self.log = format!("Refresh failed: {err:#}"),
+            Err(err) => self.set_log(format!("Refresh failed: {err:#}")),
         }
     }
 
@@ -92,7 +121,7 @@ impl MasterSkillApp {
         F: FnOnce(CliClient) -> Result<TaskOutcome> + Send + 'static,
     {
         if self.is_busy() {
-            self.log = "A task is already running.".to_string();
+            self.set_log("A task is already running.");
             return;
         }
 
@@ -101,7 +130,7 @@ impl MasterSkillApp {
         let (tx, rx) = channel();
         self.task_rx = Some(rx);
         self.busy_label = Some(label.clone());
-        self.log = format!("{label}...");
+        self.set_log(format!("{label}..."));
 
         thread::spawn(move || {
             let result = task(client).map_err(|err| format!("{err:#}"));
@@ -119,9 +148,9 @@ impl MasterSkillApp {
                     if let Some(snapshot) = outcome.snapshot {
                         self.apply_snapshot(snapshot);
                     }
-                    self.log = outcome.message;
+                    self.set_log(outcome.message);
                 }
-                Err(message) => self.log = message,
+                Err(message) => self.set_log(message),
             }
         }
     }
@@ -139,15 +168,10 @@ impl MasterSkillApp {
 
     fn start_inspect(&mut self, slug: String) {
         self.start_task(format!("Loading master-{slug}"), move |client| {
-            let selected = client.inspect(&slug)?;
+            let snapshot = Self::load_snapshot(&client, Some(slug.clone()))?;
             Ok(TaskOutcome {
                 message: format!("Loaded master-{slug}."),
-                snapshot: Some(Snapshot {
-                    inventory: client.list()?,
-                    doctor: client.doctor()?,
-                    selected_slug: Some(slug),
-                    selected: Some(selected),
-                }),
+                snapshot: Some(snapshot),
             })
         });
     }
@@ -232,22 +256,62 @@ impl MasterSkillApp {
 
     fn show_sidebar(&mut self, ui: &mut egui::Ui) {
         ui.heading("Skills");
-        let masters: Vec<SkillSummary> = self
-            .inventory
-            .as_ref()
-            .map(|inventory| inventory.masters.clone())
-            .unwrap_or_default();
+        ui.add(
+            egui::TextEdit::singleline(&mut self.search_query)
+                .hint_text("Search name, slug, tradition, school"),
+        );
+
+        ui.horizontal(|ui| {
+            ui.selectable_value(&mut self.install_filter, InstallFilter::All, "All");
+            ui.selectable_value(
+                &mut self.install_filter,
+                InstallFilter::Installed,
+                "Installed",
+            );
+            ui.selectable_value(&mut self.install_filter, InstallFilter::Missing, "Missing");
+        });
+
+        egui::ComboBox::from_label("Tradition")
+            .selected_text(self.tradition_filter.as_deref().unwrap_or("All traditions"))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(&mut self.tradition_filter, None, "All traditions");
+                for tradition in tradition_options(&self.rows) {
+                    ui.selectable_value(
+                        &mut self.tradition_filter,
+                        Some(tradition.clone()),
+                        tradition,
+                    );
+                }
+            });
+
+        ui.separator();
+        let visible_rows: Vec<SkillRow> = filter_rows(
+            &self.rows,
+            &self.search_query,
+            self.install_filter,
+            self.tradition_filter.as_deref(),
+        )
+        .into_iter()
+        .cloned()
+        .collect();
 
         egui::ScrollArea::vertical().show(ui, |ui| {
-            for master in masters {
-                let selected = self.selected_slug.as_deref() == Some(master.slug.as_str());
-                let label = if master.name.starts_with("master-") {
-                    master.name.clone()
+            for row in visible_rows {
+                let selected = self.selected_slug.as_deref() == Some(row.slug.as_str());
+                let status = if row.installed {
+                    "installed"
                 } else {
-                    format!("master-{}", master.slug)
+                    "missing"
                 };
-                if ui.selectable_label(selected, label).clicked() {
-                    self.start_inspect(master.slug);
+                let title = row.title().to_string();
+                ui.horizontal(|ui| {
+                    if ui.selectable_label(selected, row.name.clone()).clicked() {
+                        self.start_inspect(row.slug.clone());
+                    }
+                    ui.small(status);
+                });
+                if selected && title != row.name {
+                    ui.small(title);
                 }
             }
         });
@@ -332,6 +396,9 @@ impl MasterSkillApp {
                     ui.label("Live grounding");
                     ui.label(if master.live_grounding { "yes" } else { "no" });
                     ui.end_row();
+                    ui.label("Citation format");
+                    ui.label(master.citation_format.as_deref().unwrap_or("not declared"));
+                    ui.end_row();
                 });
 
             ui.separator();
@@ -342,6 +409,12 @@ impl MasterSkillApp {
                 for source in &master.sources {
                     ui.label(source);
                 }
+            }
+
+            if !master.search_keywords.is_empty() {
+                ui.separator();
+                ui.heading("Search Keywords");
+                ui.label(master.search_keywords.join(", "));
             }
         } else {
             ui.label("No skill selected.");
@@ -369,9 +442,24 @@ impl eframe::App for MasterSkillApp {
             .default_width(260.0)
             .show(ctx, |ui| self.show_sidebar(ui));
 
-        egui::TopBottomPanel::bottom("log").show(ctx, |ui| {
-            ui.label(&self.log);
-        });
+        egui::TopBottomPanel::bottom("log")
+            .resizable(true)
+            .default_height(130.0)
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.heading("Operation Log");
+                    if ui.button("Clear").clicked() {
+                        self.log_lines.clear();
+                    }
+                });
+                egui::ScrollArea::vertical()
+                    .stick_to_bottom(true)
+                    .show(ui, |ui| {
+                        for line in &self.log_lines {
+                            ui.label(line);
+                        }
+                    });
+            });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
