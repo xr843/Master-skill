@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
@@ -171,6 +172,70 @@ pub fn console_summary(
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EvaluationGroup {
+    pub tradition: String,
+    pub skill_count: usize,
+    pub case_count: usize,
+    pub missing_suite_count: usize,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EvaluationSummary {
+    pub skill_count: usize,
+    pub case_count: usize,
+    pub ready_count: usize,
+    pub attention_count: usize,
+    pub missing_count: usize,
+    pub missing_suite_count: usize,
+    pub groups: Vec<EvaluationGroup>,
+}
+
+pub fn evaluation_summary(rows: &[SkillRow]) -> EvaluationSummary {
+    let mut ready_count = 0;
+    let mut attention_count = 0;
+    let mut missing_count = 0;
+    let mut groups: BTreeMap<String, EvaluationGroup> = BTreeMap::new();
+
+    for row in rows {
+        match row.quality_level() {
+            QualityLevel::Ready => ready_count += 1,
+            QualityLevel::Attention => attention_count += 1,
+            QualityLevel::Missing => missing_count += 1,
+        }
+
+        let tradition = row
+            .tradition
+            .clone()
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| "unspecified".to_string());
+        let group = groups.entry(tradition.clone()).or_insert(EvaluationGroup {
+            tradition,
+            skill_count: 0,
+            case_count: 0,
+            missing_suite_count: 0,
+        });
+        group.skill_count += 1;
+        group.case_count += row.fidelity_case_count;
+        if row.fidelity_case_count == 0 {
+            group.missing_suite_count += 1;
+        }
+    }
+
+    EvaluationSummary {
+        skill_count: rows.len(),
+        case_count: rows.iter().map(|row| row.fidelity_case_count).sum(),
+        ready_count,
+        attention_count,
+        missing_count,
+        missing_suite_count: rows
+            .iter()
+            .filter(|row| row.fidelity_case_count == 0)
+            .count(),
+        groups: groups.into_values().collect(),
+    }
+}
+
 pub fn filter_rows<'a>(
     rows: &'a [SkillRow],
     query: &str,
@@ -226,8 +291,8 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     use super::{
-        console_summary, filter_rows, tradition_options, InstallFilter, QualityLevel,
-        SkillDiagnostics, SkillRow,
+        console_summary, evaluation_summary, filter_rows, tradition_options, EvaluationGroup,
+        InstallFilter, QualityLevel, SkillDiagnostics, SkillRow,
     };
 
     fn temp_dir() -> PathBuf {
@@ -334,5 +399,51 @@ mod tests {
         assert_eq!(diagnostics.fidelity_case_count, 2);
 
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn summarizes_evaluation_center_by_quality_and_tradition() {
+        let mut rows = vec![
+            row("huineng", "慧能大师", "汉传", true),
+            row("zhiyi", "智者大师", "汉传", true),
+            row("atisha", "阿底峡尊者", "藏传", true),
+            row("ajahn-chah", "阿姜查", "南传", false),
+        ];
+        rows[0].fidelity_case_count = 12;
+        rows[1].fidelity_case_count = 10;
+        rows[2].fidelity_case_count = 0;
+        rows[3].fidelity_case_count = 13;
+
+        let summary = evaluation_summary(&rows);
+
+        assert_eq!(summary.skill_count, 4);
+        assert_eq!(summary.case_count, 35);
+        assert_eq!(summary.ready_count, 2);
+        assert_eq!(summary.attention_count, 1);
+        assert_eq!(summary.missing_count, 1);
+        assert_eq!(summary.missing_suite_count, 1);
+        assert_eq!(
+            summary.groups,
+            vec![
+                EvaluationGroup {
+                    tradition: "南传".to_string(),
+                    skill_count: 1,
+                    case_count: 13,
+                    missing_suite_count: 0,
+                },
+                EvaluationGroup {
+                    tradition: "汉传".to_string(),
+                    skill_count: 2,
+                    case_count: 22,
+                    missing_suite_count: 0,
+                },
+                EvaluationGroup {
+                    tradition: "藏传".to_string(),
+                    skill_count: 1,
+                    case_count: 0,
+                    missing_suite_count: 1,
+                },
+            ]
+        );
     }
 }

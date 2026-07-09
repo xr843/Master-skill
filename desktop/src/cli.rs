@@ -58,6 +58,23 @@ impl CliClient {
         self.run(&["update", "--all"])
     }
 
+    pub fn run_fidelity_dry_run(&self) -> Result<String> {
+        self.run_command(
+            Command::new("python3")
+                .arg(self.repo_root.join("scripts").join("test-fidelity.py"))
+                .arg("--all")
+                .arg("--dry-run"),
+            "failed to run fidelity dry-run",
+        )
+    }
+
+    pub fn run_full_validation(&self) -> Result<String> {
+        self.run_command(
+            Command::new("npm").arg("test"),
+            "failed to run full validation",
+        )
+    }
+
     fn json<T>(&self, args: &[&str]) -> Result<T>
     where
         T: serde::de::DeserializeOwned,
@@ -76,9 +93,19 @@ impl CliClient {
             command.env("HOME", home).env("USERPROFILE", home);
         }
 
-        let output = command
-            .output()
-            .with_context(|| format!("failed to run master-skill CLI with args {args:?}"))?;
+        self.run_command(
+            &mut command,
+            &format!("failed to run master-skill CLI with args {args:?}"),
+        )
+    }
+
+    fn run_command(&self, command: &mut Command, context: &str) -> Result<String> {
+        command.current_dir(&self.repo_root);
+        if let Some(home) = &self.home {
+            command.env("HOME", home).env("USERPROFILE", home);
+        }
+
+        let output = command.output().with_context(|| context.to_string())?;
 
         let stdout = String::from_utf8_lossy(&output.stdout).to_string();
         if output.status.success() {
@@ -87,7 +114,7 @@ impl CliClient {
 
         let stderr = String::from_utf8_lossy(&output.stderr);
         Err(anyhow!(
-            "master-skill CLI failed with status {}: {}{}",
+            "command failed with status {}: {}{}",
             output.status,
             stdout,
             stderr

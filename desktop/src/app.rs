@@ -5,8 +5,8 @@ use anyhow::Result;
 use eframe::egui;
 
 use crate::catalog::{
-    console_summary, filter_rows, tradition_options, InstallFilter, QualityLevel, SkillDiagnostics,
-    SkillRow,
+    console_summary, evaluation_summary, filter_rows, tradition_options, InstallFilter,
+    QualityLevel, SkillDiagnostics, SkillRow,
 };
 use crate::cli::CliClient;
 use crate::model::{DoctorReport, MasterInspect, SkillInventory};
@@ -241,6 +241,26 @@ impl MasterSkillApp {
         });
     }
 
+    fn start_fidelity_dry_run(&mut self) {
+        self.start_task("Running fidelity dry-run", move |client| {
+            let output = client.run_fidelity_dry_run()?;
+            Ok(TaskOutcome {
+                message: summarize_command_output("Fidelity dry-run finished", &output),
+                snapshot: None,
+            })
+        });
+    }
+
+    fn start_full_validation(&mut self) {
+        self.start_task("Running full validation", move |client| {
+            let output = client.run_full_validation()?;
+            Ok(TaskOutcome {
+                message: summarize_command_output("Full validation finished", &output),
+                snapshot: None,
+            })
+        });
+    }
+
     fn show_toolbar(&mut self, ui: &mut egui::Ui) {
         let busy = self.is_busy();
         ui.horizontal(|ui| {
@@ -368,6 +388,111 @@ impl MasterSkillApp {
         } else {
             ui.label("No runtime report loaded.");
         }
+    }
+
+    fn show_evaluation_center(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Evaluation Center");
+        let busy = self.is_busy();
+        let summary = evaluation_summary(&self.rows);
+
+        ui.horizontal_wrapped(|ui| {
+            Self::show_metric_card(
+                ui,
+                "Fidelity Cases",
+                summary.case_count.to_string(),
+                &format!("{} skills", summary.skill_count),
+                summary.missing_suite_count == 0,
+            );
+            Self::show_metric_card(
+                ui,
+                "Ready",
+                summary.ready_count.to_string(),
+                "source + protocol + eval",
+                summary.ready_count == summary.skill_count,
+            );
+            Self::show_metric_card(
+                ui,
+                "Attention",
+                summary.attention_count.to_string(),
+                "installed but incomplete",
+                summary.attention_count == 0,
+            );
+            Self::show_metric_card(
+                ui,
+                "Missing",
+                summary.missing_count.to_string(),
+                "not installed",
+                summary.missing_count == 0,
+            );
+            Self::show_metric_card(
+                ui,
+                "Missing Suites",
+                summary.missing_suite_count.to_string(),
+                "no fidelity jsonl",
+                summary.missing_suite_count == 0,
+            );
+        });
+
+        ui.horizontal(|ui| {
+            if ui
+                .add_enabled(!busy, egui::Button::new("Run fidelity dry-run"))
+                .clicked()
+            {
+                self.start_fidelity_dry_run();
+            }
+            if ui
+                .add_enabled(!busy, egui::Button::new("Run full validation"))
+                .clicked()
+            {
+                self.start_full_validation();
+            }
+        });
+
+        ui.separator();
+        ui.columns(2, |columns| {
+            columns[0].heading("Tradition Coverage");
+            egui::Grid::new("evaluation-tradition-grid")
+                .num_columns(4)
+                .striped(true)
+                .show(&mut columns[0], |ui| {
+                    ui.strong("Tradition");
+                    ui.strong("Skills");
+                    ui.strong("Cases");
+                    ui.strong("Missing");
+                    ui.end_row();
+                    for group in &summary.groups {
+                        ui.label(&group.tradition);
+                        ui.label(group.skill_count.to_string());
+                        ui.label(group.case_count.to_string());
+                        ui.label(group.missing_suite_count.to_string());
+                        ui.end_row();
+                    }
+                });
+
+            columns[1].heading("Skill Suites");
+            egui::ScrollArea::vertical()
+                .max_height(210.0)
+                .show(&mut columns[1], |ui| {
+                    egui::Grid::new("evaluation-skill-grid")
+                        .num_columns(4)
+                        .striped(true)
+                        .show(ui, |ui| {
+                            ui.strong("Skill");
+                            ui.strong("Tradition");
+                            ui.strong("Cases");
+                            ui.strong("Status");
+                            ui.end_row();
+                            for row in &self.rows {
+                                let level = row.quality_level();
+                                ui.label(&row.name);
+                                ui.label(row.tradition.as_deref().unwrap_or("unspecified"));
+                                ui.label(row.fidelity_case_count.to_string());
+                                ui.colored_label(Self::quality_color(level), level.label());
+                                ui.end_row();
+                            }
+                        });
+                });
+        });
     }
 
     fn show_sidebar(&mut self, ui: &mut egui::Ui) {
@@ -645,6 +770,8 @@ impl eframe::App for MasterSkillApp {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 self.show_dashboard(ui);
                 ui.separator();
+                self.show_evaluation_center(ui);
+                ui.separator();
                 ui.columns(2, |columns| {
                     self.show_doctor(&mut columns[0]);
                     self.show_selected(&mut columns[1]);
@@ -652,4 +779,17 @@ impl eframe::App for MasterSkillApp {
             });
         });
     }
+}
+
+fn summarize_command_output(prefix: &str, output: &str) -> String {
+    let lines: Vec<&str> = output
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .collect();
+    if lines.is_empty() {
+        return prefix.to_string();
+    }
+
+    let start = lines.len().saturating_sub(12);
+    format!("{prefix}:\n{}", lines[start..].join("\n"))
 }

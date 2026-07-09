@@ -36,3 +36,13 @@ fn installs_and_uninstalls_one_master_in_isolated_home() {
 
     fs::remove_dir_all(home).unwrap();
 }
+
+#[test]
+fn runs_fidelity_dry_run_from_repo_root() {
+    let client = CliClient::new(repo_root());
+
+    let output = client.run_fidelity_dry_run().unwrap();
+
+    assert!(output.contains("Overall Summary"));
+    assert!(output.contains("master-huineng"));
+}
