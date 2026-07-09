@@ -12,7 +12,7 @@ use crate::catalog::{
 use crate::cli::CliClient;
 use crate::layout::{
     dashboard_columns_for_width, dense_table_mode_for_width, metric_card_width,
-    metric_cards_per_row, TwoPaneMode,
+    metric_cards_per_row, operation_log_height, TwoPaneMode,
 };
 use crate::model::{DoctorReport, MasterInspect, SkillInventory};
 use crate::trace::{TraceStatus, TraceStore};
@@ -23,6 +23,25 @@ enum DetailView {
     Sources,
     Evaluation,
     Runtime,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ConsoleSection {
+    Overview,
+    Evaluation,
+    Runs,
+    SkillDetail,
+}
+
+impl ConsoleSection {
+    fn label(self) -> &'static str {
+        match self {
+            ConsoleSection::Overview => "Overview",
+            ConsoleSection::Evaluation => "Evaluation",
+            ConsoleSection::Runs => "Runs",
+            ConsoleSection::SkillDetail => "Skill Detail",
+        }
+    }
 }
 
 pub struct MasterSkillApp {
@@ -40,6 +59,8 @@ pub struct MasterSkillApp {
     task_rx: Option<Receiver<TaskEnvelope>>,
     busy_label: Option<String>,
     detail_view: DetailView,
+    console_section: ConsoleSection,
+    log_expanded: bool,
     traces: TraceStore,
 }
 
@@ -88,6 +109,8 @@ impl MasterSkillApp {
             task_rx: None,
             busy_label: None,
             detail_view: DetailView::Overview,
+            console_section: ConsoleSection::Overview,
+            log_expanded: false,
             traces: TraceStore::new(200),
         };
         app.refresh_all();
@@ -326,7 +349,24 @@ impl MasterSkillApp {
                 ui.label(label);
             }
         });
-        ui.label(format!("Repo: {}", self.client.repo_root().display()));
+        ui.horizontal(|ui| {
+            for section in [
+                ConsoleSection::Overview,
+                ConsoleSection::Evaluation,
+                ConsoleSection::Runs,
+                ConsoleSection::SkillDetail,
+            ] {
+                ui.selectable_value(&mut self.console_section, section, section.label());
+            }
+            ui.separator();
+            if let Some(report) = &self.doctor {
+                ui.label(format!(
+                    "Runtime: {} | Installed: {}/{}",
+                    report.status, report.installed_known_skills, report.available_skills
+                ));
+            }
+        });
+        ui.small(format!("Repo: {}", self.client.repo_root().display()));
     }
 
     fn quality_color(level: QualityLevel) -> egui::Color32 {
@@ -728,6 +768,7 @@ impl MasterSkillApp {
                 let title = row.title().to_string();
                 ui.horizontal(|ui| {
                     if ui.selectable_label(selected, row.name.clone()).clicked() {
+                        self.console_section = ConsoleSection::SkillDetail;
                         self.start_inspect(row.slug.clone());
                     }
                     ui.colored_label(Self::quality_color(quality), quality.label());
@@ -918,6 +959,59 @@ impl MasterSkillApp {
             ui.label("No skill selected.");
         }
     }
+
+    fn show_operation_log(&mut self, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            ui.heading("Operation Log");
+            let toggle_label = if self.log_expanded {
+                "Collapse"
+            } else {
+                "Expand"
+            };
+            if ui.button(toggle_label).clicked() {
+                self.log_expanded = !self.log_expanded;
+            }
+            if ui.button("Clear").clicked() {
+                self.log_lines.clear();
+            }
+            ui.separator();
+            ui.label(first_line(&self.log));
+        });
+
+        if self.log_expanded {
+            egui::ScrollArea::vertical()
+                .stick_to_bottom(true)
+                .show(ui, |ui| {
+                    for line in &self.log_lines {
+                        ui.label(line);
+                    }
+                });
+        }
+    }
+
+    fn show_overview_workspace(&mut self, ui: &mut egui::Ui) {
+        self.show_dashboard(ui);
+        ui.separator();
+        if dashboard_columns_for_width(ui.available_width()) == TwoPaneMode::TwoColumns {
+            ui.columns(2, |columns| {
+                self.show_doctor(&mut columns[0]);
+                self.show_selected(&mut columns[1]);
+            });
+        } else {
+            self.show_doctor(ui);
+            ui.separator();
+            self.show_selected(ui);
+        }
+    }
+
+    fn show_active_workspace(&mut self, ui: &mut egui::Ui) {
+        match self.console_section {
+            ConsoleSection::Overview => self.show_overview_workspace(ui),
+            ConsoleSection::Evaluation => self.show_evaluation_center(ui),
+            ConsoleSection::Runs => self.show_trace_center(ui),
+            ConsoleSection::SkillDetail => self.show_selected(ui),
+        }
+    }
 }
 
 impl Default for MasterSkillApp {
@@ -942,41 +1036,12 @@ impl eframe::App for MasterSkillApp {
 
         egui::TopBottomPanel::bottom("log")
             .resizable(true)
-            .default_height(130.0)
-            .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.heading("Operation Log");
-                    if ui.button("Clear").clicked() {
-                        self.log_lines.clear();
-                    }
-                });
-                egui::ScrollArea::vertical()
-                    .stick_to_bottom(true)
-                    .show(ui, |ui| {
-                        for line in &self.log_lines {
-                            ui.label(line);
-                        }
-                    });
-            });
+            .default_height(operation_log_height(self.log_expanded))
+            .show(ctx, |ui| self.show_operation_log(ui));
 
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                self.show_dashboard(ui);
-                ui.separator();
-                self.show_evaluation_center(ui);
-                ui.separator();
-                self.show_trace_center(ui);
-                ui.separator();
-                if dashboard_columns_for_width(ui.available_width()) == TwoPaneMode::TwoColumns {
-                    ui.columns(2, |columns| {
-                        self.show_doctor(&mut columns[0]);
-                        self.show_selected(&mut columns[1]);
-                    });
-                } else {
-                    self.show_doctor(ui);
-                    ui.separator();
-                    self.show_selected(ui);
-                }
+                self.show_active_workspace(ui);
             });
         });
     }

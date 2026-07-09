@@ -39,12 +39,20 @@ pub fn metric_cards_per_row(content_width: f32, card_width: f32, item_spacing: f
     columns.max(1)
 }
 
+pub fn operation_log_height(expanded: bool) -> f32 {
+    if expanded {
+        170.0
+    } else {
+        42.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::TwoPaneMode;
     use super::{
         dashboard_columns_for_width, dense_table_mode_for_width, metric_card_width,
-        metric_cards_per_row,
+        metric_cards_per_row, operation_log_height,
     };
 
     #[test]
@@ -86,5 +94,12 @@ mod tests {
         assert_eq!(metric_cards_per_row(760.0, 150.0, 8.0), 4);
         assert_eq!(metric_cards_per_row(320.0, 145.0, 8.0), 2);
         assert_eq!(metric_cards_per_row(120.0, 145.0, 8.0), 1);
+    }
+
+    #[test]
+    fn keeps_operation_log_compact_by_default_but_expandable() {
+        assert_eq!(operation_log_height(false), 42.0);
+        assert_eq!(operation_log_height(true), 170.0);
+        assert!(operation_log_height(true) > operation_log_height(false));
     }
 }
