@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 use std::sync::mpsc::{channel, Receiver};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -57,6 +58,7 @@ pub struct MasterSkillApp {
     console_section: ConsoleSection,
     log_expanded: bool,
     traces: TraceStore,
+    trace_path: PathBuf,
 }
 
 struct Snapshot {
@@ -90,6 +92,14 @@ struct MetricCard {
 
 impl MasterSkillApp {
     pub fn new() -> Self {
+        let trace_path = desktop_trace_store_path();
+        let (traces, trace_load_message) = match TraceStore::load_from_path(&trace_path, 200) {
+            Ok(traces) => (traces, None),
+            Err(err) => (
+                TraceStore::new(200),
+                Some(format!("Trace history load failed: {err:#}")),
+            ),
+        };
         let mut app = Self {
             client: CliClient::default(),
             inventory: None,
@@ -106,8 +116,12 @@ impl MasterSkillApp {
             busy_label: None,
             console_section: ConsoleSection::Overview,
             log_expanded: false,
-            traces: TraceStore::new(200),
+            traces,
+            trace_path,
         };
+        if let Some(message) = trace_load_message {
+            app.set_log(message);
+        }
         app.refresh_all();
         app
     }
@@ -160,6 +174,12 @@ impl MasterSkillApp {
         }
     }
 
+    fn persist_traces(&mut self) {
+        if let Err(err) = self.traces.save_to_path(&self.trace_path) {
+            self.set_log(format!("Trace history save failed: {err:#}"));
+        }
+    }
+
     fn refresh_all(&mut self) {
         match Self::load_snapshot(&self.client, self.selected_slug.clone()) {
             Ok(snapshot) => {
@@ -197,6 +217,7 @@ impl MasterSkillApp {
             self.traces
                 .begin_with_detail(label.clone(), command, "Queued.")
         };
+        self.persist_traces();
         let (tx, rx) = channel();
         self.task_rx = Some(rx);
         self.busy_label = Some(label.clone());
@@ -229,6 +250,7 @@ impl MasterSkillApp {
                         outcome.detail.clone(),
                         envelope.elapsed,
                     );
+                    self.persist_traces();
                     self.set_log(outcome.message);
                 }
                 Err(message) => {
@@ -238,6 +260,7 @@ impl MasterSkillApp {
                         message.clone(),
                         envelope.elapsed,
                     );
+                    self.persist_traces();
                     self.set_log(message);
                 }
             }
@@ -839,6 +862,7 @@ impl MasterSkillApp {
                     .clicked()
                 {
                     self.traces.clear();
+                    self.persist_traces();
                     self.set_log("Run trace history cleared.");
                 }
             },
@@ -1536,4 +1560,69 @@ fn first_line(value: &str) -> String {
         .map(str::trim)
         .unwrap_or("")
         .to_string()
+}
+
+fn desktop_trace_store_path() -> PathBuf {
+    desktop_trace_store_path_from_env(
+        std::env::var("XDG_DATA_HOME").ok().as_deref(),
+        std::env::var("HOME").ok().as_deref(),
+        std::env::var("APPDATA").ok().as_deref(),
+    )
+    .unwrap_or_else(|| {
+        std::env::temp_dir()
+            .join("master-skill")
+            .join("desktop-traces.json")
+    })
+}
+
+fn desktop_trace_store_path_from_env(
+    xdg_data_home: Option<&str>,
+    home: Option<&str>,
+    appdata: Option<&str>,
+) -> Option<PathBuf> {
+    if let Some(path) = xdg_data_home.filter(|value| !value.trim().is_empty()) {
+        return Some(
+            PathBuf::from(path)
+                .join("master-skill")
+                .join("desktop-traces.json"),
+        );
+    }
+
+    if let Some(path) = appdata.filter(|value| !value.trim().is_empty()) {
+        return Some(
+            PathBuf::from(path)
+                .join("Master-skill")
+                .join("desktop-traces.json"),
+        );
+    }
+
+    home.filter(|value| !value.trim().is_empty()).map(|path| {
+        PathBuf::from(path)
+            .join(".local")
+            .join("share")
+            .join("master-skill")
+            .join("desktop-traces.json")
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    #[test]
+    fn trace_store_path_prefers_xdg_data_home() {
+        let path = super::desktop_trace_store_path_from_env(
+            Some("/tmp/xdg-data"),
+            Some("/home/user"),
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(
+            path,
+            PathBuf::from("/tmp/xdg-data")
+                .join("master-skill")
+                .join("desktop-traces.json")
+        );
+    }
 }
