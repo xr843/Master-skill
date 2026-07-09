@@ -33,6 +33,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added executable desktop diagnostic actions for install and per-skill fidelity dry-runs, wired into the existing Run Trace workflow.
 - Added expandable Run Trace drill-down with command, summary, duration, and detailed output for desktop operations.
 - Added Run Trace recovery controls with rerunnable actions, related skill navigation, and failure-kind classification.
+- Added Skill Detail fidelity case drill-down with prompt, difficulty, assertion counts, and per-skill dry-run access.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
