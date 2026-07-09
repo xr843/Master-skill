@@ -56,6 +56,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added Evaluation Center Skill Suites search across skill metadata and diagnostic gap summaries.
 - Added Evaluation Center Run History filters for regressed, improved, stable, new, and failed evaluation runs.
 - Added an Evaluation Center Decision Brief that turns coverage, trend, and failure signals into a quality-gate posture with primary risk and next action.
+- Added a Decision Brief primary action that reruns regressed scopes, opens top failing skills, runs coverage baselines, or starts full validation based on the current quality-gate posture.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
