@@ -672,6 +672,10 @@ impl EvaluationRunCoverage {
     pub fn label(&self) -> String {
         format!("{}/{}", self.run_skill_count, self.total_skill_count)
     }
+
+    pub fn is_complete(&self) -> bool {
+        self.total_skill_count > 0 && self.run_skill_count >= self.total_skill_count
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -737,6 +741,103 @@ impl EvaluationFailureInsights {
             .as_ref()
             .map(|slug| format!("master-{slug} ({})", self.top_failure_skill_count))
             .unwrap_or_else(|| "none".to_string())
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EvaluationDecisionPosture {
+    Blocked,
+    Attention,
+    Unproven,
+    Ready,
+}
+
+impl EvaluationDecisionPosture {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Blocked => "blocked",
+            Self::Attention => "attention",
+            Self::Unproven => "unproven",
+            Self::Ready => "ready",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EvaluationDecisionBrief {
+    pub posture: EvaluationDecisionPosture,
+    pub headline: String,
+    pub primary_risk: String,
+    pub evidence: String,
+    pub recommendation: String,
+}
+
+impl EvaluationDecisionBrief {
+    pub fn from_signals(
+        coverage: &EvaluationRunCoverage,
+        trend: &EvaluationTrendSummary,
+        insights: &EvaluationFailureInsights,
+    ) -> Self {
+        if trend.regressed_count > 0 {
+            let scope = trend
+                .latest_regression_scope
+                .clone()
+                .unwrap_or_else(|| "recent scope".to_string());
+            return Self {
+                posture: EvaluationDecisionPosture::Blocked,
+                headline: "Regression detected".to_string(),
+                primary_risk: format!("{scope} regressed"),
+                evidence: format!(
+                    "{} regression(s) across {} recent run(s)",
+                    trend.regressed_count, trend.total_runs
+                ),
+                recommendation:
+                    "Rerun the regressed scope and inspect failed cases before release.".to_string(),
+            };
+        }
+
+        if insights.failed_cases > 0 {
+            return Self {
+                posture: EvaluationDecisionPosture::Attention,
+                headline: "Failing fidelity cases".to_string(),
+                primary_risk: insights.top_failure_label(),
+                evidence: format!(
+                    "{} failing case(s) across {} skill(s)",
+                    insights.failed_cases, insights.failing_skill_count
+                ),
+                recommendation:
+                    "Open the top failing skill, resolve evidence gaps, then rerun fidelity."
+                        .to_string(),
+            };
+        }
+
+        if !coverage.is_complete() {
+            let missing_runs = coverage
+                .total_skill_count
+                .saturating_sub(coverage.run_skill_count);
+            return Self {
+                posture: EvaluationDecisionPosture::Unproven,
+                headline: "Evaluation coverage incomplete".to_string(),
+                primary_risk: format!("{} skills have latest runs", coverage.label()),
+                evidence: format!("{missing_runs} skill(s) without a current run"),
+                recommendation: "Run fidelity dry-run to establish a current baseline.".to_string(),
+            };
+        }
+
+        Self {
+            posture: EvaluationDecisionPosture::Ready,
+            headline: "Evaluation baseline clear".to_string(),
+            primary_risk: "No current regressions or failing cases".to_string(),
+            evidence: format!(
+                "{} skills covered, {} recent run(s)",
+                coverage.run_skill_count, trend.total_runs
+            ),
+            recommendation: "Proceed with release review and keep monitoring new runs.".to_string(),
+        }
+    }
+
+    pub fn status_label(&self) -> &'static str {
+        self.posture.label()
     }
 }
 
@@ -1207,8 +1308,9 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     use super::{
-        EvaluationRunHistoryFilter, FailureKind, TraceAction, TraceListFilter, TraceStatus,
-        TraceStore,
+        EvaluationDecisionBrief, EvaluationDecisionPosture, EvaluationFailureInsights,
+        EvaluationRunCoverage, EvaluationRunHistoryFilter, EvaluationTrendSummary, FailureKind,
+        TraceAction, TraceListFilter, TraceStatus, TraceStore,
     };
 
     fn temp_path(name: &str) -> PathBuf {
@@ -2358,6 +2460,62 @@ mod tests {
         assert_eq!(summary.new_count, 2);
         assert_eq!(summary.latest_regression_scope.as_deref(), Some("all"));
         assert_eq!(summary.health_label(), "review");
+    }
+
+    #[test]
+    fn builds_evaluation_decision_brief_from_quality_signals() {
+        let coverage = EvaluationRunCoverage {
+            total_skill_count: 3,
+            run_skill_count: 3,
+            dry_run_count: 3,
+            graded_count: 0,
+        };
+        let mut trend = EvaluationTrendSummary {
+            total_runs: 3,
+            regressed_count: 1,
+            latest_regression_scope: Some("master-huineng".to_string()),
+            ..EvaluationTrendSummary::default()
+        };
+        let mut insights = EvaluationFailureInsights {
+            total_cases: 3,
+            pass_cases: 2,
+            failed_cases: 1,
+            failing_skill_count: 1,
+            top_failure_skill_slug: Some("huineng".to_string()),
+            top_failure_skill_count: 1,
+            ..EvaluationFailureInsights::default()
+        };
+
+        let brief = EvaluationDecisionBrief::from_signals(&coverage, &trend, &insights);
+        assert_eq!(brief.posture, EvaluationDecisionPosture::Blocked);
+        assert_eq!(brief.status_label(), "blocked");
+        assert_eq!(brief.headline, "Regression detected");
+        assert_eq!(brief.primary_risk, "master-huineng regressed");
+
+        trend.regressed_count = 0;
+        trend.latest_regression_scope = None;
+        let brief = EvaluationDecisionBrief::from_signals(&coverage, &trend, &insights);
+        assert_eq!(brief.posture, EvaluationDecisionPosture::Attention);
+        assert_eq!(brief.headline, "Failing fidelity cases");
+        assert_eq!(brief.primary_risk, "master-huineng (1)");
+
+        insights.failed_cases = 0;
+        insights.failing_skill_count = 0;
+        insights.top_failure_skill_slug = None;
+        insights.top_failure_skill_count = 0;
+        let uncovered = EvaluationRunCoverage {
+            run_skill_count: 2,
+            ..coverage.clone()
+        };
+        let brief = EvaluationDecisionBrief::from_signals(&uncovered, &trend, &insights);
+        assert_eq!(brief.posture, EvaluationDecisionPosture::Unproven);
+        assert_eq!(brief.headline, "Evaluation coverage incomplete");
+        assert_eq!(brief.primary_risk, "2/3 skills have latest runs");
+
+        let brief = EvaluationDecisionBrief::from_signals(&coverage, &trend, &insights);
+        assert_eq!(brief.posture, EvaluationDecisionPosture::Ready);
+        assert_eq!(brief.status_label(), "ready");
+        assert_eq!(brief.headline, "Evaluation baseline clear");
     }
 
     #[test]
