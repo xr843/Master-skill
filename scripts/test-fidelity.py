@@ -138,6 +138,7 @@ def run_tests(
     dry_run: bool = False,
     model: str = "claude-sonnet-4-6",
     max_tests: int | None = None,
+    quiet: bool = False,
 ) -> dict:
     """Run fidelity tests for a master. Returns summary."""
     master_dir = PREBUILT_DIR / master_name
@@ -197,7 +198,8 @@ def run_tests(
     failed = 0
 
     for i, test in enumerate(tests):
-        print(f"  [{i+1}/{len(tests)}] {test['q'][:50]}...", end=" ", flush=True)
+        if not quiet:
+            print(f"  [{i+1}/{len(tests)}] {test['q'][:50]}...", end=" ", flush=True)
 
         try:
             message = client.messages.create(
@@ -215,7 +217,8 @@ def run_tests(
                 "error": str(e),
             })
             failed += 1
-            print("API ERROR")
+            if not quiet:
+                print("API ERROR")
             continue
 
         check = check_response(
@@ -240,12 +243,14 @@ def run_tests(
 
         if check["passed"]:
             passed += 1
-            print("PASS")
+            if not quiet:
+                print("PASS")
         else:
             failed += 1
             failures = (check["missing_cites"] + check["missing_mentions"]
                         + check["forbidden_found"] + check["boundary_violations"])
-            print(f"FAIL ({failures})")
+            if not quiet:
+                print(f"FAIL ({failures})")
 
     return {
         "master": master_name,
@@ -276,6 +281,9 @@ def main():
     if not args.master and not args.all:
         parser.error("Specify --master <name> or --all")
 
+    if args.json and hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
     if args.all:
         masters = sorted(
             d.name for d in PREBUILT_DIR.iterdir()
@@ -286,11 +294,16 @@ def main():
 
     all_results = []
     for master in masters:
-        print(f"\n{'='*50}")
-        print(f"Testing: {master}")
-        print(f"{'='*50}")
+        if not args.json:
+            print(f"\n{'='*50}")
+            print(f"Testing: {master}")
+            print(f"{'='*50}")
         result = run_tests(
-            master, dry_run=args.dry_run, model=args.model, max_tests=args.max_tests
+            master,
+            dry_run=args.dry_run,
+            model=args.model,
+            max_tests=args.max_tests,
+            quiet=args.json,
         )
         all_results.append(result)
 
