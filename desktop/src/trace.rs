@@ -19,6 +19,54 @@ impl TraceStatus {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub enum TraceAction {
+    Refresh,
+    InspectSkill { slug: String },
+    InstallSkill { slug: String },
+    UninstallSkill { slug: String },
+    InstallAll,
+    UpdateAll,
+    FidelityDryRunAll,
+    FidelityDryRunSkill { slug: String },
+    FullValidation,
+}
+
+impl TraceAction {
+    pub fn related_skill_slug(&self) -> Option<&str> {
+        match self {
+            Self::InspectSkill { slug }
+            | Self::InstallSkill { slug }
+            | Self::UninstallSkill { slug }
+            | Self::FidelityDryRunSkill { slug } => Some(slug),
+            Self::Refresh
+            | Self::InstallAll
+            | Self::UpdateAll
+            | Self::FidelityDryRunAll
+            | Self::FullValidation => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FailureKind {
+    Validation,
+    Fidelity,
+    Install,
+    Runtime,
+}
+
+impl FailureKind {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Validation => "validation",
+            Self::Fidelity => "fidelity",
+            Self::Install => "install",
+            Self::Runtime => "runtime",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TraceRecord {
     pub id: u64,
     pub label: String,
@@ -26,7 +74,68 @@ pub struct TraceRecord {
     pub summary: String,
     pub detail: String,
     pub command: Option<String>,
+    pub action: Option<TraceAction>,
     pub duration_ms: Option<u128>,
+}
+
+impl TraceRecord {
+    pub fn can_rerun(&self) -> bool {
+        self.action.is_some() && self.status != TraceStatus::Running
+    }
+
+    pub fn related_skill_slug(&self) -> Option<&str> {
+        self.action
+            .as_ref()
+            .and_then(TraceAction::related_skill_slug)
+    }
+
+    pub fn failure_kind(&self) -> Option<FailureKind> {
+        if self.status != TraceStatus::Failed {
+            return None;
+        }
+
+        match &self.action {
+            Some(TraceAction::FullValidation) => Some(FailureKind::Validation),
+            Some(TraceAction::FidelityDryRunAll | TraceAction::FidelityDryRunSkill { .. }) => {
+                Some(FailureKind::Fidelity)
+            }
+            Some(
+                TraceAction::InstallSkill { .. }
+                | TraceAction::UninstallSkill { .. }
+                | TraceAction::InstallAll
+                | TraceAction::UpdateAll,
+            ) => Some(FailureKind::Install),
+            Some(TraceAction::Refresh | TraceAction::InspectSkill { .. }) => {
+                Some(FailureKind::Runtime)
+            }
+            None => classify_failure_text(&format!(
+                "{}\n{}\n{}",
+                self.label, self.summary, self.detail
+            )),
+        }
+    }
+}
+
+fn classify_failure_text(text: &str) -> Option<FailureKind> {
+    let value = text.to_ascii_lowercase();
+    if value.contains("fidelity") || value.contains("fidelity.jsonl") {
+        Some(FailureKind::Fidelity)
+    } else if value.contains("validation")
+        || value.contains("npm test")
+        || value.contains("validate")
+    {
+        Some(FailureKind::Validation)
+    } else if value.contains("install")
+        || value.contains("uninstall")
+        || value.contains("update")
+        || value.contains("master-skill cli")
+    {
+        Some(FailureKind::Install)
+    } else if value.trim().is_empty() {
+        None
+    } else {
+        Some(FailureKind::Runtime)
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -64,6 +173,26 @@ impl TraceStore {
         command: Option<impl Into<String>>,
         detail: impl Into<String>,
     ) -> u64 {
+        self.begin_record(label, None, command.map(Into::into), detail)
+    }
+
+    pub fn begin_with_action(
+        &mut self,
+        label: impl Into<String>,
+        action: TraceAction,
+        command: Option<impl Into<String>>,
+        detail: impl Into<String>,
+    ) -> u64 {
+        self.begin_record(label, Some(action), command.map(Into::into), detail)
+    }
+
+    fn begin_record(
+        &mut self,
+        label: impl Into<String>,
+        action: Option<TraceAction>,
+        command: Option<String>,
+        detail: impl Into<String>,
+    ) -> u64 {
         let id = self.next_id;
         self.next_id += 1;
         self.records.push_back(TraceRecord {
@@ -72,7 +201,8 @@ impl TraceStore {
             status: TraceStatus::Running,
             summary: "Started.".to_string(),
             detail: detail.into(),
-            command: command.map(Into::into),
+            command,
+            action,
             duration_ms: None,
         });
         self.enforce_capacity();
@@ -184,7 +314,7 @@ impl TraceStore {
 mod tests {
     use std::time::Duration;
 
-    use super::{TraceStatus, TraceStore};
+    use super::{FailureKind, TraceAction, TraceStatus, TraceStore};
 
     #[test]
     fn records_success_and_error_traces_with_summary() {
@@ -241,6 +371,89 @@ mod tests {
         );
         assert!(recent[0].detail.contains("Testing: master-huineng"));
         assert_eq!(recent[0].duration_ms, Some(88));
+    }
+
+    #[test]
+    fn records_rerunnable_trace_action_and_related_skill() {
+        let mut store = TraceStore::new(10);
+
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run"),
+            "Dry-run queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "master-huineng fidelity dry-run finished",
+            "Testing: master-huineng",
+            Duration::from_millis(91),
+        );
+
+        let record = &store.recent()[0];
+        assert_eq!(
+            record.action,
+            Some(TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string()
+            })
+        );
+        assert!(record.can_rerun());
+        assert_eq!(record.related_skill_slug(), Some("huineng"));
+    }
+
+    #[test]
+    fn classifies_failed_trace_kind_from_action_and_detail() {
+        let mut store = TraceStore::new(10);
+
+        let validation = store.begin_with_action(
+            "Running full validation",
+            TraceAction::FullValidation,
+            Some("npm test"),
+            "Queued.",
+        );
+        store.finish_error_with_detail(
+            validation,
+            "npm test failed",
+            "validate-fidelity.py failed",
+            Duration::from_millis(10),
+        );
+
+        let fidelity = store.begin_with_action(
+            "Running master-huineng fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run"),
+            "Queued.",
+        );
+        store.finish_error_with_detail(
+            fidelity,
+            "fidelity failed",
+            "No fidelity.jsonl found",
+            Duration::from_millis(11),
+        );
+
+        let install = store.begin_with_action(
+            "Installing master-huineng",
+            TraceAction::InstallSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("master-skill install huineng"),
+            "Queued.",
+        );
+        store.finish_error_with_detail(
+            install,
+            "install failed",
+            "failed to run master-skill CLI",
+            Duration::from_millis(12),
+        );
+
+        let recent = store.recent();
+        assert_eq!(recent[0].failure_kind(), Some(FailureKind::Install));
+        assert_eq!(recent[1].failure_kind(), Some(FailureKind::Fidelity));
+        assert_eq!(recent[2].failure_kind(), Some(FailureKind::Validation));
     }
 
     #[test]
