@@ -99,6 +99,16 @@ impl EvaluationRunResult {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EvaluationCaseResult {
+    pub slug: String,
+    pub case_index: usize,
+    pub question: String,
+    pub difficulty: Option<String>,
+    pub status: String,
+    pub trace_id: u64,
+}
+
 impl TraceRecord {
     pub fn can_rerun(&self) -> bool {
         self.action.is_some() && self.status != TraceStatus::Running
@@ -146,6 +156,65 @@ impl TraceRecord {
 
         parse_evaluation_results(self.id, &self.detail)
     }
+
+    pub fn evaluation_case_results(&self) -> Vec<EvaluationCaseResult> {
+        if !matches!(
+            self.action,
+            Some(TraceAction::FidelityDryRunAll | TraceAction::FidelityDryRunSkill { .. })
+        ) {
+            return Vec::new();
+        }
+
+        parse_evaluation_case_results(self.id, &self.detail)
+    }
+}
+
+fn parse_evaluation_case_results(trace_id: u64, detail: &str) -> Vec<EvaluationCaseResult> {
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(detail) else {
+        return Vec::new();
+    };
+    let Some(suites) = value.as_array() else {
+        return Vec::new();
+    };
+
+    let mut case_results = Vec::new();
+    for suite in suites {
+        let Some(master_name) = suite.get("master").and_then(serde_json::Value::as_str) else {
+            continue;
+        };
+        let Some(slug) = master_name.strip_prefix("master-") else {
+            continue;
+        };
+        let Some(results) = suite.get("results").and_then(serde_json::Value::as_array) else {
+            continue;
+        };
+
+        for result in results {
+            let Some(index) = result.get("index").and_then(serde_json::Value::as_u64) else {
+                continue;
+            };
+            let Some(status) = result.get("status").and_then(serde_json::Value::as_str) else {
+                continue;
+            };
+            case_results.push(EvaluationCaseResult {
+                slug: slug.to_string(),
+                case_index: index as usize + 1,
+                question: result
+                    .get("question")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("untitled case")
+                    .to_string(),
+                difficulty: result
+                    .get("difficulty")
+                    .and_then(serde_json::Value::as_str)
+                    .map(str::to_string),
+                status: status.to_string(),
+                trace_id,
+            });
+        }
+    }
+
+    case_results
 }
 
 fn parse_evaluation_results(trace_id: u64, detail: &str) -> Vec<EvaluationRunResult> {
@@ -389,6 +458,15 @@ impl TraceStore {
         }
 
         results.into_values().collect()
+    }
+
+    pub fn latest_evaluation_case_results_for(&self, slug: &str) -> Vec<EvaluationCaseResult> {
+        self.records
+            .iter()
+            .rev()
+            .flat_map(TraceRecord::evaluation_case_results)
+            .filter(|result| result.slug == slug)
+            .collect()
     }
 
     pub fn evaluation_run_coverage(&self, total_skill_count: usize) -> EvaluationRunCoverage {
@@ -686,6 +764,55 @@ mod tests {
         assert_eq!(results[1].slug, "zhiyi");
         assert_eq!(results[1].total_count, 10);
         assert_eq!(results[1].trace_id, old_run);
+    }
+
+    #[test]
+    fn indexes_latest_evaluation_case_results_from_json_trace() {
+        let mut store = TraceStore::new(10);
+
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "master-huineng fidelity dry-run finished",
+            r#"[
+              {
+                "master": "master-huineng",
+                "total": 2,
+                "results": [
+                  {
+                    "index": 0,
+                    "question": "什么是见性成佛？",
+                    "difficulty": "basic",
+                    "status": "dry_run"
+                  },
+                  {
+                    "index": 1,
+                    "question": "顿悟怎么修？",
+                    "difficulty": "intermediate",
+                    "status": "dry_run"
+                  }
+                ]
+              }
+            ]"#,
+            Duration::from_millis(50),
+        );
+
+        let results = store.latest_evaluation_case_results_for("huineng");
+
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].case_index, 1);
+        assert_eq!(results[0].status, "dry_run");
+        assert_eq!(results[0].difficulty.as_deref(), Some("basic"));
+        assert_eq!(results[0].trace_id, run);
+        assert_eq!(results[1].case_index, 2);
+        assert_eq!(results[1].question, "顿悟怎么修？");
     }
 
     #[test]

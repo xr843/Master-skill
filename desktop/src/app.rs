@@ -376,7 +376,7 @@ impl MasterSkillApp {
         self.start_task_with_action(
             "Running fidelity dry-run",
             Some(TraceAction::FidelityDryRunAll),
-            Some("python3 scripts/test-fidelity.py --all --dry-run"),
+            Some("python3 scripts/test-fidelity.py --all --dry-run --json"),
             move |client| {
                 let output = client.run_fidelity_dry_run()?;
                 Ok(TaskOutcome {
@@ -393,7 +393,7 @@ impl MasterSkillApp {
             format!("Running master-{slug} fidelity dry-run"),
             Some(TraceAction::FidelityDryRunSkill { slug: slug.clone() }),
             Some(format!(
-                "python3 scripts/test-fidelity.py --master master-{slug} --dry-run"
+                "python3 scripts/test-fidelity.py --master master-{slug} --dry-run --json"
             )),
             move |client| {
                 let output = client.run_fidelity_dry_run_for(&slug)?;
@@ -1216,6 +1216,12 @@ impl MasterSkillApp {
     fn show_fidelity_cases_panel(&mut self, ui: &mut egui::Ui, slug: &str, cases: &[FidelityCase]) {
         ui.heading("Fidelity Cases");
         let latest_result = self.traces.latest_evaluation_result_for(slug);
+        let case_results: BTreeMap<usize, _> = self
+            .traces
+            .latest_evaluation_case_results_for(slug)
+            .into_iter()
+            .map(|result| (result.case_index, result))
+            .collect();
         ui.horizontal(|ui| {
             ui.label(format!("{} cases", cases.len()));
             ui.separator();
@@ -1263,18 +1269,22 @@ impl MasterSkillApp {
                             ui.label(case.difficulty.as_deref().unwrap_or("unspecified"));
                             ui.label(case.citation_assertion_count.to_string());
                             ui.label(case.keyword_assertion_count.to_string());
-                            ui.label(
-                                latest_result
-                                    .as_ref()
-                                    .map(|result| {
-                                        if result.dry_run {
-                                            "N/A dry-run".to_string()
-                                        } else {
-                                            result.label()
-                                        }
-                                    })
-                                    .unwrap_or_else(|| "not run".to_string()),
-                            );
+                            if let Some(result) = case_results.get(&case.index) {
+                                ui.label(result.status.as_str());
+                            } else {
+                                ui.label(
+                                    latest_result
+                                        .as_ref()
+                                        .map(|result| {
+                                            if result.dry_run {
+                                                "N/A dry-run".to_string()
+                                            } else {
+                                                result.label()
+                                            }
+                                        })
+                                        .unwrap_or_else(|| "not run".to_string()),
+                                );
+                            }
                             ui.label(first_line(&case.question));
                             ui.end_row();
                         }
