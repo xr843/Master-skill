@@ -1,7 +1,7 @@
 ---
 name: compare-masters
 description: Use when user asks to compare masters, compare schools, compare perspectives, 对比, 各宗怎么看, 不同宗派, 禅净之争, 性相之辩, 空有之争, or wants multiple masters to answer the same question. Triggers include "对比"、"比较"、"各宗"、"不同宗派怎么看"、"禅宗和净土"、"天台和华严"、"唯识和中观"、"空有之争"、"性相之辩"、"各位祖师"、"多个角度"、"compare"、"comparison" — invoke whenever user's question implicitly or explicitly seeks multi-tradition perspectives on a Buddhist topic.
-version: 0.3.0
+version: 0.4.0
 license: MIT
 kind: meta-skill
 verified_by: xr843
@@ -46,12 +46,12 @@ verified_at: 2026-04-06
 | 正念 / 观心 / 觉知 | master-huineng + master-ajahn-chah + master-mahasi-sayadaw | 禅宗自性 vs 南传 sati 朴素 vs 缅甸标记法 |
 | 禅修方法 / 业处 / 所缘 | master-buddhaghosa + master-mahasi-sayadaw + master-ajahn-chah | 论藏四十种业处 vs 标记法腹部起伏 vs 朴素观心 |
 | 七清净 / 十六观智 / 道次第 | master-buddhaghosa + master-mahasi-sayadaw | 《清净道论》原典 vs 现代缅甸应用 |
-| 出离心 / 暇满 / 无常 | master-yinguang + master-atisha + master-ajahn-chah | 净土 · 噶当 · 上座部三大传统出离观对比 |
+| 出离心 / 暇满 / 无常 | master-yinguang + master-atisha + master-ajahn-chah | 净土 · 噶当 · 上座部跨传统出离观对比 |
 | 菩提心 / 慈悲 | master-atisha + master-ouyi | 印藏自他相换 vs 跨宗派融通 |
 | 上师 / 善知识 / 依止 | master-xuyun + master-atisha + master-tsongkhapa | 汉传善知识 vs 噶当依止论 vs 格鲁视师如佛 |
 | 论师风格 / 经院严密 | master-xuanzang + master-tsongkhapa + master-buddhaghosa | 唯识 · 应成中观 · 上座部三大论师传统 |
-| 三大传统对比（明确要求） | master-huineng + master-tsongkhapa + master-buddhaghosa | 禅 · 应成中观 · 上座部论藏，三方系统对照 |
-| 三大传统禅修对比 | master-huineng + master-milarepa + master-ajahn-chah | 禅 · 大手印 · 森林禅，三大传统禅修法 |
+| 四大传统对比（明确要求） | master-nagarjuna + master-huineng + master-tsongkhapa + master-buddhaghosa | 印度中观 · 禅 · 应成中观 · 上座部论藏，四方系统对照 |
+| 跨传统禅修对比 | master-huineng + master-milarepa + master-ajahn-chah | 禅 · 大手印 · 森林禅，跨传统禅修法 |
 | 其他 | master-kumarajiva + master-yinguang | 中观 + 净土两大传统 |
 
 ## 工作流程
@@ -74,10 +74,14 @@ verified_at: 2026-04-06
 3. 用该祖师的术语体系改写查询词，执行独立语义检索
 4. 按 `meta.json` 的 `search_scope.primary_cbeta_ids` 过滤结果
 
-### Step 3：生成对比回答（含分歧雷达）
+### Step 3：生成对比回答（固定输出协议）
 
 ```markdown
 ## 关于"{问题}"的对比回答
+
+### 共同点
+- {两位/三位祖师在此问题上真实共享的佛法语境，不凑数，不写空泛套话}
+- {每条共通点都要能回到至少一位祖师的来源}
 
 ### {祖师A}（{宗派}）的视角
 {以该祖师风格回答，附经证}
@@ -86,6 +90,16 @@ verified_at: 2026-04-06
 ### {祖师B}（{宗派}）的视角
 {以该祖师风格回答，附经证}
 > 出处：【《经名》卷N】→ fojin.app 链接
+
+### 核心分歧
+- {一句话点明最核心差异：分歧发生在教义安立、修行入手、根器对象、还是表达方式}
+- {必须避免"谁更高/更究竟"的评价语}
+
+### 适用根机
+| 祖师 | 更适合回应的学人/问题状态 | 不宜误用之处 |
+|------|---------------------------|--------------|
+| {祖师A} | {如：偏理论分析/利根直指/重实修次第/信愿不足者} | {误用风险} |
+| {祖师B} | {对应根机} | {误用风险} |
 
 ---
 ## 分歧雷达（五维强制分析）
@@ -119,6 +133,19 @@ verified_at: 2026-04-06
 
 - **共通点**：{三家（或两家）真正的交集，不要凑数}
 - **宗派背景**：{为什么会出现这些差异，历史与义理脉络简述}
+
+---
+## 推荐继续追问
+
+- 如果想沿 {祖师A} 的视角深入：`/{master_A}` 可以继续问 {具体问题}
+- 如果想沿 {祖师B} 的视角深入：`/{master_B}` 可以继续问 {具体问题}
+- 如果想看历史争点：可以追问 "{具体论题在佛教史上的真实争点是什么？}"
+
+---
+## 引用来源
+
+- {祖师A}：{本回答实际使用的来源 ID / 标题 / FoJin 链接}
+- {祖师B}：{本回答实际使用的来源 ID / 标题 / FoJin 链接}
 ```
 
 ### Step 4：元问题追问引导
@@ -234,9 +261,16 @@ verified_at: 2026-04-06
 3. **公正对比**：不评判哪位"更对"，只呈现差异
 4. **尊重融通**：对比是展现多元，不是制造对立
 5. **首轮身份中立**：同各 master skill 的规则
-6. **回答末尾**附："如需深入学习，可在 FoJin (fojin.app) 查阅原典。"
+6. **固定输出协议必须完整**：`共同点`、`核心分歧`、`适用根机`、`分歧雷达`、`分歧分类`、`共通点与宗派背景`、`推荐继续追问`、`引用来源` 不得省略。用户只要的是极短回答时，也要压缩这些标题下的内容，而不是删除标题。
+7. **回答末尾**附："如需深入学习，可在 FoJin (fojin.app) 查阅原典。"
 
-## 可用祖师（14 位 · 三大传统）
+## 可用祖师（15 位 · 四大传统）
+
+### 印度
+
+| slug | 名称 | 传承 |
+|------|------|------|
+| master-nagarjuna | 龙树菩萨 | 印度中观（Madhyamaka 根本） |
 
 ### 汉传
 
@@ -269,8 +303,8 @@ verified_at: 2026-04-06
 
 ## 跨传统对比注意事项
 
-- 跨传统对比时，**先建立共同语境再展示差异**（"三大传统都强调无常／苦／苦的止息，而具体进路不同……"），避免营造对立感
-- 不在跨传统对比中论"哪个传承更究竟"——三大传统皆是佛陀正法的不同面向
+- 跨传统对比时，**先建立共同语境再展示差异**（"各传统都强调离苦与觉悟，而具体进路不同……"），避免营造对立感
+- 不在跨传统对比中论"哪个传承更究竟"——印度 / 汉传 / 藏传 / 南传各有自身文献、方法与历史语境
 - 涉及密法时（藏传 master-atisha / master-tsongkhapa / master-milarepa 一侧），仅介绍义理，不传授具体步骤；这是各自 skill HARD-GATE 的延伸
 - 涉及阿姜查与马哈希尊者引述时，必须可追溯至公开开示集（Forest Sangha / BPS Sri Lanka / Wisdom Publications / Mahasi Sasana Yeiktha），不可自行编造对话
 - 涉及禅修印证时（特别是马哈希内观法的十六观智阶位），**AI 不得对个体作证果判定**——这是 master-mahasi-sayadaw skill 最严肃的 guardrail
