@@ -86,6 +86,30 @@ fn suite_matches_filter(
     }
 }
 
+fn suite_matches_query(row: &SkillRow, query: &str) -> bool {
+    let query = query.trim().to_ascii_lowercase();
+    if query.is_empty() {
+        return true;
+    }
+
+    row.title().to_ascii_lowercase().contains(&query)
+        || row.name.to_ascii_lowercase().contains(&query)
+        || row.slug.to_ascii_lowercase().contains(&query)
+        || row.description.to_ascii_lowercase().contains(&query)
+        || row
+            .tradition
+            .as_ref()
+            .is_some_and(|value| value.to_ascii_lowercase().contains(&query))
+        || row
+            .school
+            .as_ref()
+            .is_some_and(|value| value.to_ascii_lowercase().contains(&query))
+        || row
+            .diagnostic_summary()
+            .to_ascii_lowercase()
+            .contains(&query)
+}
+
 pub struct MasterSkillApp {
     client: CliClient,
     inventory: Option<SkillInventory>,
@@ -105,6 +129,7 @@ pub struct MasterSkillApp {
     trace_filter: TraceListFilter,
     trace_query: String,
     suite_filter: SuiteFilter,
+    suite_query: String,
     traces: TraceStore,
     trace_path: PathBuf,
 }
@@ -167,6 +192,7 @@ impl MasterSkillApp {
             trace_filter: TraceListFilter::All,
             trace_query: String::new(),
             suite_filter: SuiteFilter::All,
+            suite_query: String::new(),
             traces,
             trace_path,
         };
@@ -1251,12 +1277,17 @@ impl MasterSkillApp {
                 ui.selectable_value(&mut self.suite_filter, filter, filter.label());
             }
         });
+        ui.add(
+            egui::TextEdit::singleline(&mut self.suite_query)
+                .hint_text("Search suites by skill, tradition, school, description, or gap"),
+        );
         let rows: Vec<_> = self
             .rows
             .clone()
             .into_iter()
             .filter(|row| {
                 suite_matches_filter(row, latest_results.get(&row.slug), self.suite_filter)
+                    && suite_matches_query(row, &self.suite_query)
             })
             .collect();
         if rows.is_empty() {
@@ -2246,6 +2277,20 @@ mod tests {
             Some(&passing_run),
             super::SuiteFilter::FailedRun
         ));
+    }
+
+    #[test]
+    fn searches_skill_suites_across_metadata_and_gaps() {
+        let ready = suite_row("huineng", true, true, 12);
+        let attention = suite_row("zhiyi", true, false, 10);
+
+        assert!(super::suite_matches_query(&ready, "HUINENG"));
+        assert!(super::suite_matches_query(&ready, "chan"));
+        assert!(super::suite_matches_query(&ready, "test row"));
+        assert!(super::suite_matches_query(&attention, "source index"));
+        assert!(super::suite_matches_query(&attention, "citation format"));
+        assert!(super::suite_matches_query(&attention, "   "));
+        assert!(!super::suite_matches_query(&ready, "missing source index"));
     }
 
     fn suite_row(
