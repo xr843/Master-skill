@@ -20,7 +20,7 @@ use crate::model::{DoctorReport, MasterInspect, SkillInventory};
 use crate::theme::{
     apply_console_theme, sidebar_default_width, sidebar_row_height, status_badge_width,
 };
-use crate::trace::{TraceAction, TraceStatus, TraceStore};
+use crate::trace::{EvaluationFailureInsights, TraceAction, TraceStatus, TraceStore};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ConsoleSection {
@@ -693,6 +693,7 @@ impl MasterSkillApp {
         let busy = self.is_busy();
         let summary = evaluation_summary(&self.rows);
         let run_coverage = self.traces.evaluation_run_coverage(summary.skill_count);
+        let failure_insights = self.traces.evaluation_failure_insights();
         Self::show_workspace_header(
             ui,
             "Evaluation Center",
@@ -758,6 +759,9 @@ impl MasterSkillApp {
         Self::show_metric_cards(ui, &cards);
 
         ui.separator();
+        Self::show_evaluation_failure_insights(ui, &failure_insights);
+
+        ui.separator();
         let mode = dense_table_mode_for_width(ui.available_width());
         if mode == TwoPaneMode::TwoColumns {
             ui.columns(2, |columns| {
@@ -769,6 +773,70 @@ impl MasterSkillApp {
             ui.separator();
             self.show_skill_suites(ui);
         }
+    }
+
+    fn show_evaluation_failure_insights(ui: &mut egui::Ui, insights: &EvaluationFailureInsights) {
+        ui.heading("Failure Insights");
+        let top_failure_value = insights
+            .top_failure_skill_slug
+            .as_ref()
+            .map(|slug| slug.as_str())
+            .unwrap_or("none")
+            .to_string();
+        let cards = vec![
+            MetricCard {
+                title: "Failed Cases",
+                value: insights.failed_cases.to_string(),
+                detail: format!("{} latest cases", insights.total_cases),
+                healthy: insights.failed_cases == 0,
+            },
+            MetricCard {
+                title: "Pass Rate",
+                value: insights.pass_rate_label(),
+                detail: format!(
+                    "{} pass / {} dry-run",
+                    insights.pass_cases, insights.dry_run_cases
+                ),
+                healthy: insights.failed_cases == 0 && insights.total_cases > 0,
+            },
+            MetricCard {
+                title: "Failing Skills",
+                value: insights.failing_skill_count.to_string(),
+                detail: "latest results".to_string(),
+                healthy: insights.failing_skill_count == 0,
+            },
+            MetricCard {
+                title: "Top Failure",
+                value: top_failure_value,
+                detail: format!("{} failed case(s)", insights.top_failure_skill_count),
+                healthy: insights.top_failure_skill_count == 0,
+            },
+        ];
+        Self::show_metric_cards(ui, &cards);
+
+        if insights.total_cases == 0 {
+            ui.small("Run a fidelity dry-run with JSON output to populate case-level insights.");
+            return;
+        }
+
+        egui::Grid::new("evaluation-failure-insight-grid")
+            .num_columns(5)
+            .striped(true)
+            .min_col_width(112.0)
+            .show(ui, |ui| {
+                ui.strong("Missing cites");
+                ui.strong("Missing mentions");
+                ui.strong("Forbidden");
+                ui.strong("Boundary");
+                ui.strong("Fabricated cites");
+                ui.end_row();
+                ui.label(insights.missing_cites_count.to_string());
+                ui.label(insights.missing_mentions_count.to_string());
+                ui.label(insights.forbidden_found_count.to_string());
+                ui.label(insights.boundary_violations_count.to_string());
+                ui.label(insights.fabricated_cites_count.to_string());
+                ui.end_row();
+            });
     }
 
     fn show_tradition_coverage(ui: &mut egui::Ui, groups: &[crate::catalog::EvaluationGroup]) {

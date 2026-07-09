@@ -41,6 +41,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Fixed fidelity runner JSON mode so `--json` emits clean machine-readable output without human-readable banners.
 - Added desktop per-case fidelity result indexing from JSON dry-run traces and surfaced case-level status in Skill Detail.
 - Added per-case fidelity failure evidence summaries in Skill Detail for missing citations, missing mentions, boundary issues, forbidden text, and fabricated citations.
+- Added Evaluation Center failure insights for latest case results, including failed-case counts, pass rate, failing skills, top failure source, and failure-type distribution.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
