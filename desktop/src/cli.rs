@@ -68,6 +68,17 @@ impl CliClient {
         )
     }
 
+    pub fn run_fidelity_dry_run_for(&self, slug: &str) -> Result<String> {
+        self.run_command(
+            Command::new("python3")
+                .arg(self.repo_root.join("scripts").join("test-fidelity.py"))
+                .arg("--master")
+                .arg(format!("master-{slug}"))
+                .arg("--dry-run"),
+            "failed to run skill fidelity dry-run",
+        )
+    }
+
     pub fn run_full_validation(&self) -> Result<String> {
         self.run_command(
             Command::new("npm").arg("test"),

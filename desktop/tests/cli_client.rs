@@ -46,3 +46,13 @@ fn runs_fidelity_dry_run_from_repo_root() {
     assert!(output.contains("Overall Summary"));
     assert!(output.contains("master-huineng"));
 }
+
+#[test]
+fn runs_single_skill_fidelity_dry_run_from_repo_root() {
+    let client = CliClient::new(repo_root());
+
+    let output = client.run_fidelity_dry_run_for("huineng").unwrap();
+
+    assert!(output.contains("Testing: master-huineng"));
+    assert!(!output.contains("Testing: master-zhiyi"));
+}
