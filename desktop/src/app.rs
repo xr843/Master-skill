@@ -21,8 +21,8 @@ use crate::theme::{
     apply_console_theme, sidebar_default_width, sidebar_row_height, status_badge_width,
 };
 use crate::trace::{
-    EvaluationFailureInsights, EvaluationFailureItem, EvaluationFailurePriority, TraceAction,
-    TraceStatus, TraceStore,
+    EvaluationFailureInsights, EvaluationFailureItem, EvaluationFailurePriority,
+    EvaluationRunHistoryItem, TraceAction, TraceStatus, TraceStore,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -706,6 +706,7 @@ impl MasterSkillApp {
         let run_coverage = self.traces.evaluation_run_coverage(summary.skill_count);
         let failure_insights = self.traces.evaluation_failure_insights();
         let failure_queue = self.traces.evaluation_failure_queue();
+        let run_history = self.traces.evaluation_run_history(8);
         Self::show_workspace_header(
             ui,
             "Evaluation Center",
@@ -772,6 +773,9 @@ impl MasterSkillApp {
 
         ui.separator();
         self.show_evaluation_failure_insights(ui, &failure_insights, &failure_queue);
+
+        ui.separator();
+        self.show_evaluation_run_history(ui, &run_history);
 
         ui.separator();
         let mode = dense_table_mode_for_width(ui.available_width());
@@ -925,6 +929,89 @@ impl MasterSkillApp {
         }
         if let Some(slug) = skill_to_run {
             self.start_skill_fidelity_dry_run(slug);
+        }
+    }
+
+    fn show_evaluation_run_history(
+        &mut self,
+        ui: &mut egui::Ui,
+        run_history: &[EvaluationRunHistoryItem],
+    ) {
+        ui.heading("Run History");
+        if run_history.is_empty() {
+            ui.small("No evaluation runs recorded yet.");
+            return;
+        }
+
+        let busy = self.is_busy();
+        let mut action_to_rerun = None;
+        let mut skill_to_open = None;
+        egui::ScrollArea::horizontal()
+            .max_width(ui.available_width())
+            .show(ui, |ui| {
+                egui::ScrollArea::vertical()
+                    .max_height(180.0)
+                    .show(ui, |ui| {
+                        egui::Grid::new("evaluation-run-history-grid")
+                            .num_columns(8)
+                            .striped(true)
+                            .min_col_width(92.0)
+                            .show(ui, |ui| {
+                                ui.strong("Trace");
+                                ui.strong("Scope");
+                                ui.strong("Status");
+                                ui.strong("Result");
+                                ui.strong("Failed");
+                                ui.strong("Mode");
+                                ui.strong("Duration");
+                                ui.strong("Actions");
+                                ui.end_row();
+
+                                for item in run_history {
+                                    ui.label(format!("#{}", item.trace_id));
+                                    ui.label(&item.scope);
+                                    ui.colored_label(
+                                        Self::trace_color(item.status),
+                                        item.status.label(),
+                                    );
+                                    ui.label(item.result_label());
+                                    ui.label(item.failed_count.to_string());
+                                    ui.label(if item.dry_run { "dry-run" } else { "graded" });
+                                    ui.label(
+                                        item.duration_ms
+                                            .map(|duration| format!("{duration} ms"))
+                                            .unwrap_or_else(|| "running".to_string()),
+                                    );
+                                    ui.horizontal(|ui| {
+                                        if ui
+                                            .add_enabled(
+                                                !busy && item.action.is_some(),
+                                                egui::Button::new("Rerun"),
+                                            )
+                                            .clicked()
+                                        {
+                                            action_to_rerun = item.action.clone();
+                                        }
+                                        if let Some(slug) =
+                                            item.scope.strip_prefix("master-").map(str::to_string)
+                                        {
+                                            if ui.button("Open").clicked() {
+                                                skill_to_open = Some(slug);
+                                            }
+                                        }
+                                    });
+                                    ui.end_row();
+                                }
+                            });
+                    });
+            });
+
+        if let Some(action) = action_to_rerun {
+            self.start_trace_action(action);
+        }
+        if let Some(slug) = skill_to_open {
+            self.console_section = ConsoleSection::SkillDetail;
+            self.start_inspect(slug);
         }
     }
 

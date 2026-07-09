@@ -100,6 +100,26 @@ impl EvaluationRunResult {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EvaluationRunHistoryItem {
+    pub trace_id: u64,
+    pub scope: String,
+    pub status: TraceStatus,
+    pub passed_count: usize,
+    pub total_count: usize,
+    pub failed_count: usize,
+    pub dry_run: bool,
+    pub duration_ms: Option<u128>,
+    pub action: Option<TraceAction>,
+}
+
+impl EvaluationRunHistoryItem {
+    pub fn result_label(&self) -> String {
+        let mode = if self.dry_run { "N/A" } else { "graded" };
+        format!("{}/{} {mode}", self.passed_count, self.total_count)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EvaluationCaseResult {
     pub slug: String,
     pub case_index: usize,
@@ -219,6 +239,70 @@ impl TraceRecord {
         }
 
         parse_evaluation_case_results(self.id, &self.detail)
+    }
+
+    fn evaluation_run_history_item(&self) -> Option<EvaluationRunHistoryItem> {
+        if !matches!(
+            self.action,
+            Some(TraceAction::FidelityDryRunAll | TraceAction::FidelityDryRunSkill { .. })
+        ) {
+            return None;
+        }
+
+        let cases = self.evaluation_case_results();
+        if !cases.is_empty() {
+            let passed_count = cases.iter().filter(|case| case.status == "PASS").count();
+            let failed_count = cases
+                .iter()
+                .filter(|case| case.status == "FAIL" || case.has_failure_evidence())
+                .count();
+            let dry_run = cases.iter().all(|case| case.status == "dry_run");
+            return Some(EvaluationRunHistoryItem {
+                trace_id: self.id,
+                scope: self.evaluation_scope_label(),
+                status: self.status,
+                passed_count,
+                total_count: cases.len(),
+                failed_count,
+                dry_run,
+                duration_ms: self.duration_ms,
+                action: self.action.clone(),
+            });
+        }
+
+        let results = self.evaluation_results();
+        if results.is_empty() {
+            return None;
+        }
+
+        let passed_count: usize = results.iter().map(|result| result.passed_count).sum();
+        let total_count: usize = results.iter().map(|result| result.total_count).sum();
+        let dry_run = results.iter().all(|result| result.dry_run);
+        let failed_count = if dry_run {
+            0
+        } else {
+            total_count.saturating_sub(passed_count)
+        };
+
+        Some(EvaluationRunHistoryItem {
+            trace_id: self.id,
+            scope: self.evaluation_scope_label(),
+            status: self.status,
+            passed_count,
+            total_count,
+            failed_count,
+            dry_run,
+            duration_ms: self.duration_ms,
+            action: self.action.clone(),
+        })
+    }
+
+    fn evaluation_scope_label(&self) -> String {
+        match &self.action {
+            Some(TraceAction::FidelityDryRunSkill { slug }) => format!("master-{slug}"),
+            Some(TraceAction::FidelityDryRunAll) => "all".to_string(),
+            _ => "evaluation".to_string(),
+        }
     }
 }
 
@@ -596,6 +680,15 @@ impl TraceStore {
         }
 
         results.into_values().collect()
+    }
+
+    pub fn evaluation_run_history(&self, limit: usize) -> Vec<EvaluationRunHistoryItem> {
+        self.records
+            .iter()
+            .rev()
+            .filter_map(TraceRecord::evaluation_run_history_item)
+            .take(limit)
+            .collect()
     }
 
     pub fn latest_evaluation_case_results_for(&self, slug: &str) -> Vec<EvaluationCaseResult> {
@@ -1394,6 +1487,78 @@ mod tests {
         assert_eq!(queue[1].priority.label(), "high");
         assert_eq!(queue[2].slug, "huineng");
         assert_eq!(queue[2].priority.label(), "medium");
+    }
+
+    #[test]
+    fn lists_recent_evaluation_run_history_with_counts_and_rerun_actions() {
+        let mut store = TraceStore::new(10);
+
+        let skill_run = store.begin_with_action(
+            "Running master-huineng fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            skill_run,
+            "master-huineng fidelity dry-run finished",
+            "Testing: master-huineng\nResult: 0/12 passed (N/A)",
+            Duration::from_millis(40),
+        );
+
+        let all_run = store.begin_with_action(
+            "Running fidelity run",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            all_run,
+            "fidelity run finished",
+            r#"[
+              {
+                "master": "master-huineng",
+                "results": [
+                  {"index": 0, "question": "通过", "status": "PASS"},
+                  {"index": 1, "question": "失败", "status": "FAIL"}
+                ]
+              },
+              {
+                "master": "master-zhiyi",
+                "results": [
+                  {"index": 0, "question": "通过", "status": "PASS"}
+                ]
+              }
+            ]"#,
+            Duration::from_millis(55),
+        );
+
+        let history = store.evaluation_run_history(5);
+
+        assert_eq!(history.len(), 2);
+        assert_eq!(history[0].trace_id, all_run);
+        assert_eq!(history[0].scope, "all");
+        assert_eq!(history[0].passed_count, 2);
+        assert_eq!(history[0].total_count, 3);
+        assert_eq!(history[0].failed_count, 1);
+        assert!(!history[0].dry_run);
+        assert_eq!(history[0].duration_ms, Some(55));
+        assert_eq!(history[0].action, Some(TraceAction::FidelityDryRunAll));
+
+        assert_eq!(history[1].trace_id, skill_run);
+        assert_eq!(history[1].scope, "master-huineng");
+        assert_eq!(history[1].passed_count, 0);
+        assert_eq!(history[1].total_count, 12);
+        assert_eq!(history[1].failed_count, 0);
+        assert!(history[1].dry_run);
+        assert_eq!(
+            history[1].action,
+            Some(TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string()
+            })
+        );
     }
 
     #[test]

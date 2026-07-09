@@ -45,6 +45,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Refined Evaluation Center pass-rate semantics so dry-run-only case results show `N/A` instead of a misleading graded percentage.
 - Added an Evaluation Center failure queue that lists latest failing cases with evidence and direct actions to open the skill or rerun its fidelity dry-run.
 - Added risk priorities to the Evaluation Center failure queue so fabricated citations, boundary violations, and forbidden text surface before lower-risk failures.
+- Added Evaluation Center run history with scope, status, result counts, failed counts, mode, duration, and rerun/open actions for recent evaluation runs.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
