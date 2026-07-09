@@ -22,8 +22,9 @@ use crate::theme::{
 };
 use crate::trace::{
     EvaluationFailureInsights, EvaluationFailureItem, EvaluationFailurePriority,
-    EvaluationRegressionItem, EvaluationRunHistoryItem, EvaluationRunTrend, EvaluationTrendSummary,
-    TraceAction, TraceFailureItem, TraceListFilter, TraceStatus, TraceStore,
+    EvaluationRegressionItem, EvaluationRunHistoryItem, EvaluationRunResult, EvaluationRunTrend,
+    EvaluationTrendSummary, TraceAction, TraceFailureItem, TraceListFilter, TraceStatus,
+    TraceStore,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -45,6 +46,46 @@ impl ConsoleSection {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SuiteFilter {
+    All,
+    Ready,
+    Attention,
+    Missing,
+    NotRun,
+    FailedRun,
+}
+
+impl SuiteFilter {
+    fn label(self) -> &'static str {
+        match self {
+            Self::All => "All",
+            Self::Ready => "Ready",
+            Self::Attention => "Attention",
+            Self::Missing => "Missing",
+            Self::NotRun => "Not Run",
+            Self::FailedRun => "Failed Run",
+        }
+    }
+}
+
+fn suite_matches_filter(
+    row: &SkillRow,
+    latest_result: Option<&EvaluationRunResult>,
+    filter: SuiteFilter,
+) -> bool {
+    match filter {
+        SuiteFilter::All => true,
+        SuiteFilter::Ready => row.quality_level() == QualityLevel::Ready,
+        SuiteFilter::Attention => row.quality_level() == QualityLevel::Attention,
+        SuiteFilter::Missing => row.quality_level() == QualityLevel::Missing,
+        SuiteFilter::NotRun => latest_result.is_none(),
+        SuiteFilter::FailedRun => latest_result.is_some_and(|result| {
+            !result.dry_run && result.total_count > 0 && result.passed_count < result.total_count
+        }),
+    }
+}
+
 pub struct MasterSkillApp {
     client: CliClient,
     inventory: Option<SkillInventory>,
@@ -63,6 +104,7 @@ pub struct MasterSkillApp {
     log_expanded: bool,
     trace_filter: TraceListFilter,
     trace_query: String,
+    suite_filter: SuiteFilter,
     traces: TraceStore,
     trace_path: PathBuf,
 }
@@ -124,6 +166,7 @@ impl MasterSkillApp {
             log_expanded: false,
             trace_filter: TraceListFilter::All,
             trace_query: String::new(),
+            suite_filter: SuiteFilter::All,
             traces,
             trace_path,
         };
@@ -1189,13 +1232,37 @@ impl MasterSkillApp {
 
     fn show_skill_suites(&mut self, ui: &mut egui::Ui) {
         ui.heading("Skill Suites");
-        let rows = self.rows.clone();
         let latest_results: BTreeMap<_, _> = self
             .traces
             .latest_evaluation_results_by_slug()
             .into_iter()
             .map(|result| (result.slug.clone(), result))
             .collect();
+        ui.horizontal_wrapped(|ui| {
+            ui.label("Filter");
+            for filter in [
+                SuiteFilter::All,
+                SuiteFilter::Ready,
+                SuiteFilter::Attention,
+                SuiteFilter::Missing,
+                SuiteFilter::NotRun,
+                SuiteFilter::FailedRun,
+            ] {
+                ui.selectable_value(&mut self.suite_filter, filter, filter.label());
+            }
+        });
+        let rows: Vec<_> = self
+            .rows
+            .clone()
+            .into_iter()
+            .filter(|row| {
+                suite_matches_filter(row, latest_results.get(&row.slug), self.suite_filter)
+            })
+            .collect();
+        if rows.is_empty() {
+            ui.small("No skill suites match the current filter.");
+            return;
+        }
         egui::ScrollArea::horizontal()
             .max_width(ui.available_width())
             .show(ui, |ui| {
@@ -2109,6 +2176,9 @@ fn desktop_trace_store_path_from_env(
 mod tests {
     use std::path::PathBuf;
 
+    use crate::catalog::{SkillKind, SkillRow};
+    use crate::trace::EvaluationRunResult;
+
     #[test]
     fn trace_store_path_prefers_xdg_data_home() {
         let path = super::desktop_trace_store_path_from_env(
@@ -2124,5 +2194,82 @@ mod tests {
                 .join("master-skill")
                 .join("desktop-traces.json")
         );
+    }
+
+    #[test]
+    fn filters_skill_suites_by_quality_and_latest_run_state() {
+        let ready = suite_row("huineng", true, true, 12);
+        let attention = suite_row("zhiyi", true, false, 10);
+        let missing = suite_row("xuyun", false, true, 10);
+        let passing_run = EvaluationRunResult {
+            slug: "huineng".to_string(),
+            passed_count: 12,
+            total_count: 12,
+            dry_run: false,
+            trace_id: 1,
+        };
+        let failed_run = EvaluationRunResult {
+            slug: "zhiyi".to_string(),
+            passed_count: 8,
+            total_count: 10,
+            dry_run: false,
+            trace_id: 2,
+        };
+
+        assert!(super::suite_matches_filter(
+            &ready,
+            Some(&passing_run),
+            super::SuiteFilter::Ready
+        ));
+        assert!(super::suite_matches_filter(
+            &attention,
+            Some(&failed_run),
+            super::SuiteFilter::Attention
+        ));
+        assert!(super::suite_matches_filter(
+            &missing,
+            None,
+            super::SuiteFilter::Missing
+        ));
+        assert!(super::suite_matches_filter(
+            &missing,
+            None,
+            super::SuiteFilter::NotRun
+        ));
+        assert!(super::suite_matches_filter(
+            &attention,
+            Some(&failed_run),
+            super::SuiteFilter::FailedRun
+        ));
+        assert!(!super::suite_matches_filter(
+            &ready,
+            Some(&passing_run),
+            super::SuiteFilter::FailedRun
+        ));
+    }
+
+    fn suite_row(
+        slug: &str,
+        installed: bool,
+        complete_contract: bool,
+        case_count: usize,
+    ) -> SkillRow {
+        SkillRow {
+            name: format!("master-{slug}"),
+            slug: slug.to_string(),
+            description: "test row".to_string(),
+            display_name: None,
+            tradition: Some("Chan".to_string()),
+            school: None,
+            installed,
+            live_grounding: complete_contract,
+            source_count: usize::from(complete_contract),
+            keyword_count: 1,
+            has_citation_format: complete_contract,
+            fidelity_case_count: case_count,
+            fidelity_cases: Vec::new(),
+            source_index_present: complete_contract,
+            kind: SkillKind::Persona,
+        }
     }
 }
