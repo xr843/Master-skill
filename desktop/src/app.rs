@@ -22,7 +22,7 @@ use crate::theme::{
 };
 use crate::trace::{
     EvaluationFailureInsights, EvaluationFailureItem, EvaluationFailurePriority,
-    EvaluationRunHistoryItem, TraceAction, TraceStatus, TraceStore,
+    EvaluationRunHistoryItem, EvaluationRunTrend, TraceAction, TraceStatus, TraceStore,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -501,6 +501,15 @@ impl MasterSkillApp {
         }
     }
 
+    fn evaluation_trend_color(trend: EvaluationRunTrend) -> egui::Color32 {
+        match trend {
+            EvaluationRunTrend::Improved => egui::Color32::from_rgb(100, 190, 130),
+            EvaluationRunTrend::Regressed => egui::Color32::from_rgb(220, 90, 85),
+            EvaluationRunTrend::Stable => egui::Color32::from_rgb(145, 160, 180),
+            EvaluationRunTrend::New => egui::Color32::from_rgb(120, 170, 230),
+        }
+    }
+
     fn quality_badge_fill(level: QualityLevel) -> egui::Color32 {
         match level {
             QualityLevel::Ready => egui::Color32::from_rgb(21, 64, 44),
@@ -953,7 +962,7 @@ impl MasterSkillApp {
                     .max_height(180.0)
                     .show(ui, |ui| {
                         egui::Grid::new("evaluation-run-history-grid")
-                            .num_columns(8)
+                            .num_columns(9)
                             .striped(true)
                             .min_col_width(92.0)
                             .show(ui, |ui| {
@@ -962,6 +971,7 @@ impl MasterSkillApp {
                                 ui.strong("Status");
                                 ui.strong("Result");
                                 ui.strong("Failed");
+                                ui.strong("Trend");
                                 ui.strong("Mode");
                                 ui.strong("Duration");
                                 ui.strong("Actions");
@@ -976,6 +986,10 @@ impl MasterSkillApp {
                                     );
                                     ui.label(item.result_label());
                                     ui.label(item.failed_count.to_string());
+                                    ui.colored_label(
+                                        Self::evaluation_trend_color(item.trend),
+                                        item.trend.label(),
+                                    );
                                     ui.label(if item.dry_run { "dry-run" } else { "graded" });
                                     ui.label(
                                         item.duration_ms
