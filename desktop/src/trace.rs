@@ -133,6 +133,14 @@ impl EvaluationCaseResult {
             parts.join("; ")
         }
     }
+
+    fn has_failure_evidence(&self) -> bool {
+        !self.missing_cites.is_empty()
+            || !self.missing_mentions.is_empty()
+            || !self.forbidden_found.is_empty()
+            || !self.boundary_violations.is_empty()
+            || !self.fabricated_cites.is_empty()
+    }
 }
 
 fn push_detail_part(parts: &mut Vec<String>, label: &str, values: &[String]) {
@@ -347,6 +355,39 @@ impl EvaluationRunCoverage {
     }
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct EvaluationFailureInsights {
+    pub total_cases: usize,
+    pub pass_cases: usize,
+    pub dry_run_cases: usize,
+    pub failed_cases: usize,
+    pub failing_skill_count: usize,
+    pub top_failure_skill_slug: Option<String>,
+    pub top_failure_skill_count: usize,
+    pub missing_cites_count: usize,
+    pub missing_mentions_count: usize,
+    pub forbidden_found_count: usize,
+    pub boundary_violations_count: usize,
+    pub fabricated_cites_count: usize,
+}
+
+impl EvaluationFailureInsights {
+    pub fn pass_rate_label(&self) -> String {
+        if self.total_cases == 0 {
+            return "N/A".to_string();
+        }
+
+        format!("{}%", self.pass_cases * 100 / self.total_cases)
+    }
+
+    pub fn top_failure_label(&self) -> String {
+        self.top_failure_skill_slug
+            .as_ref()
+            .map(|slug| format!("master-{slug} ({})", self.top_failure_skill_count))
+            .unwrap_or_else(|| "none".to_string())
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TraceStore {
     capacity: usize,
@@ -530,6 +571,45 @@ impl TraceStore {
         }
     }
 
+    pub fn evaluation_failure_insights(&self) -> EvaluationFailureInsights {
+        let latest_cases = self.latest_evaluation_case_results_by_slug();
+        let mut insights = EvaluationFailureInsights::default();
+        let mut failure_counts_by_slug: BTreeMap<String, usize> = BTreeMap::new();
+
+        for result in latest_cases.into_values().flatten() {
+            insights.total_cases += 1;
+
+            match result.status.as_str() {
+                "PASS" => insights.pass_cases += 1,
+                "dry_run" => insights.dry_run_cases += 1,
+                _ => {}
+            }
+
+            if result.status == "FAIL" || result.has_failure_evidence() {
+                insights.failed_cases += 1;
+                *failure_counts_by_slug
+                    .entry(result.slug.clone())
+                    .or_default() += 1;
+            }
+
+            insights.missing_cites_count += result.missing_cites.len();
+            insights.missing_mentions_count += result.missing_mentions.len();
+            insights.forbidden_found_count += result.forbidden_found.len();
+            insights.boundary_violations_count += result.boundary_violations.len();
+            insights.fabricated_cites_count += result.fabricated_cites.len();
+        }
+
+        insights.failing_skill_count = failure_counts_by_slug.len();
+        for (slug, count) in failure_counts_by_slug {
+            if count > insights.top_failure_skill_count {
+                insights.top_failure_skill_slug = Some(slug);
+                insights.top_failure_skill_count = count;
+            }
+        }
+
+        insights
+    }
+
     pub fn clear(&mut self) {
         self.records.clear();
     }
@@ -589,6 +669,27 @@ impl TraceStore {
                     "Desktop manager closed before this operation reported a result.".to_string();
             }
         }
+    }
+
+    fn latest_evaluation_case_results_by_slug(
+        &self,
+    ) -> BTreeMap<String, Vec<EvaluationCaseResult>> {
+        let mut latest_by_slug = BTreeMap::new();
+        for record in self.records.iter().rev() {
+            let mut record_results: BTreeMap<String, Vec<EvaluationCaseResult>> = BTreeMap::new();
+            for result in record.evaluation_case_results() {
+                record_results
+                    .entry(result.slug.clone())
+                    .or_default()
+                    .push(result);
+            }
+
+            for (slug, results) in record_results {
+                latest_by_slug.entry(slug).or_insert(results);
+            }
+        }
+
+        latest_by_slug
     }
 }
 
@@ -936,6 +1037,95 @@ mod tests {
         assert_eq!(coverage.dry_run_count, 2);
         assert_eq!(coverage.graded_count, 0);
         assert_eq!(coverage.label(), "2/18");
+    }
+
+    #[test]
+    fn summarizes_evaluation_failure_insights_from_latest_case_results() {
+        let mut store = TraceStore::new(10);
+
+        let old_run = store.begin_with_action(
+            "Running master-huineng fidelity run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            old_run,
+            "master-huineng fidelity run finished",
+            r#"[
+              {
+                "master": "master-huineng",
+                "results": [
+                  {
+                    "index": 0,
+                    "question": "旧问题不应重复计算",
+                    "status": "FAIL",
+                    "missing_cites": ["OLD"]
+                  }
+                ]
+              }
+            ]"#,
+            Duration::from_millis(40),
+        );
+
+        let latest_run = store.begin_with_action(
+            "Running fidelity run",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            latest_run,
+            "fidelity run finished",
+            r#"[
+              {
+                "master": "master-huineng",
+                "results": [
+                  {
+                    "index": 0,
+                    "question": "什么是见性成佛？",
+                    "status": "PASS"
+                  },
+                  {
+                    "index": 1,
+                    "question": "顿悟是否等于随意发挥？",
+                    "status": "FAIL",
+                    "missing_cites": ["T48n2008"],
+                    "forbidden_found": ["过程旁白"]
+                  }
+                ]
+              },
+              {
+                "master": "master-zhiyi",
+                "results": [
+                  {
+                    "index": 0,
+                    "question": "一念三千如何表达？",
+                    "status": "FAIL",
+                    "missing_mentions": ["三谛"],
+                    "boundary_violations": ["越出天台语境"]
+                  }
+                ]
+              }
+            ]"#,
+            Duration::from_millis(55),
+        );
+
+        let insights = store.evaluation_failure_insights();
+
+        assert_eq!(insights.total_cases, 3);
+        assert_eq!(insights.failed_cases, 2);
+        assert_eq!(insights.pass_cases, 1);
+        assert_eq!(insights.failing_skill_count, 2);
+        assert_eq!(insights.top_failure_skill_slug.as_deref(), Some("huineng"));
+        assert_eq!(insights.top_failure_skill_count, 1);
+        assert_eq!(insights.missing_cites_count, 1);
+        assert_eq!(insights.missing_mentions_count, 1);
+        assert_eq!(insights.forbidden_found_count, 1);
+        assert_eq!(insights.boundary_violations_count, 1);
+        assert_eq!(insights.fabricated_cites_count, 0);
     }
 
     #[test]
