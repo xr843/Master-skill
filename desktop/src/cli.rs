@@ -9,6 +9,7 @@ use crate::model::{DoctorReport, MasterInspect, SkillInventory};
 pub struct CliClient {
     repo_root: PathBuf,
     node_bin: String,
+    home: Option<PathBuf>,
 }
 
 impl CliClient {
@@ -16,7 +17,13 @@ impl CliClient {
         Self {
             repo_root: repo_root.into(),
             node_bin: std::env::var("NODE").unwrap_or_else(|_| "node".to_string()),
+            home: None,
         }
+    }
+
+    pub fn with_home(mut self, home: impl Into<PathBuf>) -> Self {
+        self.home = Some(home.into());
+        self
     }
 
     pub fn repo_root(&self) -> &Path {
@@ -35,8 +42,16 @@ impl CliClient {
         self.json(&["inspect", slug, "--json"])
     }
 
+    pub fn install(&self, slug: &str) -> Result<String> {
+        self.run(&["install", slug])
+    }
+
     pub fn install_all(&self) -> Result<String> {
         self.run(&["install", "--all"])
+    }
+
+    pub fn uninstall(&self, slug: &str) -> Result<String> {
+        self.run(&["uninstall", slug])
     }
 
     pub fn update_all(&self) -> Result<String> {
@@ -52,10 +67,16 @@ impl CliClient {
     }
 
     fn run(&self, args: &[&str]) -> Result<String> {
-        let output = Command::new(&self.node_bin)
+        let mut command = Command::new(&self.node_bin);
+        command
             .arg(self.repo_root.join("bin").join("cli.mjs"))
             .args(args)
-            .current_dir(&self.repo_root)
+            .current_dir(&self.repo_root);
+        if let Some(home) = &self.home {
+            command.env("HOME", home).env("USERPROFILE", home);
+        }
+
+        let output = command
             .output()
             .with_context(|| format!("failed to run master-skill CLI with args {args:?}"))?;
 
