@@ -1,5 +1,6 @@
 use std::sync::mpsc::{channel, Receiver};
 use std::thread;
+use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use eframe::egui;
@@ -10,6 +11,7 @@ use crate::catalog::{
 };
 use crate::cli::CliClient;
 use crate::model::{DoctorReport, MasterInspect, SkillInventory};
+use crate::trace::{TraceStatus, TraceStore};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum DetailView {
@@ -31,9 +33,10 @@ pub struct MasterSkillApp {
     tradition_filter: Option<String>,
     log: String,
     log_lines: Vec<String>,
-    task_rx: Option<Receiver<TaskResult>>,
+    task_rx: Option<Receiver<TaskEnvelope>>,
     busy_label: Option<String>,
     detail_view: DetailView,
+    traces: TraceStore,
 }
 
 struct Snapshot {
@@ -50,6 +53,12 @@ struct TaskOutcome {
 }
 
 type TaskResult = std::result::Result<TaskOutcome, String>;
+
+struct TaskEnvelope {
+    trace_id: u64,
+    elapsed: Duration,
+    result: TaskResult,
+}
 
 impl MasterSkillApp {
     pub fn new() -> Self {
@@ -68,6 +77,7 @@ impl MasterSkillApp {
             task_rx: None,
             busy_label: None,
             detail_view: DetailView::Overview,
+            traces: TraceStore::new(200),
         };
         app.refresh_all();
         app
@@ -146,30 +156,45 @@ impl MasterSkillApp {
 
         let client = self.client.clone();
         let label = label.into();
+        let trace_id = self.traces.begin(label.clone());
         let (tx, rx) = channel();
         self.task_rx = Some(rx);
         self.busy_label = Some(label.clone());
         self.set_log(format!("{label}..."));
 
         thread::spawn(move || {
+            let started = Instant::now();
             let result = task(client).map_err(|err| format!("{err:#}"));
-            let _ = tx.send(result);
+            let _ = tx.send(TaskEnvelope {
+                trace_id,
+                elapsed: started.elapsed(),
+                result,
+            });
         });
     }
 
     fn poll_task(&mut self) {
-        let result = self.task_rx.as_ref().and_then(|rx| rx.try_recv().ok());
-        if let Some(result) = result {
+        let envelope = self.task_rx.as_ref().and_then(|rx| rx.try_recv().ok());
+        if let Some(envelope) = envelope {
             self.task_rx = None;
             self.busy_label = None;
-            match result {
+            match envelope.result {
                 Ok(outcome) => {
                     if let Some(snapshot) = outcome.snapshot {
                         self.apply_snapshot(snapshot);
                     }
+                    self.traces.finish_success(
+                        envelope.trace_id,
+                        outcome.message.clone(),
+                        envelope.elapsed,
+                    );
                     self.set_log(outcome.message);
                 }
-                Err(message) => self.set_log(message),
+                Err(message) => {
+                    self.traces
+                        .finish_error(envelope.trace_id, message.clone(), envelope.elapsed);
+                    self.set_log(message);
+                }
             }
         }
     }
@@ -298,6 +323,14 @@ impl MasterSkillApp {
             QualityLevel::Ready => egui::Color32::from_rgb(100, 190, 130),
             QualityLevel::Attention => egui::Color32::from_rgb(220, 170, 80),
             QualityLevel::Missing => egui::Color32::from_rgb(210, 100, 100),
+        }
+    }
+
+    fn trace_color(status: TraceStatus) -> egui::Color32 {
+        match status {
+            TraceStatus::Running => egui::Color32::from_rgb(120, 170, 230),
+            TraceStatus::Succeeded => egui::Color32::from_rgb(100, 190, 130),
+            TraceStatus::Failed => egui::Color32::from_rgb(210, 100, 100),
         }
     }
 
@@ -502,6 +535,90 @@ impl MasterSkillApp {
                         });
                 });
         });
+    }
+
+    fn show_trace_center(&self, ui: &mut egui::Ui) {
+        ui.heading("Run Trace Center");
+        let summary = self.traces.summary();
+        ui.horizontal_wrapped(|ui| {
+            Self::show_metric_card(
+                ui,
+                "Traces",
+                summary.total.to_string(),
+                "recent operations",
+                summary.failed == 0,
+            );
+            Self::show_metric_card(
+                ui,
+                "Running",
+                summary.running.to_string(),
+                "active task",
+                summary.running <= 1,
+            );
+            Self::show_metric_card(
+                ui,
+                "Succeeded",
+                summary.succeeded.to_string(),
+                "completed tasks",
+                true,
+            );
+            Self::show_metric_card(
+                ui,
+                "Failed",
+                summary.failed.to_string(),
+                "needs review",
+                summary.failed == 0,
+            );
+            Self::show_metric_card(
+                ui,
+                "Last",
+                summary
+                    .last_status
+                    .map(TraceStatus::label)
+                    .unwrap_or("none"),
+                "latest operation",
+                summary.last_status != Some(TraceStatus::Failed),
+            );
+        });
+
+        ui.separator();
+        let recent = self.traces.recent();
+        if recent.is_empty() {
+            ui.label("No traces recorded yet.");
+            return;
+        }
+
+        egui::ScrollArea::vertical()
+            .max_height(190.0)
+            .show(ui, |ui| {
+                egui::Grid::new("run-trace-grid")
+                    .num_columns(5)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        ui.strong("ID");
+                        ui.strong("Status");
+                        ui.strong("Duration");
+                        ui.strong("Operation");
+                        ui.strong("Summary");
+                        ui.end_row();
+                        for record in recent {
+                            ui.label(format!("#{}", record.id));
+                            ui.colored_label(
+                                Self::trace_color(record.status),
+                                record.status.label(),
+                            );
+                            ui.label(
+                                record
+                                    .duration_ms
+                                    .map(|duration| format!("{duration} ms"))
+                                    .unwrap_or_else(|| "running".to_string()),
+                            );
+                            ui.label(record.label);
+                            ui.label(first_line(&record.summary));
+                            ui.end_row();
+                        }
+                    });
+            });
     }
 
     fn show_sidebar(&mut self, ui: &mut egui::Ui) {
@@ -789,6 +906,8 @@ impl eframe::App for MasterSkillApp {
                 ui.separator();
                 self.show_evaluation_center(ui);
                 ui.separator();
+                self.show_trace_center(ui);
+                ui.separator();
                 ui.columns(2, |columns| {
                     self.show_doctor(&mut columns[0]);
                     self.show_selected(&mut columns[1]);
@@ -809,4 +928,13 @@ fn summarize_command_output(prefix: &str, output: &str) -> String {
 
     let start = lines.len().saturating_sub(12);
     format!("{prefix}:\n{}", lines[start..].join("\n"))
+}
+
+fn first_line(value: &str) -> String {
+    value
+        .lines()
+        .find(|line| !line.trim().is_empty())
+        .map(str::trim)
+        .unwrap_or("")
+        .to_string()
 }
