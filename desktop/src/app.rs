@@ -1166,9 +1166,17 @@ impl MasterSkillApp {
 
     fn show_fidelity_cases_panel(&mut self, ui: &mut egui::Ui, slug: &str, cases: &[FidelityCase]) {
         ui.heading("Fidelity Cases");
+        let latest_result = self.traces.latest_evaluation_result_for(slug);
         ui.horizontal(|ui| {
             ui.label(format!("{} cases", cases.len()));
             ui.separator();
+            if let Some(result) = &latest_result {
+                ui.label(format!("Latest: {}", result.label()));
+                ui.separator();
+            } else {
+                ui.label("Latest: not run");
+                ui.separator();
+            }
             if ui
                 .add_enabled(
                     !self.is_busy() && !cases.is_empty(),
@@ -1190,7 +1198,7 @@ impl MasterSkillApp {
             .max_height(220.0)
             .show(ui, |ui| {
                 egui::Grid::new(format!("fidelity-case-grid-{slug}"))
-                    .num_columns(5)
+                    .num_columns(6)
                     .striped(true)
                     .min_col_width(72.0)
                     .show(ui, |ui| {
@@ -1198,6 +1206,7 @@ impl MasterSkillApp {
                         ui.strong("Difficulty");
                         ui.strong("Cites");
                         ui.strong("Keywords");
+                        ui.strong("Last Result");
                         ui.strong("Prompt");
                         ui.end_row();
                         for case in cases {
@@ -1205,6 +1214,18 @@ impl MasterSkillApp {
                             ui.label(case.difficulty.as_deref().unwrap_or("unspecified"));
                             ui.label(case.citation_assertion_count.to_string());
                             ui.label(case.keyword_assertion_count.to_string());
+                            ui.label(
+                                latest_result
+                                    .as_ref()
+                                    .map(|result| {
+                                        if result.dry_run {
+                                            "N/A dry-run".to_string()
+                                        } else {
+                                            result.label()
+                                        }
+                                    })
+                                    .unwrap_or_else(|| "not run".to_string()),
+                            );
                             ui.label(first_line(&case.question));
                             ui.end_row();
                         }

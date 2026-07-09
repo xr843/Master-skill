@@ -78,6 +78,22 @@ pub struct TraceRecord {
     pub duration_ms: Option<u128>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EvaluationRunResult {
+    pub slug: String,
+    pub passed_count: usize,
+    pub total_count: usize,
+    pub dry_run: bool,
+    pub trace_id: u64,
+}
+
+impl EvaluationRunResult {
+    pub fn label(&self) -> String {
+        let mode = if self.dry_run { "N/A" } else { "graded" };
+        format!("{}/{} {mode}", self.passed_count, self.total_count)
+    }
+}
+
 impl TraceRecord {
     pub fn can_rerun(&self) -> bool {
         self.action.is_some() && self.status != TraceStatus::Running
@@ -114,6 +130,51 @@ impl TraceRecord {
             )),
         }
     }
+
+    pub fn evaluation_results(&self) -> Vec<EvaluationRunResult> {
+        if !matches!(
+            self.action,
+            Some(TraceAction::FidelityDryRunAll | TraceAction::FidelityDryRunSkill { .. })
+        ) {
+            return Vec::new();
+        }
+
+        parse_evaluation_results(self.id, &self.detail)
+    }
+}
+
+fn parse_evaluation_results(trace_id: u64, detail: &str) -> Vec<EvaluationRunResult> {
+    let mut results = Vec::new();
+    let mut current_slug: Option<String> = None;
+
+    for line in detail.lines().map(str::trim) {
+        if let Some(rest) = line.strip_prefix("Testing: master-") {
+            current_slug = Some(rest.to_string());
+            continue;
+        }
+
+        if let Some(rest) = line.strip_prefix("Result: ") {
+            if let Some(slug) = current_slug.take() {
+                if let Some((passed_count, total_count)) = parse_result_counts(rest) {
+                    results.push(EvaluationRunResult {
+                        slug,
+                        passed_count,
+                        total_count,
+                        dry_run: rest.contains("(N/A)"),
+                        trace_id,
+                    });
+                }
+            }
+        }
+    }
+
+    results
+}
+
+fn parse_result_counts(value: &str) -> Option<(usize, usize)> {
+    let counts = value.split_whitespace().next()?;
+    let (passed, total) = counts.split_once('/')?;
+    Some((passed.parse().ok()?, total.parse().ok()?))
 }
 
 fn classify_failure_text(text: &str) -> Option<FailureKind> {
@@ -257,6 +318,14 @@ impl TraceStore {
 
     pub fn recent(&self) -> Vec<TraceRecord> {
         self.records.iter().rev().cloned().collect()
+    }
+
+    pub fn latest_evaluation_result_for(&self, slug: &str) -> Option<EvaluationRunResult> {
+        self.records
+            .iter()
+            .rev()
+            .flat_map(TraceRecord::evaluation_results)
+            .find(|result| result.slug == slug)
     }
 
     pub fn clear(&mut self) {
@@ -454,6 +523,33 @@ mod tests {
         assert_eq!(recent[0].failure_kind(), Some(FailureKind::Install));
         assert_eq!(recent[1].failure_kind(), Some(FailureKind::Fidelity));
         assert_eq!(recent[2].failure_kind(), Some(FailureKind::Validation));
+    }
+
+    #[test]
+    fn indexes_latest_evaluation_result_from_dry_run_trace() {
+        let mut store = TraceStore::new(10);
+
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "master-huineng fidelity dry-run finished",
+            "\n==================================================\nTesting: master-huineng\n==================================================\n\nResult: 0/12 passed (N/A)\n",
+            Duration::from_millis(50),
+        );
+
+        let result = store.latest_evaluation_result_for("huineng").unwrap();
+        assert_eq!(result.slug, "huineng");
+        assert_eq!(result.passed_count, 0);
+        assert_eq!(result.total_count, 12);
+        assert!(result.dry_run);
+        assert_eq!(result.label(), "0/12 N/A");
     }
 
     #[test]
