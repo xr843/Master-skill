@@ -147,6 +147,28 @@ impl EvaluationRunTrend {
     }
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct EvaluationTrendSummary {
+    pub total_runs: usize,
+    pub improved_count: usize,
+    pub regressed_count: usize,
+    pub stable_count: usize,
+    pub new_count: usize,
+    pub latest_regression_scope: Option<String>,
+}
+
+impl EvaluationTrendSummary {
+    pub fn health_label(&self) -> &'static str {
+        if self.regressed_count > 0 {
+            "review"
+        } else if self.total_runs == 0 {
+            "none"
+        } else {
+            "clear"
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EvaluationCaseResult {
     pub slug: String,
@@ -753,6 +775,30 @@ impl TraceStore {
             .collect();
         annotate_evaluation_run_trends(&mut history);
         history
+    }
+
+    pub fn evaluation_trend_summary(&self, limit: usize) -> EvaluationTrendSummary {
+        let history = self.evaluation_run_history(limit);
+        let mut summary = EvaluationTrendSummary {
+            total_runs: history.len(),
+            ..EvaluationTrendSummary::default()
+        };
+
+        for item in history {
+            match item.trend {
+                EvaluationRunTrend::Improved => summary.improved_count += 1,
+                EvaluationRunTrend::Regressed => {
+                    summary.regressed_count += 1;
+                    if summary.latest_regression_scope.is_none() {
+                        summary.latest_regression_scope = Some(item.scope);
+                    }
+                }
+                EvaluationRunTrend::Stable => summary.stable_count += 1,
+                EvaluationRunTrend::New => summary.new_count += 1,
+            }
+        }
+
+        summary
     }
 
     pub fn latest_evaluation_case_results_for(&self, slug: &str) -> Vec<EvaluationCaseResult> {
@@ -1725,6 +1771,95 @@ mod tests {
         assert_eq!(history[2].trend.label(), "new");
         assert_eq!(history[3].trace_id, old_huineng);
         assert_eq!(history[3].trend.label(), "new");
+    }
+
+    #[test]
+    fn summarizes_evaluation_trends_from_recent_run_history() {
+        let mut store = TraceStore::new(10);
+
+        let old_huineng = store.begin_with_action(
+            "Running master-huineng fidelity run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            old_huineng,
+            "master-huineng fidelity run finished",
+            r#"[
+              {"master": "master-huineng", "results": [
+                {"index": 0, "question": "失败一", "status": "FAIL"},
+                {"index": 1, "question": "失败二", "status": "FAIL"}
+              ]}
+            ]"#,
+            Duration::from_millis(40),
+        );
+
+        let old_all = store.begin_with_action(
+            "Running fidelity run",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            old_all,
+            "fidelity run finished",
+            r#"[
+              {"master": "master-huineng", "results": [
+                {"index": 0, "question": "通过", "status": "PASS"}
+              ]}
+            ]"#,
+            Duration::from_millis(45),
+        );
+
+        let new_huineng = store.begin_with_action(
+            "Running master-huineng fidelity run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            new_huineng,
+            "master-huineng fidelity run finished",
+            r#"[
+              {"master": "master-huineng", "results": [
+                {"index": 0, "question": "通过", "status": "PASS"},
+                {"index": 1, "question": "仍失败", "status": "FAIL"}
+              ]}
+            ]"#,
+            Duration::from_millis(35),
+        );
+
+        let new_all = store.begin_with_action(
+            "Running fidelity run",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            new_all,
+            "fidelity run finished",
+            r#"[
+              {"master": "master-huineng", "results": [
+                {"index": 0, "question": "失败", "status": "FAIL"}
+              ]}
+            ]"#,
+            Duration::from_millis(50),
+        );
+
+        let summary = store.evaluation_trend_summary(4);
+
+        assert_eq!(summary.total_runs, 4);
+        assert_eq!(summary.improved_count, 1);
+        assert_eq!(summary.regressed_count, 1);
+        assert_eq!(summary.stable_count, 0);
+        assert_eq!(summary.new_count, 2);
+        assert_eq!(summary.latest_regression_scope.as_deref(), Some("all"));
+        assert_eq!(summary.health_label(), "review");
     }
 
     #[test]
