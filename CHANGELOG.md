@@ -31,6 +31,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added diagnostic gap summaries for desktop skill quality, upgraded Skill Detail into structured contract sections, and made Evaluation Center skill rows jump to detail.
 - Added recommended diagnostic actions in desktop Skill Detail so quality gaps map to concrete next steps and runnable commands where available.
 - Added executable desktop diagnostic actions for install and per-skill fidelity dry-runs, wired into the existing Run Trace workflow.
+- Added expandable Run Trace drill-down with command, summary, duration, and detailed output for desktop operations.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
