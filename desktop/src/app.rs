@@ -22,10 +22,10 @@ use crate::theme::{
 };
 use crate::trace::{
     EvaluationDecisionAction, EvaluationDecisionBrief, EvaluationDecisionPosture,
-    EvaluationFailureInsights, EvaluationFailureItem, EvaluationFailurePriority,
-    EvaluationRegressionItem, EvaluationRunHistoryFilter, EvaluationRunHistoryItem,
-    EvaluationRunResult, EvaluationRunTrend, EvaluationTrendSummary, TraceAction, TraceFailureItem,
-    TraceListFilter, TraceStatus, TraceStore,
+    EvaluationEvidenceReport, EvaluationFailureInsights, EvaluationFailureItem,
+    EvaluationFailurePriority, EvaluationRegressionItem, EvaluationRunHistoryFilter,
+    EvaluationRunHistoryItem, EvaluationRunResult, EvaluationRunTrend, EvaluationTrendSummary,
+    TraceAction, TraceFailureItem, TraceListFilter, TraceStatus, TraceStore,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -820,10 +820,22 @@ impl MasterSkillApp {
         let trend_summary = self.traces.evaluation_trend_summary(8);
         let decision_brief =
             EvaluationDecisionBrief::from_signals(&run_coverage, &trend_summary, &failure_insights);
-        let run_history = self
-            .traces
-            .evaluation_run_history_filtered(8, self.run_history_filter);
+        let all_run_history = self.traces.evaluation_run_history(8);
+        let run_history: Vec<_> = all_run_history
+            .iter()
+            .filter(|item| item.matches_filter(self.run_history_filter))
+            .cloned()
+            .collect();
         let regressions = self.traces.evaluation_regressions(8);
+        let evidence_report = EvaluationEvidenceReport::from_signals(
+            &decision_brief,
+            &run_coverage,
+            &trend_summary,
+            &failure_insights,
+            &regressions,
+            &failure_queue,
+            &all_run_history,
+        );
         Self::show_workspace_header(
             ui,
             "Evaluation Center",
@@ -889,7 +901,7 @@ impl MasterSkillApp {
         Self::show_metric_cards(ui, &cards);
 
         ui.separator();
-        self.show_evaluation_decision_brief(ui, &decision_brief);
+        self.show_evaluation_decision_brief(ui, &decision_brief, &evidence_report);
 
         ui.separator();
         Self::show_evaluation_trend_summary(ui, &trend_summary);
@@ -921,10 +933,12 @@ impl MasterSkillApp {
         &mut self,
         ui: &mut egui::Ui,
         brief: &EvaluationDecisionBrief,
+        evidence_report: &EvaluationEvidenceReport,
     ) {
         ui.heading("Decision Brief");
         let busy = self.is_busy();
         let mut decision_action = None;
+        let mut copy_report = false;
         ui.horizontal_wrapped(|ui| {
             ui.colored_label(
                 Self::decision_posture_color(brief.posture),
@@ -938,6 +952,9 @@ impl MasterSkillApp {
                 .clicked()
             {
                 decision_action = Some(brief.action.clone());
+            }
+            if ui.button("Copy report").clicked() {
+                copy_report = true;
             }
         });
         egui::Grid::new("evaluation-decision-brief-grid")
@@ -958,6 +975,10 @@ impl MasterSkillApp {
 
         if let Some(action) = decision_action {
             self.start_evaluation_decision_action(action);
+        }
+        if copy_report {
+            ui.ctx().copy_text(evidence_report.markdown.clone());
+            self.set_log("Evaluation evidence report copied.");
         }
     }
 
