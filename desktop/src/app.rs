@@ -10,6 +10,7 @@ use crate::catalog::{
     QualityLevel, SkillDiagnostics, SkillRow,
 };
 use crate::cli::CliClient;
+use crate::layout::{dashboard_columns_for_width, TwoPaneMode};
 use crate::model::{DoctorReport, MasterInspect, SkillInventory};
 use crate::trace::{TraceStatus, TraceStore};
 
@@ -489,18 +490,33 @@ impl MasterSkillApp {
         });
 
         ui.separator();
-        ui.columns(2, |columns| {
-            columns[0].heading("Tradition Coverage");
+        let mode = dashboard_columns_for_width(ui.available_width());
+        if mode == TwoPaneMode::TwoColumns {
+            ui.columns(2, |columns| {
+                Self::show_tradition_coverage(&mut columns[0], &summary.groups);
+                self.show_skill_suites(&mut columns[1]);
+            });
+        } else {
+            Self::show_tradition_coverage(ui, &summary.groups);
+            ui.separator();
+            self.show_skill_suites(ui);
+        }
+    }
+
+    fn show_tradition_coverage(ui: &mut egui::Ui, groups: &[crate::catalog::EvaluationGroup]) {
+        ui.heading("Tradition Coverage");
+        egui::ScrollArea::horizontal().show(ui, |ui| {
             egui::Grid::new("evaluation-tradition-grid")
                 .num_columns(4)
                 .striped(true)
-                .show(&mut columns[0], |ui| {
+                .min_col_width(70.0)
+                .show(ui, |ui| {
                     ui.strong("Tradition");
                     ui.strong("Skills");
                     ui.strong("Cases");
                     ui.strong("Missing");
                     ui.end_row();
-                    for group in &summary.groups {
+                    for group in groups {
                         ui.label(&group.tradition);
                         ui.label(group.skill_count.to_string());
                         ui.label(group.case_count.to_string());
@@ -508,14 +524,19 @@ impl MasterSkillApp {
                         ui.end_row();
                     }
                 });
+        });
+    }
 
-            columns[1].heading("Skill Suites");
+    fn show_skill_suites(&self, ui: &mut egui::Ui) {
+        ui.heading("Skill Suites");
+        egui::ScrollArea::horizontal().show(ui, |ui| {
             egui::ScrollArea::vertical()
                 .max_height(210.0)
-                .show(&mut columns[1], |ui| {
+                .show(ui, |ui| {
                     egui::Grid::new("evaluation-skill-grid")
                         .num_columns(5)
                         .striped(true)
+                        .min_col_width(82.0)
                         .show(ui, |ui| {
                             ui.strong("Skill");
                             ui.strong("Tradition");
@@ -588,37 +609,40 @@ impl MasterSkillApp {
             return;
         }
 
-        egui::ScrollArea::vertical()
-            .max_height(190.0)
-            .show(ui, |ui| {
-                egui::Grid::new("run-trace-grid")
-                    .num_columns(5)
-                    .striped(true)
-                    .show(ui, |ui| {
-                        ui.strong("ID");
-                        ui.strong("Status");
-                        ui.strong("Duration");
-                        ui.strong("Operation");
-                        ui.strong("Summary");
-                        ui.end_row();
-                        for record in recent {
-                            ui.label(format!("#{}", record.id));
-                            ui.colored_label(
-                                Self::trace_color(record.status),
-                                record.status.label(),
-                            );
-                            ui.label(
-                                record
-                                    .duration_ms
-                                    .map(|duration| format!("{duration} ms"))
-                                    .unwrap_or_else(|| "running".to_string()),
-                            );
-                            ui.label(record.label);
-                            ui.label(first_line(&record.summary));
+        egui::ScrollArea::horizontal().show(ui, |ui| {
+            egui::ScrollArea::vertical()
+                .max_height(190.0)
+                .show(ui, |ui| {
+                    egui::Grid::new("run-trace-grid")
+                        .num_columns(5)
+                        .striped(true)
+                        .min_col_width(88.0)
+                        .show(ui, |ui| {
+                            ui.strong("ID");
+                            ui.strong("Status");
+                            ui.strong("Duration");
+                            ui.strong("Operation");
+                            ui.strong("Summary");
                             ui.end_row();
-                        }
-                    });
-            });
+                            for record in recent {
+                                ui.label(format!("#{}", record.id));
+                                ui.colored_label(
+                                    Self::trace_color(record.status),
+                                    record.status.label(),
+                                );
+                                ui.label(
+                                    record
+                                        .duration_ms
+                                        .map(|duration| format!("{duration} ms"))
+                                        .unwrap_or_else(|| "running".to_string()),
+                                );
+                                ui.label(record.label);
+                                ui.label(first_line(&record.summary));
+                                ui.end_row();
+                            }
+                        });
+                });
+        });
     }
 
     fn show_sidebar(&mut self, ui: &mut egui::Ui) {
@@ -908,10 +932,16 @@ impl eframe::App for MasterSkillApp {
                 ui.separator();
                 self.show_trace_center(ui);
                 ui.separator();
-                ui.columns(2, |columns| {
-                    self.show_doctor(&mut columns[0]);
-                    self.show_selected(&mut columns[1]);
-                });
+                if dashboard_columns_for_width(ui.available_width()) == TwoPaneMode::TwoColumns {
+                    ui.columns(2, |columns| {
+                        self.show_doctor(&mut columns[0]);
+                        self.show_selected(&mut columns[1]);
+                    });
+                } else {
+                    self.show_doctor(ui);
+                    ui.separator();
+                    self.show_selected(ui);
+                }
             });
         });
     }

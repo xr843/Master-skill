@@ -22,6 +22,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added an Evaluation Center with fidelity case totals, per-tradition coverage, per-skill suite status, and background actions for fidelity dry-run and full validation.
 - Desktop quality scoring now distinguishes persona skills from meta-skills so orchestration workflows are not penalized for missing persona-only source/protocol metadata.
 - Added a Run Trace Center to record structured desktop operation traces with running/success/failure status, duration, and result summaries.
+- Improved desktop console layout responsiveness with adaptive one/two-column sections and horizontal scrolling for dense evaluation and trace tables.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
