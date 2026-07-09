@@ -18,7 +18,7 @@ use crate::model::{DoctorReport, MasterInspect, SkillInventory};
 use crate::theme::{
     apply_console_theme, sidebar_default_width, sidebar_row_height, status_badge_width,
 };
-use crate::trace::{TraceStatus, TraceStore};
+use crate::trace::{TraceAction, TraceStatus, TraceStore};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ConsoleSection {
@@ -173,16 +173,10 @@ impl MasterSkillApp {
         self.task_rx.is_some()
     }
 
-    fn start_task<F>(&mut self, label: impl Into<String>, task: F)
-    where
-        F: FnOnce(CliClient) -> Result<TaskOutcome> + Send + 'static,
-    {
-        self.start_task_with_command(label, None::<String>, task);
-    }
-
-    fn start_task_with_command<F>(
+    fn start_task_with_action<F>(
         &mut self,
         label: impl Into<String>,
+        action: Option<TraceAction>,
         command: Option<impl Into<String>>,
         task: F,
     ) where
@@ -195,9 +189,13 @@ impl MasterSkillApp {
 
         let client = self.client.clone();
         let label = label.into();
-        let trace_id = self
-            .traces
-            .begin_with_detail(label.clone(), command, "Queued.");
+        let trace_id = if let Some(action) = action {
+            self.traces
+                .begin_with_action(label.clone(), action, command, "Queued.")
+        } else {
+            self.traces
+                .begin_with_detail(label.clone(), command, "Queued.")
+        };
         let (tx, rx) = channel();
         self.task_rx = Some(rx);
         self.busy_label = Some(label.clone());
@@ -247,32 +245,43 @@ impl MasterSkillApp {
 
     fn start_refresh(&mut self) {
         let selected_slug = self.selected_slug.clone();
-        self.start_task("Refreshing runtime data", move |client| {
-            let snapshot = Self::load_snapshot(&client, selected_slug)?;
-            Ok(TaskOutcome {
-                message: "Runtime data refreshed.".to_string(),
-                detail: "Reloaded inventory, runtime doctor report, selected skill metadata, and local diagnostics.".to_string(),
-                snapshot: Some(snapshot),
-            })
-        });
+        self.start_task_with_action(
+            "Refreshing runtime data",
+            Some(TraceAction::Refresh),
+            None::<String>,
+            move |client| {
+                let snapshot = Self::load_snapshot(&client, selected_slug)?;
+                Ok(TaskOutcome {
+                    message: "Runtime data refreshed.".to_string(),
+                    detail: "Reloaded inventory, runtime doctor report, selected skill metadata, and local diagnostics.".to_string(),
+                    snapshot: Some(snapshot),
+                })
+            },
+        );
     }
 
     fn start_inspect(&mut self, slug: String) {
-        self.start_task(format!("Loading master-{slug}"), move |client| {
-            let snapshot = Self::load_snapshot(&client, Some(slug.clone()))?;
-            Ok(TaskOutcome {
-                message: format!("Loaded master-{slug}."),
-                detail: format!(
-                    "Loaded source, evaluation, install, and runtime metadata for master-{slug}."
-                ),
-                snapshot: Some(snapshot),
-            })
-        });
+        self.start_task_with_action(
+            format!("Loading master-{slug}"),
+            Some(TraceAction::InspectSkill { slug: slug.clone() }),
+            None::<String>,
+            move |client| {
+                let snapshot = Self::load_snapshot(&client, Some(slug.clone()))?;
+                Ok(TaskOutcome {
+                    message: format!("Loaded master-{slug}."),
+                    detail: format!(
+                        "Loaded source, evaluation, install, and runtime metadata for master-{slug}."
+                    ),
+                    snapshot: Some(snapshot),
+                })
+            },
+        );
     }
 
     fn start_install(&mut self, slug: String) {
-        self.start_task_with_command(
+        self.start_task_with_action(
             format!("Installing master-{slug}"),
+            Some(TraceAction::InstallSkill { slug: slug.clone() }),
             Some(format!("master-skill install {slug}")),
             move |client| {
                 let output = client.install(&slug)?;
@@ -287,8 +296,9 @@ impl MasterSkillApp {
     }
 
     fn start_uninstall(&mut self, slug: String) {
-        self.start_task_with_command(
+        self.start_task_with_action(
             format!("Uninstalling master-{slug}"),
+            Some(TraceAction::UninstallSkill { slug: slug.clone() }),
             Some(format!("master-skill uninstall {slug}")),
             move |client| {
                 let output = client.uninstall(&slug)?;
@@ -304,8 +314,9 @@ impl MasterSkillApp {
 
     fn start_install_all(&mut self) {
         let selected_slug = self.selected_slug.clone();
-        self.start_task_with_command(
+        self.start_task_with_action(
             "Installing all skills",
+            Some(TraceAction::InstallAll),
             Some("master-skill install --all"),
             move |client| {
                 let output = client.install_all()?;
@@ -321,8 +332,9 @@ impl MasterSkillApp {
 
     fn start_update_all(&mut self) {
         let selected_slug = self.selected_slug.clone();
-        self.start_task_with_command(
+        self.start_task_with_action(
             "Updating all skills",
+            Some(TraceAction::UpdateAll),
             Some("master-skill update --all"),
             move |client| {
                 let output = client.update_all()?;
@@ -337,8 +349,9 @@ impl MasterSkillApp {
     }
 
     fn start_fidelity_dry_run(&mut self) {
-        self.start_task_with_command(
+        self.start_task_with_action(
             "Running fidelity dry-run",
+            Some(TraceAction::FidelityDryRunAll),
             Some("python3 scripts/test-fidelity.py --all --dry-run"),
             move |client| {
                 let output = client.run_fidelity_dry_run()?;
@@ -352,8 +365,9 @@ impl MasterSkillApp {
     }
 
     fn start_skill_fidelity_dry_run(&mut self, slug: String) {
-        self.start_task_with_command(
+        self.start_task_with_action(
             format!("Running master-{slug} fidelity dry-run"),
+            Some(TraceAction::FidelityDryRunSkill { slug: slug.clone() }),
             Some(format!(
                 "python3 scripts/test-fidelity.py --master master-{slug} --dry-run"
             )),
@@ -372,14 +386,19 @@ impl MasterSkillApp {
     }
 
     fn start_full_validation(&mut self) {
-        self.start_task_with_command("Running full validation", Some("npm test"), move |client| {
-            let output = client.run_full_validation()?;
-            Ok(TaskOutcome {
-                message: summarize_command_output("Full validation finished", &output),
-                detail: output.trim().to_string(),
-                snapshot: None,
-            })
-        });
+        self.start_task_with_action(
+            "Running full validation",
+            Some(TraceAction::FullValidation),
+            Some("npm test"),
+            move |client| {
+                let output = client.run_full_validation()?;
+                Ok(TaskOutcome {
+                    message: summarize_command_output("Full validation finished", &output),
+                    detail: output.trim().to_string(),
+                    snapshot: None,
+                })
+            },
+        );
     }
 
     fn show_toolbar(&mut self, ui: &mut egui::Ui) {
@@ -483,6 +502,20 @@ impl MasterSkillApp {
             }
             DiagnosticOperation::InstallSkill { slug } => self.start_install(slug),
             DiagnosticOperation::FidelityDryRun { slug } => self.start_skill_fidelity_dry_run(slug),
+        }
+    }
+
+    fn start_trace_action(&mut self, action: TraceAction) {
+        match action {
+            TraceAction::Refresh => self.start_refresh(),
+            TraceAction::InspectSkill { slug } => self.start_inspect(slug),
+            TraceAction::InstallSkill { slug } => self.start_install(slug),
+            TraceAction::UninstallSkill { slug } => self.start_uninstall(slug),
+            TraceAction::InstallAll => self.start_install_all(),
+            TraceAction::UpdateAll => self.start_update_all(),
+            TraceAction::FidelityDryRunAll => self.start_fidelity_dry_run(),
+            TraceAction::FidelityDryRunSkill { slug } => self.start_skill_fidelity_dry_run(slug),
+            TraceAction::FullValidation => self.start_full_validation(),
         }
     }
 
@@ -830,6 +863,10 @@ impl MasterSkillApp {
             return;
         }
 
+        let busy = self.is_busy();
+        let mut action_to_rerun = None;
+        let mut skill_to_open = None;
+
         egui::ScrollArea::vertical()
             .max_height(320.0)
             .show(ui, |ui| {
@@ -867,6 +904,16 @@ impl MasterSkillApp {
                                     ui.label("Summary");
                                     ui.label(first_line(&record.summary));
                                     ui.end_row();
+                                    ui.label("Issue");
+                                    if let Some(kind) = record.failure_kind() {
+                                        ui.colored_label(
+                                            Self::trace_color(TraceStatus::Failed),
+                                            kind.label(),
+                                        );
+                                    } else {
+                                        ui.label("none");
+                                    }
+                                    ui.end_row();
                                     ui.label("Command");
                                     if let Some(command) = &record.command {
                                         ui.monospace(command);
@@ -875,6 +922,22 @@ impl MasterSkillApp {
                                     }
                                     ui.end_row();
                                 });
+                            ui.horizontal(|ui| {
+                                if ui
+                                    .add_enabled(
+                                        !busy && record.can_rerun(),
+                                        egui::Button::new("Rerun"),
+                                    )
+                                    .clicked()
+                                {
+                                    action_to_rerun = record.action.clone();
+                                }
+                                if let Some(slug) = record.related_skill_slug() {
+                                    if ui.button("Open Skill").clicked() {
+                                        skill_to_open = Some(slug.to_string());
+                                    }
+                                }
+                            });
                             ui.separator();
                             ui.label("Detail");
                             let detail = if record.detail.trim().is_empty() {
@@ -891,6 +954,13 @@ impl MasterSkillApp {
                     ui.separator();
                 }
             });
+        if let Some(action) = action_to_rerun {
+            self.start_trace_action(action);
+        }
+        if let Some(slug) = skill_to_open {
+            self.console_section = ConsoleSection::SkillDetail;
+            self.start_inspect(slug);
+        }
     }
 
     fn show_sidebar(&mut self, ui: &mut egui::Ui) {
