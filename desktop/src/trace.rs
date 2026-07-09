@@ -141,6 +141,19 @@ impl EvaluationCaseResult {
             || !self.boundary_violations.is_empty()
             || !self.fabricated_cites.is_empty()
     }
+
+    fn failure_priority(&self) -> EvaluationFailurePriority {
+        if !self.fabricated_cites.is_empty()
+            || !self.boundary_violations.is_empty()
+            || !self.forbidden_found.is_empty()
+        {
+            EvaluationFailurePriority::Critical
+        } else if !self.missing_cites.is_empty() || !self.missing_mentions.is_empty() {
+            EvaluationFailurePriority::High
+        } else {
+            EvaluationFailurePriority::Medium
+        }
+    }
 }
 
 fn push_detail_part(parts: &mut Vec<String>, label: &str, values: &[String]) {
@@ -377,8 +390,26 @@ pub struct EvaluationFailureItem {
     pub case_index: usize,
     pub question: String,
     pub status: String,
+    pub priority: EvaluationFailurePriority,
     pub failure_summary: String,
     pub trace_id: u64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum EvaluationFailurePriority {
+    Medium,
+    High,
+    Critical,
+}
+
+impl EvaluationFailurePriority {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Medium => "medium",
+            Self::High => "high",
+            Self::Critical => "critical",
+        }
+    }
 }
 
 impl EvaluationFailureInsights {
@@ -626,22 +657,33 @@ impl TraceStore {
     }
 
     pub fn evaluation_failure_queue(&self) -> Vec<EvaluationFailureItem> {
-        self.latest_evaluation_case_results_by_slug()
+        let mut queue: Vec<_> = self
+            .latest_evaluation_case_results_by_slug()
             .into_values()
             .flatten()
             .filter(|result| result.status == "FAIL" || result.has_failure_evidence())
             .map(|result| {
+                let priority = result.failure_priority();
                 let failure_summary = result.failure_summary();
                 EvaluationFailureItem {
                     slug: result.slug,
                     case_index: result.case_index,
                     question: result.question,
                     status: result.status,
+                    priority,
                     failure_summary,
                     trace_id: result.trace_id,
                 }
             })
-            .collect()
+            .collect();
+        queue.sort_by(|left, right| {
+            right
+                .priority
+                .cmp(&left.priority)
+                .then_with(|| left.slug.cmp(&right.slug))
+                .then_with(|| left.case_index.cmp(&right.case_index))
+        });
+        queue
     }
 
     pub fn clear(&mut self) {
@@ -1292,6 +1334,66 @@ mod tests {
         assert_eq!(queue[1].slug, "zhiyi");
         assert_eq!(queue[1].case_index, 1);
         assert_eq!(queue[1].failure_summary, "missing mentions: 三谛");
+    }
+
+    #[test]
+    fn prioritizes_failure_queue_by_risk() {
+        let mut store = TraceStore::new(10);
+
+        let run = store.begin_with_action(
+            "Running fidelity run",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "fidelity run finished",
+            r#"[
+              {
+                "master": "master-huineng",
+                "results": [
+                  {
+                    "index": 0,
+                    "question": "只有 status 失败",
+                    "status": "FAIL"
+                  }
+                ]
+              },
+              {
+                "master": "master-zhiyi",
+                "results": [
+                  {
+                    "index": 0,
+                    "question": "缺少引用",
+                    "status": "FAIL",
+                    "missing_cites": ["T46n1911"]
+                  }
+                ]
+              },
+              {
+                "master": "master-xuanzang",
+                "results": [
+                  {
+                    "index": 0,
+                    "question": "伪造引用",
+                    "status": "FAIL",
+                    "fabricated_cites": ["T99n9999"]
+                  }
+                ]
+              }
+            ]"#,
+            Duration::from_millis(55),
+        );
+
+        let queue = store.evaluation_failure_queue();
+
+        assert_eq!(queue[0].slug, "xuanzang");
+        assert_eq!(queue[0].priority.label(), "critical");
+        assert_eq!(queue[1].slug, "zhiyi");
+        assert_eq!(queue[1].priority.label(), "high");
+        assert_eq!(queue[2].slug, "huineng");
+        assert_eq!(queue[2].priority.label(), "medium");
     }
 
     #[test]
