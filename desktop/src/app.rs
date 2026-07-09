@@ -21,10 +21,11 @@ use crate::theme::{
     apply_console_theme, sidebar_default_width, sidebar_row_height, status_badge_width,
 };
 use crate::trace::{
-    EvaluationFailureInsights, EvaluationFailureItem, EvaluationFailurePriority,
-    EvaluationRegressionItem, EvaluationRunHistoryFilter, EvaluationRunHistoryItem,
-    EvaluationRunResult, EvaluationRunTrend, EvaluationTrendSummary, TraceAction, TraceFailureItem,
-    TraceListFilter, TraceStatus, TraceStore,
+    EvaluationDecisionBrief, EvaluationDecisionPosture, EvaluationFailureInsights,
+    EvaluationFailureItem, EvaluationFailurePriority, EvaluationRegressionItem,
+    EvaluationRunHistoryFilter, EvaluationRunHistoryItem, EvaluationRunResult, EvaluationRunTrend,
+    EvaluationTrendSummary, TraceAction, TraceFailureItem, TraceListFilter, TraceStatus,
+    TraceStore,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -577,6 +578,15 @@ impl MasterSkillApp {
         }
     }
 
+    fn decision_posture_color(posture: EvaluationDecisionPosture) -> egui::Color32 {
+        match posture {
+            EvaluationDecisionPosture::Blocked => egui::Color32::from_rgb(220, 90, 85),
+            EvaluationDecisionPosture::Attention => egui::Color32::from_rgb(220, 170, 80),
+            EvaluationDecisionPosture::Unproven => egui::Color32::from_rgb(120, 170, 230),
+            EvaluationDecisionPosture::Ready => egui::Color32::from_rgb(100, 190, 130),
+        }
+    }
+
     fn evaluation_trend_color(trend: EvaluationRunTrend) -> egui::Color32 {
         match trend {
             EvaluationRunTrend::Improved => egui::Color32::from_rgb(100, 190, 130),
@@ -791,10 +801,12 @@ impl MasterSkillApp {
         let run_coverage = self.traces.evaluation_run_coverage(summary.skill_count);
         let failure_insights = self.traces.evaluation_failure_insights();
         let failure_queue = self.traces.evaluation_failure_queue();
+        let trend_summary = self.traces.evaluation_trend_summary(8);
+        let decision_brief =
+            EvaluationDecisionBrief::from_signals(&run_coverage, &trend_summary, &failure_insights);
         let run_history = self
             .traces
             .evaluation_run_history_filtered(8, self.run_history_filter);
-        let trend_summary = self.traces.evaluation_trend_summary(8);
         let regressions = self.traces.evaluation_regressions(8);
         Self::show_workspace_header(
             ui,
@@ -861,6 +873,9 @@ impl MasterSkillApp {
         Self::show_metric_cards(ui, &cards);
 
         ui.separator();
+        Self::show_evaluation_decision_brief(ui, &decision_brief);
+
+        ui.separator();
         Self::show_evaluation_trend_summary(ui, &trend_summary);
 
         ui.separator();
@@ -884,6 +899,33 @@ impl MasterSkillApp {
             ui.separator();
             self.show_skill_suites(ui);
         }
+    }
+
+    fn show_evaluation_decision_brief(ui: &mut egui::Ui, brief: &EvaluationDecisionBrief) {
+        ui.heading("Decision Brief");
+        ui.horizontal_wrapped(|ui| {
+            ui.colored_label(
+                Self::decision_posture_color(brief.posture),
+                egui::RichText::new(brief.status_label()).strong(),
+            );
+            ui.separator();
+            ui.strong(&brief.headline);
+        });
+        egui::Grid::new("evaluation-decision-brief-grid")
+            .num_columns(2)
+            .striped(true)
+            .min_col_width(128.0)
+            .show(ui, |ui| {
+                ui.strong("Primary Risk");
+                ui.label(&brief.primary_risk);
+                ui.end_row();
+                ui.strong("Evidence");
+                ui.label(&brief.evidence);
+                ui.end_row();
+                ui.strong("Next Action");
+                ui.label(&brief.recommendation);
+                ui.end_row();
+            });
     }
 
     fn show_evaluation_trend_summary(ui: &mut egui::Ui, summary: &EvaluationTrendSummary) {
