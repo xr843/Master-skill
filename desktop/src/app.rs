@@ -165,6 +165,21 @@ struct MetricCard {
     healthy: bool,
 }
 
+fn quality_gate_metric_card(brief: &EvaluationDecisionBrief) -> MetricCard {
+    MetricCard {
+        title: "Quality Gate",
+        value: match brief.posture {
+            EvaluationDecisionPosture::Ready => "Ready",
+            EvaluationDecisionPosture::Blocked => "Blocked",
+            EvaluationDecisionPosture::Attention => "Review",
+            EvaluationDecisionPosture::Unproven => "Unproven",
+        }
+        .to_string(),
+        detail: brief.primary_risk.clone(),
+        healthy: brief.posture == EvaluationDecisionPosture::Ready,
+    }
+}
+
 impl MasterSkillApp {
     pub fn new() -> Self {
         let trace_path = desktop_trace_store_path();
@@ -761,6 +776,17 @@ impl MasterSkillApp {
             );
             let total = self.rows.len().max(1);
             let runtime_value = if summary.runtime_ok { "OK" } else { "Review" };
+            let evaluation_summary = evaluation_summary(&self.rows);
+            let run_coverage = self
+                .traces
+                .evaluation_run_coverage(evaluation_summary.skill_count);
+            let trend_summary = self.traces.evaluation_trend_summary(8);
+            let failure_insights = self.traces.evaluation_failure_insights();
+            let decision_brief = EvaluationDecisionBrief::from_signals(
+                &run_coverage,
+                &trend_summary,
+                &failure_insights,
+            );
             let cards = vec![
                 MetricCard {
                     title: "Runtime",
@@ -786,6 +812,7 @@ impl MasterSkillApp {
                     detail: "fidelity suites".to_string(),
                     healthy: summary.evaluation_ready_count == total,
                 },
+                quality_gate_metric_card(&decision_brief),
                 MetricCard {
                     title: "Protocols",
                     value: format!("{}/{}", summary.protocol_ready_count, summary.persona_count),
@@ -2321,7 +2348,10 @@ mod tests {
     use std::path::PathBuf;
 
     use crate::catalog::{SkillKind, SkillRow};
-    use crate::trace::EvaluationRunResult;
+    use crate::trace::{
+        EvaluationDecisionAction, EvaluationDecisionBrief, EvaluationDecisionPosture,
+        EvaluationRunResult,
+    };
 
     #[test]
     fn trace_store_path_prefers_xdg_data_home() {
@@ -2404,6 +2434,40 @@ mod tests {
         assert!(super::suite_matches_query(&attention, "citation format"));
         assert!(super::suite_matches_query(&attention, "   "));
         assert!(!super::suite_matches_query(&ready, "missing source index"));
+    }
+
+    #[test]
+    fn builds_quality_gate_dashboard_card_from_decision_brief() {
+        let blocked = EvaluationDecisionBrief {
+            posture: EvaluationDecisionPosture::Blocked,
+            headline: "Regression detected".to_string(),
+            primary_risk: "master-huineng regressed".to_string(),
+            evidence: "1 regression across 8 recent runs".to_string(),
+            recommendation: "Rerun the regressed scope.".to_string(),
+            action: EvaluationDecisionAction::RerunSkill {
+                slug: "huineng".to_string(),
+            },
+        };
+
+        let card = super::quality_gate_metric_card(&blocked);
+
+        assert_eq!(card.title, "Quality Gate");
+        assert_eq!(card.value, "Blocked");
+        assert_eq!(card.detail, "master-huineng regressed");
+        assert!(!card.healthy);
+
+        let ready = EvaluationDecisionBrief {
+            posture: EvaluationDecisionPosture::Ready,
+            headline: "Evaluation baseline clear".to_string(),
+            primary_risk: "No current regressions or failing cases".to_string(),
+            evidence: "18 skills covered".to_string(),
+            recommendation: "Proceed with release review.".to_string(),
+            action: EvaluationDecisionAction::RunFullValidation,
+        };
+
+        let card = super::quality_gate_metric_card(&ready);
+        assert_eq!(card.value, "Ready");
+        assert!(card.healthy);
     }
 
     fn suite_row(
