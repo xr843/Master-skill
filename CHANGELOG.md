@@ -24,6 +24,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added a Run Trace Center to record structured desktop operation traces with running/success/failure status, duration, and result summaries.
 - Improved desktop console layout responsiveness with adaptive one/two-column sections and horizontal scrolling for dense evaluation and trace tables.
 - Tightened desktop console layout rules so metric cards keep stable widths and dense evaluation tables stay stacked until there is enough space for readable columns.
+- Reworked desktop metric card rows to calculate wrapping explicitly, preventing dashboard cards from being clipped at the right edge in normal WSL window sizes.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
