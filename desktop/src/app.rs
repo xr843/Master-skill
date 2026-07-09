@@ -10,7 +10,9 @@ use crate::catalog::{
     QualityLevel, SkillDiagnostics, SkillRow,
 };
 use crate::cli::CliClient;
-use crate::layout::{dashboard_columns_for_width, TwoPaneMode};
+use crate::layout::{
+    dashboard_columns_for_width, dense_table_mode_for_width, metric_card_width, TwoPaneMode,
+};
 use crate::model::{DoctorReport, MasterInspect, SkillInventory};
 use crate::trace::{TraceStatus, TraceStore};
 
@@ -337,6 +339,7 @@ impl MasterSkillApp {
 
     fn show_metric_card(
         ui: &mut egui::Ui,
+        width: f32,
         title: &str,
         value: impl Into<String>,
         detail: &str,
@@ -358,7 +361,8 @@ impl MasterSkillApp {
             .stroke(stroke)
             .inner_margin(egui::Margin::same(10))
             .show(ui, |ui| {
-                ui.set_min_width(135.0);
+                ui.set_min_width(width);
+                ui.set_max_width(width);
                 ui.small(title);
                 ui.heading(value.into());
                 ui.small(detail);
@@ -375,9 +379,11 @@ impl MasterSkillApp {
                 report.problems.len(),
             );
             let total = self.rows.len().max(1);
+            let card_width = metric_card_width(ui.available_width());
             ui.horizontal_wrapped(|ui| {
                 Self::show_metric_card(
                     ui,
+                    card_width,
                     "Runtime",
                     if summary.runtime_ok { "OK" } else { "Review" },
                     &format!("{} problem(s)", report.problems.len()),
@@ -385,6 +391,7 @@ impl MasterSkillApp {
                 );
                 Self::show_metric_card(
                     ui,
+                    card_width,
                     "Installation",
                     format!("{}/{}", summary.installed_count, summary.available_count),
                     &format!("{} missing", summary.missing_count),
@@ -392,13 +399,15 @@ impl MasterSkillApp {
                 );
                 Self::show_metric_card(
                     ui,
+                    card_width,
                     "Sources",
                     format!("{}/{}", summary.source_ready_count, summary.persona_count),
-                    "persona source sets",
+                    "persona sources",
                     summary.source_ready_count == summary.persona_count,
                 );
                 Self::show_metric_card(
                     ui,
+                    card_width,
                     "Evaluations",
                     format!("{}/{}", summary.evaluation_ready_count, total),
                     "fidelity suites",
@@ -406,23 +415,26 @@ impl MasterSkillApp {
                 );
                 Self::show_metric_card(
                     ui,
+                    card_width,
                     "Protocols",
                     format!("{}/{}", summary.protocol_ready_count, summary.persona_count),
-                    "persona grounding + citation",
+                    "persona protocols",
                     summary.protocol_ready_count == summary.persona_count,
                 );
                 Self::show_metric_card(
                     ui,
+                    card_width,
                     "Meta-skills",
                     summary.meta_skill_count.to_string(),
-                    "workflow skills",
+                    "workflows",
                     true,
                 );
                 Self::show_metric_card(
                     ui,
+                    card_width,
                     "Attention",
                     summary.attention_count.to_string(),
-                    "skills needing review",
+                    "needs review",
                     summary.attention_count == 0,
                 );
             });
@@ -435,10 +447,12 @@ impl MasterSkillApp {
         ui.heading("Evaluation Center");
         let busy = self.is_busy();
         let summary = evaluation_summary(&self.rows);
+        let card_width = metric_card_width(ui.available_width());
 
         ui.horizontal_wrapped(|ui| {
             Self::show_metric_card(
                 ui,
+                card_width,
                 "Fidelity Cases",
                 summary.case_count.to_string(),
                 &format!("{} skills", summary.skill_count),
@@ -446,20 +460,23 @@ impl MasterSkillApp {
             );
             Self::show_metric_card(
                 ui,
+                card_width,
                 "Ready",
                 summary.ready_count.to_string(),
-                "source + protocol + eval",
+                "complete",
                 summary.ready_count == summary.skill_count,
             );
             Self::show_metric_card(
                 ui,
+                card_width,
                 "Attention",
                 summary.attention_count.to_string(),
-                "installed but incomplete",
+                "needs review",
                 summary.attention_count == 0,
             );
             Self::show_metric_card(
                 ui,
+                card_width,
                 "Missing",
                 summary.missing_count.to_string(),
                 "not installed",
@@ -467,6 +484,7 @@ impl MasterSkillApp {
             );
             Self::show_metric_card(
                 ui,
+                card_width,
                 "Missing Suites",
                 summary.missing_suite_count.to_string(),
                 "no fidelity jsonl",
@@ -490,7 +508,7 @@ impl MasterSkillApp {
         });
 
         ui.separator();
-        let mode = dashboard_columns_for_width(ui.available_width());
+        let mode = dense_table_mode_for_width(ui.available_width());
         if mode == TwoPaneMode::TwoColumns {
             ui.columns(2, |columns| {
                 Self::show_tradition_coverage(&mut columns[0], &summary.groups);
@@ -505,65 +523,71 @@ impl MasterSkillApp {
 
     fn show_tradition_coverage(ui: &mut egui::Ui, groups: &[crate::catalog::EvaluationGroup]) {
         ui.heading("Tradition Coverage");
-        egui::ScrollArea::horizontal().show(ui, |ui| {
-            egui::Grid::new("evaluation-tradition-grid")
-                .num_columns(4)
-                .striped(true)
-                .min_col_width(70.0)
-                .show(ui, |ui| {
-                    ui.strong("Tradition");
-                    ui.strong("Skills");
-                    ui.strong("Cases");
-                    ui.strong("Missing");
-                    ui.end_row();
-                    for group in groups {
-                        ui.label(&group.tradition);
-                        ui.label(group.skill_count.to_string());
-                        ui.label(group.case_count.to_string());
-                        ui.label(group.missing_suite_count.to_string());
+        egui::ScrollArea::horizontal()
+            .max_width(ui.available_width())
+            .show(ui, |ui| {
+                egui::Grid::new("evaluation-tradition-grid")
+                    .num_columns(4)
+                    .striped(true)
+                    .min_col_width(96.0)
+                    .show(ui, |ui| {
+                        ui.strong("Tradition");
+                        ui.strong("Skills");
+                        ui.strong("Cases");
+                        ui.strong("Missing");
                         ui.end_row();
-                    }
-                });
-        });
+                        for group in groups {
+                            ui.label(&group.tradition);
+                            ui.label(group.skill_count.to_string());
+                            ui.label(group.case_count.to_string());
+                            ui.label(group.missing_suite_count.to_string());
+                            ui.end_row();
+                        }
+                    });
+            });
     }
 
     fn show_skill_suites(&self, ui: &mut egui::Ui) {
         ui.heading("Skill Suites");
-        egui::ScrollArea::horizontal().show(ui, |ui| {
-            egui::ScrollArea::vertical()
-                .max_height(210.0)
-                .show(ui, |ui| {
-                    egui::Grid::new("evaluation-skill-grid")
-                        .num_columns(5)
-                        .striped(true)
-                        .min_col_width(82.0)
-                        .show(ui, |ui| {
-                            ui.strong("Skill");
-                            ui.strong("Tradition");
-                            ui.strong("Kind");
-                            ui.strong("Cases");
-                            ui.strong("Status");
-                            ui.end_row();
-                            for row in &self.rows {
-                                let level = row.quality_level();
-                                ui.label(&row.name);
-                                ui.label(row.tradition.as_deref().unwrap_or("unspecified"));
-                                ui.label(row.kind.label());
-                                ui.label(row.fidelity_case_count.to_string());
-                                ui.colored_label(Self::quality_color(level), level.label());
+        egui::ScrollArea::horizontal()
+            .max_width(ui.available_width())
+            .show(ui, |ui| {
+                egui::ScrollArea::vertical()
+                    .max_height(260.0)
+                    .show(ui, |ui| {
+                        egui::Grid::new("evaluation-skill-grid")
+                            .num_columns(5)
+                            .striped(true)
+                            .min_col_width(104.0)
+                            .show(ui, |ui| {
+                                ui.strong("Skill");
+                                ui.strong("Tradition");
+                                ui.strong("Kind");
+                                ui.strong("Cases");
+                                ui.strong("Status");
                                 ui.end_row();
-                            }
-                        });
-                });
-        });
+                                for row in &self.rows {
+                                    let level = row.quality_level();
+                                    ui.label(&row.name);
+                                    ui.label(row.tradition.as_deref().unwrap_or("unspecified"));
+                                    ui.label(row.kind.label());
+                                    ui.label(row.fidelity_case_count.to_string());
+                                    ui.colored_label(Self::quality_color(level), level.label());
+                                    ui.end_row();
+                                }
+                            });
+                    });
+            });
     }
 
     fn show_trace_center(&self, ui: &mut egui::Ui) {
         ui.heading("Run Trace Center");
         let summary = self.traces.summary();
+        let card_width = metric_card_width(ui.available_width());
         ui.horizontal_wrapped(|ui| {
             Self::show_metric_card(
                 ui,
+                card_width,
                 "Traces",
                 summary.total.to_string(),
                 "recent operations",
@@ -571,6 +595,7 @@ impl MasterSkillApp {
             );
             Self::show_metric_card(
                 ui,
+                card_width,
                 "Running",
                 summary.running.to_string(),
                 "active task",
@@ -578,13 +603,15 @@ impl MasterSkillApp {
             );
             Self::show_metric_card(
                 ui,
+                card_width,
                 "Succeeded",
                 summary.succeeded.to_string(),
-                "completed tasks",
+                "completed",
                 true,
             );
             Self::show_metric_card(
                 ui,
+                card_width,
                 "Failed",
                 summary.failed.to_string(),
                 "needs review",
@@ -592,6 +619,7 @@ impl MasterSkillApp {
             );
             Self::show_metric_card(
                 ui,
+                card_width,
                 "Last",
                 summary
                     .last_status
