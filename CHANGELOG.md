@@ -26,6 +26,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Tightened desktop console layout rules so metric cards keep stable widths and dense evaluation tables stay stacked until there is enough space for readable columns.
 - Reworked desktop metric card rows to calculate wrapping explicitly, preventing dashboard cards from being clipped at the right edge in normal WSL window sizes.
 - Added a professional console shell with top-level workspace navigation, compact runtime status, skill-detail routing, and an expandable operation log.
+- Added workspace headers with contextual actions, moved evaluation validation into the workspace action bar, and added clearable run trace history.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
