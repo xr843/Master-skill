@@ -70,6 +70,61 @@ test("help shows the current version, not a hardcoded one", () => {
   const { stdout, code } = run(["--help"]);
   assert.equal(code, 0);
   assert.ok(stdout.includes(`v${pkg.version}`));
+  assert.match(stdout, /master-skill doctor/);
+  assert.match(stdout, /master-skill inspect <name>/);
+  assert.match(stdout, /master-skill update --all/);
+});
+
+test("doctor reports local runtime paths and available skills", (t) => {
+  const { env } = tmpHome(t);
+  const { stdout, code } = run(["doctor"], env);
+  assert.equal(code, 0);
+  assert.match(stdout, /master-skill doctor/);
+  assert.match(stdout, /Package version:/);
+  assert.match(stdout, /Node version:/);
+  assert.match(stdout, new RegExp(`Available skills: ${prebuiltMasters.length}`));
+  assert.match(stdout, /Installed known skills: 0/);
+  assert.match(stdout, /Status: ok/);
+});
+
+test("doctor counts installed known skills", (t) => {
+  const { env } = tmpHome(t);
+  run(["install", "zhiyi"], env);
+  const { stdout, code } = run(["doctor"], env);
+  assert.equal(code, 0);
+  assert.match(stdout, /Installed known skills: 1/);
+});
+
+test("inspect shows master metadata, sources, and live grounding", (t) => {
+  const { env } = tmpHome(t);
+  const { stdout, code } = run(["inspect", "huineng"], env);
+  assert.equal(code, 0);
+  assert.match(stdout, /^master-huineng/m);
+  assert.match(stdout, /Display name: 慧能大师/);
+  assert.match(stdout, /Slug: huineng/);
+  assert.match(stdout, /Tradition: 汉传/);
+  assert.match(stdout, /Installed: no/);
+  assert.match(stdout, /Live grounding: yes/);
+  assert.match(stdout, /T48n2008/);
+});
+
+test("inspect reflects installed state", (t) => {
+  const { env } = tmpHome(t);
+  run(["install", "huineng"], env);
+  const { stdout, code } = run(["inspect", "master-huineng"], env);
+  assert.equal(code, 0);
+  assert.match(stdout, /Installed: yes/);
+});
+
+test("inspect rejects missing and unsafe names", (t) => {
+  const { env } = tmpHome(t);
+  const missing = run(["inspect", "no-such-master"], env);
+  assert.equal(missing.code, 1);
+  assert.match(missing.stdout, /not found/);
+
+  const unsafe = run(["inspect", "../escape"], env);
+  assert.equal(unsafe.code, 1);
+  assert.match(unsafe.stdout, /invalid name/);
 });
 
 test("install accepts short and full names", (t) => {
@@ -149,6 +204,31 @@ test("install --all installs every prebuilt master", (t) => {
       `missing ${name} after install --all`
     );
   }
+});
+
+test("update --all reinstalls every master and clears stale files", (t) => {
+  const { home, env } = tmpHome(t);
+  run(["install", "zhiyi"], env);
+  const stale = path.join(skillsDir(home), "master-zhiyi", "stale.md");
+  fs.writeFileSync(stale, "stale");
+
+  const { stdout, code } = run(["update", "--all"], env);
+  assert.equal(code, 0);
+  assert.match(stdout, new RegExp(`Updating all ${prebuiltMasters.length} masters`));
+  assert.ok(!fs.existsSync(stale), "stale file survived update --all");
+  for (const name of prebuiltMasters) {
+    assert.ok(
+      fs.existsSync(path.join(skillsDir(home), name, "SKILL.md")),
+      `missing ${name} after update --all`
+    );
+  }
+});
+
+test("update requires --all", (t) => {
+  const { env } = tmpHome(t);
+  const { stdout, code } = run(["update"], env);
+  assert.equal(code, 1);
+  assert.match(stdout, /Usage: master-skill update --all/);
 });
 
 test("unknown command exits non-zero", () => {

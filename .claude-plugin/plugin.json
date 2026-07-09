@@ -1,6 +1,6 @@
 {
   "name": "master-skill",
-  "description": "Buddhist Master AI teaching personas — 14 prebuilt masters across 汉传/藏传/南传 plus 3 teaching meta-skills (compare-masters / master-debate / master-curriculum), invokable via /master-<slug> slash commands, with source-cited doctrinal responses (CBETA / BDRC / SuttaCentral / PTS Vism), RAG-grounded in FoJin knowledge graph",
+  "description": "FoJin-powered Buddhist AI persona framework — source-grounded, boundary-aware, fidelity-tested, runtime-ready. 15 prebuilt masters across 印度/汉传/藏传/南传 plus compare, debate, and curriculum meta-skills.",
   "version": "0.9.1",
   "author": {
     "name": "xr843",

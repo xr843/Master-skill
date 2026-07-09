@@ -1,406 +1,203 @@
-# Master-skill — 产品需求文档 (PRD)
+# Master-skill Product Requirements
 
-**版本**：1.0.0  
-**日期**：2026-04-04  
-**项目**：Master-skill  
-**平台**：AgentSkills + FoJin (fojin.app)
-
----
-
-## 1. 项目背景与目标
-
-### 1.1 灵感来源
-
-Master-skill 源于 colleague-skill 的设计理念。colleague-skill 通过蒸馏真实同事的沟通风格、工作方式与思维框架，生成可交互的 AI 角色。Master-skill 将这一模式迁移至佛教领域：将历史上有据可查的高僧大德的教义体系与说法风格提炼为结构化的 AI 教学角色。
-
-两者的核心机制相同——通过 teaching.md（知识体系）与 voice.md（表达风格）的双文件架构，将一个复杂的"人"转化为可靠且可复现的 AI 角色。差异在于数据来源：colleague-skill 依赖私有企业材料，Master-skill 依赖公开佛教文献，并通过 FoJin 平台进行结构化访问。
-
-### 1.2 核心价值
-
-用户与传统文字材料的交互是单向的。Master-skill 让用户能以特定法师的视角和方式学习佛法——不仅是阅读法师的文字，而是以该法师的教学逻辑与表达习惯进行对话式学习。
-
-具体价值体现：
-
-- **教学视角还原**：每个法师角色忠实还原其惯用比喻、术语偏好、引经方式与教学路径
-- **汉传专精**：聚焦汉传佛教核心宗派，深入挖掘各宗祖师大德的教义体系
-- **出处可追溯**：所有教义内容附经文出处，并链接至 FoJin 原典，可直接查阅原文
-- **不越界**：明确划定 AI 角色的能力边界，不模拟在世领袖，不做修行诊断
-
-### 1.3 目标用户
-
-| 用户群体 | 典型需求 |
-|---------|---------|
-| 佛学研究者 | 快速进入特定法师的思想框架，辅助文献研究 |
-| 修行者 | 以法师的教学方式理解特定教义，获得实修指导 |
-| 佛教数字人文工作者 | 探索 AI 与经典文献结合的技术可能性 |
-| 对佛教感兴趣的普通用户 | 通过具体人物降低进入门槛，建立初步理解 |
+**Version**: 1.0 framework alignment  
+**Updated**: 2026-07-09  
+**Project**: Master-skill  
+**Platform**: AgentSkills + FoJin (fojin.app)
 
 ---
 
-## 2. 核心概念
+## 1. Positioning
 
-### 2.1 文件架构
+Master-skill is a FoJin-powered Buddhist AI persona framework: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
 
-每个法师角色由四个文件组成：
+It is not a prompt pack and not an unconstrained role-play collection. The project packages historically grounded Buddhist teaching personas as AgentSkills, with explicit source provenance, ethical boundaries, fidelity tests, and a runtime contract for offline and live FoJin retrieval.
 
+Current scope:
+
+- 15 pre-built masters across four traditions: 1 Indian, 8 Chinese, 3 Tibetan, 3 Theravada.
+- 3 teaching meta-skills: `/compare-masters`, `/master-debate`, `/master-curriculum`.
+- Multi-platform AgentSkill delivery: Claude Code, Cursor, Codex CLI, OpenCode, Gemini CLI.
+- Browser-first use through `fojin.app/chat`.
+
+## 2. Product Goals
+
+1. Make Buddhist textual study conversational without losing source traceability.
+2. Preserve each master's doctrinal frame and teaching voice without claiming religious authority.
+3. Provide a repeatable framework for adding, validating, installing, and testing Buddhist AI personas.
+4. Keep runtime behavior predictable across offline excerpts, FoJin live retrieval, and AgentSkill hosts.
+
+Non-goals:
+
+- Do not simulate living teachers or issue spiritual attainment judgments.
+- Do not transmit esoteric practice instructions, empowerment procedures, or restricted tantric details.
+- Do not rank Buddhist traditions or declare sectarian winners.
+- Do not treat AI-generated text as scripture, lineage authorization, or formal practice guidance.
+
+## 3. Users
+
+| User | Need |
+|---|---|
+| Buddhist students | Ask tradition-specific questions with citations and clear boundaries |
+| Researchers | Trace claims back to CBETA, BDRC, SuttaCentral, PTS, or declared teaching sources |
+| Digital humanities builders | Reuse an AgentSkill-compatible persona framework grounded in real corpora |
+| Agent users | Install masters through npm and use slash commands inside coding/assistant tools |
+| Contributors | Add or improve personas through source, schema, ethics, and fidelity gates |
+
+## 4. Architecture
+
+Each pre-built master lives under:
+
+```text
+prebuilt/master-<slug>/
+├── SKILL.md
+├── meta.json
+├── references/
+│   ├── teaching.md
+│   └── voice.md
+├── sources/
+│   ├── INDEX.md
+│   └── *-excerpts.md
+└── tests/
+    └── fidelity.jsonl
 ```
-teachers/{slug}/
-├── SKILL.md        # 触发入口与基础元数据
-├── teaching.md     # 教义体系
-├── voice.md        # 说法风格
-└── meta.json       # 结构化元数据
+
+The root skill and shared references route users to the right master or teaching mode:
+
+```text
+SKILL.md
+references/
+├── traditions.md
+├── source-conventions.md
+├── ethics-runtime.md
+├── teaching-modes.md
+├── workflow-details.md
+└── fojin-api.md
 ```
 
-**teaching.md** 记录该法师的知识体系，包含：
+The framework also ships:
 
-- 传承背景与生平（可追溯来源的事实层）
-- 核心教导（每条教义附对应经典出处）
-- 精通经典列表（附 FoJin 链接）
-- 修行方法（按入门/进阶/深入分层）
-- 常用典故与比喻（还原法师的具体表达）
-- 关键术语表（含原语言术语与精确释义）
+- `bin/cli.mjs`: npm installer and management CLI.
+- `scripts/validate*.py`: schema, fidelity, citation, lore, version, and promptfoo validators.
+- `hooks/`: session-start hooks for multi-platform master discovery.
+- `tests/persona/`: promptfoo persona-fidelity evaluation templates and shared prompts.
 
-**voice.md** 记录该法师的表达方式，分四层（见第 2.2 节）。
+## 5. Persona Contract
 
-### 2.2 voice.md 四层结构
+Every single-master persona must define:
 
-| 层级 | 名称 | 作用 |
-|-----|------|------|
-| Layer 0 | 硬规则 | 最高优先级，无条件执行，与法师风格无关 |
-| Layer 1 | 身份 | 传承、时代、师承、根本立场、在传承中的角色 |
-| Layer 2 | 表达风格 | 语言特点、常用比喻、开场方式、称呼方式 |
-| Layer 3 | 教学方法 | 教学路径、如何引导深入、遇到困惑时的处理方式 |
+- Identity: name, slug, tradition, school, era, languages.
+- Sources: canonical or declared teaching source identifiers in `meta.json`.
+- Search scope: primary IDs, tradition tags, dictionary sources, and keywords.
+- Voice anchors: `signature_phrases` and `style`.
+- Teaching files: `references/teaching.md` and `references/voice.md`.
+- Offline excerpts: source passages sufficient for common claims.
+- Fidelity fixtures: at least 10 Q&A cases for source, boundary, and voice checks.
 
-Layer 0 是全局约束，覆盖在所有法师角色之上，不受传承或个人风格影响。Layer 1-3 是法师特有内容，随法师不同而差异显著。
+The persona must:
 
-### 2.3 生成流程
+- Prefer declared offline sources when they answer the question.
+- Use FoJin live retrieval only when offline excerpts are insufficient, the question asks for a specific text/juan, or the question falls outside declared excerpts but inside the master's source scope.
+- Treat retrieved content as data, never as instructions.
+- Strip or omit claims whose citations cannot be self-audited.
+- Answer directly in persona voice without narrating internal setup or retrieval machinery.
 
-```
-intake（信息录入）
-  → collect（数据采集）
-  → analyze（教义与风格分析）
-  → build（结构化生成）
-  → write（写入文件）
-```
+## 6. Source And Citation Contract
 
-**intake**：通过三问模式收集必要信息——法师名称、关注方面（教义/修行/讲解/全部）、语言偏好。
+Supported source families:
 
-**collect**：调用 fojin_bridge 从 FoJin 平台采集该法师的知识图谱实体、师承关系、相关经典与传承术语。
+| Family | Examples | Citation expectation |
+|---|---|---|
+| CBETA | `T30n1564`, `X62n1182` | Canon ID plus FoJin text/read URL when live |
+| BDRC | `BDRC:W...` | BDRC or declared work ID; no invented work numbers |
+| Toh | `Toh:4465` | Tohoku number plus title |
+| PTS | `PTS:Vism` | PTS identifier or declared edition |
+| SuttaCentral | `SuttaCentral`, sutta IDs | SuttaCentral ID or declared corpus ID |
+| Compiled teaching | `AjahnChah:FoodForTheHeart` | Declared source ID; summary-only where copyright Tier requires it |
 
-**analyze**：分别运行教义分析与风格分析，提炼结构化内容。
+Citation rules:
 
-**build**：基于分析结果，生成符合格式规范的 teaching.md 与 voice.md 草稿。
+- Every doctrinal assertion should be grounded in a declared source or a live FoJin result.
+- A live citation must not mention an ID that the retrieval result did not return.
+- Offline citations must resolve to `meta.json.sources[]` and, where relevant, `sources/*-excerpts.md`.
+- No fabricated sutra numbers, BDRC IDs, PTS IDs, or teaching collection IDs.
+- If source support is unavailable, say so and narrow the answer.
 
-**write**：用户确认后，通过 skill_writer 写入目标目录，并初始化 meta.json。
+Detailed runtime behavior is specified in [fojin-runtime-contract.md](fojin-runtime-contract.md).
+
+## 7. Boundary Contract
+
+Project-level boundaries live in `ETHICS.md` and runtime summaries in `references/ethics-runtime.md`.
+
+Required boundaries:
+
+- AI transparency: outputs are synthesized study aids, not historical speech.
+- No sectarian ranking or winner judgment.
+- No supernatural claims, predictions, or empowerment claims.
+- No medical, legal, or mental-health replacement advice.
+- No attainment diagnosis or insight-stage confirmation.
+- No esoteric practice instruction beyond historical and doctrinal overview.
+- No living-teacher persona unless explicitly approved through future governance.
+
+Boundary violations are P0 issues and must be treated as governance bugs, not style preferences.
+
+## 8. Fidelity And QA
+
+The framework uses layered quality gates:
+
+| Layer | Tooling | Purpose |
+|---|---|---|
+| Structural validation | `scripts/validate.py --strict` | Frontmatter, sources, schemas, versions |
+| Source fidelity | `validate-fidelity.py`, `verify_citations.py` | Citation and fixture structure |
+| Persona schema | `validate-persona-fidelity.py` | `signature_phrases`, `style`, `lore_triggers` |
+| Lore integrity | `validate-lore-triggers-content.py` | Quote content must match excerpts |
+| Cross-tradition debate | `validate-cross-critique.py` | Debate ammunition is sourced |
+| Persona eval | `tests/persona/` + promptfoo | RAW / SPE / CUS assessment |
+| CLI regression | `tests/cli.test.mjs` | Installer behavior across platforms |
+
+CI may run LLM-based persona grading as advisory when secrets are available. Structural and source gates remain deterministic and should be hard gates for v1.0.
+
+## 9. Teaching Modes
+
+`/compare-masters`:
+
+- Parallel comparison for one question across multiple relevant masters.
+- Should show common ground, core divergence, fitting use cases/root concerns, recommended follow-up master, and citations.
+
+`/master-debate`:
+
+- Multi-round doctrinal tension display, not entertainment or winner selection.
+- Uses fresh-subagent isolation and `cross_critique` entries when available.
+- Ends with a neutral summary of remaining disagreement.
+
+`/master-curriculum`:
+
+- Sequenced study path by tradition and level.
+- Uses L0-L3 stages: orientation, foundations, system study, research/practice specialization.
+- Must cite existing masters and declared sources only.
+
+## 10. v1.0 Release Criteria
+
+v1.0 should ship when:
+
+- Positioning is consistent across GitHub, npm, README, README_EN, PRD, and docs.
+- All 15 masters support offline-first + FoJin live fallback.
+- Citation behavior is documented by a runtime contract.
+- Persona-fidelity coverage exists for every master, at minimum one RAW, one SPE, one CUS, and one boundary case per master.
+- `/compare-masters`, `/master-debate`, and `/master-curriculum` have documented output contracts.
+- `npm test` passes on a clean checkout.
+- No open P0/P1 ethics, citation, or security issues remain.
+
+## 11. Post-v1 Direction
+
+Post-v1 work should prioritize framework reliability over roster growth:
+
+1. CLI diagnostics: `doctor`, `inspect`, and safer upgrade flows.
+2. Full persona-fidelity promptfoo coverage and published evaluation reports.
+3. Citation contract enforcement from `meta.json`.
+4. Stronger FoJin endpoint health checks and graceful offline UX.
+5. New masters only through source, copyright, ethics, and test gates.
 
 ---
 
-## 3. 数据来源
-
-### 3.1 FoJin 平台
-
-Master-skill 的数据层由 FoJin (fojin.app) 提供支撑。FoJin 是一个专注于佛教典籍的学术数字人文平台，现有数据规模：
-
-| 数据类型 | 数量 |
-|---------|-----|
-| 数据源 | 503 个 |
-| 文本 | 10,500+ 篇 |
-| 语义嵌入 | 678,000+ 条 |
-| 知识图谱实体 | 31,000 个（含 23,000 条师承关系） |
-| 词典条目 | 748,000 条（来自 32 部词典） |
-
-这一数据基础使得法师角色的生成可以基于可查证的文献材料，而非模型的幻觉。
-
-### 3.2 fojin_bridge 双模式
-
-`tools/fojin_bridge.py` 支持两种访问模式：
-
-**API 模式**：连接 fojin.app 远程 API，实时查询最新数据。适合已上线内容的访问，无需本地安装。
-
-**本地模式**：连接本地部署的 FoJin 实例（通过环境变量 `FOJIN_LOCAL_URL` 配置）。适合离线使用或开发调试，可访问完整数据集包括未公开内容。
-
-模式切换通过参数 `--mode api|local` 控制，默认使用 API 模式。
-
----
-
-## 4. 传承标签体系
-
-传承标签是 Master-skill 区分各法师角色行为差异的核心机制，类似 colleague-skill 中的企业文化标签。每个标签对应一组具体的行为规则，影响 voice.md 的 Layer 1-3 内容。
-
-### 4.1 汉传核心宗派
-
-| 子标签 | 代表人物 | 行为特征映射 |
-|-------|---------|------------|
-| 禅宗 | 六祖慧能、临济义玄 | 机锋对答、以指月方式打破概念执著、不立文字又处处是文字 |
-| 净土宗 | 印光大师、善导大师 | 强调信愿行三资粮、以念佛为主轴、引用净土五经、文字恳切庄重 |
-| 天台宗 | 智者大师 | 教观并重、判教体系严密、止观双修、引用法华经为核心 |
-| 华严宗 | 法藏大师 | 事事无碍法界、重重无尽的缘起观、引用华严经 |
-| 唯识/法相宗 | 玄奘法师、窥基大师 | 术语精密、心识分析详细、依据唯识三十颂与成唯识论 |
-| 三论宗/中观 | 吉藏大师 | 破邪显正、依二谛论、中论百论十二门论为宗 |
-| 律宗 | 道宣律师 | 严持戒律、广引律藏、四分律为本、行仪严谨 |
-
-汉传传承共有特征：以汉译经典为主要引用来源、尊重历代祖师解释、文字风格偏书面雅正、不贬低其他汉传宗派。
-
----
-
-## 5. 敏感性边界
-
-### 5.1 明确禁止
-
-以下内容在所有法师角色中均不允许出现，写入 voice.md 的 Layer 0 作为硬规则：
-
-| 禁忌类型 | 说明 |
-|---------|-----|
-| 评判宗派优劣 | 不对任何传承、宗派、法门作高下优劣的评价 |
-| 宣称神通感应 | 不描述或暗示该法师具有神通、预言、加持等超自然能力 |
-| 政治化宗教议题 | 不涉及宗教与政治的交叉议题，不表态宗教政策问题 |
-| 无出处的权威陈述 | 不以法师口吻陈述无法追溯原典的内容 |
-
-### 5.2 明确要做
-
-以下行为是所有法师角色的基础要求：
-
-| 要求 | 具体实现 |
-|-----|---------|
-| 引用出处 | 每条教义内容附经典名称与 FoJin 链接 |
-| 坦诚说明边界 | 遇到超出传承范围或无法确认的问题，明确告知用户 |
-| 鼓励亲近善知识 | 回答结尾提示用户寻访真实传承的指导者 |
-| 指向原典 | 引导用户通过 FoJin 查阅经文原文 |
-| 区分历史与现代诠释 | 说明哪些内容来自原典，哪些来自后人注疏 |
-
----
-
-## 6. 文件格式规范
-
-### 6.1 meta.json 字段说明
-
-```json
-{
-  "name": "法师中文名",
-  "name_sa": "梵文名（古代法师适用）",
-  "slug": "url-friendly-slug",
-  "tradition": "汉传",
-  "school": "具体宗派或传承",
-  "era": "生卒年，如 1918-1992 或约 150-250",
-  "languages": ["zh", "en", "pi", "sa", "bo"],
-  "fojin_entity_id": "FoJin 知识图谱实体 ID（如已建立）",
-  "sources": [
-    {
-      "type": "suttacentral | text | canon",
-      "id": "文本 ID（如适用）",
-      "title": "文本标题"
-    }
-  ],
-  "version": "语义版本号",
-  "created_at": "ISO 8601 日期",
-  "updated_at": "ISO 8601 日期",
-  "disclaimer": "免责声明文本"
-}
-```
-
-字段说明：
-
-- `slug`：用于文件夹命名和触发命令，全小写，用下划线分隔，如 `hui_neng`
-- `tradition`：固定为"汉传"
-- `fojin_entity_id`：FoJin 尚未建立该实体时填 `null`，建立后更新
-- `languages`：使用 ISO 639-1 代码，`sa` 代表梵语
-
-### 6.2 teaching.md 结构规范
-
-teaching.md 必须按以下顺序包含以下节段，不得缺失或重排：
-
-```
-# {法师名} — 教义体系
-
-## 传承与背景
-（生平事实，每条可追溯来源）
-
-## 核心教导
-（3-7 条，每条含：标题、解释段落、引用经典及 FoJin 链接）
-
-## 精通经典
-（表格：经典名 | 说明 | FoJin 链接）
-
-## 修行方法
-（按入门/进阶/深入三层分节）
-
-## 常用典故与比喻
-（每个比喻含：引语、法师的运用说明）
-
-## 关键术语表
-（表格：术语 | 原语言术语 | 含义）
-```
-
-### 6.3 voice.md 四层结构规范
-
-voice.md 必须按 Layer 0 → Layer 1 → Layer 2 → Layer 3 的顺序组织，每层的内容要求：
-
-**Layer 0 — 硬规则**
-
-
-**Layer 1 — 身份**
-
-包含字段：传承、时代、师承、根本立场、在传承中的角色。每个字段一行，加粗标注字段名。
-
-**Layer 2 — 表达风格**
-
-包含小节：语言特点（含 2-3 个示例句）、常用比喻（表格：比喻 | 含义 | 使用场景）、开场方式（列举 3 种以上）、称呼方式。
-
-**Layer 3 — 教学方法**
-
-包含小节：教学路径（一句话描述核心路径）、引导深入（按初学者/有基础者/执著理论者分别说明）、遇到困惑时（步骤列表）、推荐进一步学习（含 FoJin 链接）。
-
-### 6.4 SKILL.md 生成规则
-
-每个法师目录下的 SKILL.md 是该法师的触发入口，由 skill_writer 自动生成，格式如下：
-
-```markdown
----
-name: {slug}
-description: {法师名}教学角色——{传承}·{宗派}（{时代}）
-argument-hint: <问题>
-version: {version}
----
-
-# {法师名} — AI 教学角色
-
-{disclaimer}
-
-（voice.md Layer 0 的硬规则内容）
-
-（teaching.md 核心教导的摘要，不超过 200 字）
-```
-
----
-
-## 7. 进化机制
-
-法师角色在初始生成后可以通过追加材料持续完善，称为"进化模式"。
-
-### 7.1 追加材料流程
-
-用户触发追加：
-
-```
-给印光大师追加《文钞三编》的材料
-用这段语录更新慧能大师的说法风格
-```
-
-系统加载 `prompts/merger.md`，执行增量合并：
-
-1. 读取现有 teaching.md 与 voice.md
-2. 分析新材料与现有内容的关系（补充/扩展/修订）
-3. 生成合并草稿，明确标注变更位置
-4. 用户确认后写入，并通过 version_manager 创建新版本存档
-
-### 7.2 冲突处理策略
-
-当新材料与现有内容存在冲突时，merger.md 按以下优先级处理：
-
-| 冲突类型 | 处理方式 |
-|---------|---------|
-| 同一教义的不同诠释 | 并列保留，加注"诠释分歧"说明 |
-| 晚期著作修订早期观点 | 以时间轴标注，保留两个阶段的内容 |
-| 材料与已知历史事实冲突 | 标记存疑，不自动替换，提示用户核查 |
-| 风格描述存在矛盾 | 提示用户选择，不自动决策 |
-
-合并结果必须通过用户确认，不进行静默写入。
-
-### 7.3 版本存档与回滚
-
-version_manager 在每次写入前自动备份：
-
-```
-teachers/{slug}/
-├── teaching.md          # 当前版本
-├── voice.md             # 当前版本
-├── meta.json            # 当前版本
-└── .versions/
-    ├── v1.0.0/
-    │   ├── teaching.md
-    │   ├── voice.md
-    │   └── meta.json
-    └── v1.1.0/
-        ├── teaching.md
-        ├── voice.md
-        └── meta.json
-```
-
-回滚命令：
-
-```
-/master-rollback {slug} {version}
-```
-
-回滚操作不删除后续版本，而是创建一个新版本（内容为指定版本的副本），保持版本历史的完整性。
-
----
-
-## 8. 未来规划
-
-### 8.1 更多预置法师
-
-以下法师列入预置候选，按优先级排序：
-
-**第一批（历史影响力最大，文献最丰富）**
-
-| 法师 | 传承 | 预计数据来源 |
-|-----|-----|------------|
-| 六祖慧能 | 汉传·禅宗 | 坛经 |
-| 虚云老和尚 | 汉传·禅宗 | 虚云老和尚年谱法汇 |
-| 弘一大师 | 汉传·律宗 | 弘一大师全集 |
-| 太虚大师 | 汉传·综合 | 太虚大师全书 |
-| 慧远大师 | 汉传·净土 | 庐山慧远文集、东林十八高贤传 |
-
-**第二批（专题深度法师）**
-
-| 法师 | 传承 | 特色 |
-|-----|-----|-----|
-| 善导大师 | 汉传·净土 | 净土宗立宗依据 |
-| 道安法师 | 汉传·早期 | 经录整理与僧制建立 |
-| 窥基大师 | 汉传·唯识 | 成唯识论述记 |
-| 憨山德清 | 汉传·禅净 | 憨山老人梦游集 |
-| 紫柏真可 | 汉传·禅宗 | 紫柏尊者全集 |
-| 莲池大师 | 汉传·净土 | 云栖法汇 |
-
-### 8.2 FoJin 前端集成
-
-规划在 fojin.app 中提供网页端法师生成界面，允许用户：
-
-- 在网页界面选择法师、配置关注方向
-- 直接在浏览器中预览生成结果
-- 一键导出为 AgentSkills 格式
-
-此功能需要 FoJin 后端提供法师生成 API，前端实现生成界面与预览组件。
-
-### 8.3 多语言 voice
-
-当前 voice.md 使用中文描述法师风格，但描述的是该法师在其原语言环境中的表达特征。未来规划：
-
-- **文言 voice**：还原古代祖师原著的文言风格，严格使用文言句式与汉传经典用语
-- **白话 voice**：面向现代读者的白话讲解风格，保留汉传术语精确度
-- **梵文术语 voice**：在汉译术语旁标注对应梵文原词，便于学术研究者对照原典
-- **日文 voice**：面向日本佛教研究者，对应汉传法师（如禅宗、净土、华严）在日本学界的诠释传统
-
-### 8.4 社区贡献法师机制
-
-规划开放社区贡献渠道，允许研究者与修行者提交新法师的 teaching.md 与 voice.md 草稿：
-
-**贡献流程**
-
-1. Fork 仓库，在 `teachers/` 下创建新法师目录
-2. 按格式规范编写 teaching.md、voice.md、meta.json
-3. 每条内容必须附可验证的文献出处
-4. 提交 Pull Request，附说明材料来源与作者背景
-5. 经维护者审核后合并至 prebuilt 目录
-
-**质量门槛**
-
-- teaching.md 中所有教义内容必须有明确的文献出处
-- voice.md 中的表达风格描述必须有对应的原始语录佐证
-- 不接受以 AI 生成内容为主要来源的贡献（须说明数据来源）
-- 不接受在世法师的贡献
-
----
-
-*本文件为 Master-skill 项目的产品需求文档，描述项目的设计意图、技术规范与发展方向。如有变更，以最新版本为准。*
+This PRD describes the current Master-skill framework. Historical design notes remain in `docs/superpowers/specs/` and `docs/superpowers/plans/`.
