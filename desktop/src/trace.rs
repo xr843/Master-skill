@@ -371,6 +371,16 @@ pub struct EvaluationFailureInsights {
     pub fabricated_cites_count: usize,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EvaluationFailureItem {
+    pub slug: String,
+    pub case_index: usize,
+    pub question: String,
+    pub status: String,
+    pub failure_summary: String,
+    pub trace_id: u64,
+}
+
 impl EvaluationFailureInsights {
     pub fn graded_cases(&self) -> usize {
         self.pass_cases + self.failed_cases
@@ -613,6 +623,25 @@ impl TraceStore {
         }
 
         insights
+    }
+
+    pub fn evaluation_failure_queue(&self) -> Vec<EvaluationFailureItem> {
+        self.latest_evaluation_case_results_by_slug()
+            .into_values()
+            .flatten()
+            .filter(|result| result.status == "FAIL" || result.has_failure_evidence())
+            .map(|result| {
+                let failure_summary = result.failure_summary();
+                EvaluationFailureItem {
+                    slug: result.slug,
+                    case_index: result.case_index,
+                    question: result.question,
+                    status: result.status,
+                    failure_summary,
+                    trace_id: result.trace_id,
+                }
+            })
+            .collect()
     }
 
     pub fn clear(&mut self) {
@@ -1174,6 +1203,95 @@ mod tests {
         assert_eq!(insights.dry_run_cases, 2);
         assert_eq!(insights.graded_cases(), 0);
         assert_eq!(insights.pass_rate_label(), "N/A");
+    }
+
+    #[test]
+    fn lists_latest_failed_evaluation_cases_for_action_queue() {
+        let mut store = TraceStore::new(10);
+
+        let old_run = store.begin_with_action(
+            "Running master-huineng fidelity run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            old_run,
+            "master-huineng fidelity run finished",
+            r#"[
+              {
+                "master": "master-huineng",
+                "results": [
+                  {
+                    "index": 0,
+                    "question": "旧失败不应进入队列",
+                    "status": "FAIL",
+                    "missing_cites": ["OLD"]
+                  }
+                ]
+              }
+            ]"#,
+            Duration::from_millis(40),
+        );
+
+        let latest_run = store.begin_with_action(
+            "Running fidelity run",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            latest_run,
+            "fidelity run finished",
+            r#"[
+              {
+                "master": "master-huineng",
+                "results": [
+                  {
+                    "index": 0,
+                    "question": "这个 case 已经通过",
+                    "status": "PASS"
+                  },
+                  {
+                    "index": 1,
+                    "question": "顿悟是否等于随意发挥？",
+                    "status": "FAIL",
+                    "missing_cites": ["T48n2008"],
+                    "forbidden_found": ["过程旁白"]
+                  }
+                ]
+              },
+              {
+                "master": "master-zhiyi",
+                "results": [
+                  {
+                    "index": 0,
+                    "question": "一念三千如何表达？",
+                    "status": "FAIL",
+                    "missing_mentions": ["三谛"]
+                  }
+                ]
+              }
+            ]"#,
+            Duration::from_millis(55),
+        );
+
+        let queue = store.evaluation_failure_queue();
+
+        assert_eq!(queue.len(), 2);
+        assert_eq!(queue[0].slug, "huineng");
+        assert_eq!(queue[0].case_index, 2);
+        assert_eq!(queue[0].question, "顿悟是否等于随意发挥？");
+        assert_eq!(
+            queue[0].failure_summary,
+            "missing cites: T48n2008; forbidden: 过程旁白"
+        );
+        assert_eq!(queue[0].trace_id, latest_run);
+        assert_eq!(queue[1].slug, "zhiyi");
+        assert_eq!(queue[1].case_index, 1);
+        assert_eq!(queue[1].failure_summary, "missing mentions: 三谛");
     }
 
     #[test]
