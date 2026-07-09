@@ -15,6 +15,9 @@ use crate::layout::{
     metric_cards_per_row, operation_log_height, TwoPaneMode,
 };
 use crate::model::{DoctorReport, MasterInspect, SkillInventory};
+use crate::theme::{
+    apply_console_theme, sidebar_default_width, sidebar_row_height, status_badge_width,
+};
 use crate::trace::{TraceStatus, TraceStore};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -383,6 +386,35 @@ impl MasterSkillApp {
             TraceStatus::Succeeded => egui::Color32::from_rgb(100, 190, 130),
             TraceStatus::Failed => egui::Color32::from_rgb(210, 100, 100),
         }
+    }
+
+    fn quality_badge_fill(level: QualityLevel) -> egui::Color32 {
+        match level {
+            QualityLevel::Ready => egui::Color32::from_rgb(21, 64, 44),
+            QualityLevel::Attention => egui::Color32::from_rgb(76, 57, 28),
+            QualityLevel::Missing => egui::Color32::from_rgb(74, 36, 36),
+        }
+    }
+
+    fn show_quality_badge(ui: &mut egui::Ui, level: QualityLevel) {
+        let fill = Self::quality_badge_fill(level);
+        let stroke = egui::Stroke::new(1.0, Self::quality_color(level));
+        ui.allocate_ui_with_layout(
+            egui::vec2(status_badge_width(), sidebar_row_height() - 4.0),
+            egui::Layout::top_down(egui::Align::Center),
+            |ui| {
+                egui::Frame::new()
+                    .fill(fill)
+                    .stroke(stroke)
+                    .inner_margin(egui::Margin::symmetric(6, 2))
+                    .show(ui, |ui| {
+                        ui.set_width((status_badge_width() - 16.0).max(28.0));
+                        ui.centered_and_justified(|ui| {
+                            ui.small(level.label());
+                        });
+                    });
+            },
+        );
     }
 
     fn show_workspace_header(
@@ -760,7 +792,17 @@ impl MasterSkillApp {
     }
 
     fn show_sidebar(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Skills");
+        let ready_count = self
+            .rows
+            .iter()
+            .filter(|row| row.quality_level() == QualityLevel::Ready)
+            .count();
+        ui.horizontal(|ui| {
+            ui.heading("Skills");
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                ui.small(format!("{ready_count}/{} ready", self.rows.len()));
+            });
+        });
         ui.add(
             egui::TextEdit::singleline(&mut self.search_query)
                 .hint_text("Search name, slug, tradition, school"),
@@ -805,13 +847,26 @@ impl MasterSkillApp {
                 let selected = self.selected_slug.as_deref() == Some(row.slug.as_str());
                 let quality = row.quality_level();
                 let title = row.title().to_string();
-                ui.horizontal(|ui| {
-                    if ui.selectable_label(selected, row.name.clone()).clicked() {
-                        self.console_section = ConsoleSection::SkillDetail;
-                        self.start_inspect(row.slug.clone());
-                    }
-                    ui.colored_label(Self::quality_color(quality), quality.label());
-                });
+                ui.allocate_ui_with_layout(
+                    egui::vec2(ui.available_width(), sidebar_row_height()),
+                    egui::Layout::left_to_right(egui::Align::Center),
+                    |ui| {
+                        let name_width =
+                            (ui.available_width() - status_badge_width() - 10.0).max(80.0);
+                        let name = egui::RichText::new(row.name.clone()).size(13.0);
+                        if ui
+                            .add_sized(
+                                egui::vec2(name_width, sidebar_row_height()),
+                                egui::SelectableLabel::new(selected, name),
+                            )
+                            .clicked()
+                        {
+                            self.console_section = ConsoleSection::SkillDetail;
+                            self.start_inspect(row.slug.clone());
+                        }
+                        Self::show_quality_badge(ui, quality);
+                    },
+                );
                 if selected && title != row.name {
                     ui.small(title);
                 }
@@ -1069,6 +1124,7 @@ impl Default for MasterSkillApp {
 
 impl eframe::App for MasterSkillApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        apply_console_theme(ctx);
         self.poll_task();
         if self.is_busy() {
             ctx.request_repaint();
@@ -1078,7 +1134,7 @@ impl eframe::App for MasterSkillApp {
 
         egui::SidePanel::left("skills")
             .resizable(true)
-            .default_width(260.0)
+            .default_width(sidebar_default_width())
             .show(ctx, |ui| self.show_sidebar(ui));
 
         egui::TopBottomPanel::bottom("log")
