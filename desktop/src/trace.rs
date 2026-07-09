@@ -1,7 +1,12 @@
 use std::collections::{BTreeMap, VecDeque};
+use std::fs;
+use std::path::Path;
 use std::time::Duration;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub enum TraceStatus {
     Running,
     Succeeded,
@@ -18,7 +23,7 @@ impl TraceStatus {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub enum TraceAction {
     Refresh,
     InspectSkill { slug: String },
@@ -66,7 +71,7 @@ impl FailureKind {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct TraceRecord {
     pub id: u64,
     pub label: String,
@@ -222,7 +227,7 @@ impl EvaluationRunCoverage {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TraceStore {
     capacity: usize,
     next_id: u64,
@@ -236,6 +241,36 @@ impl TraceStore {
             next_id: 1,
             records: VecDeque::new(),
         }
+    }
+
+    pub fn load_from_path(path: &Path, capacity: usize) -> Result<Self> {
+        if !path.is_file() {
+            return Ok(Self::new(capacity));
+        }
+
+        let content = fs::read_to_string(path)?;
+        let mut store: Self = serde_json::from_str(&content)?;
+        store.capacity = capacity;
+        store.next_id = store
+            .records
+            .iter()
+            .map(|record| record.id)
+            .max()
+            .unwrap_or(0)
+            .saturating_add(1)
+            .max(store.next_id);
+        store.mark_running_records_interrupted();
+        store.enforce_capacity();
+        Ok(store)
+    }
+
+    pub fn save_to_path(&self, path: &Path) -> Result<()> {
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let content = serde_json::to_string_pretty(self)?;
+        fs::write(path, content)?;
+        Ok(())
     }
 
     pub fn begin(&mut self, label: impl Into<String>) -> u64 {
@@ -415,13 +450,35 @@ impl TraceStore {
             self.records.pop_front();
         }
     }
+
+    fn mark_running_records_interrupted(&mut self) {
+        for record in &mut self.records {
+            if record.status == TraceStatus::Running {
+                record.status = TraceStatus::Failed;
+                record.summary = "Interrupted before completion.".to_string();
+                record.detail =
+                    "Desktop manager closed before this operation reported a result.".to_string();
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+    use std::path::PathBuf;
     use std::time::Duration;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     use super::{FailureKind, TraceAction, TraceStatus, TraceStore};
+
+    fn temp_path(name: &str) -> PathBuf {
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        std::env::temp_dir().join(format!("master-skill-desktop-{name}-{suffix}.json"))
+    }
 
     #[test]
     fn records_success_and_error_traces_with_summary() {
@@ -655,6 +712,66 @@ mod tests {
         assert_eq!(coverage.dry_run_count, 2);
         assert_eq!(coverage.graded_count, 0);
         assert_eq!(coverage.label(), "2/18");
+    }
+
+    #[test]
+    fn persists_trace_history_and_next_record_id() {
+        let path = temp_path("trace-history");
+        let mut store = TraceStore::new(10);
+
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "master-huineng fidelity dry-run finished",
+            "Testing: master-huineng\nResult: 0/12 passed (N/A)",
+            Duration::from_millis(40),
+        );
+
+        store.save_to_path(&path).unwrap();
+        let mut restored = TraceStore::load_from_path(&path, 10).unwrap();
+        let next = restored.begin("Refreshing runtime data");
+
+        assert_eq!(restored.summary().total, 2);
+        assert_eq!(next, 2);
+        assert_eq!(
+            restored
+                .latest_evaluation_result_for("huineng")
+                .unwrap()
+                .label(),
+            "0/12 N/A"
+        );
+
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn marks_persisted_running_traces_as_interrupted_on_load() {
+        let path = temp_path("trace-interrupted");
+        let mut store = TraceStore::new(10);
+
+        store.begin_with_action(
+            "Running full validation",
+            TraceAction::FullValidation,
+            Some("npm test"),
+            "Queued.",
+        );
+
+        store.save_to_path(&path).unwrap();
+        let restored = TraceStore::load_from_path(&path, 10).unwrap();
+        let record = &restored.recent()[0];
+
+        assert_eq!(record.status, TraceStatus::Failed);
+        assert_eq!(record.summary, "Interrupted before completion.");
+        assert!(record.detail.contains("Desktop manager closed"));
+
+        fs::remove_file(path).unwrap();
     }
 
     #[test]
