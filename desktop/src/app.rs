@@ -68,6 +68,7 @@ struct Snapshot {
 
 struct TaskOutcome {
     message: String,
+    detail: String,
     snapshot: Option<Snapshot>,
 }
 
@@ -176,6 +177,17 @@ impl MasterSkillApp {
     where
         F: FnOnce(CliClient) -> Result<TaskOutcome> + Send + 'static,
     {
+        self.start_task_with_command(label, None::<String>, task);
+    }
+
+    fn start_task_with_command<F>(
+        &mut self,
+        label: impl Into<String>,
+        command: Option<impl Into<String>>,
+        task: F,
+    ) where
+        F: FnOnce(CliClient) -> Result<TaskOutcome> + Send + 'static,
+    {
         if self.is_busy() {
             self.set_log("A task is already running.");
             return;
@@ -183,7 +195,9 @@ impl MasterSkillApp {
 
         let client = self.client.clone();
         let label = label.into();
-        let trace_id = self.traces.begin(label.clone());
+        let trace_id = self
+            .traces
+            .begin_with_detail(label.clone(), command, "Queued.");
         let (tx, rx) = channel();
         self.task_rx = Some(rx);
         self.busy_label = Some(label.clone());
@@ -210,16 +224,21 @@ impl MasterSkillApp {
                     if let Some(snapshot) = outcome.snapshot {
                         self.apply_snapshot(snapshot);
                     }
-                    self.traces.finish_success(
+                    self.traces.finish_success_with_detail(
                         envelope.trace_id,
                         outcome.message.clone(),
+                        outcome.detail.clone(),
                         envelope.elapsed,
                     );
                     self.set_log(outcome.message);
                 }
                 Err(message) => {
-                    self.traces
-                        .finish_error(envelope.trace_id, message.clone(), envelope.elapsed);
+                    self.traces.finish_error_with_detail(
+                        envelope.trace_id,
+                        first_line(&message),
+                        message.clone(),
+                        envelope.elapsed,
+                    );
                     self.set_log(message);
                 }
             }
@@ -232,6 +251,7 @@ impl MasterSkillApp {
             let snapshot = Self::load_snapshot(&client, selected_slug)?;
             Ok(TaskOutcome {
                 message: "Runtime data refreshed.".to_string(),
+                detail: "Reloaded inventory, runtime doctor report, selected skill metadata, and local diagnostics.".to_string(),
                 snapshot: Some(snapshot),
             })
         });
@@ -242,70 +262,101 @@ impl MasterSkillApp {
             let snapshot = Self::load_snapshot(&client, Some(slug.clone()))?;
             Ok(TaskOutcome {
                 message: format!("Loaded master-{slug}."),
+                detail: format!(
+                    "Loaded source, evaluation, install, and runtime metadata for master-{slug}."
+                ),
                 snapshot: Some(snapshot),
             })
         });
     }
 
     fn start_install(&mut self, slug: String) {
-        self.start_task(format!("Installing master-{slug}"), move |client| {
-            let output = client.install(&slug)?;
-            let snapshot = Self::load_snapshot(&client, Some(slug))?;
-            Ok(TaskOutcome {
-                message: output.trim().to_string(),
-                snapshot: Some(snapshot),
-            })
-        });
+        self.start_task_with_command(
+            format!("Installing master-{slug}"),
+            Some(format!("master-skill install {slug}")),
+            move |client| {
+                let output = client.install(&slug)?;
+                let snapshot = Self::load_snapshot(&client, Some(slug))?;
+                Ok(TaskOutcome {
+                    message: output.trim().to_string(),
+                    detail: output.trim().to_string(),
+                    snapshot: Some(snapshot),
+                })
+            },
+        );
     }
 
     fn start_uninstall(&mut self, slug: String) {
-        self.start_task(format!("Uninstalling master-{slug}"), move |client| {
-            let output = client.uninstall(&slug)?;
-            let snapshot = Self::load_snapshot(&client, Some(slug))?;
-            Ok(TaskOutcome {
-                message: output.trim().to_string(),
-                snapshot: Some(snapshot),
-            })
-        });
+        self.start_task_with_command(
+            format!("Uninstalling master-{slug}"),
+            Some(format!("master-skill uninstall {slug}")),
+            move |client| {
+                let output = client.uninstall(&slug)?;
+                let snapshot = Self::load_snapshot(&client, Some(slug))?;
+                Ok(TaskOutcome {
+                    message: output.trim().to_string(),
+                    detail: output.trim().to_string(),
+                    snapshot: Some(snapshot),
+                })
+            },
+        );
     }
 
     fn start_install_all(&mut self) {
         let selected_slug = self.selected_slug.clone();
-        self.start_task("Installing all skills", move |client| {
-            let output = client.install_all()?;
-            let snapshot = Self::load_snapshot(&client, selected_slug)?;
-            Ok(TaskOutcome {
-                message: output.trim().to_string(),
-                snapshot: Some(snapshot),
-            })
-        });
+        self.start_task_with_command(
+            "Installing all skills",
+            Some("master-skill install --all"),
+            move |client| {
+                let output = client.install_all()?;
+                let snapshot = Self::load_snapshot(&client, selected_slug)?;
+                Ok(TaskOutcome {
+                    message: output.trim().to_string(),
+                    detail: output.trim().to_string(),
+                    snapshot: Some(snapshot),
+                })
+            },
+        );
     }
 
     fn start_update_all(&mut self) {
         let selected_slug = self.selected_slug.clone();
-        self.start_task("Updating all skills", move |client| {
-            let output = client.update_all()?;
-            let snapshot = Self::load_snapshot(&client, selected_slug)?;
-            Ok(TaskOutcome {
-                message: output.trim().to_string(),
-                snapshot: Some(snapshot),
-            })
-        });
+        self.start_task_with_command(
+            "Updating all skills",
+            Some("master-skill update --all"),
+            move |client| {
+                let output = client.update_all()?;
+                let snapshot = Self::load_snapshot(&client, selected_slug)?;
+                Ok(TaskOutcome {
+                    message: output.trim().to_string(),
+                    detail: output.trim().to_string(),
+                    snapshot: Some(snapshot),
+                })
+            },
+        );
     }
 
     fn start_fidelity_dry_run(&mut self) {
-        self.start_task("Running fidelity dry-run", move |client| {
-            let output = client.run_fidelity_dry_run()?;
-            Ok(TaskOutcome {
-                message: summarize_command_output("Fidelity dry-run finished", &output),
-                snapshot: None,
-            })
-        });
+        self.start_task_with_command(
+            "Running fidelity dry-run",
+            Some("python3 scripts/test-fidelity.py --all --dry-run"),
+            move |client| {
+                let output = client.run_fidelity_dry_run()?;
+                Ok(TaskOutcome {
+                    message: summarize_command_output("Fidelity dry-run finished", &output),
+                    detail: output.trim().to_string(),
+                    snapshot: None,
+                })
+            },
+        );
     }
 
     fn start_skill_fidelity_dry_run(&mut self, slug: String) {
-        self.start_task(
+        self.start_task_with_command(
             format!("Running master-{slug} fidelity dry-run"),
+            Some(format!(
+                "python3 scripts/test-fidelity.py --master master-{slug} --dry-run"
+            )),
             move |client| {
                 let output = client.run_fidelity_dry_run_for(&slug)?;
                 Ok(TaskOutcome {
@@ -313,6 +364,7 @@ impl MasterSkillApp {
                         &format!("master-{slug} fidelity dry-run finished"),
                         &output,
                     ),
+                    detail: output.trim().to_string(),
                     snapshot: None,
                 })
             },
@@ -320,10 +372,11 @@ impl MasterSkillApp {
     }
 
     fn start_full_validation(&mut self) {
-        self.start_task("Running full validation", move |client| {
+        self.start_task_with_command("Running full validation", Some("npm test"), move |client| {
             let output = client.run_full_validation()?;
             Ok(TaskOutcome {
                 message: summarize_command_output("Full validation finished", &output),
+                detail: output.trim().to_string(),
                 snapshot: None,
             })
         });
@@ -777,40 +830,67 @@ impl MasterSkillApp {
             return;
         }
 
-        egui::ScrollArea::horizontal().show(ui, |ui| {
-            egui::ScrollArea::vertical()
-                .max_height(190.0)
-                .show(ui, |ui| {
-                    egui::Grid::new("run-trace-grid")
-                        .num_columns(5)
-                        .striped(true)
-                        .min_col_width(88.0)
+        egui::ScrollArea::vertical()
+            .max_height(320.0)
+            .show(ui, |ui| {
+                for record in recent {
+                    let duration = record
+                        .duration_ms
+                        .map(|duration| format!("{duration} ms"))
+                        .unwrap_or_else(|| "running".to_string());
+                    let header = format!(
+                        "#{}  {}  {}  {}",
+                        record.id,
+                        record.status.label(),
+                        duration,
+                        record.label
+                    );
+                    egui::CollapsingHeader::new(header)
+                        .default_open(record.status == TraceStatus::Failed)
                         .show(ui, |ui| {
-                            ui.strong("ID");
-                            ui.strong("Status");
-                            ui.strong("Duration");
-                            ui.strong("Operation");
-                            ui.strong("Summary");
-                            ui.end_row();
-                            for record in recent {
-                                ui.label(format!("#{}", record.id));
-                                ui.colored_label(
-                                    Self::trace_color(record.status),
-                                    record.status.label(),
-                                );
-                                ui.label(
-                                    record
-                                        .duration_ms
-                                        .map(|duration| format!("{duration} ms"))
-                                        .unwrap_or_else(|| "running".to_string()),
-                                );
-                                ui.label(record.label);
-                                ui.label(first_line(&record.summary));
-                                ui.end_row();
-                            }
+                            egui::Grid::new(format!("trace-detail-grid-{}", record.id))
+                                .num_columns(2)
+                                .striped(true)
+                                .show(ui, |ui| {
+                                    ui.label("Status");
+                                    ui.colored_label(
+                                        Self::trace_color(record.status),
+                                        record.status.label(),
+                                    );
+                                    ui.end_row();
+                                    ui.label("Duration");
+                                    ui.label(&duration);
+                                    ui.end_row();
+                                    ui.label("Operation");
+                                    ui.label(&record.label);
+                                    ui.end_row();
+                                    ui.label("Summary");
+                                    ui.label(first_line(&record.summary));
+                                    ui.end_row();
+                                    ui.label("Command");
+                                    if let Some(command) = &record.command {
+                                        ui.monospace(command);
+                                    } else {
+                                        ui.label("internal");
+                                    }
+                                    ui.end_row();
+                                });
+                            ui.separator();
+                            ui.label("Detail");
+                            let detail = if record.detail.trim().is_empty() {
+                                &record.summary
+                            } else {
+                                &record.detail
+                            };
+                            egui::ScrollArea::vertical()
+                                .max_height(160.0)
+                                .show(ui, |ui| {
+                                    ui.monospace(detail);
+                                });
                         });
-                });
-        });
+                    ui.separator();
+                }
+            });
     }
 
     fn show_sidebar(&mut self, ui: &mut egui::Ui) {
