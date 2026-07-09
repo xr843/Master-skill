@@ -23,7 +23,7 @@ use crate::theme::{
 use crate::trace::{
     EvaluationFailureInsights, EvaluationFailureItem, EvaluationFailurePriority,
     EvaluationRegressionItem, EvaluationRunHistoryItem, EvaluationRunTrend, EvaluationTrendSummary,
-    TraceAction, TraceListFilter, TraceStatus, TraceStore,
+    TraceAction, TraceFailureItem, TraceListFilter, TraceStatus, TraceStore,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1239,6 +1239,7 @@ impl MasterSkillApp {
 
     fn show_trace_center(&mut self, ui: &mut egui::Ui) {
         let summary = self.traces.summary();
+        let failure_queue = self.traces.trace_failure_queue(6);
         let can_clear = summary.total > 0 && summary.running == 0;
         Self::show_workspace_header(
             ui,
@@ -1292,6 +1293,9 @@ impl MasterSkillApp {
             },
         ];
         Self::show_metric_cards(ui, &cards);
+
+        ui.separator();
+        self.show_trace_failure_queue(ui, &failure_queue);
 
         ui.separator();
         ui.horizontal_wrapped(|ui| {
@@ -1405,6 +1409,79 @@ impl MasterSkillApp {
                     ui.separator();
                 }
             });
+        if let Some(action) = action_to_rerun {
+            self.start_trace_action(action);
+        }
+        if let Some(slug) = skill_to_open {
+            self.console_section = ConsoleSection::SkillDetail;
+            self.start_inspect(slug);
+        }
+    }
+
+    fn show_trace_failure_queue(&mut self, ui: &mut egui::Ui, failure_queue: &[TraceFailureItem]) {
+        ui.heading("Failure Queue");
+        if failure_queue.is_empty() {
+            ui.small("No failed traces require recovery.");
+            return;
+        }
+
+        let busy = self.is_busy();
+        let mut action_to_rerun = None;
+        let mut skill_to_open = None;
+        egui::ScrollArea::horizontal()
+            .max_width(ui.available_width())
+            .show(ui, |ui| {
+                egui::ScrollArea::vertical()
+                    .max_height(180.0)
+                    .show(ui, |ui| {
+                        egui::Grid::new("trace-failure-queue-grid")
+                            .num_columns(6)
+                            .striped(true)
+                            .min_col_width(96.0)
+                            .show(ui, |ui| {
+                                ui.strong("Trace");
+                                ui.strong("Issue");
+                                ui.strong("Operation");
+                                ui.strong("Summary");
+                                ui.strong("Duration");
+                                ui.strong("Actions");
+                                ui.end_row();
+
+                                for item in failure_queue {
+                                    ui.label(format!("#{}", item.trace_id));
+                                    ui.colored_label(
+                                        Self::trace_color(TraceStatus::Failed),
+                                        item.kind.label(),
+                                    );
+                                    ui.label(&item.label);
+                                    ui.label(first_line(&item.summary));
+                                    ui.label(
+                                        item.duration_ms
+                                            .map(|duration| format!("{duration} ms"))
+                                            .unwrap_or_else(|| "running".to_string()),
+                                    );
+                                    ui.horizontal(|ui| {
+                                        if ui
+                                            .add_enabled(
+                                                !busy && item.action.is_some(),
+                                                egui::Button::new("Rerun"),
+                                            )
+                                            .clicked()
+                                        {
+                                            action_to_rerun = item.action.clone();
+                                        }
+                                        if let Some(slug) = &item.related_skill_slug {
+                                            if ui.button("Open Skill").clicked() {
+                                                skill_to_open = Some(slug.clone());
+                                            }
+                                        }
+                                    });
+                                    ui.end_row();
+                                }
+                            });
+                    });
+            });
+
         if let Some(action) = action_to_rerun {
             self.start_trace_action(action);
         }

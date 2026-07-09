@@ -50,6 +50,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added Evaluation Center trend summary cards for recent run health, regressions, improvements, and stable/new scopes.
 - Added an Evaluation Center regression queue with current/previous trace context, failed-count deltas, pass-rate deltas, and direct rerun/open actions.
 - Added Run Trace Center filters for all, running, succeeded, failed, evaluation, and install operations.
+- Added a Run Trace Center failure queue with failure kind, operation summary, duration, rerun actions, and related-skill navigation.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
