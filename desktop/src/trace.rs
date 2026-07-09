@@ -770,6 +770,28 @@ pub struct EvaluationDecisionBrief {
     pub primary_risk: String,
     pub evidence: String,
     pub recommendation: String,
+    pub action: EvaluationDecisionAction,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum EvaluationDecisionAction {
+    RerunAll,
+    RerunSkill { slug: String },
+    OpenSkill { slug: String },
+    RunFidelityBaseline,
+    RunFullValidation,
+}
+
+impl EvaluationDecisionAction {
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::RerunAll => "Rerun all",
+            Self::RerunSkill { .. } => "Rerun skill",
+            Self::OpenSkill { .. } => "Open skill",
+            Self::RunFidelityBaseline => "Run baseline",
+            Self::RunFullValidation => "Run validation",
+        }
+    }
 }
 
 impl EvaluationDecisionBrief {
@@ -783,6 +805,7 @@ impl EvaluationDecisionBrief {
                 .latest_regression_scope
                 .clone()
                 .unwrap_or_else(|| "recent scope".to_string());
+            let action = decision_action_for_regressed_scope(&scope);
             return Self {
                 posture: EvaluationDecisionPosture::Blocked,
                 headline: "Regression detected".to_string(),
@@ -793,10 +816,16 @@ impl EvaluationDecisionBrief {
                 ),
                 recommendation:
                     "Rerun the regressed scope and inspect failed cases before release.".to_string(),
+                action,
             };
         }
 
         if insights.failed_cases > 0 {
+            let action = insights
+                .top_failure_skill_slug
+                .as_ref()
+                .map(|slug| EvaluationDecisionAction::OpenSkill { slug: slug.clone() })
+                .unwrap_or(EvaluationDecisionAction::RunFidelityBaseline);
             return Self {
                 posture: EvaluationDecisionPosture::Attention,
                 headline: "Failing fidelity cases".to_string(),
@@ -808,6 +837,7 @@ impl EvaluationDecisionBrief {
                 recommendation:
                     "Open the top failing skill, resolve evidence gaps, then rerun fidelity."
                         .to_string(),
+                action,
             };
         }
 
@@ -821,6 +851,7 @@ impl EvaluationDecisionBrief {
                 primary_risk: format!("{} skills have latest runs", coverage.label()),
                 evidence: format!("{missing_runs} skill(s) without a current run"),
                 recommendation: "Run fidelity dry-run to establish a current baseline.".to_string(),
+                action: EvaluationDecisionAction::RunFidelityBaseline,
             };
         }
 
@@ -833,11 +864,24 @@ impl EvaluationDecisionBrief {
                 coverage.run_skill_count, trend.total_runs
             ),
             recommendation: "Proceed with release review and keep monitoring new runs.".to_string(),
+            action: EvaluationDecisionAction::RunFullValidation,
         }
     }
 
     pub fn status_label(&self) -> &'static str {
         self.posture.label()
+    }
+}
+
+fn decision_action_for_regressed_scope(scope: &str) -> EvaluationDecisionAction {
+    if scope == "all" {
+        EvaluationDecisionAction::RerunAll
+    } else if let Some(slug) = scope.strip_prefix("master-") {
+        EvaluationDecisionAction::RerunSkill {
+            slug: slug.to_string(),
+        }
+    } else {
+        EvaluationDecisionAction::RunFidelityBaseline
     }
 }
 
@@ -1308,9 +1352,9 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     use super::{
-        EvaluationDecisionBrief, EvaluationDecisionPosture, EvaluationFailureInsights,
-        EvaluationRunCoverage, EvaluationRunHistoryFilter, EvaluationTrendSummary, FailureKind,
-        TraceAction, TraceListFilter, TraceStatus, TraceStore,
+        EvaluationDecisionAction, EvaluationDecisionBrief, EvaluationDecisionPosture,
+        EvaluationFailureInsights, EvaluationRunCoverage, EvaluationRunHistoryFilter,
+        EvaluationTrendSummary, FailureKind, TraceAction, TraceListFilter, TraceStatus, TraceStore,
     };
 
     fn temp_path(name: &str) -> PathBuf {
@@ -2491,6 +2535,12 @@ mod tests {
         assert_eq!(brief.status_label(), "blocked");
         assert_eq!(brief.headline, "Regression detected");
         assert_eq!(brief.primary_risk, "master-huineng regressed");
+        assert_eq!(
+            brief.action,
+            EvaluationDecisionAction::RerunSkill {
+                slug: "huineng".to_string()
+            }
+        );
 
         trend.regressed_count = 0;
         trend.latest_regression_scope = None;
@@ -2498,6 +2548,12 @@ mod tests {
         assert_eq!(brief.posture, EvaluationDecisionPosture::Attention);
         assert_eq!(brief.headline, "Failing fidelity cases");
         assert_eq!(brief.primary_risk, "master-huineng (1)");
+        assert_eq!(
+            brief.action,
+            EvaluationDecisionAction::OpenSkill {
+                slug: "huineng".to_string()
+            }
+        );
 
         insights.failed_cases = 0;
         insights.failing_skill_count = 0;
@@ -2511,11 +2567,13 @@ mod tests {
         assert_eq!(brief.posture, EvaluationDecisionPosture::Unproven);
         assert_eq!(brief.headline, "Evaluation coverage incomplete");
         assert_eq!(brief.primary_risk, "2/3 skills have latest runs");
+        assert_eq!(brief.action, EvaluationDecisionAction::RunFidelityBaseline);
 
         let brief = EvaluationDecisionBrief::from_signals(&coverage, &trend, &insights);
         assert_eq!(brief.posture, EvaluationDecisionPosture::Ready);
         assert_eq!(brief.status_label(), "ready");
         assert_eq!(brief.headline, "Evaluation baseline clear");
+        assert_eq!(brief.action, EvaluationDecisionAction::RunFullValidation);
     }
 
     #[test]

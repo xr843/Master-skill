@@ -21,11 +21,11 @@ use crate::theme::{
     apply_console_theme, sidebar_default_width, sidebar_row_height, status_badge_width,
 };
 use crate::trace::{
-    EvaluationDecisionBrief, EvaluationDecisionPosture, EvaluationFailureInsights,
-    EvaluationFailureItem, EvaluationFailurePriority, EvaluationRegressionItem,
-    EvaluationRunHistoryFilter, EvaluationRunHistoryItem, EvaluationRunResult, EvaluationRunTrend,
-    EvaluationTrendSummary, TraceAction, TraceFailureItem, TraceListFilter, TraceStatus,
-    TraceStore,
+    EvaluationDecisionAction, EvaluationDecisionBrief, EvaluationDecisionPosture,
+    EvaluationFailureInsights, EvaluationFailureItem, EvaluationFailurePriority,
+    EvaluationRegressionItem, EvaluationRunHistoryFilter, EvaluationRunHistoryItem,
+    EvaluationRunResult, EvaluationRunTrend, EvaluationTrendSummary, TraceAction, TraceFailureItem,
+    TraceListFilter, TraceStatus, TraceStore,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -649,6 +649,22 @@ impl MasterSkillApp {
         }
     }
 
+    fn start_evaluation_decision_action(&mut self, action: EvaluationDecisionAction) {
+        match action {
+            EvaluationDecisionAction::RerunAll | EvaluationDecisionAction::RunFidelityBaseline => {
+                self.start_fidelity_dry_run()
+            }
+            EvaluationDecisionAction::RerunSkill { slug } => {
+                self.start_skill_fidelity_dry_run(slug)
+            }
+            EvaluationDecisionAction::OpenSkill { slug } => {
+                self.console_section = ConsoleSection::SkillDetail;
+                self.start_inspect(slug);
+            }
+            EvaluationDecisionAction::RunFullValidation => self.start_full_validation(),
+        }
+    }
+
     fn show_workspace_header(
         ui: &mut egui::Ui,
         title: &str,
@@ -873,7 +889,7 @@ impl MasterSkillApp {
         Self::show_metric_cards(ui, &cards);
 
         ui.separator();
-        Self::show_evaluation_decision_brief(ui, &decision_brief);
+        self.show_evaluation_decision_brief(ui, &decision_brief);
 
         ui.separator();
         Self::show_evaluation_trend_summary(ui, &trend_summary);
@@ -901,8 +917,14 @@ impl MasterSkillApp {
         }
     }
 
-    fn show_evaluation_decision_brief(ui: &mut egui::Ui, brief: &EvaluationDecisionBrief) {
+    fn show_evaluation_decision_brief(
+        &mut self,
+        ui: &mut egui::Ui,
+        brief: &EvaluationDecisionBrief,
+    ) {
         ui.heading("Decision Brief");
+        let busy = self.is_busy();
+        let mut decision_action = None;
         ui.horizontal_wrapped(|ui| {
             ui.colored_label(
                 Self::decision_posture_color(brief.posture),
@@ -910,6 +932,13 @@ impl MasterSkillApp {
             );
             ui.separator();
             ui.strong(&brief.headline);
+            ui.separator();
+            if ui
+                .add_enabled(!busy, egui::Button::new(brief.action.label()))
+                .clicked()
+            {
+                decision_action = Some(brief.action.clone());
+            }
         });
         egui::Grid::new("evaluation-decision-brief-grid")
             .num_columns(2)
@@ -926,6 +955,10 @@ impl MasterSkillApp {
                 ui.label(&brief.recommendation);
                 ui.end_row();
             });
+
+        if let Some(action) = decision_action {
+            self.start_evaluation_decision_action(action);
+        }
     }
 
     fn show_evaluation_trend_summary(ui: &mut egui::Ui, summary: &EvaluationTrendSummary) {
