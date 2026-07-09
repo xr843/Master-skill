@@ -21,7 +21,8 @@ use crate::theme::{
     apply_console_theme, sidebar_default_width, sidebar_row_height, status_badge_width,
 };
 use crate::trace::{
-    EvaluationFailureInsights, EvaluationFailureItem, TraceAction, TraceStatus, TraceStore,
+    EvaluationFailureInsights, EvaluationFailureItem, EvaluationFailurePriority, TraceAction,
+    TraceStatus, TraceStore,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -492,6 +493,14 @@ impl MasterSkillApp {
         }
     }
 
+    fn failure_priority_color(priority: EvaluationFailurePriority) -> egui::Color32 {
+        match priority {
+            EvaluationFailurePriority::Critical => egui::Color32::from_rgb(220, 90, 85),
+            EvaluationFailurePriority::High => egui::Color32::from_rgb(210, 145, 70),
+            EvaluationFailurePriority::Medium => egui::Color32::from_rgb(145, 160, 180),
+        }
+    }
+
     fn quality_badge_fill(level: QualityLevel) -> egui::Color32 {
         match level {
             QualityLevel::Ready => egui::Color32::from_rgb(21, 64, 44),
@@ -872,11 +881,12 @@ impl MasterSkillApp {
                     .max_height(220.0)
                     .show(ui, |ui| {
                         egui::Grid::new("evaluation-failure-queue-grid")
-                            .num_columns(6)
+                            .num_columns(7)
                             .striped(true)
                             .min_col_width(92.0)
                             .show(ui, |ui| {
                                 ui.strong("Skill");
+                                ui.strong("Priority");
                                 ui.strong("Case");
                                 ui.strong("Status");
                                 ui.strong("Question");
@@ -886,6 +896,10 @@ impl MasterSkillApp {
 
                                 for item in failure_queue {
                                     ui.label(format!("master-{}", item.slug));
+                                    ui.colored_label(
+                                        Self::failure_priority_color(item.priority),
+                                        item.priority.label(),
+                                    );
                                     ui.label(format!("#{}", item.case_index));
                                     ui.label(&item.status);
                                     ui.label(&item.question);
