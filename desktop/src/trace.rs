@@ -78,6 +78,10 @@ impl TraceStore {
         self.records.iter().rev().cloned().collect()
     }
 
+    pub fn clear(&mut self) {
+        self.records.clear();
+    }
+
     pub fn summary(&self) -> TraceSummary {
         TraceSummary {
             total: self.records.len(),
@@ -167,5 +171,18 @@ mod tests {
         assert_eq!(recent.len(), 2);
         assert_eq!(recent[0].label, "three");
         assert_eq!(recent[1].label, "two");
+    }
+
+    #[test]
+    fn clears_trace_history_without_resetting_record_ids() {
+        let mut store = TraceStore::new(10);
+
+        store.begin("one");
+        store.clear();
+        let next = store.begin("two");
+
+        assert_eq!(store.summary().total, 1);
+        assert_eq!(next, 2);
+        assert_eq!(store.recent()[0].label, "two");
     }
 }

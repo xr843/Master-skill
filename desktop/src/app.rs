@@ -385,6 +385,22 @@ impl MasterSkillApp {
         }
     }
 
+    fn show_workspace_header(
+        ui: &mut egui::Ui,
+        title: &str,
+        detail: &str,
+        actions: impl FnOnce(&mut egui::Ui),
+    ) {
+        ui.horizontal(|ui| {
+            ui.vertical(|ui| {
+                ui.heading(title);
+                ui.small(detail);
+            });
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), actions);
+        });
+        ui.separator();
+    }
+
     fn show_metric_card(
         ui: &mut egui::Ui,
         width: f32,
@@ -449,6 +465,12 @@ impl MasterSkillApp {
     }
 
     fn show_dashboard(&self, ui: &mut egui::Ui) {
+        Self::show_workspace_header(
+            ui,
+            "Overview",
+            "Runtime health, installation coverage, and selected skill context.",
+            |_| {},
+        );
         ui.heading("Console Health");
         if let Some(report) = &self.doctor {
             let summary = console_summary(
@@ -510,9 +532,27 @@ impl MasterSkillApp {
     }
 
     fn show_evaluation_center(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Evaluation Center");
         let busy = self.is_busy();
         let summary = evaluation_summary(&self.rows);
+        Self::show_workspace_header(
+            ui,
+            "Evaluation Center",
+            "Fidelity coverage, tradition distribution, and validation actions.",
+            |ui| {
+                if ui
+                    .add_enabled(!busy, egui::Button::new("Run full validation"))
+                    .clicked()
+                {
+                    self.start_full_validation();
+                }
+                if ui
+                    .add_enabled(!busy, egui::Button::new("Run fidelity dry-run"))
+                    .clicked()
+                {
+                    self.start_fidelity_dry_run();
+                }
+            },
+        );
 
         let cards = vec![
             MetricCard {
@@ -547,21 +587,6 @@ impl MasterSkillApp {
             },
         ];
         Self::show_metric_cards(ui, &cards);
-
-        ui.horizontal(|ui| {
-            if ui
-                .add_enabled(!busy, egui::Button::new("Run fidelity dry-run"))
-                .clicked()
-            {
-                self.start_fidelity_dry_run();
-            }
-            if ui
-                .add_enabled(!busy, egui::Button::new("Run full validation"))
-                .clicked()
-            {
-                self.start_full_validation();
-            }
-        });
 
         ui.separator();
         let mode = dense_table_mode_for_width(ui.available_width());
@@ -636,9 +661,23 @@ impl MasterSkillApp {
             });
     }
 
-    fn show_trace_center(&self, ui: &mut egui::Ui) {
-        ui.heading("Run Trace Center");
+    fn show_trace_center(&mut self, ui: &mut egui::Ui) {
         let summary = self.traces.summary();
+        let can_clear = summary.total > 0 && summary.running == 0;
+        Self::show_workspace_header(
+            ui,
+            "Run Trace Center",
+            "Recent desktop operations, durations, and failure summaries.",
+            |ui| {
+                if ui
+                    .add_enabled(can_clear, egui::Button::new("Clear traces"))
+                    .clicked()
+                {
+                    self.traces.clear();
+                    self.set_log("Run trace history cleared.");
+                }
+            },
+        );
         let cards = vec![
             MetricCard {
                 title: "Traces",
@@ -824,7 +863,15 @@ impl MasterSkillApp {
         }
     }
 
-    fn show_selected(&mut self, ui: &mut egui::Ui) {
+    fn show_selected(&mut self, ui: &mut egui::Ui, show_workspace_header: bool) {
+        if show_workspace_header {
+            Self::show_workspace_header(
+                ui,
+                "Skill Detail",
+                "Source metadata, evaluation status, installation state, and runtime protocol.",
+                |_| {},
+            );
+        }
         ui.heading("Selected Skill");
         if let Some(master) = self.selected.clone() {
             let row_metrics = self
@@ -995,12 +1042,12 @@ impl MasterSkillApp {
         if dashboard_columns_for_width(ui.available_width()) == TwoPaneMode::TwoColumns {
             ui.columns(2, |columns| {
                 self.show_doctor(&mut columns[0]);
-                self.show_selected(&mut columns[1]);
+                self.show_selected(&mut columns[1], false);
             });
         } else {
             self.show_doctor(ui);
             ui.separator();
-            self.show_selected(ui);
+            self.show_selected(ui, false);
         }
     }
 
@@ -1009,7 +1056,7 @@ impl MasterSkillApp {
             ConsoleSection::Overview => self.show_overview_workspace(ui),
             ConsoleSection::Evaluation => self.show_evaluation_center(ui),
             ConsoleSection::Runs => self.show_trace_center(ui),
-            ConsoleSection::SkillDetail => self.show_selected(ui),
+            ConsoleSection::SkillDetail => self.show_selected(ui, true),
         }
     }
 }
