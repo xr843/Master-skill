@@ -873,6 +873,111 @@ impl EvaluationDecisionBrief {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EvaluationEvidenceReport {
+    pub markdown: String,
+}
+
+impl EvaluationEvidenceReport {
+    pub fn from_signals(
+        brief: &EvaluationDecisionBrief,
+        coverage: &EvaluationRunCoverage,
+        trend: &EvaluationTrendSummary,
+        insights: &EvaluationFailureInsights,
+        regressions: &[EvaluationRegressionItem],
+        failure_queue: &[EvaluationFailureItem],
+        run_history: &[EvaluationRunHistoryItem],
+    ) -> Self {
+        let mut markdown = String::new();
+        markdown.push_str("# Master-skill Evaluation Evidence Report\n\n");
+        markdown.push_str("## Quality Gate\n");
+        markdown.push_str(&format!("- Status: {}\n", brief.status_label()));
+        markdown.push_str(&format!("- Headline: {}\n", brief.headline));
+        markdown.push_str(&format!("- Primary risk: {}\n", brief.primary_risk));
+        markdown.push_str(&format!("- Evidence: {}\n", brief.evidence));
+        markdown.push_str(&format!("- Next action: {}\n\n", brief.recommendation));
+
+        markdown.push_str("## Coverage And Trend\n");
+        markdown.push_str(&format!("- Coverage: {} skills\n", coverage.label()));
+        markdown.push_str(&format!(
+            "- Run modes: {} dry-run / {} graded\n",
+            coverage.dry_run_count, coverage.graded_count
+        ));
+        markdown.push_str(&format!(
+            "- Trend: {} regressed / {} improved / {} stable / {} new\n\n",
+            trend.regressed_count, trend.improved_count, trend.stable_count, trend.new_count
+        ));
+
+        markdown.push_str("## Failure Evidence\n");
+        markdown.push_str(&format!(
+            "- Failure evidence: {} failed case(s), {} failing skill(s), pass rate {}\n",
+            insights.failed_cases,
+            insights.failing_skill_count,
+            insights.pass_rate_label()
+        ));
+        markdown.push_str(&format!(
+            "- Evidence gaps: {} missing cite(s), {} missing mention(s), {} forbidden match(es), {} boundary violation(s), {} fabricated cite(s)\n\n",
+            insights.missing_cites_count,
+            insights.missing_mentions_count,
+            insights.forbidden_found_count,
+            insights.boundary_violations_count,
+            insights.fabricated_cites_count
+        ));
+
+        markdown.push_str("## Regression Queue\n");
+        if regressions.is_empty() {
+            markdown.push_str("- none\n\n");
+        } else {
+            for item in regressions {
+                markdown.push_str(&format!(
+                    "- {}: trace #{} vs #{}, failed {:+}, pass rate {:+} pts\n",
+                    item.scope,
+                    item.current_trace_id,
+                    item.previous_trace_id,
+                    item.failed_delta,
+                    item.pass_rate_delta_points
+                ));
+            }
+            markdown.push('\n');
+        }
+
+        markdown.push_str("## Failure Queue\n");
+        if failure_queue.is_empty() {
+            markdown.push_str("- none\n\n");
+        } else {
+            for item in failure_queue {
+                markdown.push_str(&format!(
+                    "- {} master-{} case #{}: {}\n",
+                    item.priority.label(),
+                    item.slug,
+                    item.case_index,
+                    item.failure_summary
+                ));
+            }
+            markdown.push('\n');
+        }
+
+        markdown.push_str("## Recent Evaluation Runs\n");
+        if run_history.is_empty() {
+            markdown.push_str("- none\n");
+        } else {
+            for item in run_history {
+                markdown.push_str(&format!(
+                    "- #{} {}: {}, {}, {} failed, {}\n",
+                    item.trace_id,
+                    item.scope,
+                    item.status.label(),
+                    item.result_label(),
+                    item.failed_count,
+                    item.trend.label()
+                ));
+            }
+        }
+
+        Self { markdown }
+    }
+}
+
 fn decision_action_for_regressed_scope(scope: &str) -> EvaluationDecisionAction {
     if scope == "all" {
         EvaluationDecisionAction::RerunAll
@@ -1353,7 +1458,9 @@ mod tests {
 
     use super::{
         EvaluationDecisionAction, EvaluationDecisionBrief, EvaluationDecisionPosture,
-        EvaluationFailureInsights, EvaluationRunCoverage, EvaluationRunHistoryFilter,
+        EvaluationEvidenceReport, EvaluationFailureInsights, EvaluationFailureItem,
+        EvaluationFailurePriority, EvaluationRegressionItem, EvaluationRunCoverage,
+        EvaluationRunHistoryFilter, EvaluationRunHistoryItem, EvaluationRunTrend,
         EvaluationTrendSummary, FailureKind, TraceAction, TraceListFilter, TraceStatus, TraceStore,
     };
 
@@ -2574,6 +2681,104 @@ mod tests {
         assert_eq!(brief.status_label(), "ready");
         assert_eq!(brief.headline, "Evaluation baseline clear");
         assert_eq!(brief.action, EvaluationDecisionAction::RunFullValidation);
+    }
+
+    #[test]
+    fn renders_evaluation_evidence_report_for_release_review() {
+        let coverage = EvaluationRunCoverage {
+            total_skill_count: 3,
+            run_skill_count: 2,
+            dry_run_count: 2,
+            graded_count: 0,
+        };
+        let trend = EvaluationTrendSummary {
+            total_runs: 2,
+            regressed_count: 1,
+            improved_count: 0,
+            stable_count: 1,
+            new_count: 0,
+            latest_regression_scope: Some("master-huineng".to_string()),
+        };
+        let insights = EvaluationFailureInsights {
+            total_cases: 12,
+            pass_cases: 10,
+            failed_cases: 2,
+            failing_skill_count: 1,
+            top_failure_skill_slug: Some("huineng".to_string()),
+            top_failure_skill_count: 2,
+            fabricated_cites_count: 1,
+            boundary_violations_count: 1,
+            ..EvaluationFailureInsights::default()
+        };
+        let brief = EvaluationDecisionBrief::from_signals(&coverage, &trend, &insights);
+        let regressions = vec![EvaluationRegressionItem {
+            scope: "master-huineng".to_string(),
+            current_trace_id: 9,
+            previous_trace_id: 5,
+            current_failed_count: 2,
+            previous_failed_count: 0,
+            failed_delta: 2,
+            current_pass_rate: 80,
+            previous_pass_rate: 100,
+            pass_rate_delta_points: -20,
+            action: Some(TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            }),
+        }];
+        let failure_queue = vec![EvaluationFailureItem {
+            slug: "huineng".to_string(),
+            case_index: 1,
+            question: "What is no-thought?".to_string(),
+            status: "FAIL".to_string(),
+            priority: EvaluationFailurePriority::Critical,
+            failure_summary: "fabricated cite: Platform Sutra X".to_string(),
+            trace_id: 9,
+        }];
+        let run_history = vec![EvaluationRunHistoryItem {
+            trace_id: 9,
+            scope: "master-huineng".to_string(),
+            status: TraceStatus::Succeeded,
+            passed_count: 10,
+            total_count: 12,
+            failed_count: 2,
+            dry_run: true,
+            duration_ms: Some(150),
+            action: Some(TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            }),
+            trend: EvaluationRunTrend::Regressed,
+        }];
+
+        let report = EvaluationEvidenceReport::from_signals(
+            &brief,
+            &coverage,
+            &trend,
+            &insights,
+            &regressions,
+            &failure_queue,
+            &run_history,
+        );
+
+        assert!(report
+            .markdown
+            .contains("# Master-skill Evaluation Evidence Report"));
+        assert!(report.markdown.contains("- Status: blocked"));
+        assert!(report.markdown.contains("- Coverage: 2/3 skills"));
+        assert!(report
+            .markdown
+            .contains("- Trend: 1 regressed / 0 improved / 1 stable / 0 new"));
+        assert!(report
+            .markdown
+            .contains("- Failure evidence: 2 failed case(s), 1 failing skill(s), pass rate 83%"));
+        assert!(report
+            .markdown
+            .contains("- master-huineng: trace #9 vs #5, failed +2, pass rate -20 pts"));
+        assert!(report
+            .markdown
+            .contains("- critical master-huineng case #1: fabricated cite: Platform Sutra X"));
+        assert!(report
+            .markdown
+            .contains("- #9 master-huineng: success, 10/12 N/A, 2 failed, regressed"));
     }
 
     #[test]
