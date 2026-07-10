@@ -23,9 +23,10 @@ use crate::theme::{
 use crate::trace::{
     EvaluationDecisionAction, EvaluationDecisionBrief, EvaluationDecisionPosture,
     EvaluationEvidenceReport, EvaluationFailureInsights, EvaluationFailureItem,
-    EvaluationFailurePriority, EvaluationRegressionItem, EvaluationRunHistoryFilter,
-    EvaluationRunHistoryItem, EvaluationRunResult, EvaluationRunTrend, EvaluationTrendSummary,
-    TraceAction, TraceFailureItem, TraceListFilter, TraceStatus, TraceStore,
+    EvaluationFailurePriority, EvaluationRegressionItem, EvaluationRunCoverage,
+    EvaluationRunHistoryFilter, EvaluationRunHistoryItem, EvaluationRunResult, EvaluationRunTrend,
+    EvaluationTrendSummary, TraceAction, TraceFailureItem, TraceListFilter, TraceStatus,
+    TraceStore,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -163,6 +164,49 @@ struct MetricCard {
     value: String,
     detail: String,
     healthy: bool,
+}
+
+struct EvaluationGateSnapshot {
+    run_coverage: EvaluationRunCoverage,
+    failure_insights: EvaluationFailureInsights,
+    failure_queue: Vec<EvaluationFailureItem>,
+    trend_summary: EvaluationTrendSummary,
+    decision_brief: EvaluationDecisionBrief,
+    all_run_history: Vec<EvaluationRunHistoryItem>,
+    regressions: Vec<EvaluationRegressionItem>,
+    evidence_report: EvaluationEvidenceReport,
+}
+
+fn evaluation_gate_snapshot(rows: &[SkillRow], traces: &TraceStore) -> EvaluationGateSnapshot {
+    let summary = evaluation_summary(rows);
+    let run_coverage = traces.evaluation_run_coverage(summary.skill_count);
+    let failure_insights = traces.evaluation_failure_insights();
+    let failure_queue = traces.evaluation_failure_queue();
+    let trend_summary = traces.evaluation_trend_summary(8);
+    let decision_brief =
+        EvaluationDecisionBrief::from_signals(&run_coverage, &trend_summary, &failure_insights);
+    let all_run_history = traces.evaluation_run_history(8);
+    let regressions = traces.evaluation_regressions(8);
+    let evidence_report = EvaluationEvidenceReport::from_signals(
+        &decision_brief,
+        &run_coverage,
+        &trend_summary,
+        &failure_insights,
+        &regressions,
+        &failure_queue,
+        &all_run_history,
+    );
+
+    EvaluationGateSnapshot {
+        run_coverage,
+        failure_insights,
+        failure_queue,
+        trend_summary,
+        decision_brief,
+        all_run_history,
+        regressions,
+        evidence_report,
+    }
 }
 
 fn quality_gate_metric_card(brief: &EvaluationDecisionBrief) -> MetricCard {
@@ -759,7 +803,7 @@ impl MasterSkillApp {
         }
     }
 
-    fn show_dashboard(&self, ui: &mut egui::Ui) {
+    fn show_dashboard(&mut self, ui: &mut egui::Ui) {
         Self::show_workspace_header(
             ui,
             "Overview",
@@ -776,17 +820,7 @@ impl MasterSkillApp {
             );
             let total = self.rows.len().max(1);
             let runtime_value = if summary.runtime_ok { "OK" } else { "Review" };
-            let evaluation_summary = evaluation_summary(&self.rows);
-            let run_coverage = self
-                .traces
-                .evaluation_run_coverage(evaluation_summary.skill_count);
-            let trend_summary = self.traces.evaluation_trend_summary(8);
-            let failure_insights = self.traces.evaluation_failure_insights();
-            let decision_brief = EvaluationDecisionBrief::from_signals(
-                &run_coverage,
-                &trend_summary,
-                &failure_insights,
-            );
+            let gate = evaluation_gate_snapshot(&self.rows, &self.traces);
             let cards = vec![
                 MetricCard {
                     title: "Runtime",
@@ -812,7 +846,7 @@ impl MasterSkillApp {
                     detail: "fidelity suites".to_string(),
                     healthy: summary.evaluation_ready_count == total,
                 },
-                quality_gate_metric_card(&decision_brief),
+                quality_gate_metric_card(&gate.decision_brief),
                 MetricCard {
                     title: "Protocols",
                     value: format!("{}/{}", summary.protocol_ready_count, summary.persona_count),
@@ -833,6 +867,9 @@ impl MasterSkillApp {
                 },
             ];
             Self::show_metric_cards(ui, &cards);
+
+            ui.separator();
+            self.show_evaluation_decision_brief(ui, &gate.decision_brief, &gate.evidence_report);
         } else {
             ui.label("No runtime report loaded.");
         }
@@ -841,28 +878,13 @@ impl MasterSkillApp {
     fn show_evaluation_center(&mut self, ui: &mut egui::Ui) {
         let busy = self.is_busy();
         let summary = evaluation_summary(&self.rows);
-        let run_coverage = self.traces.evaluation_run_coverage(summary.skill_count);
-        let failure_insights = self.traces.evaluation_failure_insights();
-        let failure_queue = self.traces.evaluation_failure_queue();
-        let trend_summary = self.traces.evaluation_trend_summary(8);
-        let decision_brief =
-            EvaluationDecisionBrief::from_signals(&run_coverage, &trend_summary, &failure_insights);
-        let all_run_history = self.traces.evaluation_run_history(8);
-        let run_history: Vec<_> = all_run_history
+        let gate = evaluation_gate_snapshot(&self.rows, &self.traces);
+        let run_history: Vec<_> = gate
+            .all_run_history
             .iter()
             .filter(|item| item.matches_filter(self.run_history_filter))
             .cloned()
             .collect();
-        let regressions = self.traces.evaluation_regressions(8);
-        let evidence_report = EvaluationEvidenceReport::from_signals(
-            &decision_brief,
-            &run_coverage,
-            &trend_summary,
-            &failure_insights,
-            &regressions,
-            &failure_queue,
-            &all_run_history,
-        );
         Self::show_workspace_header(
             ui,
             "Evaluation Center",
@@ -892,13 +914,13 @@ impl MasterSkillApp {
             },
             MetricCard {
                 title: "Run Coverage",
-                value: run_coverage.label(),
+                value: gate.run_coverage.label(),
                 detail: format!(
                     "{} dry-run / {} graded",
-                    run_coverage.dry_run_count, run_coverage.graded_count
+                    gate.run_coverage.dry_run_count, gate.run_coverage.graded_count
                 ),
                 healthy: summary.skill_count > 0
-                    && run_coverage.run_skill_count == summary.skill_count,
+                    && gate.run_coverage.run_skill_count == summary.skill_count,
             },
             MetricCard {
                 title: "Ready",
@@ -928,16 +950,16 @@ impl MasterSkillApp {
         Self::show_metric_cards(ui, &cards);
 
         ui.separator();
-        self.show_evaluation_decision_brief(ui, &decision_brief, &evidence_report);
+        self.show_evaluation_decision_brief(ui, &gate.decision_brief, &gate.evidence_report);
 
         ui.separator();
-        Self::show_evaluation_trend_summary(ui, &trend_summary);
+        Self::show_evaluation_trend_summary(ui, &gate.trend_summary);
 
         ui.separator();
-        self.show_evaluation_regressions(ui, &regressions);
+        self.show_evaluation_regressions(ui, &gate.regressions);
 
         ui.separator();
-        self.show_evaluation_failure_insights(ui, &failure_insights, &failure_queue);
+        self.show_evaluation_failure_insights(ui, &gate.failure_insights, &gate.failure_queue);
 
         ui.separator();
         self.show_evaluation_run_history(ui, &run_history);
@@ -2350,8 +2372,9 @@ mod tests {
     use crate::catalog::{SkillKind, SkillRow};
     use crate::trace::{
         EvaluationDecisionAction, EvaluationDecisionBrief, EvaluationDecisionPosture,
-        EvaluationRunResult,
+        EvaluationRunResult, TraceAction, TraceStore,
     };
+    use std::time::Duration;
 
     #[test]
     fn trace_store_path_prefers_xdg_data_home() {
@@ -2468,6 +2491,55 @@ mod tests {
         let card = super::quality_gate_metric_card(&ready);
         assert_eq!(card.value, "Ready");
         assert!(card.healthy);
+    }
+
+    #[test]
+    fn builds_evaluation_gate_snapshot_from_rows_and_traces() {
+        let rows = vec![suite_row("huineng", true, true, 2)];
+        let mut traces = TraceStore::new(10);
+        let run = traces.begin_with_action(
+            "Running master-huineng fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run --json"),
+            "Queued.",
+        );
+        traces.finish_success_with_detail(
+            run,
+            "master-huineng fidelity dry-run finished",
+            r#"[{"master": "master-huineng", "results": [
+              {"index": 0, "question": "通过", "status": "PASS"},
+              {"index": 1, "question": "失败", "status": "FAIL"}
+            ]}]"#,
+            Duration::from_millis(50),
+        );
+        let summary_run = traces.begin_with_action(
+            "Running master-huineng fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run"),
+            "Queued.",
+        );
+        traces.finish_success_with_detail(
+            summary_run,
+            "master-huineng fidelity dry-run finished",
+            "Testing: master-huineng\nResult: 1/2 passed (N/A)",
+            Duration::from_millis(40),
+        );
+
+        let snapshot = super::evaluation_gate_snapshot(&rows, &traces);
+
+        assert_eq!(
+            snapshot.decision_brief.posture,
+            EvaluationDecisionPosture::Attention
+        );
+        assert_eq!(snapshot.run_coverage.label(), "1/1");
+        assert_eq!(snapshot.failure_insights.failed_cases, 1);
+        assert_eq!(snapshot.failure_queue.len(), 1);
+        assert_eq!(snapshot.all_run_history.len(), 2);
+        assert!(snapshot.evidence_report.markdown.contains("master-huineng"));
     }
 
     fn suite_row(
