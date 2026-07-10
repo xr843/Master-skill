@@ -6,7 +6,11 @@
 //! (same label, command string, `TraceAction::FidelityDryRunSkill`, summary
 //! computation, and trace store path/capacity) so trace records written by
 //! `--baseline` are indistinguishable from ones written by clicking "Run
-//! skill dry-run" for every skill in the GUI.
+//! skill dry-run" for every skill in the GUI. The label, command, and
+//! success-message formatting are factored into
+//! [`skill_dry_run_label_and_command`] and [`skill_dry_run_success_message`]
+//! below, which both `app.rs` and this module call, so the two paths can't
+//! drift apart.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -19,6 +23,26 @@ use crate::app::{
 };
 use crate::cli::CliClient;
 use crate::trace::{TraceAction, TraceStore};
+
+/// Returns the `(label, command)` pair for running a single master skill's
+/// fidelity dry-run: `master-{slug}`'s progress label and the
+/// `python3 scripts/test-fidelity.py --master master-{slug} --dry-run --json`
+/// invocation. Shared by the GUI's `MasterSkillApp::start_skill_fidelity_dry_run`
+/// (`app.rs`) and [`run_headless_baseline`]'s loop below so the two paths
+/// can't drift apart.
+pub(crate) fn skill_dry_run_label_and_command(slug: &str) -> (String, String) {
+    (
+        format!("Running master-{slug} fidelity dry-run"),
+        format!("python3 scripts/test-fidelity.py --master master-{slug} --dry-run --json"),
+    )
+}
+
+/// Formats the success message for a single master skill's fidelity
+/// dry-run, matching [`summarize_command_output`]'s conventions. Shared by
+/// the same two callers as [`skill_dry_run_label_and_command`].
+pub(crate) fn skill_dry_run_success_message(slug: &str, output: &str) -> String {
+    summarize_command_output(&format!("master-{slug} fidelity dry-run finished"), output)
+}
 
 /// Runs `python3 scripts/test-fidelity.py --master <slug> --dry-run --json`
 /// for every master skill that ships a `tests/fidelity.jsonl` fixture,
@@ -39,9 +63,7 @@ pub fn run_headless_baseline() -> Result<i32> {
     let mut ok_count = 0usize;
 
     for slug in &slugs {
-        let label = format!("Running master-{slug} fidelity dry-run");
-        let command =
-            format!("python3 scripts/test-fidelity.py --master master-{slug} --dry-run --json");
+        let (label, command) = skill_dry_run_label_and_command(slug);
         let trace_id = traces.begin_with_action(
             label,
             TraceAction::FidelityDryRunSkill { slug: slug.clone() },
@@ -52,10 +74,7 @@ pub fn run_headless_baseline() -> Result<i32> {
         let started = Instant::now();
         match client.run_fidelity_dry_run_for(slug) {
             Ok(output) => {
-                let message = summarize_command_output(
-                    &format!("master-{slug} fidelity dry-run finished"),
-                    &output,
-                );
+                let message = skill_dry_run_success_message(slug, &output);
                 traces.finish_success_with_detail(
                     trace_id,
                     message,

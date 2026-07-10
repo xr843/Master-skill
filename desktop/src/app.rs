@@ -573,19 +573,15 @@ impl MasterSkillApp {
     }
 
     fn start_skill_fidelity_dry_run(&mut self, slug: String) {
+        let (label, command) = crate::baseline::skill_dry_run_label_and_command(&slug);
         self.start_task_with_action(
-            format!("Running master-{slug} fidelity dry-run"),
+            label,
             Some(TraceAction::FidelityDryRunSkill { slug: slug.clone() }),
-            Some(format!(
-                "python3 scripts/test-fidelity.py --master master-{slug} --dry-run --json"
-            )),
+            Some(command),
             move |client| {
                 let output = client.run_fidelity_dry_run_for(&slug)?;
                 Ok(TaskOutcome {
-                    message: summarize_command_output(
-                        &format!("master-{slug} fidelity dry-run finished"),
-                        &output,
-                    ),
+                    message: crate::baseline::skill_dry_run_success_message(&slug, &output),
                     detail: output.trim().to_string(),
                     snapshot: None,
                 })
