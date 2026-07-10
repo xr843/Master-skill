@@ -915,6 +915,9 @@ impl MasterSkillApp {
                 &gate.evidence_report,
                 &gate.remediation_plan,
             );
+
+            ui.separator();
+            Self::show_evaluation_remediation_plan(ui, &gate.remediation_plan);
         } else {
             ui.label("No runtime report loaded.");
         }
@@ -1013,6 +1016,9 @@ impl MasterSkillApp {
         );
 
         ui.separator();
+        Self::show_evaluation_remediation_plan(ui, &gate.remediation_plan);
+
+        ui.separator();
         Self::show_evaluation_trend_summary(ui, &gate.trend_summary);
 
         ui.separator();
@@ -1101,6 +1107,22 @@ impl MasterSkillApp {
                 remediation_plan.item_count
             ));
         }
+    }
+
+    fn show_evaluation_remediation_plan(ui: &mut egui::Ui, plan: &EvaluationRemediationPlan) {
+        ui.heading("Remediation Plan");
+        ui.small(format!("{} action item(s)", plan.item_count));
+        egui::Grid::new("evaluation-remediation-plan-grid")
+            .num_columns(2)
+            .striped(true)
+            .min_col_width(32.0)
+            .show(ui, |ui| {
+                for (index, item) in plan.items.iter().enumerate() {
+                    ui.strong(format!("{}", index + 1));
+                    ui.label(item);
+                    ui.end_row();
+                }
+            });
     }
 
     fn show_evaluation_trend_summary(ui: &mut egui::Ui, summary: &EvaluationTrendSummary) {
