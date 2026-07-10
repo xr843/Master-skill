@@ -16,7 +16,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use crate::app::{
     desktop_trace_store_path, first_line, summarize_command_output, TRACE_STORE_CAPACITY,
@@ -55,6 +55,17 @@ pub(crate) fn skill_dry_run_success_message(slug: &str, output: &str) -> String 
 pub fn run_headless_baseline() -> Result<i32> {
     let client = CliClient::default();
     let slugs = discover_master_skill_slugs(client.repo_root());
+
+    if slugs.is_empty() {
+        return Err(anyhow!(
+            "no master-* skills with tests/fidelity.jsonl were found under {:?} \
+             (resolved repo root: {:?}). --baseline must be run from inside a \
+             cloned Master-skill repo (needs prebuilt/ and scripts/test-fidelity.py); \
+             refusing to report a false 0/0 success.",
+            client.repo_root().join("prebuilt"),
+            client.repo_root()
+        ));
+    }
 
     let store_path = desktop_trace_store_path();
     let mut traces = TraceStore::load_from_path(&store_path, TRACE_STORE_CAPACITY)?;

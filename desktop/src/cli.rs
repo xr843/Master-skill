@@ -137,11 +137,127 @@ impl CliClient {
 
 impl Default for CliClient {
     fn default() -> Self {
-        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let repo_root = manifest_dir
-            .parent()
-            .map(Path::to_path_buf)
-            .unwrap_or(manifest_dir);
-        Self::new(repo_root)
+        Self::new(resolve_repo_root())
+    }
+}
+
+/// Resolves the Master-skill repo root a released binary should treat as
+/// its working repo.
+///
+/// Contract: a `master-skill-desktop` binary downloaded from GitHub
+/// Releases must be run from inside a clone of the Master-skill repo (the
+/// README says as much). `env!("CARGO_MANIFEST_DIR")` is a *compile-time*
+/// constant baked in by whichever machine built the binary (e.g. a GitHub
+/// Actions runner) — on a user's machine that path almost never exists, so
+/// it cannot be used directly to find the repo the binary is actually
+/// running from.
+///
+/// Instead this walks upward from the current working directory looking
+/// for the first ancestor (inclusive) that looks like a Master-skill repo
+/// root: one containing both a `prebuilt/` directory and a
+/// `scripts/test-fidelity.py` file. First match wins.
+///
+/// If no ancestor qualifies (or the current directory can't be read),
+/// falls back to the compile-time `CARGO_MANIFEST_DIR`-based path so
+/// `cargo run` / `cargo test` source builds and other dev workflows keep
+/// behaving exactly as they did before runtime resolution was added.
+fn resolve_repo_root() -> PathBuf {
+    std::env::current_dir()
+        .ok()
+        .and_then(|cwd| find_repo_root_from(&cwd))
+        .unwrap_or_else(compile_time_repo_root)
+}
+
+/// The compile-time fallback: the parent of `desktop/` (this crate's
+/// `CARGO_MANIFEST_DIR`), i.e. the repo root as seen by whatever machine
+/// built this binary.
+fn compile_time_repo_root() -> PathBuf {
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    manifest_dir
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or(manifest_dir)
+}
+
+/// Walks upward from `start` (inclusive), returning the first ancestor
+/// that contains both a `prebuilt/` directory and a
+/// `scripts/test-fidelity.py` file, or `None` if no ancestor qualifies.
+fn find_repo_root_from(start: &Path) -> Option<PathBuf> {
+    let mut candidate = Some(start);
+    while let Some(dir) = candidate {
+        if dir.join("prebuilt").is_dir() && dir.join("scripts").join("test-fidelity.py").is_file() {
+            return Some(dir.to_path_buf());
+        }
+        candidate = dir.parent();
+    }
+    None
+}
+
+#[cfg(test)]
+mod resolve_repo_root_tests {
+    use super::find_repo_root_from;
+    use std::fs;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_dir(label: &str) -> PathBuf {
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "master-skill-desktop-resolve-root-{label}-{suffix}"
+        ))
+    }
+
+    /// Builds `<root>/prebuilt` and `<root>/scripts/test-fidelity.py` so
+    /// `root` satisfies the repo-root marker check.
+    fn make_repo_markers(root: &std::path::Path) {
+        fs::create_dir_all(root.join("prebuilt")).unwrap();
+        fs::create_dir_all(root.join("scripts")).unwrap();
+        fs::write(root.join("scripts").join("test-fidelity.py"), "# stub\n").unwrap();
+    }
+
+    #[test]
+    fn finds_repo_root_by_walking_up_from_a_nested_subdirectory() {
+        let root = temp_dir("nested");
+        make_repo_markers(&root);
+        let nested = root.join("desktop").join("target").join("debug");
+        fs::create_dir_all(&nested).unwrap();
+
+        let found = find_repo_root_from(&nested);
+
+        assert_eq!(found, Some(root.clone()));
+
+        fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn matches_the_starting_directory_itself_when_it_has_both_markers() {
+        let root = temp_dir("self-match");
+        make_repo_markers(&root);
+
+        let found = find_repo_root_from(&root);
+
+        assert_eq!(found, Some(root.clone()));
+
+        fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn returns_none_when_no_ancestor_has_both_markers() {
+        let root = temp_dir("no-markers");
+        let nested = root.join("a").join("b");
+        fs::create_dir_all(&nested).unwrap();
+
+        // Only a `prebuilt/` dir, no `scripts/test-fidelity.py` — must not
+        // match on a partial marker set.
+        fs::create_dir_all(root.join("prebuilt")).unwrap();
+
+        let found = find_repo_root_from(&nested);
+
+        assert_eq!(found, None);
+
+        fs::remove_dir_all(&root).ok();
     }
 }

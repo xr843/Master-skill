@@ -9,7 +9,7 @@
     {
       "name": "master-skill",
       "description": "FoJin-powered Buddhist AI persona framework — source-grounded, boundary-aware, fidelity-tested, runtime-ready. 15 prebuilt masters across 印度/汉传/藏传/南传 plus compare, debate, and curriculum meta-skills.",
-      "version": "0.9.1",
+      "version": "0.10.0",
       "source": "./",
       "author": {
         "name": "xr843",

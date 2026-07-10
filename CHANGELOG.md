@@ -10,6 +10,22 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-07-10
+
+### Fixed — release binary repo-root resolution
+- Fixed `master-skill-desktop` release binaries baking in the compile-time build path (`CARGO_MANIFEST_DIR`), which produced a broken GUI shell and a `--baseline` that silently found zero skills on any machine other than the one that built the binary. The repo root is now resolved at runtime by walking up from the current working directory for a directory containing both `prebuilt/` and `scripts/test-fidelity.py`, falling back to the compile-time path only so source builds and dev workflows keep working unchanged.
+- Fixed headless `--baseline` reporting a false `baseline: 0/0 ok` success (exit 0) when no master skills could be discovered under the resolved repo root; it now exits non-zero with a clear error naming the resolved path and the requirement to run from inside a cloned Master-skill repo.
+
+### Changed — release workflow hardening
+- Added `--clobber` to the desktop release asset upload so re-running `release-desktop.yml` after a partial failure no longer fails on assets a previous attempt already uploaded.
+- Added `--locked` to the desktop release build so it uses the committed `desktop/Cargo.lock` exactly, instead of allowing dependency re-resolution at release time.
+- Added a Linux-only smoke test that runs the staged release binary's `--baseline` from the checkout root before the job is considered successful, catching non-portable (compile-time-path) binaries before they reach a release.
+
+### Changed — desktop download docs
+- Documented the `chmod +x` step (Linux/macOS) and the macOS unsigned-binary first-run workaround (right-click → Open, or `xattr -d com.apple.quarantine`) needed after downloading a release binary.
+- Changed the desktop screenshot in README/README_EN to reference the absolute GitHub raw URL instead of a relative path, since README.md ships to npm where relative image paths break.
+- Corrected README's desktop section from "17 位法师" to "17 个 master skill" — 2 of the 17 are meta-skills, not personas.
+
 ### Added — native desktop manager
 - Added a pure Rust `desktop/` app skeleton using `egui/eframe` as the first native Master-skill Desktop Manager shell.
 - Added Rust models and tests for the CLI JSON contracts consumed by the desktop app.
@@ -463,5 +479,14 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/xr843/Master-skill/compare/v0.9.1...v0.10.0
+[0.9.1]: https://github.com/xr843/Master-skill/releases/tag/v0.9.1
+[0.9.0]: https://github.com/xr843/Master-skill/releases/tag/v0.9.0
+[0.8.0]: https://github.com/xr843/Master-skill/releases/tag/v0.8.0
+[0.7.1]: https://github.com/xr843/Master-skill/releases/tag/v0.7.1
+[0.7.0]: https://github.com/xr843/Master-skill/releases/tag/v0.7.0
+[0.6.0]: https://github.com/xr843/Master-skill/releases/tag/v0.6.0
+[0.5.0]: https://github.com/xr843/Master-skill/releases/tag/v0.5.0
+[0.4.0]: https://github.com/xr843/Master-skill/releases/tag/v0.4.0
 [0.3.0]: https://github.com/xr843/Master-skill/releases/tag/v0.3.0
