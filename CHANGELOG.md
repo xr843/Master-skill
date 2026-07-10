@@ -60,6 +60,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added a copyable Evaluation Evidence Report that packages the current quality gate, coverage, trend, regression, failure, and run-history evidence as Markdown.
 - Added an Overview Quality Gate card so the main console surface shows the current evaluation gate posture and primary risk without opening Evaluation Center.
 - Added an actionable Overview Decision Brief backed by the shared evaluation gate snapshot, including the primary gate action and copyable evidence report from the main console surface.
+- Added an Evaluation Center evidence window selector for 8, 16, or 32 recent runs, shared by trend summaries, regression queues, run history, and copied evidence reports.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
