@@ -301,6 +301,24 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 
 ---
 
+## 桌面管理器
+
+原生桌面控制台(纯 Rust,egui,单二进制,无 Electron),统一管理 17 位法师 skill 的安装状态、fidelity 评测覆盖率、运行追踪与质量门禁:
+
+![Master-skill Desktop Manager](docs/assets/desktop-manager.png)
+
+**下载**:[Releases](https://github.com/xr843/Master-skill/releases) 提供 Linux / Windows / macOS 预编译二进制,下载后直接运行(仓库根目录下执行,需本地已 clone 本仓库)。
+
+**从源码构建**:
+
+```bash
+cd desktop && cargo build --release
+./target/release/master-skill-desktop            # 图形界面
+./target/release/master-skill-desktop --baseline # 无头跑 fidelity dry-run 基线
+```
+
+---
+
 ## 预置法师
 
 ### 龙树菩萨（Nāgārjuna，约150-250） — 印度 · 中观
