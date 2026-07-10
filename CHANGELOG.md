@@ -10,7 +10,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
-## [0.10.0] - 2026-07-10
+## [0.10.0] — 2026-07-10
 
 ### Added — native desktop manager
 - Added a pure Rust `desktop/` app skeleton using `egui/eframe` as the first native Master-skill Desktop Manager shell.
