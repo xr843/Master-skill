@@ -12,6 +12,10 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [0.10.0] — 2026-07-10
 
+### Fixed — release binary repo-root resolution
+- Fixed `master-skill-desktop` release binaries baking in the compile-time build path (`CARGO_MANIFEST_DIR`), which produced a broken GUI shell and a `--baseline` that silently found zero skills on any machine other than the one that built the binary. The repo root is now resolved at runtime by walking up from the current working directory for a directory containing both `prebuilt/` and `scripts/test-fidelity.py`, falling back to the compile-time path only so source builds and dev workflows keep working unchanged.
+- Fixed headless `--baseline` reporting a false `baseline: 0/0 ok` success (exit 0) when no master skills could be discovered under the resolved repo root; it now exits non-zero with a clear error naming the resolved path and the requirement to run from inside a cloned Master-skill repo.
+
 ### Added — native desktop manager
 - Added a pure Rust `desktop/` app skeleton using `egui/eframe` as the first native Master-skill Desktop Manager shell.
 - Added Rust models and tests for the CLI JSON contracts consumed by the desktop app.

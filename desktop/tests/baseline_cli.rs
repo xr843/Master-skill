@@ -153,3 +153,72 @@ fn baseline_flag_runs_headless_and_records_traces_for_all_master_skills() {
 
     fs::remove_dir_all(&xdg_data_home).ok();
 }
+
+/// Builds a directory that *looks* like a Master-skill repo root to the
+/// runtime resolver (has `prebuilt/` and `scripts/test-fidelity.py`) but
+/// has no `master-*` skills under `prebuilt/`. This is how a released
+/// binary run outside a real clone behaves once repo-root resolution is
+/// runtime-based: `find_repo_root_from` can match an ancestor that merely
+/// has the two marker paths (e.g. a stray/incomplete checkout) while
+/// discovering zero skills underneath it.
+///
+/// A literal, fully empty `cwd` is deliberately *not* used here: this
+/// integration test runs the locally built `cargo test` binary, whose
+/// compile-time `CARGO_MANIFEST_DIR` fallback always points at this very
+/// dev checkout (which does have real `prebuilt/` skills). Walking up from
+/// a marker-less empty directory would find nothing and fall through to
+/// that fallback by design (see `resolve_repo_root`'s doc comment in
+/// `src/cli.rs`) — masking the bug this test exists to catch. Planting the
+/// markers directly in `cwd` makes discovery genuinely, deterministically
+/// empty regardless of which machine built the test binary.
+fn empty_master_skill_repo_dir(label: &str) -> PathBuf {
+    let suffix = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let root =
+        std::env::temp_dir().join(format!("master-skill-desktop-empty-repo-{label}-{suffix}"));
+    fs::create_dir_all(root.join("prebuilt")).unwrap();
+    fs::create_dir_all(root.join("scripts")).unwrap();
+    fs::write(root.join("scripts").join("test-fidelity.py"), "# stub\n").unwrap();
+    root
+}
+
+#[test]
+fn baseline_flag_with_no_discovered_skills_fails_loudly_instead_of_reporting_zero_of_zero() {
+    let empty_repo = empty_master_skill_repo_dir("baseline");
+    let xdg_data_home = temp_xdg_data_home();
+    fs::create_dir_all(&xdg_data_home).unwrap();
+
+    let mut command = Command::new(env!("CARGO_BIN_EXE_master-skill-desktop"));
+    command
+        .arg("--baseline")
+        .current_dir(&empty_repo)
+        .env("XDG_DATA_HOME", &xdg_data_home);
+
+    let output = run_with_timeout(command, Duration::from_secs(30));
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    assert!(
+        !output.status.success(),
+        "expected a nonzero exit when no master skills are discovered under the \
+         resolved repo root, got {:?}\nstdout:\n{stdout}\nstderr:\n{stderr}",
+        output.status.code()
+    );
+    assert!(
+        !stdout.contains("baseline: 0/0 ok"),
+        "must never silently report a false 0/0 success, got stdout:\n{stdout}"
+    );
+    assert!(
+        stderr.contains("cloned Master-skill repo"),
+        "expected a clear error naming the cloned-repo requirement, got stderr:\n{stderr}"
+    );
+    assert!(
+        stderr.contains(&empty_repo.to_string_lossy().to_string()),
+        "expected the error to name the resolved repo-root path {empty_repo:?}, got stderr:\n{stderr}"
+    );
+
+    fs::remove_dir_all(&empty_repo).ok();
+    fs::remove_dir_all(&xdg_data_home).ok();
+}
