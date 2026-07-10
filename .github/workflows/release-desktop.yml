@@ -75,7 +75,10 @@ jobs:
           cargo --version
 
       - name: Build desktop app
-        run: cargo build --release --manifest-path desktop/Cargo.toml
+        # --locked: desktop/Cargo.lock is committed, so release builds must
+        # use exactly those dependency versions instead of silently
+        # re-resolving (and potentially drifting from what CI/tests used).
+        run: cargo build --release --locked --manifest-path desktop/Cargo.toml
 
       - name: Stage renamed binary
         shell: bash
@@ -83,12 +86,29 @@ jobs:
           mkdir -p dist
           cp "${{ matrix.binary_path }}" "dist/${{ matrix.artifact_name }}"
 
+      - name: Smoke-test staged binary (Linux only)
+        if: runner.os == 'Linux'
+        # Guards against non-portable binaries (e.g. one that bakes in a
+        # compile-time repo path that only exists on this runner) reaching
+        # a release: run the staged artifact's headless `--baseline` from
+        # the checkout root, the same way a downloaded release binary is
+        # documented to be run, with an isolated store so it can't read or
+        # write a real user's trace history. `python3` is preinstalled on
+        # GitHub-hosted Linux runners, which `--baseline` shells out to.
+        shell: bash
+        run: |
+          chmod +x "dist/${{ matrix.artifact_name }}"
+          XDG_DATA_HOME="$(mktemp -d)" "./dist/${{ matrix.artifact_name }}" --baseline
+
       - name: Upload release asset
         if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
-        run: gh release upload "$GITHUB_REF_NAME" "dist/${{ matrix.artifact_name }}"
+        # --clobber: re-runs of this workflow (e.g. after a transient
+        # failure on another matrix leg) must not fail just because this
+        # leg's asset was already uploaded by a previous attempt.
+        run: gh release upload "$GITHUB_REF_NAME" "dist/${{ matrix.artifact_name }}" --clobber
 
       - name: Upload workflow artifact
         if: github.event_name == 'workflow_dispatch'
