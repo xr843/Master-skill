@@ -23,10 +23,10 @@ use crate::theme::{
 use crate::trace::{
     EvaluationDecisionAction, EvaluationDecisionBrief, EvaluationDecisionPosture,
     EvaluationEvidenceReport, EvaluationFailureInsights, EvaluationFailureItem,
-    EvaluationFailurePriority, EvaluationRegressionItem, EvaluationRunCoverage,
-    EvaluationRunHistoryFilter, EvaluationRunHistoryItem, EvaluationRunResult, EvaluationRunTrend,
-    EvaluationTrendSummary, TraceAction, TraceFailureItem, TraceListFilter, TraceStatus,
-    TraceStore,
+    EvaluationFailurePriority, EvaluationRegressionItem, EvaluationRemediationPlan,
+    EvaluationRunCoverage, EvaluationRunHistoryFilter, EvaluationRunHistoryItem,
+    EvaluationRunResult, EvaluationRunTrend, EvaluationTrendSummary, TraceAction, TraceFailureItem,
+    TraceListFilter, TraceStatus, TraceStore,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -201,6 +201,7 @@ struct EvaluationGateSnapshot {
     all_run_history: Vec<EvaluationRunHistoryItem>,
     regressions: Vec<EvaluationRegressionItem>,
     evidence_report: EvaluationEvidenceReport,
+    remediation_plan: EvaluationRemediationPlan,
 }
 
 fn evaluation_gate_snapshot(
@@ -227,6 +228,12 @@ fn evaluation_gate_snapshot(
         &failure_queue,
         &all_run_history,
     );
+    let remediation_plan = EvaluationRemediationPlan::from_signals(
+        &decision_brief,
+        &regressions,
+        &failure_queue,
+        &all_run_history,
+    );
 
     EvaluationGateSnapshot {
         run_coverage,
@@ -237,6 +244,7 @@ fn evaluation_gate_snapshot(
         all_run_history,
         regressions,
         evidence_report,
+        remediation_plan,
     }
 }
 
@@ -901,7 +909,12 @@ impl MasterSkillApp {
             Self::show_metric_cards(ui, &cards);
 
             ui.separator();
-            self.show_evaluation_decision_brief(ui, &gate.decision_brief, &gate.evidence_report);
+            self.show_evaluation_decision_brief(
+                ui,
+                &gate.decision_brief,
+                &gate.evidence_report,
+                &gate.remediation_plan,
+            );
         } else {
             ui.label("No runtime report loaded.");
         }
@@ -992,7 +1005,12 @@ impl MasterSkillApp {
         Self::show_metric_cards(ui, &cards);
 
         ui.separator();
-        self.show_evaluation_decision_brief(ui, &gate.decision_brief, &gate.evidence_report);
+        self.show_evaluation_decision_brief(
+            ui,
+            &gate.decision_brief,
+            &gate.evidence_report,
+            &gate.remediation_plan,
+        );
 
         ui.separator();
         Self::show_evaluation_trend_summary(ui, &gate.trend_summary);
@@ -1025,11 +1043,13 @@ impl MasterSkillApp {
         ui: &mut egui::Ui,
         brief: &EvaluationDecisionBrief,
         evidence_report: &EvaluationEvidenceReport,
+        remediation_plan: &EvaluationRemediationPlan,
     ) {
         ui.heading("Decision Brief");
         let busy = self.is_busy();
         let mut decision_action = None;
         let mut copy_report = false;
+        let mut copy_plan = false;
         ui.horizontal_wrapped(|ui| {
             ui.colored_label(
                 Self::decision_posture_color(brief.posture),
@@ -1046,6 +1066,9 @@ impl MasterSkillApp {
             }
             if ui.button("Copy report").clicked() {
                 copy_report = true;
+            }
+            if ui.button("Copy action plan").clicked() {
+                copy_plan = true;
             }
         });
         egui::Grid::new("evaluation-decision-brief-grid")
@@ -1070,6 +1093,13 @@ impl MasterSkillApp {
         if copy_report {
             ui.ctx().copy_text(evidence_report.markdown.clone());
             self.set_log("Evaluation evidence report copied.");
+        }
+        if copy_plan {
+            ui.ctx().copy_text(remediation_plan.markdown.clone());
+            self.set_log(format!(
+                "Evaluation remediation plan copied ({} action item(s)).",
+                remediation_plan.item_count
+            ));
         }
     }
 
@@ -2583,6 +2613,10 @@ mod tests {
         assert_eq!(snapshot.failure_queue.len(), 1);
         assert_eq!(snapshot.all_run_history.len(), 2);
         assert!(snapshot.evidence_report.markdown.contains("master-huineng"));
+        assert!(snapshot
+            .remediation_plan
+            .markdown
+            .contains("# Master-skill Evaluation Remediation Plan"));
     }
 
     #[test]

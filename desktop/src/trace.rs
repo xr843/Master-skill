@@ -878,6 +878,12 @@ pub struct EvaluationEvidenceReport {
     pub markdown: String,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EvaluationRemediationPlan {
+    pub markdown: String,
+    pub item_count: usize,
+}
+
 impl EvaluationEvidenceReport {
     pub fn from_signals(
         brief: &EvaluationDecisionBrief,
@@ -975,6 +981,106 @@ impl EvaluationEvidenceReport {
         }
 
         Self { markdown }
+    }
+}
+
+impl EvaluationRemediationPlan {
+    pub fn from_signals(
+        brief: &EvaluationDecisionBrief,
+        regressions: &[EvaluationRegressionItem],
+        failure_queue: &[EvaluationFailureItem],
+        run_history: &[EvaluationRunHistoryItem],
+    ) -> Self {
+        let mut markdown = String::new();
+        let mut item_count = 0;
+
+        markdown.push_str("# Master-skill Evaluation Remediation Plan\n\n");
+        markdown.push_str("## Gate Decision\n");
+        markdown.push_str(&format!("- Status: {}\n", brief.status_label()));
+        markdown.push_str(&format!("- Headline: {}\n", brief.headline));
+        markdown.push_str(&format!("- Primary risk: {}\n", brief.primary_risk));
+        markdown.push_str(&format!("- Evidence: {}\n", brief.evidence));
+        markdown.push_str(&format!(
+            "- Recommended next action: {}\n",
+            brief.recommendation
+        ));
+        if let Some(latest) = run_history.first() {
+            markdown.push_str(&format!(
+                "- Latest run: {} from latest trace #{}\n",
+                latest.scope, latest.trace_id
+            ));
+        }
+        markdown.push('\n');
+
+        markdown.push_str("## Action Items\n");
+        if regressions.is_empty() && failure_queue.is_empty() {
+            append_remediation_item(
+                &mut markdown,
+                &mut item_count,
+                &default_remediation_action(brief),
+            );
+        } else {
+            for item in regressions {
+                append_remediation_item(
+                    &mut markdown,
+                    &mut item_count,
+                    &format!(
+                        "Rerun {} and compare trace #{} against #{} (failed {:+}, pass rate {:+} pts)",
+                        item.scope,
+                        item.current_trace_id,
+                        item.previous_trace_id,
+                        item.failed_delta,
+                        item.pass_rate_delta_points
+                    ),
+                );
+            }
+            for item in failure_queue.iter().take(10) {
+                append_remediation_item(
+                    &mut markdown,
+                    &mut item_count,
+                    &format!(
+                        "Fix master-{} case #{} ({}): {}",
+                        item.slug,
+                        item.case_index,
+                        item.priority.label(),
+                        item.failure_summary
+                    ),
+                );
+            }
+        }
+
+        markdown.push_str("\n## Verification\n");
+        append_remediation_item(
+            &mut markdown,
+            &mut item_count,
+            "Rerun affected fidelity scopes",
+        );
+        append_remediation_item(&mut markdown, &mut item_count, "Run `npm test`");
+        markdown.push_str("- Attach the copied evidence report to the PR or release note.\n");
+
+        Self {
+            markdown,
+            item_count,
+        }
+    }
+}
+
+fn append_remediation_item(markdown: &mut String, item_count: &mut usize, text: &str) {
+    *item_count += 1;
+    markdown.push_str(&format!("- [ ] {text}\n"));
+}
+
+fn default_remediation_action(brief: &EvaluationDecisionBrief) -> String {
+    match brief.posture {
+        EvaluationDecisionPosture::Ready => {
+            "Run full validation before release approval".to_string()
+        }
+        EvaluationDecisionPosture::Unproven => {
+            "Run fidelity baseline for all skills to establish current coverage".to_string()
+        }
+        EvaluationDecisionPosture::Attention | EvaluationDecisionPosture::Blocked => {
+            brief.recommendation.clone()
+        }
     }
 }
 
@@ -1459,9 +1565,10 @@ mod tests {
     use super::{
         EvaluationDecisionAction, EvaluationDecisionBrief, EvaluationDecisionPosture,
         EvaluationEvidenceReport, EvaluationFailureInsights, EvaluationFailureItem,
-        EvaluationFailurePriority, EvaluationRegressionItem, EvaluationRunCoverage,
-        EvaluationRunHistoryFilter, EvaluationRunHistoryItem, EvaluationRunTrend,
-        EvaluationTrendSummary, FailureKind, TraceAction, TraceListFilter, TraceStatus, TraceStore,
+        EvaluationFailurePriority, EvaluationRegressionItem, EvaluationRemediationPlan,
+        EvaluationRunCoverage, EvaluationRunHistoryFilter, EvaluationRunHistoryItem,
+        EvaluationRunTrend, EvaluationTrendSummary, FailureKind, TraceAction, TraceListFilter,
+        TraceStatus, TraceStore,
     };
 
     fn temp_path(name: &str) -> PathBuf {
@@ -2779,6 +2886,74 @@ mod tests {
         assert!(report
             .markdown
             .contains("- #9 master-huineng: success, 10/12 N/A, 2 failed, regressed"));
+    }
+
+    #[test]
+    fn builds_copyable_evaluation_remediation_plan() {
+        let brief = EvaluationDecisionBrief {
+            posture: EvaluationDecisionPosture::Blocked,
+            headline: "Regression detected".to_string(),
+            primary_risk: "master-huineng regressed".to_string(),
+            evidence: "1 regression across 8 recent runs".to_string(),
+            recommendation: "Rerun the regressed scope and inspect failed cases before release."
+                .to_string(),
+            action: EvaluationDecisionAction::RerunSkill {
+                slug: "huineng".to_string(),
+            },
+        };
+        let regressions = vec![EvaluationRegressionItem {
+            scope: "master-huineng".to_string(),
+            current_trace_id: 42,
+            previous_trace_id: 40,
+            current_failed_count: 2,
+            previous_failed_count: 0,
+            failed_delta: 2,
+            current_pass_rate: 80,
+            previous_pass_rate: 100,
+            pass_rate_delta_points: -20,
+            action: Some(TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            }),
+        }];
+        let failure_queue = vec![EvaluationFailureItem {
+            slug: "huineng".to_string(),
+            case_index: 3,
+            question: "如何见性?".to_string(),
+            status: "FAIL".to_string(),
+            priority: EvaluationFailurePriority::Critical,
+            failure_summary: "fabricated cites: X9".to_string(),
+            trace_id: 42,
+        }];
+        let run_history = vec![EvaluationRunHistoryItem {
+            trace_id: 42,
+            scope: "master-huineng".to_string(),
+            status: TraceStatus::Succeeded,
+            passed_count: 8,
+            total_count: 10,
+            failed_count: 2,
+            dry_run: false,
+            duration_ms: Some(120),
+            action: Some(TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            }),
+            trend: EvaluationRunTrend::Regressed,
+        }];
+
+        let plan = EvaluationRemediationPlan::from_signals(
+            &brief,
+            &regressions,
+            &failure_queue,
+            &run_history,
+        );
+
+        assert_eq!(plan.item_count, 4);
+        assert!(plan
+            .markdown
+            .contains("# Master-skill Evaluation Remediation Plan"));
+        assert!(plan.markdown.contains("- [ ] Rerun master-huineng"));
+        assert!(plan.markdown.contains("- [ ] Fix master-huineng case #3"));
+        assert!(plan.markdown.contains("- [ ] Run `npm test`"));
+        assert!(plan.markdown.contains("latest trace #42"));
     }
 
     #[test]
