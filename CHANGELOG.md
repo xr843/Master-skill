@@ -63,6 +63,12 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added an Evaluation Center evidence window selector for 8, 16, or 32 recent runs, shared by trend summaries, regression queues, run history, and copied evidence reports.
 - Added a copyable Evaluation Remediation Plan that turns regressions, failing cases, latest trace context, and verification steps into a Markdown action checklist.
 - Added a visible Remediation Plan panel to Overview and Evaluation Center so current gate actions are scannable before copying them out.
+- Added a headless `master-skill-desktop --baseline` command (PR #109) that runs the same per-skill fidelity dry-run as the GUI for every `master-*` skill without a display, persisting byte-for-byte identical trace records for CI and screenshot automation.
+- Added a `release-desktop.yml` CI workflow (PR #108) that builds and publishes Linux / Windows / macOS desktop release binaries.
+- Documented the native Desktop Manager in README and README_EN with a quality-gate screenshot and build/run instructions.
+
+### Fixed — desktop quality gate JSON coverage
+- Fixed the Quality Gate evaluation coverage parser (PR #110) to recognize the real `[{"master": ..., "total": ..., "results": [...] }]` JSON shape emitted by `--json` dry-runs, instead of only the legacy plain-text `Testing: / Result:` format. Previously every real GUI or headless `--baseline` run left `evaluation_results()` empty, so the Quality Gate stayed permanently stuck on `Unproven` regardless of how many baselines were recorded.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.
