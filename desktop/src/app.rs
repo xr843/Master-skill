@@ -71,6 +71,31 @@ impl SuiteFilter {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum EvaluationWindow {
+    Recent8,
+    Recent16,
+    Recent32,
+}
+
+impl EvaluationWindow {
+    fn label(self) -> &'static str {
+        match self {
+            Self::Recent8 => "8 runs",
+            Self::Recent16 => "16 runs",
+            Self::Recent32 => "32 runs",
+        }
+    }
+
+    fn limit(self) -> usize {
+        match self {
+            Self::Recent8 => 8,
+            Self::Recent16 => 16,
+            Self::Recent32 => 32,
+        }
+    }
+}
+
 fn suite_matches_filter(
     row: &SkillRow,
     latest_result: Option<&EvaluationRunResult>,
@@ -133,6 +158,7 @@ pub struct MasterSkillApp {
     suite_filter: SuiteFilter,
     suite_query: String,
     run_history_filter: EvaluationRunHistoryFilter,
+    evaluation_window: EvaluationWindow,
     traces: TraceStore,
     trace_path: PathBuf,
 }
@@ -177,16 +203,21 @@ struct EvaluationGateSnapshot {
     evidence_report: EvaluationEvidenceReport,
 }
 
-fn evaluation_gate_snapshot(rows: &[SkillRow], traces: &TraceStore) -> EvaluationGateSnapshot {
+fn evaluation_gate_snapshot(
+    rows: &[SkillRow],
+    traces: &TraceStore,
+    window: EvaluationWindow,
+) -> EvaluationGateSnapshot {
     let summary = evaluation_summary(rows);
+    let limit = window.limit();
     let run_coverage = traces.evaluation_run_coverage(summary.skill_count);
     let failure_insights = traces.evaluation_failure_insights();
     let failure_queue = traces.evaluation_failure_queue();
-    let trend_summary = traces.evaluation_trend_summary(8);
+    let trend_summary = traces.evaluation_trend_summary(limit);
     let decision_brief =
         EvaluationDecisionBrief::from_signals(&run_coverage, &trend_summary, &failure_insights);
-    let all_run_history = traces.evaluation_run_history(8);
-    let regressions = traces.evaluation_regressions(8);
+    let all_run_history = traces.evaluation_run_history(limit);
+    let regressions = traces.evaluation_regressions(limit);
     let evidence_report = EvaluationEvidenceReport::from_signals(
         &decision_brief,
         &run_coverage,
@@ -255,6 +286,7 @@ impl MasterSkillApp {
             suite_filter: SuiteFilter::All,
             suite_query: String::new(),
             run_history_filter: EvaluationRunHistoryFilter::All,
+            evaluation_window: EvaluationWindow::Recent8,
             traces,
             trace_path,
         };
@@ -820,7 +852,7 @@ impl MasterSkillApp {
             );
             let total = self.rows.len().max(1);
             let runtime_value = if summary.runtime_ok { "OK" } else { "Review" };
-            let gate = evaluation_gate_snapshot(&self.rows, &self.traces);
+            let gate = evaluation_gate_snapshot(&self.rows, &self.traces, self.evaluation_window);
             let cards = vec![
                 MetricCard {
                     title: "Runtime",
@@ -878,7 +910,7 @@ impl MasterSkillApp {
     fn show_evaluation_center(&mut self, ui: &mut egui::Ui) {
         let busy = self.is_busy();
         let summary = evaluation_summary(&self.rows);
-        let gate = evaluation_gate_snapshot(&self.rows, &self.traces);
+        let gate = evaluation_gate_snapshot(&self.rows, &self.traces, self.evaluation_window);
         let run_history: Vec<_> = gate
             .all_run_history
             .iter()
@@ -904,6 +936,16 @@ impl MasterSkillApp {
                 }
             },
         );
+        ui.horizontal_wrapped(|ui| {
+            ui.label("Evidence window");
+            for window in [
+                EvaluationWindow::Recent8,
+                EvaluationWindow::Recent16,
+                EvaluationWindow::Recent32,
+            ] {
+                ui.selectable_value(&mut self.evaluation_window, window, window.label());
+            }
+        });
 
         let cards = vec![
             MetricCard {
@@ -2529,7 +2571,8 @@ mod tests {
             Duration::from_millis(40),
         );
 
-        let snapshot = super::evaluation_gate_snapshot(&rows, &traces);
+        let snapshot =
+            super::evaluation_gate_snapshot(&rows, &traces, super::EvaluationWindow::Recent8);
 
         assert_eq!(
             snapshot.decision_brief.posture,
@@ -2540,6 +2583,49 @@ mod tests {
         assert_eq!(snapshot.failure_queue.len(), 1);
         assert_eq!(snapshot.all_run_history.len(), 2);
         assert!(snapshot.evidence_report.markdown.contains("master-huineng"));
+    }
+
+    #[test]
+    fn configures_evaluation_evidence_window_limits() {
+        assert_eq!(super::EvaluationWindow::Recent8.limit(), 8);
+        assert_eq!(super::EvaluationWindow::Recent8.label(), "8 runs");
+        assert_eq!(super::EvaluationWindow::Recent16.limit(), 16);
+        assert_eq!(super::EvaluationWindow::Recent32.limit(), 32);
+    }
+
+    #[test]
+    fn evaluation_gate_snapshot_respects_evidence_window() {
+        let rows = vec![suite_row("huineng", true, true, 2)];
+        let mut traces = TraceStore::new(20);
+        for index in 0..12 {
+            let run = traces.begin_with_action(
+                "Running master-huineng fidelity dry-run",
+                TraceAction::FidelityDryRunSkill {
+                    slug: "huineng".to_string(),
+                },
+                Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run"),
+                "Queued.",
+            );
+            traces.finish_success_with_detail(
+                run,
+                "master-huineng fidelity dry-run finished",
+                format!(
+                    "Testing: master-huineng\nResult: {}/2 passed (N/A)",
+                    index % 2
+                ),
+                Duration::from_millis(40),
+            );
+        }
+
+        let recent_8 =
+            super::evaluation_gate_snapshot(&rows, &traces, super::EvaluationWindow::Recent8);
+        let recent_16 =
+            super::evaluation_gate_snapshot(&rows, &traces, super::EvaluationWindow::Recent16);
+
+        assert_eq!(recent_8.all_run_history.len(), 8);
+        assert_eq!(recent_8.trend_summary.total_runs, 8);
+        assert_eq!(recent_16.all_run_history.len(), 12);
+        assert_eq!(recent_16.trend_summary.total_runs, 12);
     }
 
     fn suite_row(
