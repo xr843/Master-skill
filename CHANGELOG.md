@@ -10,6 +10,8 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-07-10
+
 ### Added — native desktop manager
 - Added a pure Rust `desktop/` app skeleton using `egui/eframe` as the first native Master-skill Desktop Manager shell.
 - Added Rust models and tests for the CLI JSON contracts consumed by the desktop app.
@@ -463,5 +465,14 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/xr843/Master-skill/compare/v0.9.1...v0.10.0
+[0.9.1]: https://github.com/xr843/Master-skill/releases/tag/v0.9.1
+[0.9.0]: https://github.com/xr843/Master-skill/releases/tag/v0.9.0
+[0.8.0]: https://github.com/xr843/Master-skill/releases/tag/v0.8.0
+[0.7.1]: https://github.com/xr843/Master-skill/releases/tag/v0.7.1
+[0.7.0]: https://github.com/xr843/Master-skill/releases/tag/v0.7.0
+[0.6.0]: https://github.com/xr843/Master-skill/releases/tag/v0.6.0
+[0.5.0]: https://github.com/xr843/Master-skill/releases/tag/v0.5.0
+[0.4.0]: https://github.com/xr843/Master-skill/releases/tag/v0.4.0
 [0.3.0]: https://github.com/xr843/Master-skill/releases/tag/v0.3.0
