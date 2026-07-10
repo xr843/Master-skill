@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+use master_skill_desktop::trace::{EvaluationDecisionBrief, EvaluationDecisionPosture, TraceStore};
+
 fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
@@ -123,6 +125,30 @@ fn baseline_flag_runs_headless_and_records_traces_for_all_master_skills() {
         records.len() >= expected_min,
         "expected at least {expected_min} trace record(s) (one per master skill with fidelity.jsonl), found {}",
         records.len()
+    );
+
+    // Task 1b: real `--json` dry-run output must actually count toward
+    // evaluation coverage, not just exist as opaque trace records. Load the
+    // store through the same `TraceStore` the GUI and `--baseline` both use
+    // and assert the Quality Gate reaches full coverage and leaves Unproven,
+    // exactly as `evaluation_gate_snapshot` (app.rs) computes it.
+    let store = TraceStore::load_from_path(&store_path, records.len().max(1))
+        .expect("failed to load trace store written by --baseline");
+    let coverage = store.evaluation_run_coverage(expected_min);
+    assert!(
+        coverage.is_complete(),
+        "expected full evaluation coverage after --baseline, got {}: {coverage:?}",
+        coverage.label()
+    );
+    assert_eq!(coverage.label(), format!("{expected_min}/{expected_min}"));
+
+    let insights = store.evaluation_failure_insights();
+    let trend = store.evaluation_trend_summary(expected_min * 2);
+    let brief = EvaluationDecisionBrief::from_signals(&coverage, &trend, &insights);
+    assert_ne!(
+        brief.posture,
+        EvaluationDecisionPosture::Unproven,
+        "Quality Gate should leave Unproven after a full --baseline run: {brief:?}"
     );
 
     fs::remove_dir_all(&xdg_data_home).ok();

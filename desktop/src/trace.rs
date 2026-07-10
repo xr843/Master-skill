@@ -553,7 +553,63 @@ fn json_string_array(value: &serde_json::Value, key: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
+/// Parses a trace record's `detail` into per-skill evaluation results.
+///
+/// The GUI (`app.rs`) and headless `--baseline` (`baseline.rs`) both run
+/// `scripts/test-fidelity.py ... --json` and store the *full* raw stdout as
+/// `detail` (see `output.trim().to_string()` in both call sites -
+/// `summarize_command_output` only truncates the separate summary message).
+/// So real dry-runs always produce JSON here; the plain-text `Testing: /
+/// Result:` format only appears in trace records persisted before `--json`
+/// was added to every dry-run invocation. Try JSON first, then fall back to
+/// the legacy text format for backward compatibility with those old records.
 fn parse_evaluation_results(trace_id: u64, detail: &str) -> Vec<EvaluationRunResult> {
+    parse_evaluation_results_json(trace_id, detail)
+        .unwrap_or_else(|| parse_evaluation_results_text(trace_id, detail))
+}
+
+/// Parses the real `--json` shape produced by `scripts/test-fidelity.py`:
+/// a top-level array of `{"master": "master-<slug>", "total": N, "results":
+/// [...], "passed": N}` objects (`"passed"` is only present for graded runs;
+/// dry-runs omit it and every result has `"status": "dry_run"`). Returns
+/// `None` when `detail` is not that JSON shape at all, so the caller can fall
+/// back to the legacy text parser.
+fn parse_evaluation_results_json(trace_id: u64, detail: &str) -> Option<Vec<EvaluationRunResult>> {
+    let value = serde_json::from_str::<serde_json::Value>(detail).ok()?;
+    let suites = value.as_array()?;
+
+    let mut results = Vec::new();
+    for suite in suites {
+        let Some(master_name) = suite.get("master").and_then(serde_json::Value::as_str) else {
+            continue;
+        };
+        let Some(slug) = master_name.strip_prefix("master-") else {
+            continue;
+        };
+        let Some(results_array) = suite.get("results").and_then(serde_json::Value::as_array) else {
+            continue;
+        };
+
+        let total_count = suite
+            .get("total")
+            .and_then(serde_json::Value::as_u64)
+            .map(|value| value as usize)
+            .unwrap_or(results_array.len());
+        let passed = suite.get("passed").and_then(serde_json::Value::as_u64);
+
+        results.push(EvaluationRunResult {
+            slug: slug.to_string(),
+            passed_count: passed.unwrap_or(0) as usize,
+            total_count,
+            dry_run: passed.is_none(),
+            trace_id,
+        });
+    }
+
+    Some(results)
+}
+
+fn parse_evaluation_results_text(trace_id: u64, detail: &str) -> Vec<EvaluationRunResult> {
     let mut results = Vec::new();
     let mut current_slug: Option<String> = None;
 
@@ -2100,6 +2156,216 @@ mod tests {
         assert_eq!(coverage.dry_run_count, 2);
         assert_eq!(coverage.graded_count, 0);
         assert_eq!(coverage.label(), "2/18");
+    }
+
+    /// Real (trimmed) `python3 scripts/test-fidelity.py --master master-zhiyi
+    /// --dry-run --json` output captured 2026-07-10 as Task 1b evidence,
+    /// trimmed from 10 to 3 cases. Field names and nesting are unmodified.
+    fn real_json_dry_run_detail_zhiyi() -> &'static str {
+        r#"[
+  {
+    "master": "master-zhiyi",
+    "total": 3,
+    "results": [
+      {
+        "index": 0,
+        "question": "什么是一念三千？",
+        "must_cite": ["T1911", "摩訶止觀"],
+        "must_mention": ["十法界", "三千", "一念心"],
+        "difficulty": "basic",
+        "status": "dry_run"
+      },
+      {
+        "index": 1,
+        "question": "三谛圆融是什么意思？",
+        "must_cite": ["T1716", "法華玄義"],
+        "must_mention": ["空", "假", "中", "圆融"],
+        "difficulty": "basic",
+        "status": "dry_run"
+      },
+      {
+        "index": 2,
+        "question": "五时八教怎么分？",
+        "must_cite": ["T1716"],
+        "must_mention": ["华严", "阿含", "方等", "般若", "法华"],
+        "difficulty": "basic",
+        "status": "dry_run"
+      }
+    ]
+  }
+]"#
+    }
+
+    /// Real (trimmed) `--master master-huineng --dry-run --json` output, 2
+    /// of N cases.
+    fn real_json_dry_run_detail_huineng() -> &'static str {
+        r#"[
+  {
+    "master": "master-huineng",
+    "total": 2,
+    "results": [
+      {
+        "index": 0,
+        "question": "什么是见性成佛？",
+        "difficulty": "basic",
+        "status": "dry_run"
+      },
+      {
+        "index": 1,
+        "question": "顿悟怎么修？",
+        "difficulty": "intermediate",
+        "status": "dry_run"
+      }
+    ]
+  }
+]"#
+    }
+
+    /// Real (trimmed) `--master master-nagarjuna --dry-run --json` output, 2
+    /// of 10 cases.
+    fn real_json_dry_run_detail_nagarjuna() -> &'static str {
+        r#"[
+  {
+    "master": "master-nagarjuna",
+    "total": 2,
+    "results": [
+      {
+        "index": 0,
+        "question": "什么是八不中道？",
+        "must_cite": ["T30n1564", "中论"],
+        "must_mention": ["不生不灭", "不常不断", "中道", "缘起", "戏论"],
+        "difficulty": "basic",
+        "status": "dry_run"
+      },
+      {
+        "index": 1,
+        "question": "'众因缘生法，我说即是空'是什么意思？",
+        "must_cite": ["T30n1564"],
+        "must_mention": ["缘起", "性空", "空", "假名", "中道"],
+        "difficulty": "basic",
+        "status": "dry_run"
+      }
+    ]
+  }
+]"#
+    }
+
+    #[test]
+    fn parses_evaluation_results_from_real_json_dry_run_detail() {
+        // GUI and headless dry-runs both invoke `--json` (cli.rs, baseline.rs)
+        // and store the *full* raw stdout as `detail` (app.rs / baseline.rs
+        // use `output.trim().to_string()`, not the truncated
+        // `summarize_command_output` summary). `evaluation_results()` must
+        // therefore understand this real JSON shape, not just the legacy
+        // `Testing: / Result:` plain-text format.
+        let mut store = TraceStore::new(10);
+
+        let run = store.begin_with_action(
+            "Running master-zhiyi fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "zhiyi".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-zhiyi --dry-run --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "master-zhiyi fidelity dry-run finished",
+            real_json_dry_run_detail_zhiyi(),
+            Duration::from_millis(64),
+        );
+
+        let result = store
+            .latest_evaluation_result_for("zhiyi")
+            .expect("expected a parsed evaluation result for the JSON dry-run detail");
+        assert_eq!(result.slug, "zhiyi");
+        assert_eq!(result.passed_count, 0);
+        assert_eq!(result.total_count, 3);
+        assert!(result.dry_run);
+        assert_eq!(result.trace_id, run);
+    }
+
+    #[test]
+    fn summarizes_evaluation_run_coverage_from_json_dry_run_results() {
+        let mut store = TraceStore::new(10);
+
+        for (slug, detail) in [
+            ("zhiyi", real_json_dry_run_detail_zhiyi()),
+            ("huineng", real_json_dry_run_detail_huineng()),
+            ("nagarjuna", real_json_dry_run_detail_nagarjuna()),
+        ] {
+            let run = store.begin_with_action(
+                format!("Running master-{slug} fidelity dry-run"),
+                TraceAction::FidelityDryRunSkill {
+                    slug: slug.to_string(),
+                },
+                Some(format!(
+                    "python3 scripts/test-fidelity.py --master master-{slug} --dry-run --json"
+                )),
+                "Queued.",
+            );
+            store.finish_success_with_detail(
+                run,
+                format!("master-{slug} fidelity dry-run finished"),
+                detail,
+                Duration::from_millis(50),
+            );
+        }
+
+        let coverage = store.evaluation_run_coverage(3);
+
+        assert_eq!(coverage.total_skill_count, 3);
+        assert_eq!(coverage.run_skill_count, 3);
+        assert_eq!(coverage.dry_run_count, 3);
+        assert_eq!(coverage.graded_count, 0);
+        assert_eq!(coverage.label(), "3/3");
+        assert!(coverage.is_complete());
+    }
+
+    #[test]
+    fn evaluation_gate_leaves_unproven_after_full_json_dry_run_baseline() {
+        // Mirrors `master-skill-desktop --baseline` recording one real
+        // `--json` dry-run trace per skill via the shared trace-store code
+        // path (baseline.rs / app.rs), then computes the exact signals
+        // `evaluation_gate_snapshot` (app.rs) feeds into
+        // `EvaluationDecisionBrief::from_signals`.
+        let mut store = TraceStore::new(10);
+
+        for (slug, detail) in [
+            ("zhiyi", real_json_dry_run_detail_zhiyi()),
+            ("huineng", real_json_dry_run_detail_huineng()),
+            ("nagarjuna", real_json_dry_run_detail_nagarjuna()),
+        ] {
+            let run = store.begin_with_action(
+                format!("Running master-{slug} fidelity dry-run"),
+                TraceAction::FidelityDryRunSkill {
+                    slug: slug.to_string(),
+                },
+                Some(format!(
+                    "python3 scripts/test-fidelity.py --master master-{slug} --dry-run --json"
+                )),
+                "Queued.",
+            );
+            store.finish_success_with_detail(
+                run,
+                format!("master-{slug} fidelity dry-run finished"),
+                detail,
+                Duration::from_millis(50),
+            );
+        }
+
+        let coverage = store.evaluation_run_coverage(3);
+        let insights = store.evaluation_failure_insights();
+        let trend = store.evaluation_trend_summary(20);
+        let brief = EvaluationDecisionBrief::from_signals(&coverage, &trend, &insights);
+
+        assert!(coverage.is_complete());
+        assert_ne!(
+            brief.posture,
+            EvaluationDecisionPosture::Unproven,
+            "gate should leave Unproven once every skill has a current run: {brief:?}"
+        );
+        assert_eq!(brief.posture, EvaluationDecisionPosture::Ready);
     }
 
     #[test]
