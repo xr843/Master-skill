@@ -62,6 +62,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added an actionable Overview Decision Brief backed by the shared evaluation gate snapshot, including the primary gate action and copyable evidence report from the main console surface.
 - Added an Evaluation Center evidence window selector for 8, 16, or 32 recent runs, shared by trend summaries, regression queues, run history, and copied evidence reports.
 - Added a copyable Evaluation Remediation Plan that turns regressions, failing cases, latest trace context, and verification steps into a Markdown action checklist.
+- Added a visible Remediation Plan panel to Overview and Evaluation Center so current gate actions are scannable before copying them out.
 
 ### Changed — framework positioning and v1.0 planning
 - Repositioned Master-skill as a **FoJin-powered Buddhist AI persona framework**: source-grounded, boundary-aware, fidelity-tested, and runtime-ready.

@@ -882,6 +882,7 @@ pub struct EvaluationEvidenceReport {
 pub struct EvaluationRemediationPlan {
     pub markdown: String,
     pub item_count: usize,
+    pub items: Vec<String>,
 }
 
 impl EvaluationEvidenceReport {
@@ -993,6 +994,7 @@ impl EvaluationRemediationPlan {
     ) -> Self {
         let mut markdown = String::new();
         let mut item_count = 0;
+        let mut items = Vec::new();
 
         markdown.push_str("# Master-skill Evaluation Remediation Plan\n\n");
         markdown.push_str("## Gate Decision\n");
@@ -1017,6 +1019,7 @@ impl EvaluationRemediationPlan {
             append_remediation_item(
                 &mut markdown,
                 &mut item_count,
+                &mut items,
                 &default_remediation_action(brief),
             );
         } else {
@@ -1024,6 +1027,7 @@ impl EvaluationRemediationPlan {
                 append_remediation_item(
                     &mut markdown,
                     &mut item_count,
+                    &mut items,
                     &format!(
                         "Rerun {} and compare trace #{} against #{} (failed {:+}, pass rate {:+} pts)",
                         item.scope,
@@ -1038,6 +1042,7 @@ impl EvaluationRemediationPlan {
                 append_remediation_item(
                     &mut markdown,
                     &mut item_count,
+                    &mut items,
                     &format!(
                         "Fix master-{} case #{} ({}): {}",
                         item.slug,
@@ -1053,20 +1058,28 @@ impl EvaluationRemediationPlan {
         append_remediation_item(
             &mut markdown,
             &mut item_count,
+            &mut items,
             "Rerun affected fidelity scopes",
         );
-        append_remediation_item(&mut markdown, &mut item_count, "Run `npm test`");
+        append_remediation_item(&mut markdown, &mut item_count, &mut items, "Run `npm test`");
         markdown.push_str("- Attach the copied evidence report to the PR or release note.\n");
 
         Self {
             markdown,
             item_count,
+            items,
         }
     }
 }
 
-fn append_remediation_item(markdown: &mut String, item_count: &mut usize, text: &str) {
+fn append_remediation_item(
+    markdown: &mut String,
+    item_count: &mut usize,
+    items: &mut Vec<String>,
+    text: &str,
+) {
     *item_count += 1;
+    items.push(text.to_string());
     markdown.push_str(&format!("- [ ] {text}\n"));
 }
 
@@ -2947,6 +2960,15 @@ mod tests {
         );
 
         assert_eq!(plan.item_count, 4);
+        assert_eq!(
+            plan.items,
+            vec![
+                "Rerun master-huineng and compare trace #42 against #40 (failed +2, pass rate -20 pts)",
+                "Fix master-huineng case #3 (critical): fabricated cites: X9",
+                "Rerun affected fidelity scopes",
+                "Run `npm test`",
+            ]
+        );
         assert!(plan
             .markdown
             .contains("# Master-skill Evaluation Remediation Plan"));
