@@ -263,16 +263,21 @@ fn quality_gate_metric_card(brief: &EvaluationDecisionBrief) -> MetricCard {
     }
 }
 
+/// Trace history capacity shared by the GUI (`MasterSkillApp::new`) and the
+/// headless `--baseline` run, so both load/save the store identically.
+pub(crate) const TRACE_STORE_CAPACITY: usize = 200;
+
 impl MasterSkillApp {
     pub fn new() -> Self {
         let trace_path = desktop_trace_store_path();
-        let (traces, trace_load_message) = match TraceStore::load_from_path(&trace_path, 200) {
-            Ok(traces) => (traces, None),
-            Err(err) => (
-                TraceStore::new(200),
-                Some(format!("Trace history load failed: {err:#}")),
-            ),
-        };
+        let (traces, trace_load_message) =
+            match TraceStore::load_from_path(&trace_path, TRACE_STORE_CAPACITY) {
+                Ok(traces) => (traces, None),
+                Err(err) => (
+                    TraceStore::new(TRACE_STORE_CAPACITY),
+                    Some(format!("Trace history load failed: {err:#}")),
+                ),
+            };
         let mut app = Self {
             client: CliClient::default(),
             inventory: None,
@@ -568,19 +573,15 @@ impl MasterSkillApp {
     }
 
     fn start_skill_fidelity_dry_run(&mut self, slug: String) {
+        let (label, command) = crate::baseline::skill_dry_run_label_and_command(&slug);
         self.start_task_with_action(
-            format!("Running master-{slug} fidelity dry-run"),
+            label,
             Some(TraceAction::FidelityDryRunSkill { slug: slug.clone() }),
-            Some(format!(
-                "python3 scripts/test-fidelity.py --master master-{slug} --dry-run --json"
-            )),
+            Some(command),
             move |client| {
                 let output = client.run_fidelity_dry_run_for(&slug)?;
                 Ok(TaskOutcome {
-                    message: summarize_command_output(
-                        &format!("master-{slug} fidelity dry-run finished"),
-                        &output,
-                    ),
+                    message: crate::baseline::skill_dry_run_success_message(&slug, &output),
                     detail: output.trim().to_string(),
                     snapshot: None,
                 })
@@ -2394,7 +2395,7 @@ impl eframe::App for MasterSkillApp {
     }
 }
 
-fn summarize_command_output(prefix: &str, output: &str) -> String {
+pub(crate) fn summarize_command_output(prefix: &str, output: &str) -> String {
     let lines: Vec<&str> = output
         .lines()
         .filter(|line| !line.trim().is_empty())
@@ -2407,7 +2408,7 @@ fn summarize_command_output(prefix: &str, output: &str) -> String {
     format!("{prefix}:\n{}", lines[start..].join("\n"))
 }
 
-fn first_line(value: &str) -> String {
+pub(crate) fn first_line(value: &str) -> String {
     value
         .lines()
         .find(|line| !line.trim().is_empty())
@@ -2416,7 +2417,7 @@ fn first_line(value: &str) -> String {
         .to_string()
 }
 
-fn desktop_trace_store_path() -> PathBuf {
+pub(crate) fn desktop_trace_store_path() -> PathBuf {
     desktop_trace_store_path_from_env(
         std::env::var("XDG_DATA_HOME").ok().as_deref(),
         std::env::var("HOME").ok().as_deref(),
