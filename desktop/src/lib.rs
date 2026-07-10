@@ -1,4 +1,5 @@
 pub mod app;
+pub mod baseline;
 pub mod catalog;
 pub mod cli;
 pub mod fonts;
