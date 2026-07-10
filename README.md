@@ -303,11 +303,11 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 
 ## 桌面管理器
 
-原生桌面控制台(纯 Rust,egui,单二进制,无 Electron),统一管理 17 位法师 skill 的安装状态、fidelity 评测覆盖率、运行追踪与质量门禁:
+原生桌面控制台(纯 Rust,egui,单二进制,无 Electron),统一管理 17 个 master skill 的安装状态、fidelity 评测覆盖率、运行追踪与质量门禁:
 
-![Master-skill Desktop Manager](docs/assets/desktop-manager.png)
+![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/master/docs/assets/desktop-manager.png)
 
-**下载**:[Releases](https://github.com/xr843/Master-skill/releases) 提供 Linux / Windows / macOS 预编译二进制,下载后直接运行(仓库根目录下执行,需本地已 clone 本仓库)。
+**下载**:[Releases](https://github.com/xr843/Master-skill/releases) 提供 Linux / Windows / macOS 预编译二进制,下载后直接运行(仓库根目录下执行,需本地已 clone 本仓库)。Linux / macOS 下载后需先 `chmod +x` 赋予可执行权限;macOS 上二进制未签名,首次运行需右键"打开"或执行 `xattr -d com.apple.quarantine <文件名>` 解除隔离。
 
 **从源码构建**:
 

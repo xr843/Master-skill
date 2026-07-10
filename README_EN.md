@@ -283,9 +283,9 @@ The system will guide you through a three-step intake, then automatically collec
 
 A native desktop console (pure Rust, egui, single binary, no Electron) that unifies management of installation status, fidelity evaluation coverage, run tracing, and the quality gate across all 17 master skills:
 
-![Master-skill Desktop Manager](docs/assets/desktop-manager.png)
+![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/master/docs/assets/desktop-manager.png)
 
-**Download**: [Releases](https://github.com/xr843/Master-skill/releases) provides pre-built binaries for Linux / Windows / macOS — download and run directly (execute from the repository root; requires a local clone of this repo).
+**Download**: [Releases](https://github.com/xr843/Master-skill/releases) provides pre-built binaries for Linux / Windows / macOS — download and run directly (execute from the repository root; requires a local clone of this repo). On Linux/macOS you'll need to `chmod +x` the downloaded binary first; on macOS it's unsigned, so the first run needs right-click → Open, or `xattr -d com.apple.quarantine <file>` to clear the quarantine flag.
 
 **Build from source**:
 

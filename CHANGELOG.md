@@ -21,6 +21,11 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Added `--locked` to the desktop release build so it uses the committed `desktop/Cargo.lock` exactly, instead of allowing dependency re-resolution at release time.
 - Added a Linux-only smoke test that runs the staged release binary's `--baseline` from the checkout root before the job is considered successful, catching non-portable (compile-time-path) binaries before they reach a release.
 
+### Changed — desktop download docs
+- Documented the `chmod +x` step (Linux/macOS) and the macOS unsigned-binary first-run workaround (right-click → Open, or `xattr -d com.apple.quarantine`) needed after downloading a release binary.
+- Changed the desktop screenshot in README/README_EN to reference the absolute GitHub raw URL instead of a relative path, since README.md ships to npm where relative image paths break.
+- Corrected README's desktop section from "17 位法师" to "17 个 master skill" — 2 of the 17 are meta-skills, not personas.
+
 ### Added — native desktop manager
 - Added a pure Rust `desktop/` app skeleton using `egui/eframe` as the first native Master-skill Desktop Manager shell.
 - Added Rust models and tests for the CLI JSON contracts consumed by the desktop app.
