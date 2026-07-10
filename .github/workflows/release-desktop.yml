@@ -1,0 +1,99 @@
+name: Release Desktop Binaries
+
+# Builds the pure-Rust egui/eframe desktop app (desktop/) for Linux,
+# Windows, and macOS, then:
+#   - on `release: published`   → attaches the three renamed binaries to
+#     that GitHub release via `gh release upload`.
+#   - on `workflow_dispatch`    → only builds and uploads them as workflow
+#     artifacts. It never touches a release — use this to dry-run the
+#     three-platform build before cutting a real release.
+#
+# `$GITHUB_REF_NAME` is used (not `github.event.release.tag_name`) because
+# for the `release` event GitHub sets `GITHUB_REF` to `refs/tags/<tag>`,
+# so `GITHUB_REF_NAME` already equals the release tag name. This also
+# keeps the upload step identical in spirit to a tag-push release flow.
+#
+# Supply-chain hardening (matches npm-publish.yml / validate-and-test.yml):
+#   - All `uses:` are pinned to a full commit SHA + version comment.
+#     Bumps are PR'd by Dependabot (see .github/dependabot.yml).
+#   - No third-party Rust-toolchain action is introduced: the GitHub-hosted
+#     runners already ship a recent stable rustc/cargo, which is enough for
+#     this workflow (no cross-compilation, no MSRV pin needed).
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  # `contents: write` is required so the release job can attach binaries
+  # to the triggering release via `gh release upload`. workflow_dispatch
+  # runs never touch a release, but the permission is declared once at
+  # workflow scope for simplicity — it does not grant any extra capability
+  # to the dispatch path since that path never calls the GitHub API.
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.artifact_name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: master-skill-desktop-linux-x86_64
+            binary_path: desktop/target/release/master-skill-desktop
+          - os: windows-latest
+            artifact_name: master-skill-desktop-windows-x86_64.exe
+            binary_path: desktop/target/release/master-skill-desktop.exe
+          - os: macos-latest
+            # macos-latest runners are Apple Silicon (arm64) hosts, so a
+            # native `cargo build --release` here already produces an
+            # aarch64-apple-darwin binary — no cross-compile flags needed.
+            artifact_name: master-skill-desktop-macos-aarch64
+            binary_path: desktop/target/release/master-skill-desktop
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - name: Install native GUI build dependencies (Linux only)
+        if: runner.os == 'Linux'
+        # eframe/winit link against these X11/Wayland/xkb dev libraries at
+        # build time on Linux; other platforms use their native toolkits.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxkbcommon-dev \
+            libwayland-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev
+
+      - name: Show Rust toolchain
+        run: |
+          rustc --version
+          cargo --version
+
+      - name: Build desktop app
+        run: cargo build --release --manifest-path desktop/Cargo.toml
+
+      - name: Stage renamed binary
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp "${{ matrix.binary_path }}" "dist/${{ matrix.artifact_name }}"
+
+      - name: Upload release asset
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: gh release upload "$GITHUB_REF_NAME" "dist/${{ matrix.artifact_name }}"
+
+      - name: Upload workflow artifact
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.artifact_name }}
+          if-no-files-found: error
