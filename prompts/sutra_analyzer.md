@@ -14,6 +14,9 @@
 ### 师承脉络
 {lineage_info}
 
+### 声明来源清单
+{sources_info}
+
 ### 相关经典
 {texts_info}
 
@@ -30,9 +33,11 @@
 ### 1. 核心经典（core_texts）
 该法师最重要的经典，按重要性排序。每部经包含：
 - `title`: 经名
-- `cbeta_id`: CBETA 编号（如有）
+- `source_type`: 来源家族，必须来自本次声明来源清单
+- `source_id`: 该来源家族中的声明 ID
 - `importance`: 重要程度说明
-- `fojin_url`: FoJin 链接（格式：https://fojin.app/texts/{text_id}）
+- `locator`: 卷、章、节、页码等来源族定位信息（如有）
+- `fojin_text_id`: 仅在输入真实返回 `text_id` 时保留；不得推测或编造
 
 ### 2. 教义体系（doctrine）
 3-5 条核心主张，每条包含：

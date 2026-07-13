@@ -108,6 +108,33 @@ def test_declared_source_families_and_membership_pass():
     assert validate_source_document(document) == []
 
 
+def test_documented_canonical_source_ids_match_the_offline_verifier():
+    conventions = (
+        Path(__file__).resolve().parents[1]
+        / "references"
+        / "source-conventions.md"
+    ).read_text(encoding="utf-8")
+    documented = [
+        {"type": "cbeta", "id": "T08n0235", "title": "Diamond Sutra"},
+        {"type": "tibetan_canon", "id": "BDRC:W22084", "title": "BDRC work"},
+        {"type": "tibetan_canon", "id": "Toh 4465", "title": "Lamp"},
+        {"type": "pali_canon", "id": "MN 10", "title": "Satipatthana"},
+        {"type": "pali_treatise", "id": "PTS:Vism", "title": "Vism"},
+        {
+            "type": "compiled_teaching",
+            "id": "AjahnChah:FoodForTheHeart",
+            "title": "Food for the Heart",
+        },
+    ]
+    for source in documented:
+        assert f"`{source['id']}`" in conventions
+    document = {
+        "sources": documented,
+        "citation_contract": derive_citation_contract(documented),
+    }
+    assert validate_source_document(document) == []
+
+
 def test_undeclared_citation_member_fails():
     sources = [{"type": "pali_canon", "id": "SuttaCentral"}]
     document = {
@@ -152,7 +179,7 @@ def test_check_links_cli_validates_declared_sources_offline(tmp_path):
 
 
 def test_final_check_cli_validates_generated_persona_directory(tmp_path):
-    persona = tmp_path / "demo"
+    persona = tmp_path / "master-demo"
     persona.mkdir()
     sources = [{"type": "compiled_teaching", "id": "OfflineSmoke:Deterministic"}]
     (persona / "meta.json").write_text(
@@ -164,7 +191,10 @@ def test_final_check_cli_validates_generated_persona_directory(tmp_path):
         ),
         encoding="utf-8",
     )
-    for required in ("SKILL.md", "teaching.md", "voice.md"):
+    (persona / "SKILL.md").write_text(
+        "---\nname: master-demo\n---\noffline smoke\n", encoding="utf-8"
+    )
+    for required in ("teaching.md", "voice.md"):
         (persona / required).write_text("offline smoke", encoding="utf-8")
 
     result = subprocess.run(
@@ -180,3 +210,38 @@ def test_final_check_cli_validates_generated_persona_directory(tmp_path):
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "final source check OK (1 sources)"
+
+
+def test_final_check_rejects_skill_name_that_does_not_match_directory(tmp_path):
+    persona = tmp_path / "master-demo"
+    persona.mkdir()
+    sources = [{"type": "compiled_teaching", "id": "OfflineSmoke:Deterministic"}]
+    (persona / "meta.json").write_text(
+        json.dumps(
+            {
+                "sources": sources,
+                "citation_contract": derive_citation_contract(sources),
+            }
+        ),
+        encoding="utf-8",
+    )
+    (persona / "SKILL.md").write_text(
+        "---\nname: master_wrong\n---\n", encoding="utf-8"
+    )
+    for required in ("teaching.md", "voice.md"):
+        (persona / required).write_text("offline smoke", encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOLS / "verify_sources.py"),
+            "--final-check",
+            str(persona),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode != 0
+    assert "SKILL.md name" in result.stderr
+    assert "master-demo" in result.stderr

@@ -100,7 +100,7 @@ ANTHROPIC_API_KEY=sk-... python scripts/test-fidelity.py --master master-zhiyi -
 | 近现代法师，亲授弟子在世 / 所属寺院仍运营 | ⚠️ Tier B，PR 必须附 `prebuilt/{slug}/LICENSE.md` 授权证明 |
 | 在世法师 | ❌ Tier C，不接受 |
 | 主流学界对身份 / 著作有争议 | ❌ Tier C，不接受 |
-| 汉传以外（南传 / 藏传 / 日莲 / 天台日宗等）| ⏳ 当前版本仅汉传，未来独立分支规划中，不接受 |
+| 汉传、印度、藏传或南传等有可靠史料与合规原典来源的传统 | ✅ 按同一版权、史实、声明来源与教义审查标准评估；不评宗派高下 |
 
 **想收录但不确定？** 先开一个 [new_master Issue](https://github.com/xr843/Master-skill/issues/new?template=new_master.yml) 征询意见，**不要先写完再提 PR**——已经投入精力再被拒成本太高。
 
@@ -114,11 +114,11 @@ ANTHROPIC_API_KEY=sk-... python scripts/test-fidelity.py --master master-zhiyi -
 生成管线会：
 
 1. **intake** — 3 问收集信息（传承、核心教义、可用文献）
-2. **collect** — 从 FoJin 采集该法师的 CBETA 文本
+2. **collect** — 从 FoJin 或人工输入采集该法师所属来源族的声明原典（CBETA / BDRC / Toh / SuttaCentral / PTS / 合规编纂开示）
 3. **analyze** — `sutra_analyzer` + `voice_analyzer` 并行分析
 4. **review** — 二阶段独立审查：教义准确性 → 风格一致性
 5. **write** — 生成 `prebuilt/<slug>/` 目录结构
-6. **validate** — 自动跑 `validate.py` + `validate-fidelity.py`
+6. **validate** — 自动跑 `validate.py` + `validate-citation-contract.py` + `validate-fidelity.py`
 
 然后你手动：
 
@@ -134,13 +134,13 @@ ANTHROPIC_API_KEY=sk-... python scripts/test-fidelity.py --master master-zhiyi -
 ```
 prebuilt/master-<slug>/
 ├── SKILL.md             # 必须。frontmatter 见下
-├── meta.json            # 必须。search_scope + keywords
+├── meta.json            # 必须。sources + citation_contract + search_scope
 ├── references/
-│   ├── teaching.md      # 必须。教义体系，每条断言附 CBETA 引证
+│   ├── teaching.md      # 必须。教义体系，合同覆盖的内容附声明来源引用
 │   └── voice.md         # 必须。Layer 0/1/2/3 四层表达风格
 ├── sources/
 │   ├── INDEX.md         # 必须。本目录导览
-│   └── *.md             # ≥ 2 篇 CBETA 核心段落摘录
+│   └── *.md             # ≥ 2 篇合规的声明来源核心段落或摘要
 └── tests/
     └── fidelity.jsonl   # 必须。5 条 Q&A 测试用例
 ```
@@ -157,19 +157,39 @@ lineage: <宗派>
 dates: 生年-卒年
 sources:
   - title: <经典名称>
-    cbeta_id: <T 或 X + 数字>
-    fojin_text_id: <FoJin 内部 text_id>
+    source_type: <cbeta | tibetan_canon | pali_canon | compiled_teaching | ...>
+    source_id: <该来源族中的声明 ID>
   - ...                    # 至少 3 部经
-citation_format: "【《{title}》卷{juan}，{cbeta_id}】"
+citation_format: "【《{title}》，{source_id}{locator}】"
 verified_by: <你的 GitHub handle>
 verified_at: <YYYY-MM-DD>
 ---
 ```
 
+`meta.json` 是运行时来源合同的权威位置；`allowed_source_types` 必须等于 `sources[].type` 的排序去重值：
+
+```json
+{
+  "sources": [
+    {"type": "pali_canon", "id": "MN 10", "title": "Satipaṭṭhāna Sutta"}
+  ],
+  "citation_contract": {
+    "version": 1,
+    "claim_policy": "declared_sources_only",
+    "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
+    "allowed_source_types": ["pali_canon"],
+    "minimum_claim_coverage": 0.9,
+    "live_retrieval_allowed": true
+  }
+}
+```
+
+完整来源族与 ID 规范见 [`references/source-conventions.md`](references/source-conventions.md)；结构验证运行 `python3 scripts/validate-citation-contract.py`。
+
 **HARD-GATE 铁律（写入任何 `teaching.md` 前请自检）：**
 
-1. 每一条教义断言必须附一个**真实**的 CBETA 经号
-2. 不得捏造经号（`scripts/validate.py` 会对照 FoJin 反查）
+1. 每一条教义断言、修行指导与文本解释必须附一个能解析到 `meta.json.sources[]` 的**真实声明来源 ID**
+2. 不得捏造来源 ID；类型必须属于 `citation_contract.allowed_source_types`
 3. 不得为虚构 / 神话 / 未有史实记载的人物建角色
 4. 不得大段抄录仍在版权期内的现代白话译本或学术校注
 
@@ -192,7 +212,7 @@ verified_at: <YYYY-MM-DD>
 ```json
 {
   "q": "用户会问的典型问题",
-  "must_cite": ["T48n2008", "某经号"],
+  "must_cite": ["T48n2008", "MN 10", "Toh 4465"],
   "must_mention": ["核心术语1", "核心术语2"],
   "must_not_contain_first_turn": ["学生啊", "师兄"],
   "difficulty": "basic|intermediate|advanced"
@@ -234,7 +254,7 @@ PR 提交后：
 - 不评判宗派高下
 - 不借项目传播个人修行见解
 - 不对其他贡献者做教学式 / 居高临下的发言
-- 教理争议以学界主流共识 + CBETA 原文为准，而非个人修学经验
+- 教理争议以学界主流共识 + 对应传统的声明原典为准，而非个人修学经验
 
 ---
 

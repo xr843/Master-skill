@@ -52,7 +52,7 @@
 - 多写法名（如"鸠摩罗什"/"鸠摩罗什婆"）→ 优先 FoJin KG 中的**标准名称**
 - 已存在（预置或已生成） → 提示：
 
-  > "「{name}」已存在，可直接使用 /{slug} 调用。如需重新生成，请先执行 /delete-master {slug}。"
+  > "「{name}」已存在，可直接使用 /master-{slug} 调用。如需重新生成，请先执行 /delete-master {slug}。"
 
 - 在世法师 / 圆寂未足版权期 → 走 `references/ethics-runtime.md` §版权分级 Tier B/C 流程
 
@@ -245,7 +245,7 @@ python3 ${CLAUDE_SKILL_DIR}/tools/master_builder.py --spec generated-master.json
 ### 生成后终验
 
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check masters/{slug}/
+python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check masters/master-{slug}/
 ```
 
 `--final-check` 离线验证 persona 目录包含 `SKILL.md`、`teaching.md`、`voice.md`、`meta.json`，
@@ -255,8 +255,8 @@ python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check masters/{slug}
 ### 生成目录结构
 
 ```
-masters/{slug}/
-├── SKILL.md          # /{slug} 触发（完整角色定义）
+masters/master-{slug}/
+├── SKILL.md          # /master-{slug} 触发（完整角色定义）
 ├── teaching.md       # 教义体系（可单独使用）
 ├── voice.md          # 说法风格（可单独使用）
 └── meta.json         # 元数据（版本、生成时间、数据来源）
@@ -265,12 +265,12 @@ masters/{slug}/
 ### 角色注册（按运行环境）
 
 **Claude Code 用户**
-1. 生成的 SKILL.md 已放置在 `masters/{slug}/`
+1. 生成的 SKILL.md 已放置在 `masters/master-{slug}/`
 2. 确保 `masters/` 在 Claude Code skill 搜索路径中（检查 `.claude/settings.json` 的 `skillDirs` 配置）
-3. 完成后自动可通过 `/{slug}` 触发
+3. 完成后自动可通过 `/master-{slug}` 触发
 
 **OpenClaw 用户**
-1. 将 `masters/{slug}/` 复制到 OpenClaw 的 skills 目录
+1. 将 `masters/master-{slug}/` 复制到 OpenClaw 的 skills 目录
 2. 在 OpenClaw 配置中注册新 skill
 3. 参考 OpenClaw 文档完成注册流程
 
@@ -278,8 +278,8 @@ masters/{slug}/
 
 ```
 已生成「{master_name}」教学角色
-  目录：masters/{slug}/
-  调用命令：/{slug}
+  目录：masters/master-{slug}/
+  调用命令：/master-{slug}
   包含文件：SKILL.md, teaching.md, voice.md, meta.json
   数据来源：{n} 条经文，{m} 个知识图谱实体
 ```
@@ -303,7 +303,7 @@ masters/{slug}/
 
 **版本自动递增**：
 - 每次追加 → meta.json `version` 自动 minor 递增（1.0.0 → 1.1.0）
-- 旧版本自动归档到 `masters/{slug}/.versions/`
+- 旧版本自动归档到 `masters/master-{slug}/versions/`
 - `/master-rollback` 可回退到任意历史版本
 
 ### 纠正模式

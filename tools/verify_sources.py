@@ -108,6 +108,7 @@ def validate_source_document(document: dict) -> list[str]:
 
 def _load_declared_source_target(target: str, *, final: bool) -> tuple[dict | None, list[str]]:
     path = Path(target)
+    errors: list[str] = []
     if final:
         if not path.is_dir():
             return None, [f"final-check target is not a persona directory: {path}"]
@@ -118,14 +119,32 @@ def _load_declared_source_target(target: str, *, final: bool) -> tuple[dict | No
         ]
         if missing:
             return None, [f"final-check target is missing required files: {missing}"]
+        if not re.fullmatch(r"master-[a-z0-9][a-z0-9-]*", path.name):
+            errors.append(
+                "final-check persona directory must use master-<slug>: "
+                f"{path.name}"
+            )
+        try:
+            skill_text = (path / "SKILL.md").read_text(encoding="utf-8")
+        except OSError as exc:
+            errors.append(f"cannot read final SKILL.md: {exc}")
+        else:
+            name_match = re.search(r"(?m)^name:\s*([^\s]+)\s*$", skill_text)
+            skill_name = name_match.group(1) if name_match else None
+            if skill_name != path.name:
+                errors.append(
+                    f"SKILL.md name {skill_name!r} must equal directory "
+                    f"{path.name!r}"
+                )
         path = path / "meta.json"
     elif not path.is_file():
         return None, [f"check-links input file not found: {path}"]
 
     try:
-        return json.loads(path.read_text(encoding="utf-8")), []
+        return json.loads(path.read_text(encoding="utf-8")), errors
     except (OSError, json.JSONDecodeError) as exc:
-        return None, [f"cannot read source manifest {path}: {exc}"]
+        errors.append(f"cannot read source manifest {path}: {exc}")
+        return None, errors
 
 
 def _run_declared_source_check(target: str, *, final: bool) -> int:

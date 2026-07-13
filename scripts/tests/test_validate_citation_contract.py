@@ -241,12 +241,19 @@ def test_repository_wording_uses_declared_source_contract():
         repository / "references" / "source-conventions.md",
         repository / "docs" / "PRD.md",
         repository / "docs" / "v1-framework-roadmap.md",
+        repository / "ETHICS.md",
+        repository / "README.md",
+        repository / "README_EN.md",
+        repository / "CONTRIBUTING.md",
     ]
     forbidden = [
         "NO DOCTRINAL CLAIM WITHOUT CBETA CITATION",
         "每位祖师的回答必须附 CBETA 引用",
         "CBETA 经证覆盖率 ≥ 90%",
         "primary_cbeta_ids 过滤结果",
+        "当前版本仅汉传",
+        "无 CBETA 经号的教义断言不得写入",
+        "每一条教义断言必须附一个**真实**的 CBETA 经号",
     ]
     for path in runtime_paths:
         content = path.read_text(encoding="utf-8")
@@ -269,6 +276,10 @@ def test_repository_wording_uses_declared_source_contract():
     assert "primary_cbeta_ids" not in compare_text
     assert "minimum_claim_coverage" in reviewer_text
     assert "同等适用 citation contract" in conventions_text
+    contributing_text = runtime_paths[-1].read_text(encoding="utf-8")
+    assert "validate-citation-contract.py" in contributing_text
+    assert '"citation_contract"' in contributing_text
+    assert "meta.json.sources[]" in contributing_text
     for source_family in (
         "CBETA",
         "BDRC / Toh",
@@ -316,6 +327,30 @@ def test_non_cbeta_runtime_instructions_are_source_family_aware():
         assert required in rag
 
 
+def test_live_retrieval_never_uses_sources_outside_the_declared_contract():
+    repository = Path(__file__).resolve().parents[2]
+    persona_skills = []
+    for path in sorted((repository / "prebuilt").glob("master-*/SKILL.md")):
+        meta_path = path.parent / "meta.json"
+        if not meta_path.is_file():
+            continue
+        metadata = json.loads(meta_path.read_text(encoding="utf-8"))
+        if isinstance(metadata.get("sources"), list) and metadata["sources"]:
+            persona_skills.append(path)
+    assert len(persona_skills) == 15
+    for path in persona_skills:
+        content = path.read_text(encoding="utf-8")
+        for stale in (
+            "声明经典之外",
+            "所列经典之外",
+            "三部经之外",
+            "上述三部经之外",
+        ):
+            assert stale not in content, f"{path}: contradictory live trigger {stale}"
+        assert "先人工扩充 `sources[]` / citation contract" in content
+        assert "已声明来源" in content
+
+
 def test_create_master_docs_match_the_real_generator_cli():
     repository = Path(__file__).resolve().parents[2]
     root = (repository / "SKILL.md").read_text(encoding="utf-8")
@@ -330,3 +365,37 @@ def test_create_master_docs_match_the_real_generator_cli():
     assert "verify_sources.py --final-check" in combined
     assert "生成器内存" in root
     assert "master_builder.py --name" not in combined
+
+
+def test_create_master_prompts_and_contribution_paths_are_source_neutral():
+    repository = Path(__file__).resolve().parents[2]
+    source_prompts = [
+        repository / "prompts" / "sutra_analyzer.md",
+        repository / "prompts" / "teaching_builder.md",
+        repository / "prompts" / "voice_builder.md",
+    ]
+    for path in source_prompts:
+        content = path.read_text(encoding="utf-8")
+        for stale in (
+            "`cbeta_id`",
+            "`fojin_url`",
+            "所有经文引用必须附 FoJin 链接",
+            "https://fojin.app/texts/{text_id}",
+        ):
+            assert stale not in content, f"{path}: stale {stale}"
+        assert "source_id" in content, f"{path}: missing source_id"
+
+    intake = (repository / "prompts" / "intake.md").read_text(encoding="utf-8")
+    for tradition in ("印度", "汉传", "藏传", "南传"):
+        assert tradition in intake
+    assert "当前版本仅汉传" not in intake
+
+    pull_request = (
+        repository / ".github" / "PULL_REQUEST_TEMPLATE.md"
+    ).read_text(encoding="utf-8")
+    issue = (
+        repository / ".github" / "ISSUE_TEMPLATE" / "new_master.yml"
+    ).read_text(encoding="utf-8")
+    for content in (pull_request, issue):
+        assert "声明来源" in content
+    assert "validate-citation-contract.py" in pull_request

@@ -18,19 +18,30 @@ from fojin_bridge import FojinBridge, create_bridge
 from skill_writer import derive_citation_contract
 
 
+def _source_identity_from_text(text: dict) -> tuple[str, str] | None:
+    """Normalize one FoJin text record to the source-neutral identity schema."""
+    source_type = text.get("source_type")
+    source_id = text.get("source_id")
+    if not source_type and text.get("cbeta_id"):
+        source_type = "cbeta"
+        source_id = text["cbeta_id"]
+    if not isinstance(source_type, str) or not isinstance(source_id, str):
+        return None
+    if not source_type.strip() or not source_id.strip():
+        return None
+    return source_type.strip(), source_id.strip()
+
+
 def _declared_sources_from_texts(texts: list[dict]) -> list[dict]:
     """Extract only canonical source identifiers returned by FoJin."""
     sources: list[dict] = []
     seen: set[tuple[str, str]] = set()
     for text in texts:
-        source_type = text.get("source_type")
-        source_id = text.get("source_id")
-        if not source_type and text.get("cbeta_id"):
-            source_type = "cbeta"
-            source_id = text["cbeta_id"]
-        if not isinstance(source_type, str) or not isinstance(source_id, str):
+        identity = _source_identity_from_text(text)
+        if identity is None:
             continue
-        member = (source_type, source_id)
+        source_type, source_id = identity
+        member = identity
         if member in seen:
             continue
         seen.add(member)
@@ -91,11 +102,15 @@ def collect_teacher_data(
             continue
         try:
             content = bridge.get_text_content(text_id, juan_num=1)
-            result["content_samples"].append({
+            sample = {
                 "text_id": text_id,
                 "title": text.get("title_zh", ""),
                 "content": content.get("content", "")[:3000],
-            })
+            }
+            identity = _source_identity_from_text(text)
+            if identity is not None:
+                sample["source_type"], sample["source_id"] = identity
+            result["content_samples"].append(sample)
         except Exception:
             continue
 

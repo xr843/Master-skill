@@ -20,6 +20,27 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from fojin_bridge import create_bridge, FojinUnavailableError
 
 
+def source_identity(item: dict) -> tuple[str, str]:
+    """Return the canonical source fields required by the citation contract."""
+    source_type = item.get("source_type", "")
+    source_id = item.get("source_id", "")
+    # FoJin's historical CBETA payload predates the generic fields. Normalize
+    # it at the formatter boundary so every tradition exposes one schema.
+    cbeta_id = item.get("cbeta_id", "")
+    if cbeta_id:
+        source_type = source_type or "cbeta"
+        source_id = source_id or cbeta_id
+    return str(source_type).strip(), str(source_id).strip()
+
+
+def format_source_identity(item: dict) -> str:
+    """Render a machine-readable identity only when both fields are present."""
+    source_type, source_id = source_identity(item)
+    if not source_type or not source_id:
+        return ""
+    return f"source_type={source_type} source_id={source_id}"
+
+
 def format_search_results(data: dict, brief: bool = False) -> str:
     """Format keyword search results for LLM consumption."""
     items = data.get("items") or data.get("results") or []
@@ -33,9 +54,12 @@ def format_search_results(data: dict, brief: bool = False) -> str:
             title = item.get("title", "无标题")
             text_id = item.get("text_id", item.get("id", ""))
             link = f"https://fojin.app/texts/{text_id}" if text_id else ""
+            identity = format_source_identity(item)
             snippet = item.get("highlight", item.get("snippet", item.get("content", "")))
             snippet_str = str(snippet).strip().replace("\n", " ")[:80]
             lines.append(f"{i}. {title} — {link}")
+            if identity:
+                lines.append(f"   {identity}")
             if snippet_str:
                 lines.append(f"   {snippet_str}...")
         return "\n".join(lines)
@@ -47,9 +71,12 @@ def format_search_results(data: dict, brief: bool = False) -> str:
         score = item.get("score", item.get("relevance", ""))
         snippet = item.get("highlight", item.get("snippet", item.get("content", "")))
         text_id = item.get("text_id", item.get("id", ""))
+        identity = format_source_identity(item)
 
         lines.append(f"── 结果 {i} ──")
         lines.append(f"标题: {title}")
+        if identity:
+            lines.append(identity)
         if source:
             lines.append(f"来源: {source}")
         if score:
@@ -88,6 +115,7 @@ def format_semantic_results(data: dict, brief: bool = False) -> str:
             content = item.get("content", item.get("snippet", item.get("text", "")))
             text_id = item.get("text_id", item.get("id", ""))
             juan = item.get("juan_num", item.get("juan", ""))
+            identity = format_source_identity(item)
 
             link = f"https://fojin.app/texts/{text_id}" if text_id else ""
             if text_id and juan:
@@ -97,6 +125,8 @@ def format_semantic_results(data: dict, brief: bool = False) -> str:
             snippet = str(content).strip().replace("\n", " ")[:80]
 
             lines.append(f"{i}. {title}{score_str} — {link}")
+            if identity:
+                lines.append(f"   {identity}")
             if snippet:
                 lines.append(f"   {snippet}...")
         return "\n".join(lines)
@@ -109,9 +139,12 @@ def format_semantic_results(data: dict, brief: bool = False) -> str:
         content = item.get("content", item.get("snippet", item.get("text", "")))
         text_id = item.get("text_id", item.get("id", ""))
         juan = item.get("juan_num", item.get("juan", ""))
+        identity = format_source_identity(item)
 
         lines.append(f"── 经文 {i} ──")
         lines.append(f"标题: {title}")
+        if identity:
+            lines.append(identity)
         if source:
             lines.append(f"来源: {source}")
         if score:

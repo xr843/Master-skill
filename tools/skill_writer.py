@@ -67,7 +67,7 @@ def derive_citation_contract(sources: list[dict]) -> dict:
 
 
 SKILL_MD_TEMPLATE = """---
-name: master_{slug}
+name: master-{slug}
 description: 依据{name}（{tradition}{school}）的教学风格与教义体系
 user-invocable: true
 ---
@@ -139,7 +139,7 @@ def create_teacher(
     teaching_content = sanitize_generated(teaching_content)
     voice_content = sanitize_generated(voice_content)
     slug = slugify(name)
-    teacher_dir = os.path.join(base_dir, slug)
+    teacher_dir = os.path.join(base_dir, f"master-{slug}")
     os.makedirs(teacher_dir, exist_ok=True)
     os.makedirs(os.path.join(teacher_dir, "versions"), exist_ok=True)
 

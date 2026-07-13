@@ -94,7 +94,9 @@ def test_create_teacher_skill_md_includes_content(tmp_path):
         content = f.read()
     assert "UNIQUE_TEACHING_MARKER" in content
     assert "UNIQUE_VOICE_MARKER" in content
-    assert "master_" in content  # frontmatter
+    directory_name = os.path.basename(teacher_dir)
+    assert directory_name.startswith("master-")
+    assert f"name: {directory_name}" in content
 
 
 def test_create_teacher_skill_md_uses_declared_source_contract(tmp_path):

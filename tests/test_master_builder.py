@@ -81,3 +81,65 @@ def test_doctrine_reviewer_counts_every_contract_required_claim_class():
         "text_interpretation",
     ):
         assert claim_class in reviewer
+
+
+def test_analysis_prompt_keeps_non_cbeta_identity_and_real_locator():
+    data = {
+        "entity": None,
+        "lineage": [],
+        "sources": [
+            {"type": "pali_canon", "id": "MN 10", "title": "Satipaṭṭhāna Sutta"}
+        ],
+        "texts": [
+            {
+                "id": 4242,
+                "title_zh": "念处经",
+                "source_type": "pali_canon",
+                "source_id": "MN 10",
+            }
+        ],
+        "content_samples": [
+            {
+                "text_id": 4242,
+                "title": "念处经",
+                "source_type": "pali_canon",
+                "source_id": "MN 10",
+                "content": "mindfulness source passage",
+            }
+        ],
+        "terms": [],
+    }
+
+    prompt = master_builder.build_analysis_prompt(
+        "sutra_analyzer", "Demo Sayadaw", data
+    )
+
+    assert "source_type=pali_canon" in prompt
+    assert "source_id=MN 10" in prompt
+    assert "FoJin text_id=4242" in prompt
+    assert "mindfulness source passage" in prompt
+
+
+def test_analysis_prompt_includes_manual_sources_when_no_text_results_exist():
+    prompt = master_builder.build_analysis_prompt(
+        "sutra_analyzer",
+        "Manual Source Master",
+        {
+            "entity": None,
+            "lineage": [],
+            "sources": [
+                {
+                    "type": "compiled_teaching",
+                    "id": "ManualArchive:TeachingOne",
+                    "title": "Teaching One",
+                }
+            ],
+            "texts": [],
+            "content_samples": [],
+            "terms": [],
+        },
+    )
+
+    assert "title=Teaching One" in prompt
+    assert "source_type=compiled_teaching" in prompt
+    assert "source_id=ManualArchive:TeachingOne" in prompt

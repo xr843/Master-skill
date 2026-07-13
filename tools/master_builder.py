@@ -90,13 +90,38 @@ def build_analysis_prompt(
     for rel in data.get("lineage", []):
         lineage_info += f"- {rel['predicate']}: {rel.get('target_name', '未知')}\n"
 
+    sources_info = ""
+    for source in data.get("sources", []):
+        sources_info += (
+            f"- title={source.get('title', '未知')} "
+            f"source_type={source.get('type', '')} "
+            f"source_id={source.get('id', '')}\n"
+        )
+
     texts_info = ""
     for t in data.get("texts", [])[:20]:
-        texts_info += f"- 《{t.get('title_zh', '未知')}》({t.get('cbeta_id', '')})\n"
+        source_type = t.get("source_type") or (
+            "cbeta" if t.get("cbeta_id") else ""
+        )
+        source_id = t.get("source_id") or t.get("cbeta_id", "")
+        locator = f" FoJin text_id={t['id']}" if t.get("id") else ""
+        texts_info += (
+            f"- 《{t.get('title_zh') or t.get('title', '未知')}》 "
+            f"source_type={source_type} source_id={source_id}{locator}\n"
+        )
 
     content_samples = ""
     for sample in data.get("content_samples", []):
-        content_samples += f"\n### 《{sample['title']}》\n{sample['content'][:2000]}\n"
+        locator = (
+            f" FoJin text_id={sample['text_id']}"
+            if sample.get("text_id") else ""
+        )
+        content_samples += (
+            f"\n### 《{sample['title']}》 "
+            f"source_type={sample.get('source_type', '')} "
+            f"source_id={sample.get('source_id', '')}{locator}\n"
+            f"{sample['content'][:2000]}\n"
+        )
 
     terms_info = ""
     for term in data.get("terms", [])[:30]:
@@ -109,6 +134,7 @@ def build_analysis_prompt(
     prompt = template.replace("{teacher_name}", _CONTROL_CHARS.sub("", teacher_name))
     prompt = prompt.replace("{entity_info}", _fence(entity_info))
     prompt = prompt.replace("{lineage_info}", _fence(lineage_info))
+    prompt = prompt.replace("{sources_info}", _fence(sources_info))
     prompt = prompt.replace("{texts_info}", _fence(texts_info))
     prompt = prompt.replace("{content_samples}", _fence(content_samples))
     prompt = prompt.replace("{terms_info}", _fence(terms_info))

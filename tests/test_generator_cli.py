@@ -89,8 +89,13 @@ def test_master_builder_offline_smoke_persists_review_contract(tmp_path):
     summary = json.loads(result.stdout)
     meta_path = Path(summary["meta_path"])
     review_path = Path(summary["review_input_path"])
+    teacher_dir = Path(summary["teacher_dir"])
     assert meta_path.is_file()
     assert review_path.is_file()
+    assert teacher_dir.name.startswith("master-")
+    assert f"name: {teacher_dir.name}" in (teacher_dir / "SKILL.md").read_text(
+        encoding="utf-8"
+    )
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     review = json.loads(review_path.read_text(encoding="utf-8"))
     assert meta["citation_contract"] == review["citation_contract"]
@@ -152,6 +157,7 @@ def test_exact_installed_bundle_runs_offline_after_source_copy_is_deleted(tmp_pa
     summary = json.loads(builder.stdout)
     teacher_dir = Path(summary["teacher_dir"])
     assert teacher_dir.is_relative_to(installed / "masters")
+    assert teacher_dir.name == "master-offline-smoke-master"
 
     final_check = run_installed_tool(
         installed, "verify_sources.py", "--final-check", str(teacher_dir)
