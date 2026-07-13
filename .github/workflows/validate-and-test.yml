@@ -12,6 +12,7 @@ on:
       - 'hooks/**'
       - 'desktop/**'
       - 'package.json'
+      - 'skill-catalog.json'
       - '.github/workflows/validate-and-test.yml'
   # No paths: filter on pull_request — the "Validate" and "Fidelity smoke"
   # jobs are branch-protection-required checks, so they must run on EVERY

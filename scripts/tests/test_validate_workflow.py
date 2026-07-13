@@ -1,68 +1,136 @@
-"""Static regression checks for the repository validation workflow."""
+"""Structural and behavior checks for the repository validation workflow."""
+
+from __future__ import annotations
 
 import os
 import subprocess
 from pathlib import Path
 
+import pytest
 import yaml
 
 
 ROOT = Path(__file__).resolve().parents[2]
-WORKFLOW = (
-    ROOT / ".github" / "workflows" / "validate-and-test.yml"
-).read_text(encoding="utf-8")
+WORKFLOW_PATH = ROOT / ".github" / "workflows" / "validate-and-test.yml"
+WORKFLOW_TEXT = WORKFLOW_PATH.read_text(encoding="utf-8")
 
 
-def test_workflow_runs_all_python_tests():
-    assert "python -m pytest tests/ scripts/tests/ -v" in WORKFLOW
+def _load_workflow_text(text: str) -> dict:
+    workflow = yaml.safe_load(text)
+    assert isinstance(workflow, dict)
+    assert isinstance(workflow.get("jobs"), dict)
+    return workflow
 
 
-def test_workflow_has_no_advisory_quality_steps():
-    assert "continue-on-error: true" not in WORKFLOW
+def _job(workflow: dict, job_name: str) -> dict:
+    job = workflow["jobs"].get(job_name)
+    assert isinstance(job, dict), f"missing workflow job: {job_name}"
+    assert isinstance(job.get("steps"), list), f"job has no steps: {job_name}"
+    return job
 
 
-def test_workflow_validates_citation_contract():
-    assert "python scripts/validate-citation-contract.py" in WORKFLOW
+def _step(workflow: dict, job_name: str, step_name: str) -> dict:
+    matches = [
+        step
+        for step in _job(workflow, job_name)["steps"]
+        if step.get("name") == step_name
+    ]
+    assert len(matches) == 1, f"expected one {job_name}/{step_name} step, got {len(matches)}"
+    return matches[0]
 
 
-def test_workflow_runs_strict_lore_validation():
-    assert "python scripts/validate-lore-triggers-content.py --strict" in WORKFLOW
+def _assert_hard(step: dict) -> None:
+    assert step.get("continue-on-error") not in (True, "true")
 
 
-def test_workflow_checks_rust_formatting():
-    assert "cargo fmt --manifest-path desktop/Cargo.toml -- --check" in WORKFLOW
+WORKFLOW = _load_workflow_text(WORKFLOW_TEXT)
 
 
-def test_workflow_runs_strict_clippy():
-    command = (
-        "cargo clippy --locked --manifest-path desktop/Cargo.toml "
-        "--all-targets -- -D warnings"
+def test_free_text_tokens_cannot_substitute_for_workflow_structure():
+    fake = _load_workflow_text(
+        """\
+name: fake
+jobs:
+  validate:
+    steps:
+      - name: comments only
+        run: echo 'python -m pytest tests/ scripts/tests/ -v'
+"""
     )
-    assert command in WORKFLOW
+
+    with pytest.raises(AssertionError, match="Run Python tests"):
+        _step(fake, "validate", "Run Python tests")
 
 
-def test_workflow_does_not_use_fixed_smoke_roster():
-    assert "master-nagarjuna master-xuanzang" not in WORKFLOW
-    assert "MASTERS=(" not in WORKFLOW
+def test_workflow_has_no_softened_steps():
+    for job_name, job in WORKFLOW["jobs"].items():
+        for step in job.get("steps", []):
+            assert step.get("continue-on-error") not in (True, "true"), (
+                f"softened workflow step in {job_name}: {step.get('name', step.get('uses'))}"
+            )
 
 
-def test_workflow_delegates_smoke_roster_discovery_to_selector():
-    assert "python scripts/select-fidelity-smoke.py" in WORKFLOW
-    assert "--prebuilt prebuilt" in WORKFLOW
+@pytest.mark.parametrize(
+    ("step_name", "command"),
+    [
+        ("Run Python tests", "python -m pytest tests/ scripts/tests/ -v"),
+        ("Validate citation contracts", "python scripts/validate-citation-contract.py"),
+        (
+            "Validate lore_triggers content (v0.8 — hard gate)",
+            "python scripts/validate-lore-triggers-content.py --strict",
+        ),
+    ],
+)
+def test_validate_job_contains_hard_gate_commands(step_name: str, command: str):
+    step = _step(WORKFLOW, "validate", step_name)
+    assert step.get("run") == command
+    _assert_hard(step)
 
 
-def test_workflow_invokes_smoke_selector_with_checked_status():
-    assert "if ! CHANGED=$(python scripts/select-fidelity-smoke.py" in WORKFLOW
-    assert '"$(date +%j)"' in WORKFLOW
+@pytest.mark.parametrize(
+    ("step_name", "command"),
+    [
+        ("Check desktop formatting", "cargo fmt --manifest-path desktop/Cargo.toml -- --check"),
+        (
+            "Lint desktop app",
+            "cargo clippy --locked --manifest-path desktop/Cargo.toml "
+            "--all-targets -- -D warnings",
+        ),
+        ("Test desktop app", "cargo test --locked --manifest-path desktop/Cargo.toml"),
+        ("Build desktop app", "cargo build --locked --manifest-path desktop/Cargo.toml"),
+    ],
+)
+def test_desktop_job_contains_hard_gate_commands(step_name: str, command: str):
+    step = _step(WORKFLOW, "desktop-rust", step_name)
+    assert step.get("run") == command
+    _assert_hard(step)
+
+
+def test_desktop_quality_gates_run_before_tests_and_build():
+    step_names = [step.get("name") for step in _job(WORKFLOW, "desktop-rust")["steps"]]
+    assert step_names.index("Check desktop formatting") < step_names.index("Lint desktop app")
+    assert step_names.index("Lint desktop app") < step_names.index("Test desktop app")
+    assert step_names.index("Test desktop app") < step_names.index("Build desktop app")
+
+
+def test_push_paths_include_distribution_catalog():
+    triggers = WORKFLOW.get("on", WORKFLOW.get(True))
+    assert isinstance(triggers, dict)
+    assert "skill-catalog.json" in triggers["push"]["paths"]
+
+
+def test_pick_step_uses_checked_selector_without_fixed_roster():
+    step = _step(WORKFLOW, "fidelity-smoke", "Pick smoke target")
+    script = step["run"]
+    assert "if ! CHANGED=$(python scripts/select-fidelity-smoke.py" in script
+    assert "--prebuilt prebuilt" in script
+    assert '--day-of-year "$(date +%j)"' in script
+    assert "MASTERS=(" not in script
+    _assert_hard(step)
 
 
 def test_smoke_selector_producer_failure_is_not_masked(tmp_path: Path):
-    workflow = yaml.safe_load(WORKFLOW)
-    pick_step = next(
-        step
-        for step in workflow["jobs"]["fidelity-smoke"]["steps"]
-        if step.get("name") == "Pick smoke target"
-    )
+    pick_step = _step(WORKFLOW, "fidelity-smoke", "Pick smoke target")
     script = pick_step["run"].replace("${{ github.base_ref || 'main' }}", "main")
 
     bin_dir = tmp_path / "bin"
@@ -88,7 +156,22 @@ def test_smoke_selector_producer_failure_is_not_masked(tmp_path: Path):
     )
 
     assert result.returncode != 0
+    assert not output_path.exists()
 
 
-def test_workflow_records_missing_key_advisory_in_step_summary():
-    assert 'echo "### Fidelity grading skipped' in WORKFLOW
+@pytest.mark.parametrize(
+    ("job_name", "step_name"),
+    [
+        ("fidelity-smoke", "Run fidelity smoke"),
+        ("fidelity-full", "Run fidelity tests"),
+    ],
+)
+def test_each_fidelity_no_key_branch_records_step_summary(job_name: str, step_name: str):
+    job = _job(WORKFLOW, job_name)
+    assert job.get("needs") == "validate"
+    step = _step(WORKFLOW, job_name, step_name)
+    script = step["run"]
+    assert 'if [ -z "${ANTHROPIC_API_KEY:-}" ]; then' in script
+    assert script.count('echo "### Fidelity grading skipped"') == 1
+    assert '} >> "$GITHUB_STEP_SUMMARY"' in script
+    _assert_hard(step)
