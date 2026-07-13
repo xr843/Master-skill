@@ -9,6 +9,24 @@ from pathlib import Path
 
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 
+EXPECTED_PERSONA_SLUGS = (
+    "ajahn-chah",
+    "atisha",
+    "buddhaghosa",
+    "fazang",
+    "huineng",
+    "kumarajiva",
+    "mahasi-sayadaw",
+    "milarepa",
+    "nagarjuna",
+    "ouyi",
+    "tsongkhapa",
+    "xuanzang",
+    "xuyun",
+    "yinguang",
+    "zhiyi",
+)
+
 EXPECTED_REQUIRED_FOR = [
     "doctrinal_claim",
     "practice_guidance",
@@ -35,7 +53,7 @@ def _persona_count(prebuilt_dir: Path) -> int:
             data = json.loads(meta_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
-        if data.get("sources"):
+        if data.get("kind") != "meta-skill":
             count += 1
     return count
 
@@ -52,11 +70,16 @@ def validate(prebuilt_dir: Path) -> list[str]:
             errors.append(f"{path}: invalid metadata: {exc}")
             continue
 
-        sources = data.get("sources")
-        if not sources:
+        if data.get("kind") == "meta-skill":
+            if "citation_contract" in data:
+                errors.append(
+                    f"{path}: meta-skill must not declare citation_contract"
+                )
             continue
-        if not isinstance(sources, list):
-            errors.append(f"{path}: sources must be a list")
+
+        sources = data.get("sources")
+        if not isinstance(sources, list) or not sources:
+            errors.append(f"{path}: persona sources must be a non-empty list")
             continue
 
         source_types: list[str] = []
@@ -125,8 +148,38 @@ def validate(prebuilt_dir: Path) -> list[str]:
     return errors
 
 
+def validate_repository(prebuilt_dir: Path) -> list[str]:
+    """Validate contracts plus the repository's fixed 15-persona roster."""
+    if not prebuilt_dir.is_dir():
+        return [f"{prebuilt_dir}: prebuilt directory not found"]
+
+    errors = validate(prebuilt_dir)
+    discovered: set[str] = set()
+    for meta_path in sorted(prebuilt_dir.glob("master-*/meta.json")):
+        try:
+            data = json.loads(meta_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if data.get("kind") == "meta-skill":
+            continue
+        discovered.add(meta_path.parent.name.removeprefix("master-"))
+
+    expected = set(EXPECTED_PERSONA_SLUGS)
+    missing = sorted(expected - discovered)
+    unexpected = sorted(discovered - expected)
+    if missing or unexpected or len(discovered) != len(EXPECTED_PERSONA_SLUGS):
+        errors.append(
+            "persona roster must contain exactly "
+            f"{len(EXPECTED_PERSONA_SLUGS)} declared personas; "
+            f"missing={[f'master-{slug}' for slug in missing]}, "
+            f"unexpected={[f'master-{slug}' for slug in unexpected]}"
+        )
+
+    return errors
+
+
 def main() -> int:
-    errors = validate(PREBUILT_DIR)
+    errors = validate_repository(PREBUILT_DIR)
     if errors:
         for error in errors:
             print(error, file=sys.stderr)

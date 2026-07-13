@@ -44,6 +44,8 @@ def write_meta(
     slug: str,
     source_types: list[str],
     value: dict | None,
+    *,
+    kind: str | None = None,
 ) -> None:
     directory = prebuilt / f"master-{slug}"
     directory.mkdir(parents=True, exist_ok=True)
@@ -54,6 +56,8 @@ def write_meta(
             for index, source_type in enumerate(source_types)
         ],
     }
+    if kind is not None:
+        data["kind"] = kind
     if value is not None:
         data["citation_contract"] = value
     (directory / "meta.json").write_text(json.dumps(data), encoding="utf-8")
@@ -120,8 +124,31 @@ def test_fixed_contract_values_are_enforced(
 
 
 def test_meta_skill_without_sources_is_ignored(validator, fake_tree):
-    write_meta(fake_tree, "debate", [], None)
+    write_meta(fake_tree, "debate", [], None, kind="meta-skill")
     assert validator.validate(fake_tree) == []
+
+
+def test_meta_skill_must_not_declare_persona_contract(validator, fake_tree):
+    write_meta(
+        fake_tree,
+        "debate",
+        ["cbeta"],
+        contract("cbeta"),
+        kind="meta-skill",
+    )
+    errors = validator.validate(fake_tree)
+    assert any(
+        "master-debate/meta.json" in error and "meta-skill" in error
+        for error in errors
+    )
+
+
+def test_persona_without_sources_is_not_treated_as_meta_skill(validator, fake_tree):
+    write_meta(fake_tree, "demo", [], None)
+    errors = validator.validate(fake_tree)
+    assert any(
+        "master-demo/meta.json" in error and "sources" in error for error in errors
+    )
 
 
 @pytest.mark.parametrize("mutation", ["missing", "extra"])
@@ -160,6 +187,7 @@ def test_cli_exit_codes_and_persona_count(
     capsys,
 ):
     monkeypatch.setattr(validator, "PREBUILT_DIR", fake_tree)
+    monkeypatch.setattr(validator, "EXPECTED_PERSONA_SLUGS", ("demo",))
     write_meta(fake_tree, "demo", ["cbeta"], None)
 
     assert validator.main() == 1
@@ -170,6 +198,37 @@ def test_cli_exit_codes_and_persona_count(
     captured = capsys.readouterr()
     assert captured.err == ""
     assert captured.out.strip() == "citation contracts OK (1 personas)"
+
+
+def test_repository_mode_fails_when_prebuilt_directory_is_missing(
+    validator,
+    tmp_path,
+):
+    errors = validator.validate_repository(tmp_path / "missing")
+    assert any("prebuilt directory" in error for error in errors)
+
+
+def test_repository_mode_fails_with_zero_personas(validator, fake_tree):
+    write_meta(fake_tree, "debate", [], None, kind="meta-skill")
+    errors = validator.validate_repository(fake_tree)
+    assert any("persona roster" in error and "missing" in error for error in errors)
+
+
+def test_repository_mode_fails_with_fourteen_personas(validator, fake_tree):
+    for slug in validator.EXPECTED_PERSONA_SLUGS[:-1]:
+        write_meta(fake_tree, slug, ["cbeta"], contract("cbeta"))
+
+    errors = validator.validate_repository(fake_tree)
+    missing = validator.EXPECTED_PERSONA_SLUGS[-1]
+    assert any(
+        "persona roster" in error and f"master-{missing}" in error
+        for error in errors
+    )
+
+
+def test_repository_mode_accepts_the_real_fifteen_persona_roster(validator):
+    repository = Path(__file__).resolve().parents[2]
+    assert validator.validate_repository(repository / "prebuilt") == []
 
 
 def test_repository_wording_uses_declared_source_contract():
