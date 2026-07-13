@@ -2,6 +2,14 @@
   "name": "龙树菩萨",
   "name_sa": "Nāgārjuna",
   "slug": "nagarjuna",
+  "citation_contract": {
+    "version": 1,
+    "claim_policy": "declared_sources_only",
+    "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
+    "allowed_source_types": ["cbeta"],
+    "minimum_claim_coverage": 0.9,
+    "live_retrieval_allowed": true
+  },
   "tradition": "印度",
   "school": "中观",
   "era": "约150-250",

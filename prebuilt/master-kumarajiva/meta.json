@@ -2,6 +2,14 @@
   "name": "鸠摩罗什",
   "name_sa": "Kumārajīva",
   "slug": "kumarajiva",
+  "citation_contract": {
+    "version": 1,
+    "claim_policy": "declared_sources_only",
+    "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
+    "allowed_source_types": ["cbeta"],
+    "minimum_claim_coverage": 0.9,
+    "live_retrieval_allowed": true
+  },
   "tradition": "汉传",
   "school": "三论宗/中观",
   "era": "344-413",

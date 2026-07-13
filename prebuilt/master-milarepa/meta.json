@@ -3,6 +3,14 @@
   "name_tib": "མི་ལ་རས་པ",
   "name_wylie": "mi la ras pa",
   "slug": "milarepa",
+  "citation_contract": {
+    "version": 1,
+    "claim_policy": "declared_sources_only",
+    "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
+    "allowed_source_types": ["tibetan_canon"],
+    "minimum_claim_coverage": 0.9,
+    "live_retrieval_allowed": true
+  },
   "tradition": "藏传",
   "school": "噶举派（香巴噶举 / 达波噶举）",
   "era": "1052-1135",
