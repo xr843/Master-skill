@@ -102,7 +102,8 @@ The passing fixtures use `sources` containing the same types passed to `contract
 
 - [ ] **Step 2: Run tests and verify RED**
 
-Run: `python -m pytest scripts/tests/test_validate_citation_contract.py -v`  
+Run: `python -m pytest scripts/tests/test_validate_citation_contract.py -v`
+
 Expected: FAIL because the validator module does not exist.
 
 - [ ] **Step 3: Implement the validator**
@@ -123,7 +124,8 @@ Reject booleans as numeric coverage, require every source type to be a non-empty
 
 - [ ] **Step 4: Run tests and verify GREEN**
 
-Run: `python -m pytest scripts/tests/test_validate_citation_contract.py -v`  
+Run: `python -m pytest scripts/tests/test_validate_citation_contract.py -v`
+
 Expected: all tests pass.
 
 - [ ] **Step 5: Commit**
@@ -144,7 +146,8 @@ git commit -m "feat(citations): add source-neutral contract validator"
 
 - [ ] **Step 1: Run the validator and verify RED against repository data**
 
-Run: `python scripts/validate-citation-contract.py`  
+Run: `python scripts/validate-citation-contract.py`
+
 Expected: exit 1 with 15 missing-contract errors.
 
 - [ ] **Step 2: Add each contract mechanically**
@@ -220,7 +223,8 @@ Also assert that root and compare contain `NO DOCTRINAL CLAIM WITHOUT A DECLARED
 
 - [ ] **Step 2: Run the wording test and verify RED**
 
-Run: `python -m pytest scripts/tests/test_validate_citation_contract.py -k wording -v`  
+Run: `python -m pytest scripts/tests/test_validate_citation_contract.py -k wording -v`
+
 Expected: FAIL on current CBETA-only wording.
 
 - [ ] **Step 3: Replace the stale rules**

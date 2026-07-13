@@ -51,7 +51,8 @@ Add a subprocess test that invokes the script with `--master master-does-not-exi
 
 - [ ] **Step 2: Run tests and verify RED**
 
-Run: `python -m pytest tests/test_fidelity_exit.py -v`  
+Run: `python -m pytest tests/test_fidelity_exit.py -v`
+
 Expected: FAIL because `results_failed` does not exist and current errors exit 0.
 
 - [ ] **Step 3: Implement exit evaluation**
@@ -122,7 +123,8 @@ Keep the Layer 0, opening, address, and forbidden-term assertions unchanged unle
 
 - [ ] **Step 3: Run voice tests and verify GREEN**
 
-Run: `python -m pytest tests/test_voice_rules.py -v -rs`  
+Run: `python -m pytest tests/test_voice_rules.py -v -rs`
+
 Expected: 91 passing cases and no skips (1 discovery test plus 6 parameterized tests × 15 personas).
 
 - [ ] **Step 4: Commit**
@@ -158,7 +160,8 @@ assert 'echo "### Fidelity grading skipped' in workflow
 
 - [ ] **Step 2: Run tests and verify RED**
 
-Run: `python -m pytest scripts/tests/test_validate_workflow.py -v`  
+Run: `python -m pytest scripts/tests/test_validate_workflow.py -v`
+
 Expected: FAIL on the current split pytest command, advisory lore step, missing Rust lint, fixed roster, and absent step summary.
 
 - [ ] **Step 3: Update the validate and Rust jobs**
@@ -185,7 +188,8 @@ The keyed full run relies on the corrected fidelity runner exit status and needs
 
 - [ ] **Step 6: Run workflow tests and verify GREEN**
 
-Run: `python -m pytest scripts/tests/test_validate_workflow.py -v`  
+Run: `python -m pytest scripts/tests/test_validate_workflow.py -v`
+
 Expected: all assertions pass.
 
 - [ ] **Step 7: Commit**
@@ -205,7 +209,8 @@ git commit -m "fix(ci): enforce truthful complete quality gates"
 
 - [ ] **Step 1: Reproduce the lint failure**
 
-Run: `cargo clippy --locked --manifest-path desktop/Cargo.toml --all-targets -- -D warnings`  
+Run: `cargo clippy --locked --manifest-path desktop/Cargo.toml --all-targets -- -D warnings`
+
 Expected: FAIL at the `top_failure_skill_slug.as_ref().map(|slug| slug.as_str())` expression with `option_as_ref_deref`.
 
 - [ ] **Step 2: Apply the minimal lint fix**

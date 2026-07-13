@@ -1,7 +1,9 @@
 # v0.10.1 Trustworthiness Closure Design
 
-**Date:** 2026-07-13  
-**Target branch:** `agent/v0101-trustworthiness`  
+**Date:** 2026-07-13
+
+**Target branch:** `agent/v0101-trustworthiness`
+
 **Goal:** Close the three highest-value gaps before further feature or persona expansion: complete distribution, cross-tradition citation enforcement, and truthful CI gates.
 
 ## Scope and chosen approach

@@ -62,7 +62,8 @@ test("skill catalog declares 19 unique installable skills", () => {
 
 - [ ] **Step 2: Run the test and verify RED**
 
-Run: `node --test --test-name-pattern="skill catalog" tests/cli.test.mjs`  
+Run: `node --test --test-name-pattern="skill catalog" tests/cli.test.mjs`
+
 Expected: FAIL because `skill-catalog.json` does not exist.
 
 - [ ] **Step 3: Create the catalog**
@@ -83,7 +84,8 @@ Persona sources and install directories equal their names. Persona aliases conta
 
 - [ ] **Step 4: Run the focused test and verify GREEN**
 
-Run: `node --test --test-name-pattern="skill catalog" tests/cli.test.mjs`  
+Run: `node --test --test-name-pattern="skill catalog" tests/cli.test.mjs`
+
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -149,7 +151,8 @@ test("install --all installs all 19 public skill directories", (t) => {
 
 - [ ] **Step 2: Run the four tests and verify RED**
 
-Run: `node --test --test-name-pattern="list --json exposes|compare-masters name|create-master copies|all 19" tests/cli.test.mjs`  
+Run: `node --test --test-name-pattern="list --json exposes|compare-masters name|create-master copies|all 19" tests/cli.test.mjs`
+
 Expected: all four new behaviors fail against directory-derived installation.
 
 - [ ] **Step 3: Implement catalog loading and validation**
@@ -178,7 +181,8 @@ Derive descriptions from each source `SKILL.md`. Preserve the current legacy `ma
 
 - [ ] **Step 4: Run CLI tests and verify GREEN**
 
-Run: `node --test tests/cli.test.mjs`  
+Run: `node --test tests/cli.test.mjs`
+
 Expected: all CLI tests pass.
 
 - [ ] **Step 5: Commit**
@@ -205,7 +209,8 @@ Use `execFileSync("npm", ["pack", "--silent"], { cwd: REPO })`, extract the retu
 
 - [ ] **Step 2: Run the packed test and verify RED**
 
-Run: `node --test --test-name-pattern="packed npm artifact" tests/cli.test.mjs`  
+Run: `node --test --test-name-pattern="packed npm artifact" tests/cli.test.mjs`
+
 Expected: FAIL because the current `files` allowlist omits the catalog, tools, prompts, references, requirements, and masters directory.
 
 - [ ] **Step 3: Complete the npm files allowlist**
