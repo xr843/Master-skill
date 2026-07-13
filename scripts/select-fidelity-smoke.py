@@ -38,12 +38,15 @@ def parse_day_of_year(raw_day: str) -> int:
     return day
 
 
-def select_target(roster: list[str], day_of_year: int, changed: str) -> str:
-    """Prefer a discovered changed persona; otherwise rotate by day."""
+def select_target(
+    roster: list[str], day_of_year: int, changed: list[str]
+) -> str:
+    """Prefer the first discovered changed persona; otherwise rotate by day."""
     if not roster:
         raise SelectionError("No persona smoke targets discovered from metadata sources")
-    if changed in roster:
-        return changed
+    for candidate in changed:
+        if candidate in roster:
+            return candidate
     return roster[day_of_year % len(roster)]
 
 
@@ -51,7 +54,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--prebuilt", type=Path, default=Path("prebuilt"))
     parser.add_argument("--day-of-year", required=True)
-    parser.add_argument("--changed", default="")
+    parser.add_argument(
+        "--changed",
+        action="append",
+        default=[],
+        help="changed prebuilt directory; repeat to preserve diff order",
+    )
     args = parser.parse_args()
 
     try:

@@ -113,16 +113,43 @@ def test_desktop_quality_gates_run_before_tests_and_build():
     assert step_names.index("Test desktop app") < step_names.index("Build desktop app")
 
 
-def test_push_paths_include_distribution_catalog():
+def test_windows_cli_job_installs_the_generator_python_runtime():
+    job = _job(WORKFLOW, "cli-windows")
+    uses = [step.get("uses", "") for step in job["steps"]]
+    assert any(use.startswith("actions/setup-python@") for use in uses)
+    install = _step(WORKFLOW, "cli-windows", "Install generator dependencies")
+    assert install.get("run") == "python -m pip install -r requirements.txt"
+    _assert_hard(install)
+
+
+def test_push_paths_include_distribution_and_generator_runtime():
     triggers = WORKFLOW.get("on", WORKFLOW.get(True))
     assert isinstance(triggers, dict)
-    assert "skill-catalog.json" in triggers["push"]["paths"]
+    paths = set(triggers["push"]["paths"])
+    assert {
+        "skill-catalog.json",
+        "SKILL.md",
+        "references/**",
+        "ETHICS.md",
+        "requirements.txt",
+        ".claude-plugin/**",
+        ".cursor-plugin/**",
+        "gemini-extension.json",
+    } <= paths
 
 
 def test_pick_step_uses_checked_selector_without_fixed_roster():
+    checkout = next(
+        step
+        for step in _job(WORKFLOW, "fidelity-smoke")["steps"]
+        if str(step.get("uses", "")).startswith("actions/checkout@")
+    )
+    assert checkout.get("with", {}).get("fetch-depth") == 0
     step = _step(WORKFLOW, "fidelity-smoke", "Pick smoke target")
     script = step["run"]
     assert "if ! CHANGED=$(python scripts/select-fidelity-smoke.py" in script
+    assert "if ! DIFF_OUTPUT=$(git diff --name-only" in script
+    assert "CHANGED_CANDIDATES" in script
     assert "--prebuilt prebuilt" in script
     assert '--day-of-year "$(date +%j)"' in script
     assert "MASTERS=(" not in script
@@ -156,6 +183,40 @@ def test_smoke_selector_producer_failure_is_not_masked(tmp_path: Path):
     )
 
     assert result.returncode != 0
+    assert not output_path.exists()
+
+
+def test_smoke_git_diff_failure_is_not_masked(tmp_path: Path):
+    pick_step = _step(WORKFLOW, "fidelity-smoke", "Pick smoke target")
+    script = pick_step["run"].replace("${{ github.base_ref || 'main' }}", "main")
+
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    fake_git = bin_dir / "git"
+    fake_git.write_text("#!/bin/sh\nexit 7\n", encoding="utf-8")
+    fake_git.chmod(0o755)
+    fake_python = bin_dir / "python"
+    fake_python.write_text(
+        "#!/bin/sh\nprintf 'master-alpha\\n'\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    output_path = tmp_path / "github-output"
+    env = os.environ.copy()
+    env["PATH"] = f"{bin_dir}:{env['PATH']}"
+    env["GITHUB_OUTPUT"] = str(output_path)
+
+    result = subprocess.run(
+        ["bash", "-e", "-o", "pipefail", "-c", script],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "git diff failed" in result.stdout
     assert not output_path.exists()
 
 

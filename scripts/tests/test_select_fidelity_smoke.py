@@ -26,7 +26,7 @@ def _write_meta(prebuilt: Path, slug: str, sources: object) -> None:
 def _run_selector(
     prebuilt: Path,
     day_of_year: str,
-    changed: str | None = None,
+    changed: str | list[str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     command = [
         sys.executable,
@@ -37,7 +37,9 @@ def _run_selector(
         day_of_year,
     ]
     if changed is not None:
-        command.extend(["--changed", changed])
+        changed_values = [changed] if isinstance(changed, str) else changed
+        for candidate in changed_values:
+            command.extend(["--changed", candidate])
     return subprocess.run(command, text=True, capture_output=True, check=False)
 
 
@@ -74,6 +76,21 @@ def test_changed_persona_wins_only_when_in_discovered_roster(tmp_path: Path):
     assert selected.stdout == "master-beta\n"
     assert rotated.returncode == 0, rotated.stderr
     assert rotated.stdout == "master-alpha\n"
+
+
+def test_meta_skill_before_persona_does_not_hide_changed_persona(tmp_path: Path):
+    prebuilt = tmp_path / "prebuilt"
+    _write_meta(prebuilt, "master-alpha", [{"id": "a"}])
+    _write_meta(prebuilt, "master-beta", [{"id": "b"}])
+
+    result = _run_selector(
+        prebuilt,
+        "008",
+        ["compare", "master-beta", "master-alpha"],
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == "master-beta\n"
 
 
 def test_discovery_ignores_meta_skills_and_empty_sources(tmp_path: Path):

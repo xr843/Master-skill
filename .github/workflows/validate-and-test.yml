@@ -13,6 +13,13 @@ on:
       - 'desktop/**'
       - 'package.json'
       - 'skill-catalog.json'
+      - 'SKILL.md'
+      - 'references/**'
+      - 'ETHICS.md'
+      - 'requirements.txt'
+      - '.claude-plugin/**'
+      - '.cursor-plugin/**'
+      - 'gemini-extension.json'
       - '.github/workflows/validate-and-test.yml'
   # No paths: filter on pull_request — the "Validate" and "Fidelity smoke"
   # jobs are branch-protection-required checks, so they must run on EVERY
@@ -99,6 +106,13 @@ jobs:
         with:
           node-version: "20"
 
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.11"
+
+      - name: Install generator dependencies
+        run: python -m pip install -r requirements.txt
+
       - name: Run CLI tests
         run: node --test tests/cli.test.mjs
 
@@ -162,12 +176,23 @@ jobs:
           # The selector ignores meta-skills and incomplete directories, then
           # rotates over every discovered persona for any invalid changed target.
           BASE="${{ github.base_ref || 'main' }}"
-          CHANGED=$(git diff --name-only "origin/${BASE}...HEAD" 2>/dev/null \
-            | grep -oP 'prebuilt/\K[^/]+' | head -n1 || true)
+          if ! DIFF_OUTPUT=$(git diff --name-only "origin/${BASE}...HEAD"); then
+            echo "::error::git diff failed while selecting the fidelity smoke target."
+            exit 1
+          fi
+          mapfile -t CHANGED_CANDIDATES < <(
+            printf '%s\n' "$DIFF_OUTPUT" \
+              | sed -nE 's#^prebuilt/([^/]+)/.*#\1#p' \
+              | awk '!seen[$0]++'
+          )
+          SELECTOR_ARGS=()
+          for CANDIDATE in "${CHANGED_CANDIDATES[@]}"; do
+            SELECTOR_ARGS+=(--changed "$CANDIDATE")
+          done
           if ! CHANGED=$(python scripts/select-fidelity-smoke.py \
             --prebuilt prebuilt \
             --day-of-year "$(date +%j)" \
-            --changed "$CHANGED"); then
+            "${SELECTOR_ARGS[@]}"); then
             echo "::error::Fidelity smoke target selection failed."
             exit 1
           fi
