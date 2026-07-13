@@ -19,6 +19,15 @@ const CLI = path.join(REPO, "bin", "cli.mjs");
 const CATALOG_PATH = path.join(REPO, "skill-catalog.json");
 const PYTHON = process.env.PYTHON || (process.platform === "win32" ? "python" : "python3");
 
+function npmExecutionOptions(platform = process.platform) {
+  return { shell: platform === "win32" };
+}
+
+test("npm pack enables a shell only on Windows", () => {
+  assert.deepEqual(npmExecutionOptions("win32"), { shell: true });
+  assert.deepEqual(npmExecutionOptions("linux"), { shell: false });
+});
+
 function run(args, env = {}, cli = CLI) {
   try {
     const stdout = execFileSync(process.execPath, [cli, ...args], {
@@ -567,6 +576,7 @@ test("packed npm artifact installs all skills with the complete generator runtim
   const packOutput = execFileSync("npm", ["pack", "--silent"], {
     cwd: REPO,
     encoding: "utf8",
+    ...npmExecutionOptions(),
   });
   const tarballName = packOutput.trim().split(/\r?\n/).at(-1);
   const tarballPath = path.join(REPO, tarballName);
