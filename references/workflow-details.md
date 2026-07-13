@@ -61,7 +61,7 @@
 ### 采集内容
 
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/tools/sutra_collector.py --name "<法师名>" --tradition "<传承>"
+python3 ${CLAUDE_SKILL_DIR}/tools/sutra_collector.py --name "<法师名>" --tradition "<传承>" --output collected_data.json
 ```
 
 包括：
@@ -97,7 +97,9 @@ FoJin API 返回错误或不可达 → 向用户说明：
 python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --check-links collected_data.json
 ```
 
-无效链接标记并在 Step 3 排除。详细引用规则 → `references/source-conventions.md`。
+该命令离线检查来源家族、ID 格式、声明归属与自动派生的 citation contract；它不请求外部站点。
+格式或归属无效的来源须在 Step 3 前排除。外部可达性如有需要，应另作人工或可选在线核验。
+详细引用规则 → `references/source-conventions.md`。
 
 ### 采集结果确认
 
@@ -169,11 +171,14 @@ python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --check-links collected_data
 
 ### 教义准确性审查
 
-`prompts/doctrine_reviewer.md` 对 teaching.md：
+生成器先从 `sources[].type` 派生 citation contract，并在内存中保留同一个 sources/contract 对象。
+`prompts/doctrine_reviewer.md` 接收这个**生成器内存上下文**及 teaching.md：
 - 经证覆盖率（目标 ≥ 90%）
-- CBETA / BDRC / SC ID 归属准确性
+- 各来源家族 ID 的声明归属准确性
 - 宗派边界越界（如让慧能讲三士道）
 - 输出：PASS / PASS WITH WARNINGS / FAIL
+
+最终 spec 与 `meta.json` 必须复用同一个 contract；写入器会重新按 `sources[].type` 派生并拒绝漂移。
 
 FAIL → 自动修复严重问题后重审，**最多 2 轮**。仍 FAIL → 报告问题请求人工介入。
 
@@ -230,16 +235,22 @@ FAIL → 自动修复后重审。
 ## Step 5：写入文件细则
 
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/tools/master_builder.py --name "<法师名>" --output masters/
+python3 ${CLAUDE_SKILL_DIR}/tools/master_builder.py --spec generated-master.json --output masters/
 ```
 
-### 写入前终验
+`generated-master.json` 是审查通过后的生成规格，必含 `name`、`tradition`、`school`、`era`、
+`languages`、`teaching_content`、`voice_content`、`sources`，并可携带审查所用的同一
+`citation_contract`。若携带的 contract 与来源家族自动派生结果不同，构建立即失败。
+
+### 生成后终验
 
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check masters/{slug}/
 ```
 
-无效链接 → 替换为 FoJin 搜索链接（降级策略），确保用户始终能找到相关内容。
+`--final-check` 离线验证 persona 目录包含 `SKILL.md`、`teaching.md`、`voice.md`、`meta.json`，
+并验证 `meta.json` 的来源家族、ID 格式、声明归属与 citation contract。它不会解析
+`teaching.md` 的自由文本引文，也不检查外部链接 HTTP 状态；外部可达性是独立的人工或可选在线步骤。
 
 ### 生成目录结构
 

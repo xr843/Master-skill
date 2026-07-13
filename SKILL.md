@@ -72,7 +72,7 @@ allowed-tools:
 
 ### Step 2：数据采集
 
-使用 `${CLAUDE_SKILL_DIR}/tools/sutra_collector.py --name "<法师名>" --tradition "<传承>"` 从 FoJin 采集知识图谱实体、经典内容、传承术语。采集后用 `verify_sources.py --check-links` 验证 CBETA / BDRC / SC ID。
+使用 `${CLAUDE_SKILL_DIR}/tools/sutra_collector.py --name "<法师名>" --tradition "<传承>" --output collected_data.json` 从 FoJin 采集知识图谱实体、经典内容、传承术语。采集后运行 `${CLAUDE_SKILL_DIR}/tools/verify_sources.py --check-links collected_data.json`，离线验证来源家族、ID 格式、声明归属与自动派生的 citation contract。
 
 API 故障 / 超时 / 数据阈值 / 引用规则细节 → `references/workflow-details.md` §Step 2 + `references/source-conventions.md`。
 
@@ -84,7 +84,7 @@ API 故障 / 超时 / 数据阈值 / 引用规则细节 → `references/workflow
 
 ### Step 3.5：二阶段审查
 
-教义准确性（`doctrine_reviewer.md`，按 `meta.json` 的 `citation_contract.minimum_claim_coverage` 审核声明来源覆盖率） → 风格一致性（`voice_reviewer.md`，Layer 0 硬规则完整）。审查顺序不可颠倒。FAIL → 自动修复重审，最多 2 轮，仍 FAIL → 人工介入。
+生成器先从 `sources[].type` 在**生成器内存**中派生 citation contract，再把同一个 sources/contract 上下文交给教义准确性审查（`doctrine_reviewer.md`，按 `citation_contract.minimum_claim_coverage` 审核声明来源覆盖率） → 风格一致性（`voice_reviewer.md`，Layer 0 硬规则完整）。审查顺序不可颠倒。FAIL → 自动修复重审，最多 2 轮，仍 FAIL → 人工介入；最终写入的 `meta.json` 必须复用并再次校验同一 contract。
 
 ### Step 4：预览与确认
 
@@ -92,7 +92,7 @@ API 故障 / 超时 / 数据阈值 / 引用规则细节 → `references/workflow
 
 ### Step 5：写入文件
 
-`master_builder.py --name "<法师名>" --output masters/` 写入 `masters/{slug}/{SKILL.md,teaching.md,voice.md,meta.json}`。写入前 `verify_sources.py --final-check` 最终验证，无效链接降级为 FoJin 搜索链接。
+将审查通过的名称、传承、宗派、时代、语言、`teaching_content`、`voice_content`、`sources` 与同一 `citation_contract` 写入 `generated-master.json`，再运行 `${CLAUDE_SKILL_DIR}/tools/master_builder.py --spec generated-master.json --output "${CLAUDE_SKILL_DIR}/masters/"`。生成后运行 `${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check "${CLAUDE_SKILL_DIR}/masters/{slug}/"`；该终验离线检查四个必需文件以及 `meta.json` 的来源清单、家族 ID、声明归属和 contract，不解析 `teaching.md` 自由文本，也不保证外部站点可达。
 
 OpenClaw / Claude Code 注册路径 → `references/workflow-details.md` §Step 5。
 

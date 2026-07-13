@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Verify and fix FoJin source links in all prebuilt teacher skills.
+Validate declared persona source manifests, or audit legacy FoJin links.
 
 Discovers CBETA IDs from meta.json sources and fojin.app URLs in markdown
 files, then verifies each against FoJin's API and maps to internal text_ids.
@@ -9,9 +9,9 @@ Key insight: meta.json and URLs use the full CBETA catalog format (e.g.
 T08n0235) while FoJin internally uses a shorter cbeta_id (e.g. T0235).
 This script handles the conversion.
 
-Usage:
-    python3 tools/verify_sources.py          # Dry run - report only
-    python3 tools/verify_sources.py --fix    # Actually update files
+Offline modes validate family identifiers, declared membership, and citation
+contracts. They do not parse free-text citations or check HTTP reachability.
+The legacy no-argument / --fix modes only audit repository CBETA/FoJin URLs.
 """
 
 import argparse
@@ -460,7 +460,7 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Verify declared persona sources and FoJin source links"
+        description="Validate declared source manifests or audit legacy FoJin links"
     )
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument(

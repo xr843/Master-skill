@@ -1,6 +1,6 @@
 # 引用规则与来源约定
 
-> **何时读这个**：用户给出 T- / X- / SC- / Toh- / W- 编号需验证或解析时；create-master 主流程 Step 2 / Step 5 验证 CBETA / BDRC / SuttaCentral / PTS 引用时；写入 `teaching.md` 之前需要确认引用格式时。
+> **何时读这个**：用户给出 T- / X- / SC- / Toh- / W- 编号需验证或解析时；create-master 主流程 Step 2 / Step 5 验证 CBETA / BDRC / SuttaCentral / PTS 来源声明时；写入 `teaching.md` 之前需要确认引用格式时。
 
 ## 引用编号系统总览
 
@@ -105,20 +105,18 @@ python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --check-links collected_data
 python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check masters/{slug}/
 ```
 
-### 验证逻辑
+### 两个离线模式的真实边界
 
-1. **合同预检**：ID 必须属于所选 persona 的 `meta.json.sources[]`，类型必须属于 `citation_contract.allowed_source_types`；实时请求还须合同允许
-2. **CBETA**：调 FoJin `/api/text/<CBETA_ID>` 检查 200，再核对返回的卷栏行是否覆盖断言范围
-3. **BDRC**：调 `library.bdrc.io/resource/bdr:W<编号>` 检查 200；元数据校对题名 / 作者
-4. **SuttaCentral**：调 `suttacentral.net/<NikāyaCode><编号>` 检查 200；副本对照 PTS 编号
-5. **Toh**：与 BDRC 联表，无独立验证 endpoint
-6. **compiled teachings**：核对声明的版本 / 出版信息与版权 Tier；不得把未授权现代文本当作可自由逐字引用的原典
+1. `--check-links collected_data.json` 读取采集 manifest，验证 `sources[]` 非空、来源家族受支持、各家族 ID 格式、来源不重复、可选 `citations[]` 均属于已声明来源，并确认 `citation_contract` 等于从 `sources[].type` 自动派生的合同。
+2. `--final-check masters/{slug}/` 先确认 persona 目录包含 `SKILL.md`、`teaching.md`、`voice.md`、`meta.json`，再对 `meta.json` 执行同一来源与合同校验。
+3. 两个模式都不联网，也不解析 `teaching.md` 中的自由文本引文，因此成功只表示 manifest / meta 的结构、家族 ID 和声明归属一致；不表示每个正文断言已经逐条核验，也不保证外部站点 HTTP 可达。
 
-### 无效引用的降级策略
+### 外部可达性与旧版 CBETA 审计
 
-- 链接 404 → 替换为 FoJin / CBETA / SC 站内搜索链接（保证用户可手动检索）
-- 编号格式错误（如 `T235` 而非 `T0235`） → 自动补 0 后重验，仍失败则标 invalid 排除
-- 跨藏冲突（如 T / X 同号不同经） → 标 `<!-- AMBIGUOUS_ID -->` 注释，请求人工确认
+外部链接可达性需要独立的人工或可选在线核验。`verify_sources.py --fix` 保留旧版在线 CBETA URL
+审计与替换流程，只覆盖仓库中的 CBETA / FoJin 链接；它不验证 BDRC、Toh、SuttaCentral、PTS 或
+compiled teachings，也不能代替上述声明归属校验。不得把 `--check-links` 或 `--final-check` 的成功
+描述为“所有链接已检查 200”或“题名 / 作者已在线核对”。
 
 ## 编造引用 = HARD-GATE 红旗
 

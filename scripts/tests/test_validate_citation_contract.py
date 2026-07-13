@@ -276,3 +276,57 @@ def test_repository_wording_uses_declared_source_contract():
         "compiled teachings",
     ):
         assert source_family in conventions_text
+
+
+def test_non_cbeta_runtime_instructions_are_source_family_aware():
+    repository = Path(__file__).resolve().parents[2]
+    slugs = (
+        "atisha",
+        "tsongkhapa",
+        "milarepa",
+        "buddhaghosa",
+        "mahasi-sayadaw",
+        "ajahn-chah",
+    )
+    for slug in slugs:
+        persona = repository / "prebuilt" / f"master-{slug}"
+        meta = json.loads((persona / "meta.json").read_text(encoding="utf-8"))
+        assert "cbeta" not in meta["citation_contract"]["allowed_source_types"]
+        instructions = (persona / "SKILL.md").read_text(encoding="utf-8")
+        for stale in ("cbeta_id", "--sources cbeta", "以 CBETA 汉文为主"):
+            assert stale not in instructions, f"master-{slug}: stale {stale}"
+        for required in (
+            "source_type",
+            "source_id",
+            "meta.json.sources[]",
+            "citation_contract.allowed_source_types",
+        ):
+            assert required in instructions, f"master-{slug}: missing {required}"
+
+    rag = (repository / "prompts" / "rag_instructions.md").read_text(
+        encoding="utf-8"
+    )
+    assert "--sources cbeta" not in rag
+    for required in (
+        "source_type",
+        "source_id",
+        "meta.json.sources[]",
+        "citation_contract.allowed_source_types",
+    ):
+        assert required in rag
+
+
+def test_create_master_docs_match_the_real_generator_cli():
+    repository = Path(__file__).resolve().parents[2]
+    root = (repository / "SKILL.md").read_text(encoding="utf-8")
+    workflow = (repository / "references" / "workflow-details.md").read_text(
+        encoding="utf-8"
+    )
+    combined = root + workflow
+    assert "sutra_collector.py --name" in combined
+    assert "--output collected_data.json" in combined
+    assert "verify_sources.py --check-links collected_data.json" in combined
+    assert "master_builder.py --spec generated-master.json" in combined
+    assert "verify_sources.py --final-check" in combined
+    assert "生成器内存" in root
+    assert "master_builder.py --name" not in combined
