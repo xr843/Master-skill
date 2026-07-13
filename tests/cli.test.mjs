@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, "..");
 const CLI = path.join(REPO, "bin", "cli.mjs");
+const CATALOG_PATH = path.join(REPO, "skill-catalog.json");
 
 function run(args, env = {}) {
   try {
@@ -45,6 +46,29 @@ const prebuiltMasters = fs
   .readdirSync(path.join(REPO, "prebuilt"), { withFileTypes: true })
   .filter((d) => d.isDirectory() && d.name !== "compare")
   .map((d) => d.name);
+
+test("skill catalog declares 19 unique installable skills", () => {
+  const catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, "utf8"));
+  assert.equal(catalog.version, 1);
+  assert.equal(catalog.skills.length, 19);
+  const counts = catalog.skills.reduce((groups, skill) => {
+    (groups[skill.kind] ||= []).push(skill);
+    return groups;
+  }, {});
+  assert.equal(counts.persona.length, 15);
+  assert.equal(counts["teaching-mode"].length, 3);
+  assert.equal(counts.generator.length, 1);
+  for (const field of ["name", "source", "install_dir"]) {
+    assert.equal(new Set(catalog.skills.map((skill) => skill[field])).size, 19);
+  }
+  const aliases = catalog.skills.flatMap((skill) => skill.aliases);
+  assert.equal(new Set(aliases).size, aliases.length);
+  const generator = catalog.skills.find((skill) => skill.name === "create-master");
+  assert.deepEqual(generator.bundle_paths, [
+    "SKILL.md", "tools", "prompts", "references", "requirements.txt",
+    "ETHICS.md", "masters",
+  ]);
+});
 
 test("list names every prebuilt master with its description", () => {
   const { stdout, code } = run(["list"]);

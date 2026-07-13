@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "skills": [
+    {
+      "name": "master-nagarjuna",
+      "kind": "persona",
+      "source": "prebuilt/master-nagarjuna",
+      "install_dir": "master-nagarjuna",
+      "aliases": ["nagarjuna", "master-nagarjuna"]
+    },
+    {
+      "name": "master-xuanzang",
+      "kind": "persona",
+      "source": "prebuilt/master-xuanzang",
+      "install_dir": "master-xuanzang",
+      "aliases": ["xuanzang", "master-xuanzang"]
+    },
+    {
+      "name": "master-kumarajiva",
+      "kind": "persona",
+      "source": "prebuilt/master-kumarajiva",
+      "install_dir": "master-kumarajiva",
+      "aliases": ["kumarajiva", "master-kumarajiva"]
+    },
+    {
+      "name": "master-huineng",
+      "kind": "persona",
+      "source": "prebuilt/master-huineng",
+      "install_dir": "master-huineng",
+      "aliases": ["huineng", "master-huineng"]
+    },
+    {
+      "name": "master-zhiyi",
+      "kind": "persona",
+      "source": "prebuilt/master-zhiyi",
+      "install_dir": "master-zhiyi",
+      "aliases": ["zhiyi", "master-zhiyi"]
+    },
+    {
+      "name": "master-fazang",
+      "kind": "persona",
+      "source": "prebuilt/master-fazang",
+      "install_dir": "master-fazang",
+      "aliases": ["fazang", "master-fazang"]
+    },
+    {
+      "name": "master-yinguang",
+      "kind": "persona",
+      "source": "prebuilt/master-yinguang",
+      "install_dir": "master-yinguang",
+      "aliases": ["yinguang", "master-yinguang"]
+    },
+    {
+      "name": "master-ouyi",
+      "kind": "persona",
+      "source": "prebuilt/master-ouyi",
+      "install_dir": "master-ouyi",
+      "aliases": ["ouyi", "master-ouyi"]
+    },
+    {
+      "name": "master-xuyun",
+      "kind": "persona",
+      "source": "prebuilt/master-xuyun",
+      "install_dir": "master-xuyun",
+      "aliases": ["xuyun", "master-xuyun"]
+    },
+    {
+      "name": "master-atisha",
+      "kind": "persona",
+      "source": "prebuilt/master-atisha",
+      "install_dir": "master-atisha",
+      "aliases": ["atisha", "master-atisha"]
+    },
+    {
+      "name": "master-tsongkhapa",
+      "kind": "persona",
+      "source": "prebuilt/master-tsongkhapa",
+      "install_dir": "master-tsongkhapa",
+      "aliases": ["tsongkhapa", "master-tsongkhapa"]
+    },
+    {
+      "name": "master-milarepa",
+      "kind": "persona",
+      "source": "prebuilt/master-milarepa",
+      "install_dir": "master-milarepa",
+      "aliases": ["milarepa", "master-milarepa"]
+    },
+    {
+      "name": "master-buddhaghosa",
+      "kind": "persona",
+      "source": "prebuilt/master-buddhaghosa",
+      "install_dir": "master-buddhaghosa",
+      "aliases": ["buddhaghosa", "master-buddhaghosa"]
+    },
+    {
+      "name": "master-mahasi-sayadaw",
+      "kind": "persona",
+      "source": "prebuilt/master-mahasi-sayadaw",
+      "install_dir": "master-mahasi-sayadaw",
+      "aliases": ["mahasi-sayadaw", "master-mahasi-sayadaw"]
+    },
+    {
+      "name": "master-ajahn-chah",
+      "kind": "persona",
+      "source": "prebuilt/master-ajahn-chah",
+      "install_dir": "master-ajahn-chah",
+      "aliases": ["ajahn-chah", "master-ajahn-chah"]
+    },
+    {
+      "name": "compare-masters",
+      "kind": "teaching-mode",
+      "source": "prebuilt/compare",
+      "install_dir": "compare-masters",
+      "aliases": ["compare-masters"]
+    },
+    {
+      "name": "master-debate",
+      "kind": "teaching-mode",
+      "source": "prebuilt/master-debate",
+      "install_dir": "master-debate",
+      "aliases": ["master-debate"]
+    },
+    {
+      "name": "master-curriculum",
+      "kind": "teaching-mode",
+      "source": "prebuilt/master-curriculum",
+      "install_dir": "master-curriculum",
+      "aliases": ["master-curriculum"]
+    },
+    {
+      "name": "create-master",
+      "kind": "generator",
+      "source": ".",
+      "install_dir": "create-master",
+      "aliases": ["create-master"],
+      "bundle_paths": [
+        "SKILL.md",
+        "tools",
+        "prompts",
+        "references",
+        "requirements.txt",
+        "ETHICS.md",
+        "masters"
+      ]
+    }
+  ]
+}
