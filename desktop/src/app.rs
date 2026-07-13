@@ -1254,8 +1254,7 @@ impl MasterSkillApp {
         ui.heading("Failure Insights");
         let top_failure_value = insights
             .top_failure_skill_slug
-            .as_ref()
-            .map(|slug| slug.as_str())
+            .as_deref()
             .unwrap_or("none")
             .to_string();
         let cards = vec![
