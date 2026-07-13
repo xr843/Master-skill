@@ -211,7 +211,8 @@ npm update -g master-skill             # 升到下一个 minor / patch
 # npx（上方）与 git clone 手动安装为正式发布渠道：
 git clone https://github.com/xr843/Master-skill ~/Master-skill
 cd ~/Master-skill && pip install -r requirements.txt
-for d in prebuilt/*/; do ln -sf "$(pwd)/$d" ~/.claude/skills/"$(basename $d)"; done
+for d in prebuilt/master-*/; do ln -sf "$(pwd)/$d" ~/.claude/skills/"$(basename $d)"; done
+ln -sf "$(pwd)/prebuilt/compare" ~/.claude/skills/compare-masters
 ln -sf "$(pwd)" ~/.claude/skills/create-master
 ```
 

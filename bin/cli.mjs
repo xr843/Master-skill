@@ -30,7 +30,7 @@ function pkgVersion() {
 // Names feed into path.join + rmSync; reject separators / ".." so a typo
 // like "../foo" can never escape PREBUILT or SKILLS_DIR.
 function isSafeName(name) {
-  return /^[A-Za-z0-9_-]+$/.test(name);
+  return typeof name === "string" && /^[A-Za-z0-9_-]+$/.test(name);
 }
 
 function isSafeRelativePath(value, { allowDot = false } = {}) {
@@ -64,8 +64,6 @@ function loadCatalog() {
     source: new Set(),
     install_dir: new Set(),
   };
-  const aliases = new Set();
-  const tokenOwners = new Map();
 
   for (const [index, skill] of catalog.skills.entries()) {
     if (!skill || typeof skill !== "object" || Array.isArray(skill)) {
@@ -94,20 +92,6 @@ function loadCatalog() {
       uniqueFields[field].add(skill[field]);
     }
 
-    tokenOwners.set(skill.name, skill.name);
-    for (const alias of skill.aliases) {
-      if (!isSafeName(alias)) {
-        invalidCatalog(`skills[${index}].aliases contains an unsafe value`);
-      }
-      if (aliases.has(alias)) invalidCatalog(`duplicate alias "${alias}"`);
-      aliases.add(alias);
-      const existingOwner = tokenOwners.get(alias);
-      if (existingOwner && existingOwner !== skill.name) {
-        invalidCatalog(`alias "${alias}" conflicts with skill "${existingOwner}"`);
-      }
-      tokenOwners.set(alias, skill.name);
-    }
-
     const sourcePath = path.resolve(PACKAGE_ROOT, skill.source);
     if (!fs.existsSync(sourcePath)) invalidCatalog(`source does not exist: ${skill.source}`);
     if (!fs.statSync(sourcePath).isDirectory()) {
@@ -133,6 +117,28 @@ function loadCatalog() {
       }
     } else if (skill.bundle_paths !== undefined) {
       invalidCatalog(`only generator skills may declare bundle_paths`);
+    }
+  }
+
+  // Register every canonical name before considering aliases so token
+  // ownership is independent of catalog record order. An alias may repeat its
+  // own canonical name, but it may never shadow another skill's canonical name.
+  const aliases = new Set();
+  const tokenOwners = new Map(
+    catalog.skills.map((skill) => [skill.name, skill.name])
+  );
+  for (const [index, skill] of catalog.skills.entries()) {
+    for (const alias of skill.aliases) {
+      if (!isSafeName(alias)) {
+        invalidCatalog(`skills[${index}].aliases contains an unsafe value`);
+      }
+      if (aliases.has(alias)) invalidCatalog(`duplicate alias "${alias}"`);
+      aliases.add(alias);
+      const existingOwner = tokenOwners.get(alias);
+      if (existingOwner && existingOwner !== skill.name) {
+        invalidCatalog(`alias "${alias}" conflicts with skill "${existingOwner}"`);
+      }
+      tokenOwners.set(alias, skill.name);
     }
   }
 
@@ -523,7 +529,7 @@ Usage:
   master-skill inspect <name> --json
   master-skill doctor              Check local install and runtime paths
   master-skill doctor --json       Print diagnostics as JSON
-  master-skill uninstall <name...> Remove installed masters
+  master-skill uninstall <name...> Remove installed skills
   master-skill --version           Print version
   master-skill --help              Show this help
 

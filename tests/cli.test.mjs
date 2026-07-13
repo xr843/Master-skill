@@ -143,6 +143,8 @@ test("help shows the current version, not a hardcoded one", () => {
   assert.match(stdout, /master-skill doctor/);
   assert.match(stdout, /master-skill inspect <name>/);
   assert.match(stdout, /master-skill update --all/);
+  assert.match(stdout, /Remove installed skills/);
+  assert.doesNotMatch(stdout, /Remove installed masters/);
 });
 
 test("doctor reports local runtime paths and available skills", (t) => {
@@ -368,6 +370,96 @@ test("unknown command exits non-zero", () => {
   assert.equal(code, 1);
 });
 
+test("catalog name fields reject non-strings before filesystem mutation", (t) => {
+  const cases = [];
+  for (const invalid of [123, true, null]) {
+    cases.push({
+      label: `name ${String(invalid)}`,
+      mutate(skill) { skill.name = invalid; },
+      expected: /Invalid skill catalog: skills\[0\]\.name/,
+    });
+    cases.push({
+      label: `install_dir ${String(invalid)}`,
+      mutate(skill) { skill.install_dir = invalid; },
+      expected: /Invalid skill catalog: skills\[0\]\.install_dir/,
+    });
+    cases.push({
+      label: `alias ${String(invalid)}`,
+      mutate(skill) { skill.aliases = [invalid]; },
+      expected: /Invalid skill catalog: skills\[0\]\.aliases/,
+    });
+  }
+
+  for (const fixtureCase of cases) {
+    const skill = {
+      name: "demo",
+      kind: "persona",
+      source: "prebuilt/demo",
+      install_dir: "demo",
+      aliases: ["demo-alias"],
+    };
+    fixtureCase.mutate(skill);
+    const fixture = catalogFixture(
+      t,
+      { version: 1, skills: [skill] },
+      (root) => {
+        const source = path.join(root, "prebuilt", "demo");
+        fs.mkdirSync(source, { recursive: true });
+        fs.writeFileSync(path.join(source, "SKILL.md"), "---\nname: demo\n---\n");
+      }
+    );
+    const { home, env } = tmpHome(t);
+    const result = run(["install", "demo"], env, fixture.cli);
+    assert.equal(result.code, 1, fixtureCase.label);
+    assert.match(result.stdout, fixtureCase.expected, fixtureCase.label);
+    assert.ok(!fs.existsSync(skillsDir(home)), `${fixtureCase.label} mutated the filesystem`);
+  }
+});
+
+test("catalog rejects alias and canonical-name collisions in either record order", (t) => {
+  const aliasOwner = {
+    name: "demo-one",
+    kind: "persona",
+    source: "prebuilt/demo-one",
+    install_dir: "demo-one",
+    aliases: ["demo-two"],
+  };
+  const canonicalOwner = {
+    name: "demo-two",
+    kind: "persona",
+    source: "prebuilt/demo-two",
+    install_dir: "demo-two",
+    aliases: ["two"],
+  };
+  const orders = [
+    [aliasOwner, canonicalOwner],
+    [canonicalOwner, aliasOwner],
+  ];
+
+  for (const [index, skills] of orders.entries()) {
+    const fixture = catalogFixture(
+      t,
+      { version: 1, skills },
+      (root) => {
+        for (const name of ["demo-one", "demo-two"]) {
+          const source = path.join(root, "prebuilt", name);
+          fs.mkdirSync(source, { recursive: true });
+          fs.writeFileSync(path.join(source, "SKILL.md"), "---\nname: demo\n---\n");
+        }
+      }
+    );
+    const { home, env } = tmpHome(t);
+    const result = run(["install", "demo-two"], env, fixture.cli);
+    assert.equal(result.code, 1, `record order ${index + 1}`);
+    assert.match(
+      result.stdout,
+      /Invalid skill catalog: alias "demo-two" conflicts with skill/,
+      `record order ${index + 1}`
+    );
+    assert.ok(!fs.existsSync(skillsDir(home)), `record order ${index + 1} mutated filesystem`);
+  }
+});
+
 test("invalid catalogs fail before filesystem mutation", (t) => {
   const cases = [
     {
@@ -495,6 +587,19 @@ test("both READMEs document the complete npm installation contract", () => {
   for (const readme of [chinese, english]) {
     assert.match(readme, /npx master-skill install compare-masters/);
     assert.match(readme, /npx master-skill install create-master/);
+  }
+});
+
+test("both README clone examples install compare under its public name", () => {
+  for (const filename of ["README.md", "README_EN.md"]) {
+    const readme = fs.readFileSync(path.join(REPO, filename), "utf8");
+    assert.match(readme, /for d in prebuilt\/master-\*\/;/, filename);
+    assert.match(
+      readme,
+      /ln -sf "\$\(pwd\)\/prebuilt\/compare" ~\/\.claude\/skills\/compare-masters/,
+      filename
+    );
+    assert.doesNotMatch(readme, /for d in prebuilt\/\*\/;/, filename);
   }
 });
 
