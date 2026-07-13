@@ -4,7 +4,7 @@ Verifies:
 1. Every voice.md contains the 首轮身份中立原则 rule in Layer 0
 2. Every voice.md's 开场方式 and 称呼方式 sections are tiered into 首轮中立 / 身份已知后
 3. The 首轮中立 section does NOT contain identity-assuming address terms
-4. voice.md and SKILL.md PART B stay in sync
+4. Every SKILL.md routes to voice.md and summarizes the first-turn rule
 """
 
 import re
@@ -23,7 +23,7 @@ IDENTITY_TERMS = [
 # Get all master slugs that have a voice.md
 MASTER_SLUGS = sorted([
     d.name for d in PREBUILT_DIR.iterdir()
-    if d.is_dir() and (d / "voice.md").exists()
+    if d.is_dir() and (d / "references" / "voice.md").exists()
 ])
 
 
@@ -34,12 +34,18 @@ def slug(request):
 
 @pytest.fixture
 def voice_content(slug):
-    return (PREBUILT_DIR / slug / "voice.md").read_text(encoding="utf-8")
+    return (PREBUILT_DIR / slug / "references" / "voice.md").read_text(
+        encoding="utf-8"
+    )
 
 
 @pytest.fixture
 def skill_content(slug):
     return (PREBUILT_DIR / slug / "SKILL.md").read_text(encoding="utf-8")
+
+
+def test_voice_persona_discovery_is_complete():
+    assert len(MASTER_SLUGS) == 15, MASTER_SLUGS
 
 
 def test_layer0_contains_neutrality_rule(slug, voice_content):
@@ -61,7 +67,10 @@ def test_opening_section_is_tiered(slug, voice_content):
 
 def test_address_section_is_tiered(slug, voice_content):
     """称呼方式 must have both 首轮中立称呼 and 身份已知后 sub-headers."""
-    assert "首轮中立称呼" in voice_content, (
+    assert (
+        "**首轮中立称呼**" in voice_content
+        or "**首轮中立**" in voice_content
+    ), (
         f"{slug}/voice.md 称呼方式 missing 首轮中立称呼 subsection"
     )
     assert "身份已知后" in voice_content, (
@@ -98,9 +107,14 @@ def test_neutral_opening_has_no_identity_terms(slug, voice_content):
 
 def test_neutral_address_has_no_identity_terms(slug, voice_content):
     """首轮中立称呼 section must not contain identity-assuming terms."""
+    start_marker = (
+        "**首轮中立称呼**"
+        if "**首轮中立称呼**" in voice_content
+        else "**首轮中立**"
+    )
     section = _extract_section(
         voice_content,
-        "**首轮中立称呼**",
+        start_marker,
         "**身份已知后**",
     )
     assert section, f"{slug}: could not extract 首轮中立称呼 section"
@@ -112,18 +126,6 @@ def test_neutral_address_has_no_identity_terms(slug, voice_content):
     )
 
 
-def test_skill_md_contains_voice_body(slug, voice_content, skill_content):
-    """SKILL.md PART B must contain voice.md body (excluding title)."""
-    # Strip voice.md's first # Title line
-    voice_lines = voice_content.split("\n")
-    if voice_lines[0].startswith("# "):
-        voice_body = "\n".join(voice_lines[1:]).lstrip("\n")
-    else:
-        voice_body = voice_content
-    voice_body = voice_body.rstrip()
-
-    # Check SKILL.md contains the same body
-    assert voice_body in skill_content, (
-        f"{slug}/SKILL.md PART B is out of sync with voice.md. "
-        f"Run: python3 tools/sync_skill_from_voice.py --slug {slug}"
-    )
+def test_skill_md_routes_to_voice_reference(slug, skill_content):
+    assert "references/voice.md" in skill_content
+    assert "首轮身份中立" in skill_content
