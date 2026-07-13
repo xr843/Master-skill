@@ -357,12 +357,19 @@ def test_create_master_docs_match_the_real_generator_cli():
     workflow = (repository / "references" / "workflow-details.md").read_text(
         encoding="utf-8"
     )
-    combined = root + workflow
+    conventions = (repository / "references" / "source-conventions.md").read_text(
+        encoding="utf-8"
+    )
+    combined = root + workflow + conventions
     assert "sutra_collector.py --name" in combined
     assert "--output collected_data.json" in combined
     assert "verify_sources.py --check-links collected_data.json" in combined
     assert "master_builder.py --spec generated-master.json" in combined
     assert "verify_sources.py --final-check" in combined
+    assert "masters/master-{slug}/" in root
+    assert "masters/master-{slug}/" in workflow
+    assert "masters/master-{slug}/" in conventions
+    assert "masters/{slug}/" not in combined
     assert "生成器内存" in root
     assert "master_builder.py --name" not in combined
 

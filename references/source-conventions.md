@@ -103,13 +103,13 @@ create-master 主流程在 Step 2 与 Step 5 调用 `verify_sources.py`：
 python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --check-links collected_data.json
 
 # Step 5 写入前终验
-python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check masters/{slug}/
+python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check masters/master-{slug}/
 ```
 
 ### 两个离线模式的真实边界
 
 1. `--check-links collected_data.json` 读取采集 manifest，验证 `sources[]` 非空、来源家族受支持、各家族 ID 格式、来源不重复、可选 `citations[]` 均属于已声明来源，并确认 `citation_contract` 等于从 `sources[].type` 自动派生的合同。
-2. `--final-check masters/{slug}/` 先确认 persona 目录包含 `SKILL.md`、`teaching.md`、`voice.md`、`meta.json`，再对 `meta.json` 执行同一来源与合同校验。
+2. `--final-check masters/master-{slug}/` 先确认 persona 目录与 `SKILL.md` name 都使用 `master-{slug}`，并包含 `teaching.md`、`voice.md`、`meta.json`，再对 `meta.json` 执行同一来源与合同校验。
 3. 两个模式都不联网，也不解析 `teaching.md` 中的自由文本引文，因此成功只表示 manifest / meta 的结构、家族 ID 和声明归属一致；不表示每个正文断言已经逐条核验，也不保证外部站点 HTTP 可达。
 
 ### 外部可达性与旧版 CBETA 审计
