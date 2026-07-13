@@ -17,6 +17,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, "..");
 const CLI = path.join(REPO, "bin", "cli.mjs");
 const CATALOG_PATH = path.join(REPO, "skill-catalog.json");
+const PYTHON = process.env.PYTHON || (process.platform === "win32" ? "python" : "python3");
 
 function run(args, env = {}, cli = CLI) {
   try {
@@ -576,6 +577,63 @@ test("packed npm artifact installs all skills with the complete generator runtim
       `missing packed generator runtime ${required}`
     );
   }
+
+  // Prove the installed generator is operational without reaching back into
+  // the transient npm extraction. This is the real publication boundary: the
+  // package source disappears before any generator entry point is invoked.
+  fs.rmSync(packageRoot, { recursive: true, force: true });
+  assert.ok(!fs.existsSync(packageRoot), "packed source extraction still exists");
+
+  const collectedPath = path.join(home, "offline-collected.json");
+  const generatedRoot = path.join(home, "offline-generated-masters");
+  const collectorOutput = execFileSync(
+    PYTHON,
+    [
+      path.join(generatorRoot, "tools", "sutra_collector.py"),
+      "--offline-smoke",
+      "--name", "Offline Demo",
+      "--tradition", "南传",
+      "--output", collectedPath,
+    ],
+    { encoding: "utf8", cwd: generatorRoot }
+  );
+  assert.equal(collectorOutput.trim(), `collected data written: ${collectedPath}`);
+
+  const initialCheck = execFileSync(
+    PYTHON,
+    [
+      path.join(generatorRoot, "tools", "verify_sources.py"),
+      "--check-links", collectedPath,
+    ],
+    { encoding: "utf8", cwd: generatorRoot }
+  );
+  assert.equal(initialCheck.trim(), "declared sources OK (1 sources)");
+
+  const builderOutput = execFileSync(
+    PYTHON,
+    [
+      path.join(generatorRoot, "tools", "master_builder.py"),
+      "--offline-smoke",
+      "--output", generatedRoot,
+    ],
+    { encoding: "utf8", cwd: generatorRoot }
+  );
+  const generated = JSON.parse(builderOutput);
+  assert.ok(fs.existsSync(generated.meta_path), "offline builder did not write meta.json");
+  assert.ok(
+    fs.existsSync(generated.review_input_path),
+    "offline builder did not persist the doctrine review input"
+  );
+
+  const finalCheck = execFileSync(
+    PYTHON,
+    [
+      path.join(generatorRoot, "tools", "verify_sources.py"),
+      "--final-check", generated.teacher_dir,
+    ],
+    { encoding: "utf8", cwd: generatorRoot }
+  );
+  assert.equal(finalCheck.trim(), "final source check OK (1 sources)");
 });
 
 test("both READMEs document the complete npm installation contract", () => {
@@ -605,7 +663,7 @@ test("both README clone examples install compare under its public name", () => {
 
 test("fidelity runner --json emits parseable JSON without text banners", () => {
   const stdout = execFileSync(
-    "python3",
+    PYTHON,
     [
       path.join(REPO, "scripts", "test-fidelity.py"),
       "--master",
