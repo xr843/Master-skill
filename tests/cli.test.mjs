@@ -445,6 +445,59 @@ test("invalid catalogs fail before filesystem mutation", (t) => {
   }
 });
 
+test("packed npm artifact installs all skills with the complete generator runtime", (t) => {
+  const packOutput = execFileSync("npm", ["pack", "--silent"], {
+    cwd: REPO,
+    encoding: "utf8",
+  });
+  const tarballName = packOutput.trim().split(/\r?\n/).at(-1);
+  const tarballPath = path.join(REPO, tarballName);
+  t.after(() => fs.rmSync(tarballPath, { force: true }));
+
+  const extractRoot = fs.mkdtempSync(path.join(os.tmpdir(), "master-skill-pack-test-"));
+  t.after(() => fs.rmSync(extractRoot, { recursive: true, force: true }));
+  execFileSync("tar", ["-xzf", tarballPath, "-C", extractRoot]);
+
+  const packageRoot = path.join(extractRoot, "package");
+  const packagedCli = path.join(packageRoot, "bin", "cli.mjs");
+  const { home, env } = tmpHome(t);
+  const result = run(["install", "--all"], env, packagedCli);
+  assert.equal(result.code, 0, result.stdout);
+
+  const catalog = JSON.parse(
+    fs.readFileSync(path.join(packageRoot, "skill-catalog.json"), "utf8")
+  );
+  for (const skill of catalog.skills) {
+    assert.ok(
+      fs.existsSync(path.join(skillsDir(home), skill.install_dir, "SKILL.md")),
+      `missing packed install ${skill.name}`
+    );
+  }
+
+  const generatorRoot = path.join(skillsDir(home), "create-master");
+  for (const required of [
+    "SKILL.md", "tools/sutra_collector.py", "prompts/intake.md",
+    "references/workflow-details.md", "requirements.txt", "ETHICS.md", "masters",
+  ]) {
+    assert.ok(
+      fs.existsSync(path.join(generatorRoot, required)),
+      `missing packed generator runtime ${required}`
+    );
+  }
+});
+
+test("both READMEs document the complete npm installation contract", () => {
+  const chinese = fs.readFileSync(path.join(REPO, "README.md"), "utf8");
+  const english = fs.readFileSync(path.join(REPO, "README_EN.md"), "utf8");
+
+  assert.match(chinese, /全部 19 个 Skill：15 位祖师、3 个教学模式，以及 `create-master` 生成器/);
+  assert.match(english, /all 19 skills: 15 personas, 3 teaching modes, and the `create-master` generator/);
+  for (const readme of [chinese, english]) {
+    assert.match(readme, /npx master-skill install compare-masters/);
+    assert.match(readme, /npx master-skill install create-master/);
+  }
+});
+
 test("fidelity runner --json emits parseable JSON without text banners", () => {
   const stdout = execFileSync(
     "python3",

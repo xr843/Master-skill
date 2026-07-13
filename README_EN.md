@@ -177,9 +177,17 @@ The v1.0 track prioritizes framework stability over adding more masters. See [do
 
 **NPX (recommended, no global state)**
 
+`npx master-skill install --all` installs all 19 skills: 15 personas, 3 teaching modes, and the `create-master` generator. The generator is copied as a self-contained runtime, so it remains usable after the transient npx package directory is removed.
+
 ```bash
-npx master-skill install --all    # Install all 15 masters
-npx master-skill list             # List available masters
+# Install individual public skills
+npx master-skill install master-zhiyi
+npx master-skill install compare-masters
+npx master-skill install create-master
+
+# Install or list the complete 19-skill catalog
+npx master-skill install --all
+npx master-skill list
 ```
 
 **Global install (frequent use / offline-friendly)**
