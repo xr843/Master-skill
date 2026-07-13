@@ -33,7 +33,7 @@ Add `skill-catalog.json` at the repository root. Each record declares `name`, `k
 
 The `create-master` record's `bundle_paths` is exactly `SKILL.md`, `tools/`, `prompts/`, `references/`, `requirements.txt`, `ETHICS.md`, and `masters/`. The catalog contains exactly 19 records; duplicate names, aliases, sources, or install directories are fatal.
 
-`list --json` adds a complete `skills` array and category counts. The existing `masters` field remains during v0.10.x as a backward-compatible desktop API and retains its existing shape. Human-readable `list` displays all installable skills grouped by kind.
+`list --json` adds a complete `skills` array, `skillCount`, and category counts. The existing `count` and `masters` fields remain during v0.10.x as a backward-compatible desktop API and retain their existing values and shape. Human-readable `list` displays all installable skills grouped by kind.
 
 The generator is copied using an explicit bundle allowlist rather than copying the whole npm package. Missing declared bundle entries are fatal and result in a non-zero exit.
 
