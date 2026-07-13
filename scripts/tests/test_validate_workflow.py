@@ -17,6 +17,10 @@ def test_workflow_has_no_advisory_quality_steps():
     assert "continue-on-error: true" not in WORKFLOW
 
 
+def test_workflow_validates_citation_contract():
+    assert "python scripts/validate-citation-contract.py" in WORKFLOW
+
+
 def test_workflow_runs_strict_lore_validation():
     assert "python scripts/validate-lore-triggers-content.py --strict" in WORKFLOW
 

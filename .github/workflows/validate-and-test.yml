@@ -60,6 +60,9 @@ jobs:
       - name: Validate persona-fidelity schema (v0.8) — explicit
         run: python scripts/validate-persona-fidelity.py
 
+      - name: Validate citation contracts
+        run: python scripts/validate-citation-contract.py
+
       - name: Validate cross_critique schema
         run: python scripts/validate-cross-critique.py
 
