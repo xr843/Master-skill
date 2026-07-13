@@ -157,35 +157,18 @@ jobs:
       - name: Pick smoke target
         id: pick
         run: |
-          mapfile -t MASTERS < <(
-            python - <<'PY'
-          import json
-          from pathlib import Path
-
-          for meta_path in sorted(Path("prebuilt").glob("master-*/meta.json")):
-              metadata = json.loads(meta_path.read_text(encoding="utf-8"))
-              sources = metadata.get("sources")
-              if isinstance(sources, list) and sources:
-                  print(meta_path.parent.name)
-          PY
-          )
-          if [ "${#MASTERS[@]}" -eq 0 ]; then
-            echo "::error::No persona smoke targets discovered from meta.json sources."
-            exit 1
-          fi
-
           # If the PR touches a specific prebuilt master, smoke-test that one.
-          # Ignore meta-skills and incomplete directories, then rotate over every
-          # discovered persona when the PR does not identify a valid target.
+          # The selector ignores meta-skills and incomplete directories, then
+          # rotates over every discovered persona for any invalid changed target.
           BASE="${{ github.base_ref || 'main' }}"
           CHANGED=$(git diff --name-only "origin/${BASE}...HEAD" 2>/dev/null \
             | grep -oP 'prebuilt/\K[^/]+' | head -n1 || true)
-          if [ -n "$CHANGED" ] && ! printf '%s\n' "${MASTERS[@]}" | grep -Fxq -- "$CHANGED"; then
-            CHANGED=""
-          fi
-          if [ -z "$CHANGED" ]; then
-            IDX=$(( $(date +%j) % ${#MASTERS[@]} ))
-            CHANGED=${MASTERS[$IDX]}
+          if ! CHANGED=$(python scripts/select-fidelity-smoke.py \
+            --prebuilt prebuilt \
+            --day-of-year "$(date +%j)" \
+            --changed "$CHANGED"); then
+            echo "::error::Fidelity smoke target selection failed."
+            exit 1
           fi
           echo "master=$CHANGED" >> "$GITHUB_OUTPUT"
           echo "Smoke target: $CHANGED"
