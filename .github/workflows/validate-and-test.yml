@@ -24,7 +24,7 @@ on:
   schedule:
     # Weekly full fidelity sweep — Mondays 04:00 UTC. Per-PR CI only runs a
     # 1-fixture smoke; this is the only run that grades all 160+ fixtures and
-    # catches regressions the smoke rotation would take 14 weeks to surface.
+    # catches regressions the smoke rotation would take 15 weeks to surface.
     - cron: '0 4 * * 1'
 
 # Least privilege: this workflow only reads the repo and runs tests. No job
@@ -66,15 +66,14 @@ jobs:
       - name: Check platform manifest version consistency (v0.8 — hard gate)
         run: python scripts/check-manifest-versions.py
 
-      - name: Validate lore_triggers content (v0.8 — advisory)
-        continue-on-error: true
-        run: python scripts/validate-lore-triggers-content.py
+      - name: Validate lore_triggers content (v0.8 — hard gate)
+        run: python scripts/validate-lore-triggers-content.py --strict
 
       - name: Test session-start hook lineage sanitization
         run: bash hooks/tests/test_session_start.sh
 
-      - name: Run validator unit tests
-        run: python -m pytest scripts/tests/ -v
+      - name: Run Python tests
+        run: python -m pytest tests/ scripts/tests/ -v
 
       - name: Dry-run fidelity tests
         run: python scripts/test-fidelity.py --all --dry-run
@@ -120,11 +119,17 @@ jobs:
           rustc --version
           cargo --version
 
+      - name: Check desktop formatting
+        run: cargo fmt --manifest-path desktop/Cargo.toml -- --check
+
+      - name: Lint desktop app
+        run: cargo clippy --locked --manifest-path desktop/Cargo.toml --all-targets -- -D warnings
+
       - name: Test desktop app
-        run: cargo test --manifest-path desktop/Cargo.toml
+        run: cargo test --locked --manifest-path desktop/Cargo.toml
 
       - name: Build desktop app
-        run: cargo build --manifest-path desktop/Cargo.toml
+        run: cargo build --locked --manifest-path desktop/Cargo.toml
 
   fidelity-smoke:
     name: Fidelity smoke (1 master × 1 fixture)
@@ -149,16 +154,33 @@ jobs:
       - name: Pick smoke target
         id: pick
         run: |
+          mapfile -t MASTERS < <(
+            python - <<'PY'
+          import json
+          from pathlib import Path
+
+          for meta_path in sorted(Path("prebuilt").glob("master-*/meta.json")):
+              metadata = json.loads(meta_path.read_text(encoding="utf-8"))
+              sources = metadata.get("sources")
+              if isinstance(sources, list) and sources:
+                  print(meta_path.parent.name)
+          PY
+          )
+          if [ "${#MASTERS[@]}" -eq 0 ]; then
+            echo "::error::No persona smoke targets discovered from meta.json sources."
+            exit 1
+          fi
+
           # If the PR touches a specific prebuilt master, smoke-test that one.
-          # Otherwise rotate by day-of-year so coverage stays uniform across all 14.
+          # Ignore meta-skills and incomplete directories, then rotate over every
+          # discovered persona when the PR does not identify a valid target.
           BASE="${{ github.base_ref || 'main' }}"
           CHANGED=$(git diff --name-only "origin/${BASE}...HEAD" 2>/dev/null \
-            | grep -oP 'prebuilt/\K[^/]+' | grep -v '^compare$' | head -n1 || true)
+            | grep -oP 'prebuilt/\K[^/]+' | head -n1 || true)
+          if [ -n "$CHANGED" ] && ! printf '%s\n' "${MASTERS[@]}" | grep -Fxq -- "$CHANGED"; then
+            CHANGED=""
+          fi
           if [ -z "$CHANGED" ]; then
-            MASTERS=(master-xuanzang master-kumarajiva master-huineng master-zhiyi \
-                     master-fazang master-yinguang master-ouyi master-xuyun \
-                     master-atisha master-tsongkhapa master-milarepa \
-                     master-buddhaghosa master-mahasi-sayadaw master-ajahn-chah)
             IDX=$(( $(date +%j) % ${#MASTERS[@]} ))
             CHANGED=${MASTERS[$IDX]}
           fi
@@ -179,6 +201,11 @@ jobs:
           if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
             echo "::warning::ANTHROPIC_API_KEY not configured — smoke is advisory on this run (expected on forks)."
             echo '{"skipped": true, "reason": "no_api_key"}' > fidelity-smoke.json
+            {
+              echo "### Fidelity grading skipped"
+              echo
+              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but model grading did not run."
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           python scripts/test-fidelity.py \
@@ -228,6 +255,11 @@ jobs:
           if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
             echo "::warning::ANTHROPIC_API_KEY not configured — full fidelity sweep is advisory (structural validation in the validate job still gates)."
             echo '{"skipped": true, "reason": "no_api_key"}' > fidelity-results.json
+            {
+              echo "### Fidelity grading skipped"
+              echo
+              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but model grading did not run."
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           python scripts/test-fidelity.py --all --json > fidelity-results.json
