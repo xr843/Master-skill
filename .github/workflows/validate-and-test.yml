@@ -98,6 +98,36 @@ jobs:
       - name: Run CLI tests
         run: node --test tests/cli.test.mjs
 
+  python-compat:
+    name: Generator compatibility (Python 3.9)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.9"
+
+      - name: Install generator dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run Python 3.9 generator smoke
+        run: |
+          python -m compileall -q tools scripts
+          TMP_DIR="$(mktemp -d)"
+          trap 'rm -rf "$TMP_DIR"' EXIT
+          python tools/sutra_collector.py \
+            --offline-smoke --name "Offline Demo" --tradition "南传" \
+            --output "$TMP_DIR/collected.json"
+          python tools/verify_sources.py --check-links "$TMP_DIR/collected.json"
+          python tools/master_builder.py \
+            --offline-smoke --output "$TMP_DIR/masters" \
+            > "$TMP_DIR/builder.json"
+          PERSONA_DIR=$(python -c \
+            'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["teacher_dir"])' \
+            "$TMP_DIR/builder.json")
+          python tools/verify_sources.py --final-check "$PERSONA_DIR"
+
   # bin/cli.mjs is the one piece of code every npx user executes, and its
   # path handling broke silently on Windows before this fix (URL.pathname
   # gives "/C:/…"). This job is the regression net: the same node:test suite,

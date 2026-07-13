@@ -8,6 +8,8 @@ Orchestrates FoJin Bridge calls to collect:
 4. Dictionary terms related to the teacher's tradition
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import os

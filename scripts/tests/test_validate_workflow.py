@@ -122,6 +122,24 @@ def test_windows_cli_job_installs_the_generator_python_runtime():
     _assert_hard(install)
 
 
+def test_python39_job_compiles_and_runs_the_four_generator_cli_steps():
+    job = _job(WORKFLOW, "python-compat")
+    setup = next(
+        step
+        for step in job["steps"]
+        if str(step.get("uses", "")).startswith("actions/setup-python@")
+    )
+    assert setup.get("with", {}).get("python-version") == "3.9"
+    smoke = _step(WORKFLOW, "python-compat", "Run Python 3.9 generator smoke")
+    command = smoke["run"]
+    assert "python -m compileall -q tools scripts" in command
+    assert "sutra_collector.py" in command
+    assert "verify_sources.py --check-links" in command
+    assert "master_builder.py" in command
+    assert "verify_sources.py --final-check" in command
+    _assert_hard(smoke)
+
+
 def test_push_paths_include_distribution_and_generator_runtime():
     triggers = WORKFLOW.get("on", WORKFLOW.get(True))
     assert isinstance(triggers, dict)

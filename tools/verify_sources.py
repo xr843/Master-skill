@@ -14,6 +14,8 @@ contracts. They do not parse free-text citations or check HTTP reachability.
 The legacy no-argument / --fix modes only audit repository CBETA/FoJin URLs.
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import os

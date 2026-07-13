@@ -49,6 +49,16 @@ def test_collector_and_builder_expose_real_argparse_help():
         assert "usage:" in result.stdout
 
 
+def test_shipped_generator_cli_modules_defer_annotations_for_python39():
+    for tool in (
+        "sutra_collector.py",
+        "master_builder.py",
+        "verify_sources.py",
+    ):
+        content = (TOOLS / tool).read_text(encoding="utf-8")
+        assert "from __future__ import annotations" in content, tool
+
+
 def test_collector_offline_smoke_writes_verifiable_source_manifest(tmp_path):
     output = tmp_path / "collected.json"
     result = run_tool(

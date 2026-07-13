@@ -8,6 +8,8 @@ Flow:
 4. Write via skill_writer
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import os
