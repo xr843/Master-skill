@@ -132,9 +132,15 @@ def test_push_paths_include_distribution_and_generator_runtime():
         "references/**",
         "ETHICS.md",
         "requirements.txt",
+        "README.md",
+        "README_EN.md",
+        "CONTRIBUTING.md",
+        "CHANGELOG.md",
         ".claude-plugin/**",
         ".cursor-plugin/**",
         "gemini-extension.json",
+        ".github/PULL_REQUEST_TEMPLATE.md",
+        ".github/ISSUE_TEMPLATE/**",
     } <= paths
 
 
