@@ -6,6 +6,7 @@ __pycache__/
 dist/
 build/
 target/
+.worktrees/
 .DS_Store
 masters/*/
 !masters/.gitkeep
