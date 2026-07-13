@@ -28,12 +28,42 @@ _CONTROL_CHARS = re.compile(
     r"\u200b-\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069\ufeff]"
 )
 
+REQUIRED_CITATION_CLAIMS = [
+    "doctrinal_claim",
+    "practice_guidance",
+    "text_interpretation",
+]
+
 
 def sanitize_generated(content: str) -> str:
     """Strip control characters from generated content before persisting."""
     if not content:
         return content
     return _CONTROL_CHARS.sub("", content)
+
+
+def derive_citation_contract(sources: list[dict]) -> dict:
+    """Build the exact version-1 contract for a non-empty source manifest."""
+    if not isinstance(sources, list) or not sources:
+        raise ValueError("sources must be a non-empty list")
+
+    source_types: list[str] = []
+    for index, source in enumerate(sources):
+        source_type = source.get("type") if isinstance(source, dict) else None
+        if not isinstance(source_type, str) or not source_type.strip():
+            raise ValueError(
+                f"sources[{index}].type must be a non-empty string"
+            )
+        source_types.append(source_type)
+
+    return {
+        "version": 1,
+        "claim_policy": "declared_sources_only",
+        "required_for": list(REQUIRED_CITATION_CLAIMS),
+        "allowed_source_types": sorted(set(source_types)),
+        "minimum_claim_coverage": 0.9,
+        "live_retrieval_allowed": True,
+    }
 
 
 SKILL_MD_TEMPLATE = """---
@@ -93,8 +123,18 @@ def create_teacher(
     voice_content: str,
     fojin_entity_id: Optional[str] = None,
     sources: Optional[list] = None,
+    citation_contract: Optional[dict] = None,
 ) -> str:
     """Create a new teacher skill directory."""
+    source_manifest = sources if sources is not None else []
+    expected_contract = derive_citation_contract(source_manifest)
+    if citation_contract is None:
+        citation_contract = expected_contract
+    elif citation_contract != expected_contract:
+        raise ValueError(
+            "citation_contract must equal the contract derived from sources[].type"
+        )
+
     teaching_content = sanitize_generated(teaching_content)
     voice_content = sanitize_generated(voice_content)
     slug = slugify(name)
@@ -119,7 +159,8 @@ def create_teacher(
     meta = {
         "name": name, "slug": slug, "tradition": tradition, "school": school,
         "era": era, "languages": languages, "fojin_entity_id": fojin_entity_id,
-        "sources": sources or [], "version": "1.0.0",
+        "sources": source_manifest, "citation_contract": citation_contract,
+        "version": "1.0.0",
         "created_at": datetime.now().strftime("%Y-%m-%d"),
         "updated_at": datetime.now().strftime("%Y-%m-%d"),
         "disclaimer": DISCLAIMER,

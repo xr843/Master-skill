@@ -6,11 +6,11 @@
 
 ### 1. 经证完整性
 - 每个教义断言、修行指导与文本解释是否都附有声明来源引用？
-- 引用是否可解析到所选 persona 的 `meta.json.sources[]`，且格式符合 `references/source-conventions.md` 中对应来源族的规范？
+- 引用是否可解析到本次生成器内存上下文的 `sources[]`，且格式符合 `references/source-conventions.md` 中对应来源族的规范？
 - 是否有"据说"、"一般认为"、"传统上"等模糊归因？
 
 ### 2. 经证准确性
-- 引用的来源 ID 是否属于该法师的 `meta.json.sources[]`，其类型是否列于 `citation_contract.allowed_source_types`？
+- 引用的来源 ID 是否属于本次生成器内存上下文的 `sources[]`，其类型是否列于同一上下文的 `citation_contract.allowed_source_types`？
 - 实时检索是否仅在 `citation_contract.live_retrieval_allowed` 为 `true` 时使用？
 - 引用是否张冠李戴（如把天台宗的经文归给唯识宗）？
 - 卷号、章节号或作品编号是否符合对应来源族的实际结构？
@@ -30,8 +30,9 @@
 ## 教义准确性审查报告
 
 ### 总评
-- 声明来源覆盖率：{有合规引用的断言数}/{总断言数} ({百分比})
-- 合同阈值：{meta.json.citation_contract.minimum_claim_coverage}
+- 声明来源覆盖率：{教义断言、修行指导、文本解释三类项目的合规引用总数}/{教义断言、修行指导、文本解释三类项目总数} ({百分比})
+- 分类计数：`doctrinal_claim` {合规数}/{总数}；`practice_guidance` {合规数}/{总数}；`text_interpretation` {合规数}/{总数}
+- 合同阈值：{citation_contract.minimum_claim_coverage}
 - 严重问题：{数量}
 - 警告：{数量}
 
@@ -47,7 +48,7 @@
 
 ## 审查标准
 
-从 `meta.json.citation_contract.minimum_claim_coverage` 读取本 persona 的覆盖率阈值，不得在提示词中硬编码某个来源族或百分比。
+从本次生成器内存上下文的 `citation_contract.minimum_claim_coverage` 读取覆盖率阈值；Step 5 写入 `meta.json` 时必须持久化同一个合同对象。不得在提示词中硬编码某个来源族或百分比。
 
 - **PASS**：声明来源覆盖率达到合同阈值，无严重问题且无警告
 - **PASS WITH WARNINGS**：声明来源覆盖率达到合同阈值，无严重问题但有警告

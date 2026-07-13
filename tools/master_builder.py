@@ -15,7 +15,7 @@ from typing import Optional
 
 from fojin_bridge import FojinBridge, create_bridge
 from sutra_collector import collect_teacher_data, collect_specific_texts
-from skill_writer import create_teacher, DISCLAIMER
+from skill_writer import DISCLAIMER, create_teacher, derive_citation_contract
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "prompts")
@@ -125,6 +125,40 @@ def build_teacher_prompt(
     return prompt
 
 
+def prepare_generation_context(
+    sources: list[dict],
+    citation_contract: Optional[dict] = None,
+) -> dict:
+    """Derive and retain the citation contract before doctrine review."""
+    expected = derive_citation_contract(sources)
+    if citation_contract is None:
+        citation_contract = expected
+    elif citation_contract != expected:
+        raise ValueError(
+            "citation_contract must equal the contract derived from sources[].type"
+        )
+    return {
+        "sources": sources,
+        "citation_contract": citation_contract,
+    }
+
+
+def build_doctrine_review_prompt(teaching_content: str, context: dict) -> str:
+    """Attach the in-memory source contract to the doctrine reviewer prompt."""
+    contract = context["citation_contract"]
+    sources = context["sources"]
+    contract_json = json.dumps(contract, ensure_ascii=False, sort_keys=True)
+    sources_json = json.dumps(sources, ensure_ascii=False, sort_keys=True)
+    return (
+        f"{load_prompt('doctrine_reviewer')}\n\n"
+        "## 本次审查输入（生成器内存上下文）\n"
+        f"citation_contract: {contract_json}\n"
+        f"sources: {sources_json}\n\n"
+        "## 待审 teaching.md\n"
+        f"{teaching_content}\n"
+    )
+
+
 def generate_teacher_skill(
     name: str,
     tradition: str,
@@ -136,8 +170,22 @@ def generate_teacher_skill(
     output_dir: str = "teachers",
     fojin_entity_id: Optional[str] = None,
     sources: Optional[list] = None,
+    citation_contract: Optional[dict] = None,
+    generation_context: Optional[dict] = None,
 ) -> str:
     """Write the final teacher skill to disk."""
+    if generation_context is None:
+        generation_context = prepare_generation_context(
+            sources if sources is not None else [], citation_contract
+        )
+    else:
+        if sources is not None and sources != generation_context.get("sources"):
+            raise ValueError("sources disagree with generation_context")
+        generation_context = prepare_generation_context(
+            generation_context.get("sources", []),
+            generation_context.get("citation_contract"),
+        )
+
     base_dir = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), output_dir
     )
@@ -151,5 +199,6 @@ def generate_teacher_skill(
         teaching_content=teaching_content,
         voice_content=voice_content,
         fojin_entity_id=fojin_entity_id,
-        sources=sources,
+        sources=generation_context["sources"],
+        citation_contract=generation_context["citation_contract"],
     )
