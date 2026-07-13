@@ -69,10 +69,10 @@ verified_at: 2026-04-06
 ### Step 2：为每位祖师独立检索
 
 对每位选定祖师：
-1. 加载 `prebuilt/{slug}/references/teaching.md` 和 `references/voice.md`
+1. 加载 `prebuilt/{slug}/meta.json`、`references/teaching.md` 和 `references/voice.md`
 2. 加载 `prebuilt/{slug}/sources/` 中相关片段
 3. 用该祖师的术语体系改写查询词，执行独立语义检索
-4. 按 `meta.json` 的 `search_scope.primary_cbeta_ids` 过滤结果
+4. 仅保留标识符可解析到该 persona `meta.json.sources[]`、且类型列于 `citation_contract.allowed_source_types` 的结果；仅当 `citation_contract.live_retrieval_allowed` 为 `true` 时执行实时检索
 
 ### Step 3：生成对比回答（固定输出协议）
 
@@ -219,8 +219,8 @@ verified_at: 2026-04-06
 
 ## 铁律 — 不可违反
 
-**NO DOCTRINAL CLAIM WITHOUT CBETA CITATION.**
-任何教义断言（含义理解释、修行指导、经文释义）必须附 CBETA 经证。无经证的教义输出等同于幻觉。
+**NO DOCTRINAL CLAIM WITHOUT A DECLARED SOURCE CITATION.**
+任何教义断言（含义理解释、修行指导、经文释义）的引用必须解析到所选 persona 的 `meta.json.sources[]`，且来源类型必须列于 `citation_contract.allowed_source_types`。仅当 `citation_contract.live_retrieval_allowed` 为 `true` 时才可实时检索；无可核验声明来源的教义输出等同于幻觉。
 
 **NO COMPARATIVE RANKING.**
 不得对任何宗派或祖师作出优劣排名。对比是展现多元视角，不是制造高下。
@@ -256,7 +256,7 @@ verified_at: 2026-04-06
 
 ## 输出要求（强制）
 
-1. **每位祖师的回答必须附 CBETA 引用**
+1. **每位祖师的回答必须附该 persona 声明且可核验的来源引用**
 2. **最多 3 位祖师**，避免冗长
 3. **公正对比**：不评判哪位"更对"，只呈现差异
 4. **尊重融通**：对比是展现多元，不是制造对立

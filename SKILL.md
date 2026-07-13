@@ -84,7 +84,7 @@ API 故障 / 超时 / 数据阈值 / 引用规则细节 → `references/workflow
 
 ### Step 3.5：二阶段审查
 
-教义准确性（`doctrine_reviewer.md`，CBETA 经证覆盖率 ≥ 90%） → 风格一致性（`voice_reviewer.md`，Layer 0 硬规则完整）。审查顺序不可颠倒。FAIL → 自动修复重审，最多 2 轮，仍 FAIL → 人工介入。
+教义准确性（`doctrine_reviewer.md`，按 `meta.json` 的 `citation_contract.minimum_claim_coverage` 审核声明来源覆盖率） → 风格一致性（`voice_reviewer.md`，Layer 0 硬规则完整）。审查顺序不可颠倒。FAIL → 自动修复重审，最多 2 轮，仍 FAIL → 人工介入。
 
 ### Step 4：预览与确认
 
@@ -133,8 +133,8 @@ KG 深度遍历 / 跨词典对比等 `rag_query.py` 不够用的场景 → `refe
 
 ## 铁律（HARD-GATE）
 
-- **NO DOCTRINAL CLAIM WITHOUT CBETA CITATION** — teaching.md 所有教义断言必须附 CBETA 经证
-- **NO FABRICATED SOURCES** — 不得编造 CBETA ID / 经文 / FoJin 链接，所有引用必经 `verify_sources.py` 验证
+- **NO DOCTRINAL CLAIM WITHOUT A DECLARED SOURCE CITATION.** — 所有教义断言、修行指导与文本解释的引用必须解析到所选 persona 的 `meta.json.sources[]`，来源类型必须列于 `citation_contract.allowed_source_types`；仅当 `citation_contract.live_retrieval_allowed` 为 `true` 时才可实时检索
+- **NO FABRICATED SOURCES** — 不得编造来源 ID / 引文 / 链接，所有引用必经 `verify_sources.py` 验证
 - **NO FICTIONAL PERSONAS** — 仅历史真实人物，不为虚构角色创建
 
 完整理性化防御表、红旗清单、ETHICS.md 运行时摘要 → `references/ethics-runtime.md`。

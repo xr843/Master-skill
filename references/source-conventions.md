@@ -11,6 +11,17 @@
 | **SuttaCentral** | 巴利经藏 | `SC <NikāyaCode>.<编号>` | SC MN10（中部第 10 经《念处经》）/ SC DN22 |
 | **Toh.** | 藏文大藏经德格版 | `Toh <序号>` | Toh 4465（阿底峡《菩提道灯论》） |
 | **PTS** | 巴利圣典协会版页码 | `<经简称> <册>.<页>` | Vism I.85（《清净道论》第一章 §85） |
+| **compiled teachings** | 经授权或合规收录的编纂开示 | persona 自身声明的来源 ID | 以 `meta.json.sources[]` 中的 ID 与题名为准 |
+
+## 来源中立 Citation Contract
+
+CBETA、BDRC / Toh、PTS / SuttaCentral 与 compiled teachings 四类来源家族**同等适用 citation contract**，没有任何一种来源族可充当其他传统的全局替代。运行时必须：
+
+1. 将引用解析到所选 persona 的 `meta.json.sources[]`
+2. 确认来源类型列于 `citation_contract.allowed_source_types`
+3. 仅在 `citation_contract.live_retrieval_allowed` 为 `true` 时执行实时检索
+
+四类来源家族地位相同，但分别受自身引述与版权规则约束：CBETA 须保留底本文字与定位；BDRC / Toh 的元数据不等于现代译文授权；PTS / SuttaCentral 须遵守所用版本与站点许可；compiled teachings 按版权 Tier 与授权范围控制逐字引述，必要时仅作摘要。
 
 ## CBETA 引用规范（汉传必备）
 
@@ -32,9 +43,9 @@
 
 ### 常见易错点
 
-- 引《菩提道次第广论》→ **不是 CBETA**，是藏文 Toh 系统；汉译本可引《广论》白话本但不计入"经证"
+- 引《菩提道次第广论》→ **不是 CBETA**，应按所选 persona 声明的 Toh / BDRC 来源核验；现代汉译本仅作辅助并遵守其版权
 - 引《六祖坛经》→ 多版本（敦煌本 / 宗宝本 / 德异本），生成时优先 T2008（宗宝本，常用）并注明所据本
-- 引《清净道论》→ 是 PTS Vism / SuttaCentral，**不在 CBETA**；若引汉译，用现代译本仅作参考不作经证
+- 引《清净道论》→ 是 PTS Vism / SuttaCentral，**不在 CBETA**；应按所选 persona 声明的巴利来源核验，现代汉译本仅作辅助并遵守其版权
 
 ## BDRC 引用规范（藏传必备）
 
@@ -96,10 +107,12 @@ python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check masters/{slug}
 
 ### 验证逻辑
 
-1. **CBETA**：调 FoJin `/api/text/<CBETA_ID>` 检查 200，再核对返回的卷栏行是否覆盖断言范围
-2. **BDRC**：调 `library.bdrc.io/resource/bdr:W<编号>` 检查 200；元数据校对题名 / 作者
-3. **SuttaCentral**：调 `suttacentral.net/<NikāyaCode><编号>` 检查 200；副本对照 PTS 编号
-4. **Toh**：与 BDRC 联表，无独立验证 endpoint
+1. **合同预检**：ID 必须属于所选 persona 的 `meta.json.sources[]`，类型必须属于 `citation_contract.allowed_source_types`；实时请求还须合同允许
+2. **CBETA**：调 FoJin `/api/text/<CBETA_ID>` 检查 200，再核对返回的卷栏行是否覆盖断言范围
+3. **BDRC**：调 `library.bdrc.io/resource/bdr:W<编号>` 检查 200；元数据校对题名 / 作者
+4. **SuttaCentral**：调 `suttacentral.net/<NikāyaCode><编号>` 检查 200；副本对照 PTS 编号
+5. **Toh**：与 BDRC 联表，无独立验证 endpoint
+6. **compiled teachings**：核对声明的版本 / 出版信息与版权 Tier；不得把未授权现代文本当作可自由逐字引用的原典
 
 ### 无效引用的降级策略
 
@@ -109,7 +122,7 @@ python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check masters/{slug}
 
 ## 编造引用 = HARD-GATE 红旗
 
-- 编造不存在的 CBETA / BDRC / SC ID
+- 编造不存在或未由 persona 声明的 CBETA / BDRC / Toh / PTS / SC / compiled-teaching ID
 - "众所周知该法师持此见，故不引"（HARD-GATE 防御表禁止）
 - 用现代译本充当经证（仅作辅助参考，不进入教义断言支撑链）
 - 引述时省略卷栏行致使无法定位（粒度低于"经"级别一律视为不充分）

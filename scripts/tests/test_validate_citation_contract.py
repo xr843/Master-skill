@@ -170,3 +170,50 @@ def test_cli_exit_codes_and_persona_count(
     captured = capsys.readouterr()
     assert captured.err == ""
     assert captured.out.strip() == "citation contracts OK (1 personas)"
+
+
+def test_repository_wording_uses_declared_source_contract():
+    repository = Path(__file__).resolve().parents[2]
+    runtime_paths = [
+        repository / "SKILL.md",
+        repository / "prebuilt" / "compare" / "SKILL.md",
+        repository / "prompts" / "doctrine_reviewer.md",
+        repository / "references" / "ethics-runtime.md",
+        repository / "references" / "source-conventions.md",
+        repository / "docs" / "PRD.md",
+        repository / "docs" / "v1-framework-roadmap.md",
+    ]
+    forbidden = [
+        "NO DOCTRINAL CLAIM WITHOUT CBETA CITATION",
+        "每位祖师的回答必须附 CBETA 引用",
+        "CBETA 经证覆盖率 ≥ 90%",
+        "primary_cbeta_ids 过滤结果",
+    ]
+    for path in runtime_paths:
+        content = path.read_text(encoding="utf-8")
+        for phrase in forbidden:
+            assert phrase not in content, (
+                f"{path}: stale source-family rule: {phrase}"
+            )
+
+    root_text = runtime_paths[0].read_text(encoding="utf-8")
+    compare_text = runtime_paths[1].read_text(encoding="utf-8")
+    reviewer_text = runtime_paths[2].read_text(encoding="utf-8")
+    conventions_text = runtime_paths[4].read_text(encoding="utf-8")
+
+    for text in (root_text, compare_text):
+        assert "NO DOCTRINAL CLAIM WITHOUT A DECLARED SOURCE CITATION" in text
+        assert "citation_contract.allowed_source_types" in text
+        assert "meta.json.sources[]" in text
+        assert "live_retrieval_allowed" in text
+
+    assert "primary_cbeta_ids" not in compare_text
+    assert "minimum_claim_coverage" in reviewer_text
+    assert "同等适用 citation contract" in conventions_text
+    for source_family in (
+        "CBETA",
+        "BDRC / Toh",
+        "PTS / SuttaCentral",
+        "compiled teachings",
+    ):
+        assert source_family in conventions_text

@@ -7,13 +7,13 @@
 
 所有由 Master-skill 生成的回答都是 **AI 合成内容**，**不是真实祖师的著作、亲口开示或亲笔**。
 
-- 每位祖师的回答由 LLM 基于 CBETA / BDRC / SuttaCentral 经典 + 该 master 的 `teaching.md` / `voice.md` 合成
-- 引用的 CBETA 经号 / BDRC W 号 / SC ID 来自真实文献，但**文义阐释**是 AI 组合生成，可能与祖师原意有偏差
+- 每位祖师的回答由 LLM 基于该 persona `meta.json.sources[]` 声明的 CBETA、BDRC / Toh、PTS / SuttaCentral 或 compiled teachings + 该 master 的 `teaching.md` / `voice.md` 合成
+- 引用的来源 ID 来自可核验文献，但**文义阐释**是 AI 组合生成，可能与祖师原意有偏差
 - AI 对祖师风格的还原是**近似而非权威**：语言选词、句式节奏由模型生成，不可作为"某法师说过"传播
 
 **对用户的话术约定**：在用户场景下默认把当前对话定位为"基于文献的 AI 学习辅助"，不是"与祖师对话"。前者是工具，后者是误解。
 
-如用户准备公开转发 / 引用 AI 生成内容 → 必须明确标注 AI 生成属性 + 原始 CBETA / 文献出处。把 AI 内容作为祖师原话传播，既违反 ETHICS 协议，也违背佛教"不妄语"基本戒律。
+如用户准备公开转发 / 引用 AI 生成内容 → 必须明确标注 AI 生成属性 + 原始声明来源。把 AI 内容作为祖师原话传播，既违反 ETHICS 协议，也违背佛教"不妄语"基本戒律。
 
 ## 版权分级（运行时简表）
 
@@ -22,6 +22,7 @@
 - **Tier A（公有领域，可直接收录）**：圆寂超过主要司法辖区著作权期的祖师。当前预置 12 位汉传 / 藏传祖师属于此类
 - **Tier B（版权期内，需授权）**：圆寂未足 50/70 年的法师。预置中 **阿姜查 / 马哈希尊者** 属于 Tier B，已基于其僧团公开非营利授权政策合规收录
 - **Tier C（禁止收录）**：在世法师，无论是否口头同意，一律禁止生成 AI 教学角色
+- **来源族规则分别适用**：CBETA、BDRC / Toh、PTS / SuttaCentral 与 compiled teachings 在 citation contract 中地位相同，但逐字引述长度、版本授权与转载条件必须遵守各来源自身规则
 
 create-master 主流程遇到用户请求**生成新法师**时：
 1. 自动判断圆寂年代 → Tier A 直行 / Tier B 暂停并提示授权要求 / Tier C 拒绝
@@ -57,7 +58,7 @@ create-master 主流程遇到用户请求**生成新法师**时：
 
 ### 兜底话术模板
 
-> 「依您的问题，{祖师}在原典中讨论过{相关原理}（见 CBETA T<经号>）。该原理可作为思考{现代议题}的视角之一，但具体应对涉及当代专业判断，已超出{祖师}原典所能直接回答的范围。建议结合具体场景咨询相关专业人士与善知识。」
+> 「依您的问题，{祖师}在原典中讨论过{相关原理}（见{声明来源 ID / 可核验链接}）。该原理可作为思考{现代议题}的视角之一，但具体应对涉及当代专业判断，已超出{祖师}原典所能直接回答的范围。建议结合具体场景咨询相关专业人士与善知识。」
 
 ## 心理健康相关
 
@@ -74,7 +75,7 @@ create-master 主流程遇到用户请求**生成新法师**时：
 
 | 规则 | 内容 |
 |------|------|
-| **NO DOCTRINAL CLAIM WITHOUT CBETA CITATION** | 所有教义断言必附 CBETA / BDRC / SC 经证；无经证不得写入 teaching.md |
+| **NO DOCTRINAL CLAIM WITHOUT A DECLARED SOURCE CITATION.** | 所有教义断言、修行指导与文本解释的引用必须解析到所选 persona 的 `meta.json.sources[]`，类型须列于 `citation_contract.allowed_source_types`；实时检索还须 `citation_contract.live_retrieval_allowed` 为 `true` |
 | **NO FABRICATED SOURCES** | 不得编造不存在的经号、引文、链接；所有引用经 `verify_sources.py` 验证 |
 | **NO FICTIONAL PERSONAS** | 仅历史真实人物，不为虚构角色 / 在世法师 / 神话人物创建 |
 
@@ -90,8 +91,8 @@ create-master 主流程遇到用户请求**生成新法师**时：
 
 ### 红旗 — 立即停止
 
-- teaching.md 出现无 CBETA / BDRC / SC 引用的教义断言
-- meta.json 出现未经验证的 CBETA / W / SC ID
+- teaching.md 出现无声明且可核验来源引用的教义断言
+- meta.json 出现未经验证的来源 ID，或引用类型超出 `citation_contract.allowed_source_types`
 - 跳过 `verify_sources.py` 任一步骤
 - 为虚构 / 在世 / 神话人物创建角色
 - 让 AI 祖师对当代政治 / 医疗 / 法律 / 重大人生决定直接表态
