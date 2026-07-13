@@ -3,16 +3,39 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 
 
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
+BUNDLE_ROOT = Path(__file__).resolve().parents[1]
+BUNDLE_MEMBERS = (
+    "SKILL.md",
+    "tools",
+    "prompts",
+    "references",
+    "requirements.txt",
+    "ETHICS.md",
+    "masters",
+)
 
 
 def run_tool(name: str, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(TOOLS / name), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def run_installed_tool(
+    installed: Path, name: str, *args: str
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(installed / "tools" / name), *args],
+        cwd=installed,
         capture_output=True,
         text=True,
         check=False,
@@ -74,3 +97,64 @@ def test_master_builder_offline_smoke_persists_review_contract(tmp_path):
     assert meta["citation_contract"]["allowed_source_types"] == [
         "compiled_teaching"
     ]
+
+
+def test_exact_installed_bundle_runs_offline_after_source_copy_is_deleted(tmp_path):
+    packed_source = tmp_path / "packed-source"
+    installed = tmp_path / "installed-create-master"
+    packed_source.mkdir()
+    for member in BUNDLE_MEMBERS:
+        source = BUNDLE_ROOT / member
+        destination = packed_source / member
+        if source.is_dir():
+            shutil.copytree(
+                source,
+                destination,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
+        else:
+            shutil.copy2(source, destination)
+
+    shutil.copytree(packed_source, installed)
+    shutil.rmtree(packed_source)
+    assert not packed_source.exists()
+    assert {path.name for path in installed.iterdir()} == set(BUNDLE_MEMBERS)
+
+    collected = tmp_path / "collected.json"
+    collector = run_installed_tool(
+        installed,
+        "sutra_collector.py",
+        "--offline-smoke",
+        "--name",
+        "Offline Demo",
+        "--tradition",
+        "南传",
+        "--output",
+        str(collected),
+    )
+    assert collector.returncode == 0, collector.stderr
+    assert collector.stdout.strip() == f"collected data written: {collected}"
+
+    initial_check = run_installed_tool(
+        installed, "verify_sources.py", "--check-links", str(collected)
+    )
+    assert initial_check.returncode == 0, initial_check.stderr
+    assert initial_check.stdout.strip() == "declared sources OK (1 sources)"
+
+    builder = run_installed_tool(
+        installed,
+        "master_builder.py",
+        "--offline-smoke",
+        "--output",
+        str(installed / "masters"),
+    )
+    assert builder.returncode == 0, builder.stderr
+    summary = json.loads(builder.stdout)
+    teacher_dir = Path(summary["teacher_dir"])
+    assert teacher_dir.is_relative_to(installed / "masters")
+
+    final_check = run_installed_tool(
+        installed, "verify_sources.py", "--final-check", str(teacher_dir)
+    )
+    assert final_check.returncode == 0, final_check.stderr
+    assert final_check.stdout.strip() == "final source check OK (1 sources)"
