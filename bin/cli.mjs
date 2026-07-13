@@ -155,6 +155,65 @@ function cpR(src, dest) {
   }
 }
 
+function copyGeneratorBundle(skill, src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const bundlePath of skill.bundle_paths) {
+    const bundleSource = path.join(src, bundlePath);
+    const bundleDest = path.join(dest, bundlePath);
+    if (fs.statSync(bundleSource).isDirectory()) {
+      cpR(bundleSource, bundleDest);
+    } else {
+      fs.mkdirSync(path.dirname(bundleDest), { recursive: true });
+      fs.copyFileSync(bundleSource, bundleDest);
+    }
+  }
+}
+
+function replaceGeneratorInstall(skill, src, dest) {
+  const staging = fs.mkdtempSync(
+    path.join(SKILLS_DIR, `.${skill.install_dir}-staging-`)
+  );
+  let backup = null;
+
+  try {
+    copyGeneratorBundle(skill, src, staging);
+
+    // Generated personas are user data, not package runtime. Merge them into
+    // the staged bundle before replacing the old install so reinstall/update
+    // can still remove stale runtime files without erasing masters/*.
+    const existingMasters = path.join(dest, "masters");
+    if (fs.existsSync(existingMasters)) {
+      cpR(existingMasters, path.join(staging, "masters"));
+    }
+
+    if (fs.existsSync(dest)) {
+      backup = fs.mkdtempSync(
+        path.join(SKILLS_DIR, `.${skill.install_dir}-backup-`)
+      );
+      fs.rmSync(backup, { recursive: true, force: true });
+      fs.renameSync(dest, backup);
+    }
+
+    try {
+      fs.renameSync(staging, dest);
+    } catch (err) {
+      if (backup && fs.existsSync(backup) && !fs.existsSync(dest)) {
+        fs.renameSync(backup, dest);
+        backup = null;
+      }
+      throw err;
+    }
+
+    if (backup) {
+      fs.rmSync(backup, { recursive: true, force: true });
+      backup = null;
+    }
+  } finally {
+    fs.rmSync(staging, { recursive: true, force: true });
+    if (backup) fs.rmSync(backup, { recursive: true, force: true });
+  }
+}
+
 function parseFrontmatter(filepath) {
   // \r?\n: a CRLF checkout (git autocrlf on Windows) must not blank out
   // every description.
@@ -322,22 +381,12 @@ function cmdInstall(names) {
     }
     const src = path.join(PACKAGE_ROOT, skill.source);
     const dest = path.join(SKILLS_DIR, skill.install_dir);
-    // Clear any previous install first: files renamed or removed upstream
-    // must not linger as stale skill content under ~/.claude/skills/.
-    fs.rmSync(dest, { recursive: true, force: true });
     if (skill.kind === "generator") {
-      fs.mkdirSync(dest, { recursive: true });
-      for (const bundlePath of skill.bundle_paths) {
-        const bundleSource = path.join(src, bundlePath);
-        const bundleDest = path.join(dest, bundlePath);
-        if (fs.statSync(bundleSource).isDirectory()) {
-          cpR(bundleSource, bundleDest);
-        } else {
-          fs.mkdirSync(path.dirname(bundleDest), { recursive: true });
-          fs.copyFileSync(bundleSource, bundleDest);
-        }
-      }
+      replaceGeneratorInstall(skill, src, dest);
     } else {
+      // Clear any previous install first: files renamed or removed upstream
+      // must not linger as stale skill content under ~/.claude/skills/.
+      fs.rmSync(dest, { recursive: true, force: true });
       cpR(src, dest);
     }
     console.log(`  ✓ ${name} → ${dest}`);

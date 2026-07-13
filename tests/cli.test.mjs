@@ -262,6 +262,31 @@ test("reinstall clears stale files from a previous version", (t) => {
   assert.ok(fs.existsSync(path.join(skillsDir(home), "master-zhiyi", "SKILL.md")));
 });
 
+test("updating create-master preserves user-generated personas", (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "create-master"], env).code, 0);
+
+  const generatorRoot = path.join(skillsDir(home), "create-master");
+  const customMaster = path.join(generatorRoot, "masters", "my-custom-master");
+  fs.mkdirSync(customMaster, { recursive: true });
+  fs.writeFileSync(
+    path.join(customMaster, "meta.json"),
+    JSON.stringify({ name: "My Custom Master", version: "1.0.0" })
+  );
+  fs.writeFileSync(path.join(customMaster, "SKILL.md"), "user-generated\n");
+  const staleRuntime = path.join(generatorRoot, "stale-runtime.txt");
+  fs.writeFileSync(staleRuntime, "old package content\n");
+
+  const result = run(["update", "--all"], env);
+  assert.equal(result.code, 0, result.stdout);
+  assert.equal(
+    fs.readFileSync(path.join(customMaster, "SKILL.md"), "utf8"),
+    "user-generated\n"
+  );
+  assert.ok(fs.existsSync(path.join(customMaster, "meta.json")));
+  assert.ok(!fs.existsSync(staleRuntime), "stale generator runtime survived update");
+});
+
 test("install of an unknown master exits non-zero", (t) => {
   const { env } = tmpHome(t);
   const { stdout, code } = run(["install", "no-such-master"], env);
