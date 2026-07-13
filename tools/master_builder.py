@@ -8,9 +8,12 @@ Flow:
 4. Write via skill_writer
 """
 
+import argparse
 import json
 import os
 import re
+import sys
+from pathlib import Path
 from typing import Optional
 
 from fojin_bridge import FojinBridge, create_bridge
@@ -202,3 +205,109 @@ def generate_teacher_skill(
         sources=generation_context["sources"],
         citation_contract=generation_context["citation_contract"],
     )
+
+
+def _offline_smoke_spec() -> dict:
+    return {
+        "name": "Offline Smoke Master",
+        "tradition": "offline-test",
+        "school": "deterministic",
+        "era": "test-only",
+        "languages": ["en"],
+        "teaching_content": "Offline teaching content with declared source support.",
+        "voice_content": "Offline deterministic voice.",
+        "sources": [
+            {
+                "type": "compiled_teaching",
+                "id": "OfflineSmoke:Deterministic",
+                "title": "Deterministic offline smoke source",
+            }
+        ],
+    }
+
+
+def build_from_spec(spec: dict, output_dir: str) -> dict:
+    """Prepare review input and persist one persona from an explicit spec."""
+    required = (
+        "name",
+        "tradition",
+        "school",
+        "era",
+        "languages",
+        "teaching_content",
+        "voice_content",
+        "sources",
+    )
+    missing = [field for field in required if field not in spec]
+    if missing:
+        raise ValueError(f"generation spec missing required fields: {missing}")
+
+    context = prepare_generation_context(
+        spec["sources"], spec.get("citation_contract")
+    )
+    review_prompt = build_doctrine_review_prompt(
+        spec["teaching_content"], context
+    )
+    teacher_dir = generate_teacher_skill(
+        name=spec["name"],
+        tradition=spec["tradition"],
+        school=spec["school"],
+        era=spec["era"],
+        languages=spec["languages"],
+        teaching_content=spec["teaching_content"],
+        voice_content=spec["voice_content"],
+        output_dir=output_dir,
+        fojin_entity_id=spec.get("fojin_entity_id"),
+        generation_context=context,
+    )
+
+    review_input_path = Path(teacher_dir) / "doctrine-review-input.json"
+    review_input_path.write_text(
+        json.dumps(
+            {
+                "sources": context["sources"],
+                "citation_contract": context["citation_contract"],
+                "prompt": review_prompt,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    return {
+        "teacher_dir": str(teacher_dir),
+        "meta_path": str(Path(teacher_dir) / "meta.json"),
+        "review_input_path": str(review_input_path),
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Build a create-master persona from an explicit generation spec"
+    )
+    modes = parser.add_mutually_exclusive_group(required=True)
+    modes.add_argument("--spec", help="JSON generation spec prepared after review")
+    modes.add_argument(
+        "--offline-smoke",
+        action="store_true",
+        help="run a deterministic no-network generation smoke",
+    )
+    parser.add_argument("--output", required=True, help="master output directory")
+    args = parser.parse_args(argv)
+
+    try:
+        if args.offline_smoke:
+            spec = _offline_smoke_spec()
+        else:
+            spec = json.loads(Path(args.spec).read_text(encoding="utf-8"))
+        summary = build_from_spec(spec, args.output)
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+
+    print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

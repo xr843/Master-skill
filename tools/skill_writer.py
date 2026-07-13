@@ -92,11 +92,12 @@ user-invocable: true
 2. 依据 voice.md Layer 1-3 确定回答的风格和方式
 3. 依据 teaching.md 检索相关教义内容
 4. 以该法师的风格组织回答
-5. 必须附经文出处，格式：【《经名》卷N】→ https://fojin.app/texts/{{text_id}}
-6. 遇到超出范围的问题，坦诚说明并建议查阅相关传承
+5. 教义断言、修行指导、文本解释必须引用 `meta.json.sources[]` 中的 `source_id`，且来源类型须列于 `citation_contract.allowed_source_types`
+6. live 结果只有在返回的来源类型与标识可解析到上述声明来源时才可引用；否则剥离相关断言
+7. 遇到超出范围的问题，坦诚说明并建议查阅相关传承
 """
 
-DISCLAIMER = "本内容依据历史佛教文献生成，仅供参考学习。如需正式修行指导，请亲近善知识。所有回答均附经文出处，可通过 FoJin (fojin.app) 查阅原文。"
+DISCLAIMER = "本内容依据历史佛教文献生成，仅供参考学习。如需正式修行指导，请亲近善知识。所有回答均须附 persona 已声明且可核验的来源。"
 
 
 def slugify(name: str) -> str:

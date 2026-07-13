@@ -97,6 +97,26 @@ def test_create_teacher_skill_md_includes_content(tmp_path):
     assert "master_" in content  # frontmatter
 
 
+def test_create_teacher_skill_md_uses_declared_source_contract(tmp_path):
+    teacher_dir = create_teacher(
+        base_dir=str(tmp_path),
+        name="测试法师",
+        tradition="南传",
+        school="上座部",
+        era="1900",
+        languages=["zh"],
+        teaching_content="教义",
+        voice_content="风格",
+        sources=[{"type": "pali_canon", "id": "SuttaCentral"}],
+    )
+    with open(os.path.join(teacher_dir, "SKILL.md"), encoding="utf-8") as f:
+        content = f.read()
+    assert "meta.json.sources[]" in content
+    assert "citation_contract.allowed_source_types" in content
+    assert "source_id" in content
+    assert "【《经名》卷N】" not in content
+
+
 def test_list_teachers_empty(tmp_path):
     assert list_teachers(str(tmp_path)) == []
 
