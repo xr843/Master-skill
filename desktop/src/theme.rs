@@ -11,12 +11,12 @@ pub fn apply_console_theme(ctx: &egui::Context) {
     visuals.faint_bg_color = egui::Color32::from_rgb(26, 30, 30);
     visuals.extreme_bg_color = egui::Color32::from_rgb(8, 10, 10);
     visuals.selection.bg_fill = egui::Color32::from_rgb(18, 94, 126);
-    visuals.selection.stroke = egui::Stroke::new(1.0, egui::Color32::from_rgb(76, 164, 196));
+    visuals.selection.stroke = egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(76, 164, 196));
     visuals.widgets.inactive.bg_fill = egui::Color32::from_rgb(38, 42, 42);
     visuals.widgets.hovered.bg_fill = egui::Color32::from_rgb(48, 56, 56);
     visuals.widgets.active.bg_fill = egui::Color32::from_rgb(30, 84, 96);
     visuals.widgets.noninteractive.fg_stroke =
-        egui::Stroke::new(1.0, egui::Color32::from_rgb(186, 194, 190));
+        egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(186, 194, 190));
     ctx.set_visuals(visuals);
 
     let mut style = (*ctx.style()).clone();

@@ -5,6 +5,14 @@
   "name_wylie": "tsong kha pa blo bzang grags pa",
   "honorific": "རྗེ་རིན་པོ་ཆེ་ (Je Rinpoche)",
   "slug": "tsongkhapa",
+  "citation_contract": {
+    "version": 1,
+    "claim_policy": "declared_sources_only",
+    "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
+    "allowed_source_types": ["tibetan_canon", "tibetan_treatise"],
+    "minimum_claim_coverage": 0.9,
+    "live_retrieval_allowed": true
+  },
   "tradition": "藏传",
   "school": "格鲁派 (dge lugs pa, '善规派') — 由其改革噶当派建立",
   "era": "1357-1419",

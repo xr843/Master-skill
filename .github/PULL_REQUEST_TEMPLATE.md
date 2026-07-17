@@ -28,7 +28,8 @@
 
 - [ ] CI 绿色（validate / fidelity-smoke / verify-links 无 red）
 - [ ] 如果改了 `prebuilt/**` → 已 review [`ETHICS.md`](../ETHICS.md) §2（版权 Tier）、§3（教界边界）
-- [ ] 如果新增 / 修改 `teaching.md` → 所有教义断言均附**真实** CBETA 经号
+- [ ] 如果新增 / 修改 `teaching.md` → 所有教义断言、修行指导与文本解释均附能解析到 `meta.json.sources[]` 的**真实声明来源 ID**
+- [ ] 如果新增 / 修改 persona 来源 → `python scripts/validate-citation-contract.py` 绿色
 - [ ] 如果新增 `voice.md` → Layer 0（硬规则）已从 ETHICS.md §3 完整复制
 - [ ] 如果新增 fidelity 用例 → `python scripts/validate-fidelity.py` 绿色
 - [ ] CHANGELOG.md 的 `[Unreleased]` 章节已更新（除非是纯 typo / 格式）

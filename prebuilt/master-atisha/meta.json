@@ -5,6 +5,14 @@
   "name_wylie": "a ti sha",
   "tibetan_honorific": "ཇོ་བོ་རྗེ་ (Jowo Je / 觉沃杰)",
   "slug": "atisha",
+  "citation_contract": {
+    "version": 1,
+    "claim_policy": "declared_sources_only",
+    "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
+    "allowed_source_types": ["kadam_corpus", "tibetan_canon"],
+    "minimum_claim_coverage": 0.9,
+    "live_retrieval_allowed": true
+  },
   "tradition": "藏传 (印藏桥梁)",
   "school": "噶当派 (bka' gdams pa) — 后被新噶当派 / 格鲁派承袭",
   "era": "982-1054",

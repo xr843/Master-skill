@@ -67,8 +67,7 @@ fn run_with_timeout(mut command: Command, timeout: Duration) -> std::process::Ou
             let _ = child.kill();
             let _ = child.wait();
             panic!(
-                "master-skill-desktop did not exit within {:?} (still hangs on GUI startup?)",
-                timeout
+                "master-skill-desktop did not exit within {timeout:?} (still hangs on GUI startup?)"
             );
         }
         std::thread::sleep(Duration::from_millis(50));

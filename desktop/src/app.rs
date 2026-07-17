@@ -706,7 +706,7 @@ impl MasterSkillApp {
 
     fn show_quality_badge(ui: &mut egui::Ui, level: QualityLevel) {
         let fill = Self::quality_badge_fill(level);
-        let stroke = egui::Stroke::new(1.0, Self::quality_color(level));
+        let stroke = egui::Stroke::new(1.0_f32, Self::quality_color(level));
         ui.allocate_ui_with_layout(
             egui::vec2(status_badge_width(), sidebar_row_height() - 4.0),
             egui::Layout::top_down(egui::Align::Center),
@@ -795,9 +795,9 @@ impl MasterSkillApp {
             egui::Color32::from_rgb(50, 37, 26)
         };
         let stroke = if healthy {
-            egui::Stroke::new(1.0, egui::Color32::from_rgb(67, 120, 88))
+            egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(67, 120, 88))
         } else {
-            egui::Stroke::new(1.0, egui::Color32::from_rgb(140, 103, 55))
+            egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(140, 103, 55))
         };
 
         ui.allocate_ui_with_layout(
@@ -1254,8 +1254,7 @@ impl MasterSkillApp {
         ui.heading("Failure Insights");
         let top_failure_value = insights
             .top_failure_skill_slug
-            .as_ref()
-            .map(|slug| slug.as_str())
+            .as_deref()
             .unwrap_or("none")
             .to_string();
         let cards = vec![

@@ -8,8 +8,11 @@ import { fileURLToPath } from "url";
 // fileURLToPath (not new URL().pathname) — on Windows the URL pathname is
 // "/C:/…", which fs cannot resolve, so every command saw an empty prebuilt/.
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PREBUILT = path.join(__dirname, "..", "prebuilt");
+const PACKAGE_ROOT = path.join(__dirname, "..");
+const PREBUILT = path.join(PACKAGE_ROOT, "prebuilt");
+const CATALOG_PATH = path.join(PACKAGE_ROOT, "skill-catalog.json");
 const SKILLS_DIR = path.join(os.homedir(), ".claude", "skills");
+const SKILL_KINDS = new Set(["persona", "teaching-mode", "generator"]);
 
 // --- helpers ---
 
@@ -27,7 +30,119 @@ function pkgVersion() {
 // Names feed into path.join + rmSync; reject separators / ".." so a typo
 // like "../foo" can never escape PREBUILT or SKILLS_DIR.
 function isSafeName(name) {
-  return /^[A-Za-z0-9_-]+$/.test(name);
+  return typeof name === "string" && /^[A-Za-z0-9_-]+$/.test(name);
+}
+
+function isSafeRelativePath(value, { allowDot = false } = {}) {
+  if (typeof value !== "string" || value.length === 0) return false;
+  if (allowDot && value === ".") return true;
+  if (value === "." || value.includes("\\") || path.posix.isAbsolute(value)) return false;
+  if (/^[A-Za-z]:/.test(value)) return false;
+  const normalized = path.posix.normalize(value);
+  return normalized === value && normalized !== ".." && !normalized.startsWith("../");
+}
+
+function invalidCatalog(message) {
+  throw new Error(`Invalid skill catalog: ${message}`);
+}
+
+function loadCatalog() {
+  let catalog;
+  try {
+    catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, "utf8"));
+  } catch (err) {
+    invalidCatalog(`cannot read ${path.basename(CATALOG_PATH)} (${err.message})`);
+  }
+
+  if (catalog?.version !== 1) invalidCatalog("version must be 1");
+  if (!Array.isArray(catalog.skills) || catalog.skills.length === 0) {
+    invalidCatalog("skills must be a non-empty array");
+  }
+
+  const uniqueFields = {
+    name: new Set(),
+    source: new Set(),
+    install_dir: new Set(),
+  };
+
+  for (const [index, skill] of catalog.skills.entries()) {
+    if (!skill || typeof skill !== "object" || Array.isArray(skill)) {
+      invalidCatalog(`skills[${index}] must be an object`);
+    }
+    if (!isSafeName(skill.name)) {
+      invalidCatalog(`skills[${index}].name must be a safe non-empty string`);
+    }
+    if (!SKILL_KINDS.has(skill.kind)) {
+      invalidCatalog(`skills[${index}].kind must be persona, teaching-mode, or generator`);
+    }
+    if (!isSafeRelativePath(skill.source, { allowDot: true })) {
+      invalidCatalog(`skills[${index}].source must be a safe relative path`);
+    }
+    if (!isSafeName(skill.install_dir)) {
+      invalidCatalog(`skills[${index}].install_dir must be a safe non-empty string`);
+    }
+    if (!Array.isArray(skill.aliases)) {
+      invalidCatalog(`skills[${index}].aliases must be an array`);
+    }
+
+    for (const field of Object.keys(uniqueFields)) {
+      if (uniqueFields[field].has(skill[field])) {
+        invalidCatalog(`duplicate ${field} "${skill[field]}"`);
+      }
+      uniqueFields[field].add(skill[field]);
+    }
+
+    const sourcePath = path.resolve(PACKAGE_ROOT, skill.source);
+    if (!fs.existsSync(sourcePath)) invalidCatalog(`source does not exist: ${skill.source}`);
+    if (!fs.statSync(sourcePath).isDirectory()) {
+      invalidCatalog(`source is not a directory: ${skill.source}`);
+    }
+
+    if (skill.kind === "generator") {
+      if (!Array.isArray(skill.bundle_paths) || skill.bundle_paths.length === 0) {
+        invalidCatalog(`generator "${skill.name}" must declare bundle_paths`);
+      }
+      const bundlePaths = new Set();
+      for (const bundlePath of skill.bundle_paths) {
+        if (!isSafeRelativePath(bundlePath)) {
+          invalidCatalog(`generator "${skill.name}" has an unsafe bundle path`);
+        }
+        if (bundlePaths.has(bundlePath)) {
+          invalidCatalog(`generator "${skill.name}" has duplicate bundle path "${bundlePath}"`);
+        }
+        bundlePaths.add(bundlePath);
+        if (!fs.existsSync(path.resolve(sourcePath, bundlePath))) {
+          invalidCatalog(`bundle path does not exist: ${bundlePath}`);
+        }
+      }
+    } else if (skill.bundle_paths !== undefined) {
+      invalidCatalog(`only generator skills may declare bundle_paths`);
+    }
+  }
+
+  // Register every canonical name before considering aliases so token
+  // ownership is independent of catalog record order. An alias may repeat its
+  // own canonical name, but it may never shadow another skill's canonical name.
+  const aliases = new Set();
+  const tokenOwners = new Map(
+    catalog.skills.map((skill) => [skill.name, skill.name])
+  );
+  for (const [index, skill] of catalog.skills.entries()) {
+    for (const alias of skill.aliases) {
+      if (!isSafeName(alias)) {
+        invalidCatalog(`skills[${index}].aliases contains an unsafe value`);
+      }
+      if (aliases.has(alias)) invalidCatalog(`duplicate alias "${alias}"`);
+      aliases.add(alias);
+      const existingOwner = tokenOwners.get(alias);
+      if (existingOwner && existingOwner !== skill.name) {
+        invalidCatalog(`alias "${alias}" conflicts with skill "${existingOwner}"`);
+      }
+      tokenOwners.set(alias, skill.name);
+    }
+  }
+
+  return catalog;
 }
 
 function cpR(src, dest) {
@@ -37,6 +152,65 @@ function cpR(src, dest) {
     const d = path.join(dest, entry.name);
     if (entry.isDirectory()) cpR(s, d);
     else fs.copyFileSync(s, d);
+  }
+}
+
+function copyGeneratorBundle(skill, src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const bundlePath of skill.bundle_paths) {
+    const bundleSource = path.join(src, bundlePath);
+    const bundleDest = path.join(dest, bundlePath);
+    if (fs.statSync(bundleSource).isDirectory()) {
+      cpR(bundleSource, bundleDest);
+    } else {
+      fs.mkdirSync(path.dirname(bundleDest), { recursive: true });
+      fs.copyFileSync(bundleSource, bundleDest);
+    }
+  }
+}
+
+function replaceGeneratorInstall(skill, src, dest) {
+  const staging = fs.mkdtempSync(
+    path.join(SKILLS_DIR, `.${skill.install_dir}-staging-`)
+  );
+  let backup = null;
+
+  try {
+    copyGeneratorBundle(skill, src, staging);
+
+    // Generated personas are user data, not package runtime. Merge them into
+    // the staged bundle before replacing the old install so reinstall/update
+    // can still remove stale runtime files without erasing masters/*.
+    const existingMasters = path.join(dest, "masters");
+    if (fs.existsSync(existingMasters)) {
+      cpR(existingMasters, path.join(staging, "masters"));
+    }
+
+    if (fs.existsSync(dest)) {
+      backup = fs.mkdtempSync(
+        path.join(SKILLS_DIR, `.${skill.install_dir}-backup-`)
+      );
+      fs.rmSync(backup, { recursive: true, force: true });
+      fs.renameSync(dest, backup);
+    }
+
+    try {
+      fs.renameSync(staging, dest);
+    } catch (err) {
+      if (backup && fs.existsSync(backup) && !fs.existsSync(dest)) {
+        fs.renameSync(backup, dest);
+        backup = null;
+      }
+      throw err;
+    }
+
+    if (backup) {
+      fs.rmSync(backup, { recursive: true, force: true });
+      backup = null;
+    }
+  } finally {
+    fs.rmSync(staging, { recursive: true, force: true });
+    if (backup) fs.rmSync(backup, { recursive: true, force: true });
   }
 }
 
@@ -97,12 +271,47 @@ function printJson(payload) {
   console.log(JSON.stringify(payload, null, 2));
 }
 
+let CATALOG;
+try {
+  CATALOG = loadCatalog();
+} catch (err) {
+  console.error(err.message);
+  process.exitCode = 1;
+}
+
+function catalogSkills() {
+  return CATALOG.skills.map((skill) => {
+    const skillMd = path.join(PACKAGE_ROOT, skill.source, "SKILL.md");
+    const fm = fs.existsSync(skillMd) ? parseFrontmatter(skillMd) : {};
+    return { ...skill, description: fm.description || "" };
+  });
+}
+
+function resolveSkill(input) {
+  return catalogSkills().find(
+    (skill) => skill.name === input || skill.aliases.includes(input)
+  ) || null;
+}
+
 // --- commands ---
 
 function listData() {
   const masters = availableMasters();
+  const skills = catalogSkills();
+  const categoryCounts = skills.reduce((counts, skill) => {
+    counts[skill.kind] += 1;
+    return counts;
+  }, { persona: 0, "teaching-mode": 0, generator: 0 });
   return {
     count: masters.length,
+    skillCount: skills.length,
+    categoryCounts,
+    skills: skills.map(({ name, kind, install_dir, description }) => ({
+      name,
+      kind,
+      installDir: install_dir,
+      description,
+    })),
     masters: masters.map((m) => ({
       name: m.name,
       slug: m.name.replace(/^master-/, ""),
@@ -118,16 +327,27 @@ function cmdList({ json = false } = {}) {
     return;
   }
 
-  const masters = data.masters;
-  if (!masters.length) {
-    console.log("No prebuilt masters found.");
+  const skills = data.skills;
+  if (!skills.length) {
+    console.log("No installable skills found.");
     return;
   }
-  console.log(`\nAvailable masters (${data.count}):\n`);
-  const nameW = Math.max(...masters.map((m) => m.name.length), 4);
-  for (const m of masters) {
-    const desc = m.description.length > 80 ? m.description.slice(0, 77) + "..." : m.description;
-    console.log(`  ${m.name.padEnd(nameW)}  ${desc}`);
+  console.log(`\nAvailable masters (${data.count}); installable skills (${data.skillCount}):`);
+  const groups = [
+    ["persona", "Personas"],
+    ["teaching-mode", "Teaching modes"],
+    ["generator", "Generator"],
+  ];
+  const nameW = Math.max(...skills.map((skill) => skill.name.length), 4);
+  for (const [kind, label] of groups) {
+    const group = skills.filter((skill) => skill.kind === kind);
+    console.log(`\n${label} (${group.length}):`);
+    for (const skill of group) {
+      const desc = skill.description.length > 80
+        ? skill.description.slice(0, 77) + "..."
+        : skill.description;
+      console.log(`  ${skill.name.padEnd(nameW)}  ${desc}`);
+    }
   }
   console.log();
 }
@@ -153,30 +373,34 @@ function cmdInstall(names) {
       failed++;
       continue;
     }
-    const src = resolveMasterDir(name);
-    if (!src) {
-      console.log(`  ✗ ${name} — not found in prebuilt/ (tried "${name}" and "master-${name}")`);
+    const skill = resolveSkill(name);
+    if (!skill) {
+      console.log(`  ✗ ${name} — not found in skill catalog`);
       failed++;
       continue;
     }
-    const dirName = path.basename(src);          // master-zhiyi
-    const dest = path.join(SKILLS_DIR, dirName);
-    // Clear any previous install first: files renamed or removed upstream
-    // must not linger as stale skill content under ~/.claude/skills/.
-    fs.rmSync(dest, { recursive: true, force: true });
-    cpR(src, dest);
+    const src = path.join(PACKAGE_ROOT, skill.source);
+    const dest = path.join(SKILLS_DIR, skill.install_dir);
+    if (skill.kind === "generator") {
+      replaceGeneratorInstall(skill, src, dest);
+    } else {
+      // Clear any previous install first: files renamed or removed upstream
+      // must not linger as stale skill content under ~/.claude/skills/.
+      fs.rmSync(dest, { recursive: true, force: true });
+      cpR(src, dest);
+    }
     console.log(`  ✓ ${name} → ${dest}`);
   }
   return failed;
 }
 
 function cmdInstallAll(label = "Installing") {
-  const all = availableMasters().map((m) => m.name);
+  const all = catalogSkills().map((skill) => skill.name);
   if (!all.length) {
-    console.log("No masters available.");
+    console.log("No skills available.");
     return 1;
   }
-  console.log(`${label} all ${all.length} masters...\n`);
+  console.log(`${label} all ${all.length} skills...\n`);
   return cmdInstall(all);
 }
 
@@ -188,12 +412,16 @@ function cmdUninstall(names) {
       failed++;
       continue;
     }
-    // Try both prefixed and bare directory names for backward compatibility
-    // with any pre-v0.6 installs that may still sit at ~/.claude/skills/<slug>/.
-    const candidates = [
-      path.join(SKILLS_DIR, name),               // exact: master-zhiyi
-      path.join(SKILLS_DIR, `master-${name}`),   // short: zhiyi → master-zhiyi
-    ];
+    const skill = resolveSkill(name);
+    if (!skill) {
+      console.log(`  ✗ ${name} — not found in skill catalog`);
+      failed++;
+      continue;
+    }
+    // Keep removing legacy bare persona directories when they exist, while
+    // resolving every public name through the catalog's canonical target.
+    const candidates = [path.join(SKILLS_DIR, skill.install_dir)];
+    if (name !== skill.install_dir) candidates.push(path.join(SKILLS_DIR, name));
     const dest = candidates.find((p) => fs.existsSync(p));
     if (!dest) {
       console.log(`  ✗ ${name} — not installed`);
@@ -341,25 +569,27 @@ function showHelp() {
 master-skill v${pkgVersion()} — Buddhist Master AI Skills installer
 
 Usage:
-  master-skill install <name...>   Install masters to ~/.claude/skills/
-  master-skill install --all       Install all available masters
-  master-skill update --all        Reinstall all masters, clearing stale files
-  master-skill list                List available masters
-  master-skill list --json         Print available masters as JSON
+  master-skill install <name...>   Install skills to ~/.claude/skills/
+  master-skill install --all       Install all 19 available skills
+  master-skill update --all        Reinstall all skills, clearing stale files
+  master-skill list                List available skills
+  master-skill list --json         Print available skills as JSON
   master-skill inspect <name>      Show source/runtime metadata for one master
   master-skill inspect <name> --json
   master-skill doctor              Check local install and runtime paths
   master-skill doctor --json       Print diagnostics as JSON
-  master-skill uninstall <name...> Remove installed masters
+  master-skill uninstall <name...> Remove installed skills
   master-skill --version           Print version
   master-skill --help              Show this help
 
-Names accept both short (zhiyi) and full (master-zhiyi) forms.
-Slash commands are always /master-<slug> (e.g. /master-zhiyi).
+Persona names accept both short (zhiyi) and full (master-zhiyi) forms.
+Teaching modes and create-master use their public catalog names.
 
 Examples:
   npx master-skill install zhiyi fazang
   npx master-skill install master-milarepa master-tsongkhapa
+  npx master-skill install compare-masters
+  npx master-skill install create-master
   npx master-skill install --all
   npx master-skill update --all
   npx master-skill list
@@ -371,48 +601,50 @@ Examples:
 
 // --- main ---
 
-const args = process.argv.slice(2);
-const json = args.includes("--json");
-const positionalArgs = args.filter((arg) => arg !== "--json");
-const cmd = positionalArgs[0];
+if (CATALOG) {
+  const args = process.argv.slice(2);
+  const json = args.includes("--json");
+  const positionalArgs = args.filter((arg) => arg !== "--json");
+  const cmd = positionalArgs[0];
 
-if (!cmd || cmd === "--help" || cmd === "-h") {
-  showHelp();
-} else if (cmd === "--version" || cmd === "-v") {
-  console.log(pkgVersion());
-} else if (cmd === "list") {
-  cmdList({ json });
-} else if (cmd === "doctor") {
-  if (cmdDoctor({ json }) > 0) process.exitCode = 1;
-} else if (cmd === "inspect") {
-  if (cmdInspect(positionalArgs[1], { json }) > 0) process.exitCode = 1;
-} else if (cmd === "install") {
-  const rest = positionalArgs.slice(1);
-  if (rest.includes("--all")) {
-    if (cmdInstallAll("Installing") > 0) process.exitCode = 1;
-  } else if (rest.length === 0) {
-    console.log("Usage: master-skill install <name...> | --all");
-    process.exitCode = 1;
+  if (!cmd || cmd === "--help" || cmd === "-h") {
+    showHelp();
+  } else if (cmd === "--version" || cmd === "-v") {
+    console.log(pkgVersion());
+  } else if (cmd === "list") {
+    cmdList({ json });
+  } else if (cmd === "doctor") {
+    if (cmdDoctor({ json }) > 0) process.exitCode = 1;
+  } else if (cmd === "inspect") {
+    if (cmdInspect(positionalArgs[1], { json }) > 0) process.exitCode = 1;
+  } else if (cmd === "install") {
+    const rest = positionalArgs.slice(1);
+    if (rest.includes("--all")) {
+      if (cmdInstallAll("Installing") > 0) process.exitCode = 1;
+    } else if (rest.length === 0) {
+      console.log("Usage: master-skill install <name...> | --all");
+      process.exitCode = 1;
+    } else {
+      if (cmdInstall(rest) > 0) process.exitCode = 1;
+    }
+  } else if (cmd === "update") {
+    const rest = positionalArgs.slice(1);
+    if (rest.length === 1 && rest[0] === "--all") {
+      if (cmdInstallAll("Updating") > 0) process.exitCode = 1;
+    } else {
+      console.log("Usage: master-skill update --all");
+      process.exitCode = 1;
+    }
+  } else if (cmd === "uninstall") {
+    const rest = positionalArgs.slice(1);
+    if (rest.length === 0) {
+      console.log("Usage: master-skill uninstall <name...>");
+      process.exitCode = 1;
+    } else {
+      if (cmdUninstall(rest) > 0) process.exitCode = 1;
+    }
   } else {
-    if (cmdInstall(rest) > 0) process.exitCode = 1;
-  }
-} else if (cmd === "update") {
-  const rest = positionalArgs.slice(1);
-  if (rest.length === 1 && rest[0] === "--all") {
-    if (cmdInstallAll("Updating") > 0) process.exitCode = 1;
-  } else {
-    console.log("Usage: master-skill update --all");
+    console.log(`Unknown command: ${cmd}\nRun master-skill --help for usage.`);
     process.exitCode = 1;
   }
-} else if (cmd === "uninstall") {
-  const rest = positionalArgs.slice(1);
-  if (rest.length === 0) {
-    console.log("Usage: master-skill uninstall <name...>");
-    process.exitCode = 1;
-  } else {
-    if (cmdUninstall(rest) > 0) process.exitCode = 1;
-  }
-} else {
-  console.log(`Unknown command: ${cmd}\nRun master-skill --help for usage.`);
-  process.exitCode = 1;
 }

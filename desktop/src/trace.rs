@@ -164,11 +164,9 @@ impl EvaluationRunHistoryItem {
     }
 
     fn pass_rate_basis(&self) -> usize {
-        if self.total_count == 0 {
-            0
-        } else {
-            self.passed_count * 10_000 / self.total_count
-        }
+        (self.passed_count * 10_000)
+            .checked_div(self.total_count)
+            .unwrap_or(0)
     }
 
     pub fn matches_filter(&self, filter: EvaluationRunHistoryFilter) -> bool {

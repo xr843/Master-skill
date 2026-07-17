@@ -79,12 +79,13 @@ body:
   - type: textarea
     id: sources
     attributes:
-      label: 主要 CBETA / FoJin 数据源
-      description: 至少 3 部代表性经论或文集的 CBETA ID + 可选 FoJin text_id
+      label: 主要声明来源
+      description: 至少 3 部代表性经论、文集或合规编纂开示；注明来源家族与 ID，仅在已知时附 FoJin text_id
       placeholder: |
-        - 《六祖坛经》T48n2008
-        - 《景德传灯录》T51n2076 慧能章
-        - FoJin text_id: 待查
+        - cbeta / T48n2008 / 《六祖坛经》
+        - tibetan_canon / Toh 4465 / 《菩提道灯论》
+        - pali_canon / MN 10 / Satipaṭṭhāna Sutta
+        - compiled_teaching / AjahnChah:FoodForTheHeart / Food for the Heart
     validations:
       required: true
 

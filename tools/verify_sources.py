@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Verify and fix FoJin source links in all prebuilt teacher skills.
+Validate declared persona source manifests, or audit legacy FoJin links.
 
 Discovers CBETA IDs from meta.json sources and fojin.app URLs in markdown
 files, then verifies each against FoJin's API and maps to internal text_ids.
@@ -9,10 +9,12 @@ Key insight: meta.json and URLs use the full CBETA catalog format (e.g.
 T08n0235) while FoJin internally uses a shorter cbeta_id (e.g. T0235).
 This script handles the conversion.
 
-Usage:
-    python3 tools/verify_sources.py          # Dry run - report only
-    python3 tools/verify_sources.py --fix    # Actually update files
+Offline modes validate family identifiers, declared membership, and citation
+contracts. They do not parse free-text citations or check HTTP reachability.
+The legacy no-argument / --fix modes only audit repository CBETA/FoJin URLs.
 """
+
+from __future__ import annotations
 
 import argparse
 import json
@@ -20,11 +22,13 @@ import os
 import re
 import sys
 import time
+from pathlib import Path
 
 # Allow importing fojin_bridge from tools/
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 from fojin_bridge import create_bridge
+from skill_writer import derive_citation_contract
 
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -35,6 +39,127 @@ FOJIN_URL_RE = re.compile(r"(https?://fojin\.app/texts/)([A-Za-z0-9n]+)")
 
 # Full CBETA catalog ID pattern: T08n0235, X62n1182, J36n0348
 FULL_CBETA_RE = re.compile(r"^([A-Z])(\d+)n(\d+[a-z]?)$")
+
+SOURCE_ID_PATTERNS = {
+    "cbeta": FULL_CBETA_RE,
+    "tibetan_canon": re.compile(r"^(?:Toh[: ]\d+[A-Za-z-]*|BDRC:[A-Za-z0-9][A-Za-z0-9-]*)$"),
+    "kadam_corpus": re.compile(r"^BDRC:[A-Za-z0-9][A-Za-z0-9-]*$"),
+    "tibetan_treatise": re.compile(r"^[A-Za-z][A-Za-z0-9'-]*(?:-[A-Za-z0-9'-]+)*$"),
+    "pali_canon": re.compile(r"^(?:SuttaCentral|SC[: ][A-Za-z0-9. -]+|(?:DN|MN|SN|AN|KN) ?\d+(?:\.\d+)?)$"),
+    "pali_commentary": re.compile(r"^PTS:[A-Za-z0-9][A-Za-z0-9-]*$"),
+    "pali_treatise": re.compile(r"^PTS:[A-Za-z0-9][A-Za-z0-9-]*$"),
+    "compiled_teaching": re.compile(r"^[^:\s]+:[^:\s].+$"),
+}
+
+
+def validate_source_document(document: dict) -> list[str]:
+    """Validate declared source families, identifiers, contract, and citations."""
+    errors: list[str] = []
+    sources = document.get("sources") if isinstance(document, dict) else None
+    if not isinstance(sources, list) or not sources:
+        return ["sources must be a non-empty list"]
+
+    declared: set[tuple[str, str]] = set()
+    for index, source in enumerate(sources):
+        if not isinstance(source, dict):
+            errors.append(f"sources[{index}] must be an object")
+            continue
+        source_type = source.get("type")
+        source_id = source.get("id")
+        if source_type not in SOURCE_ID_PATTERNS:
+            errors.append(f"sources[{index}].type is unsupported: {source_type!r}")
+            continue
+        if not isinstance(source_id, str) or not SOURCE_ID_PATTERNS[source_type].fullmatch(source_id):
+            errors.append(
+                f"sources[{index}] {source_type} identifier is invalid: {source_id!r}"
+            )
+            continue
+        member = (source_type, source_id)
+        if member in declared:
+            errors.append(
+                f"sources[{index}] duplicates declared source {source_type}:{source_id}"
+            )
+        declared.add(member)
+
+    try:
+        expected_contract = derive_citation_contract(sources)
+    except ValueError as exc:
+        errors.append(str(exc))
+    else:
+        if document.get("citation_contract") != expected_contract:
+            errors.append(
+                "citation_contract must equal the contract derived from sources[].type"
+            )
+
+    citations = document.get("citations", [])
+    if not isinstance(citations, list):
+        errors.append("citations must be a list when present")
+    else:
+        for index, citation in enumerate(citations):
+            if not isinstance(citation, dict):
+                errors.append(f"citations[{index}] must be an object")
+                continue
+            member = (citation.get("type"), citation.get("id"))
+            if member not in declared:
+                errors.append(
+                    f"citations[{index}] {member[0]}:{member[1]} is not declared in sources[]"
+                )
+
+    return errors
+
+
+def _load_declared_source_target(target: str, *, final: bool) -> tuple[dict | None, list[str]]:
+    path = Path(target)
+    errors: list[str] = []
+    if final:
+        if not path.is_dir():
+            return None, [f"final-check target is not a persona directory: {path}"]
+        missing = [
+            name
+            for name in ("SKILL.md", "teaching.md", "voice.md", "meta.json")
+            if not (path / name).is_file()
+        ]
+        if missing:
+            return None, [f"final-check target is missing required files: {missing}"]
+        if not re.fullmatch(r"master-[a-z0-9][a-z0-9-]*", path.name):
+            errors.append(
+                "final-check persona directory must use master-<slug>: "
+                f"{path.name}"
+            )
+        try:
+            skill_text = (path / "SKILL.md").read_text(encoding="utf-8")
+        except OSError as exc:
+            errors.append(f"cannot read final SKILL.md: {exc}")
+        else:
+            name_match = re.search(r"(?m)^name:\s*([^\s]+)\s*$", skill_text)
+            skill_name = name_match.group(1) if name_match else None
+            if skill_name != path.name:
+                errors.append(
+                    f"SKILL.md name {skill_name!r} must equal directory "
+                    f"{path.name!r}"
+                )
+        path = path / "meta.json"
+    elif not path.is_file():
+        return None, [f"check-links input file not found: {path}"]
+
+    try:
+        return json.loads(path.read_text(encoding="utf-8")), errors
+    except (OSError, json.JSONDecodeError) as exc:
+        errors.append(f"cannot read source manifest {path}: {exc}")
+        return None, errors
+
+
+def _run_declared_source_check(target: str, *, final: bool) -> int:
+    document, errors = _load_declared_source_target(target, final=final)
+    if document is not None:
+        errors.extend(validate_source_document(document))
+    if errors:
+        for error in errors:
+            print(f"ERROR: {error}", file=sys.stderr)
+        return 1
+    label = "final source check" if final else "declared sources"
+    print(f"{label} OK ({len(document['sources'])} sources)")
+    return 0
 
 
 def full_to_short_cbeta(full_id: str) -> str | None:
@@ -230,14 +355,9 @@ def fix_urls_in_file(
     return changes
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Verify and fix FoJin source links")
-    parser.add_argument(
-        "--fix", action="store_true", help="Actually write changes to files"
-    )
-    args = parser.parse_args()
-
-    dry_run = not args.fix
+def _run_legacy_link_verification(*, fix: bool) -> int:
+    """Preserve the historical FoJin CBETA URL audit and optional fixer."""
+    dry_run = not fix
 
     print("=" * 60)
     print("FoJin Source Verification Report")
@@ -356,6 +476,37 @@ def main():
     if dry_run and all_changes:
         print("\n  Run with --fix to apply changes.")
 
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Validate declared source manifests or audit legacy FoJin links"
+    )
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument(
+        "--check-links",
+        metavar="JSON",
+        help="offline-check a collected JSON source manifest",
+    )
+    modes.add_argument(
+        "--final-check",
+        metavar="PERSONA_DIR",
+        help="offline-check a generated persona and its final meta.json",
+    )
+    modes.add_argument(
+        "--fix",
+        action="store_true",
+        help="run the legacy online CBETA URL audit and apply replacements",
+    )
+    args = parser.parse_args(argv)
+
+    if args.check_links:
+        return _run_declared_source_check(args.check_links, final=False)
+    if args.final_check:
+        return _run_declared_source_check(args.final_check, final=True)
+    return _run_legacy_link_verification(fix=args.fix)
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

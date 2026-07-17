@@ -8,14 +8,19 @@ Flow:
 4. Write via skill_writer
 """
 
+from __future__ import annotations
+
+import argparse
 import json
 import os
 import re
+import sys
+from pathlib import Path
 from typing import Optional
 
 from fojin_bridge import FojinBridge, create_bridge
 from sutra_collector import collect_teacher_data, collect_specific_texts
-from skill_writer import create_teacher, DISCLAIMER
+from skill_writer import DISCLAIMER, create_teacher, derive_citation_contract
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "prompts")
@@ -87,13 +92,38 @@ def build_analysis_prompt(
     for rel in data.get("lineage", []):
         lineage_info += f"- {rel['predicate']}: {rel.get('target_name', '未知')}\n"
 
+    sources_info = ""
+    for source in data.get("sources", []):
+        sources_info += (
+            f"- title={source.get('title', '未知')} "
+            f"source_type={source.get('type', '')} "
+            f"source_id={source.get('id', '')}\n"
+        )
+
     texts_info = ""
     for t in data.get("texts", [])[:20]:
-        texts_info += f"- 《{t.get('title_zh', '未知')}》({t.get('cbeta_id', '')})\n"
+        source_type = t.get("source_type") or (
+            "cbeta" if t.get("cbeta_id") else ""
+        )
+        source_id = t.get("source_id") or t.get("cbeta_id", "")
+        locator = f" FoJin text_id={t['id']}" if t.get("id") else ""
+        texts_info += (
+            f"- 《{t.get('title_zh') or t.get('title', '未知')}》 "
+            f"source_type={source_type} source_id={source_id}{locator}\n"
+        )
 
     content_samples = ""
     for sample in data.get("content_samples", []):
-        content_samples += f"\n### 《{sample['title']}》\n{sample['content'][:2000]}\n"
+        locator = (
+            f" FoJin text_id={sample['text_id']}"
+            if sample.get("text_id") else ""
+        )
+        content_samples += (
+            f"\n### 《{sample['title']}》 "
+            f"source_type={sample.get('source_type', '')} "
+            f"source_id={sample.get('source_id', '')}{locator}\n"
+            f"{sample['content'][:2000]}\n"
+        )
 
     terms_info = ""
     for term in data.get("terms", [])[:30]:
@@ -106,6 +136,7 @@ def build_analysis_prompt(
     prompt = template.replace("{teacher_name}", _CONTROL_CHARS.sub("", teacher_name))
     prompt = prompt.replace("{entity_info}", _fence(entity_info))
     prompt = prompt.replace("{lineage_info}", _fence(lineage_info))
+    prompt = prompt.replace("{sources_info}", _fence(sources_info))
     prompt = prompt.replace("{texts_info}", _fence(texts_info))
     prompt = prompt.replace("{content_samples}", _fence(content_samples))
     prompt = prompt.replace("{terms_info}", _fence(terms_info))
@@ -125,6 +156,40 @@ def build_teacher_prompt(
     return prompt
 
 
+def prepare_generation_context(
+    sources: list[dict],
+    citation_contract: Optional[dict] = None,
+) -> dict:
+    """Derive and retain the citation contract before doctrine review."""
+    expected = derive_citation_contract(sources)
+    if citation_contract is None:
+        citation_contract = expected
+    elif citation_contract != expected:
+        raise ValueError(
+            "citation_contract must equal the contract derived from sources[].type"
+        )
+    return {
+        "sources": sources,
+        "citation_contract": citation_contract,
+    }
+
+
+def build_doctrine_review_prompt(teaching_content: str, context: dict) -> str:
+    """Attach the in-memory source contract to the doctrine reviewer prompt."""
+    contract = context["citation_contract"]
+    sources = context["sources"]
+    contract_json = json.dumps(contract, ensure_ascii=False, sort_keys=True)
+    sources_json = json.dumps(sources, ensure_ascii=False, sort_keys=True)
+    return (
+        f"{load_prompt('doctrine_reviewer')}\n\n"
+        "## 本次审查输入（生成器内存上下文）\n"
+        f"citation_contract: {contract_json}\n"
+        f"sources: {sources_json}\n\n"
+        "## 待审 teaching.md\n"
+        f"{teaching_content}\n"
+    )
+
+
 def generate_teacher_skill(
     name: str,
     tradition: str,
@@ -136,8 +201,22 @@ def generate_teacher_skill(
     output_dir: str = "teachers",
     fojin_entity_id: Optional[str] = None,
     sources: Optional[list] = None,
+    citation_contract: Optional[dict] = None,
+    generation_context: Optional[dict] = None,
 ) -> str:
     """Write the final teacher skill to disk."""
+    if generation_context is None:
+        generation_context = prepare_generation_context(
+            sources if sources is not None else [], citation_contract
+        )
+    else:
+        if sources is not None and sources != generation_context.get("sources"):
+            raise ValueError("sources disagree with generation_context")
+        generation_context = prepare_generation_context(
+            generation_context.get("sources", []),
+            generation_context.get("citation_contract"),
+        )
+
     base_dir = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), output_dir
     )
@@ -151,5 +230,112 @@ def generate_teacher_skill(
         teaching_content=teaching_content,
         voice_content=voice_content,
         fojin_entity_id=fojin_entity_id,
-        sources=sources,
+        sources=generation_context["sources"],
+        citation_contract=generation_context["citation_contract"],
     )
+
+
+def _offline_smoke_spec() -> dict:
+    return {
+        "name": "Offline Smoke Master",
+        "tradition": "offline-test",
+        "school": "deterministic",
+        "era": "test-only",
+        "languages": ["en"],
+        "teaching_content": "Offline teaching content with declared source support.",
+        "voice_content": "Offline deterministic voice.",
+        "sources": [
+            {
+                "type": "compiled_teaching",
+                "id": "OfflineSmoke:Deterministic",
+                "title": "Deterministic offline smoke source",
+            }
+        ],
+    }
+
+
+def build_from_spec(spec: dict, output_dir: str) -> dict:
+    """Prepare review input and persist one persona from an explicit spec."""
+    required = (
+        "name",
+        "tradition",
+        "school",
+        "era",
+        "languages",
+        "teaching_content",
+        "voice_content",
+        "sources",
+    )
+    missing = [field for field in required if field not in spec]
+    if missing:
+        raise ValueError(f"generation spec missing required fields: {missing}")
+
+    context = prepare_generation_context(
+        spec["sources"], spec.get("citation_contract")
+    )
+    review_prompt = build_doctrine_review_prompt(
+        spec["teaching_content"], context
+    )
+    teacher_dir = generate_teacher_skill(
+        name=spec["name"],
+        tradition=spec["tradition"],
+        school=spec["school"],
+        era=spec["era"],
+        languages=spec["languages"],
+        teaching_content=spec["teaching_content"],
+        voice_content=spec["voice_content"],
+        output_dir=output_dir,
+        fojin_entity_id=spec.get("fojin_entity_id"),
+        generation_context=context,
+    )
+
+    review_input_path = Path(teacher_dir) / "doctrine-review-input.json"
+    review_input_path.write_text(
+        json.dumps(
+            {
+                "sources": context["sources"],
+                "citation_contract": context["citation_contract"],
+                "prompt": review_prompt,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    return {
+        "teacher_dir": str(teacher_dir),
+        "meta_path": str(Path(teacher_dir) / "meta.json"),
+        "review_input_path": str(review_input_path),
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Build a create-master persona from an explicit generation spec"
+    )
+    modes = parser.add_mutually_exclusive_group(required=True)
+    modes.add_argument("--spec", help="JSON generation spec prepared after review")
+    modes.add_argument(
+        "--offline-smoke",
+        action="store_true",
+        help="run a deterministic no-network generation smoke",
+    )
+    parser.add_argument("--output", required=True, help="master output directory")
+    args = parser.parse_args(argv)
+
+    try:
+        if args.offline_smoke:
+            spec = _offline_smoke_spec()
+        else:
+            spec = json.loads(Path(args.spec).read_text(encoding="utf-8"))
+        summary = build_from_spec(spec, args.output)
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+
+    print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

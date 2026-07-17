@@ -28,6 +28,12 @@ _CONTROL_CHARS = re.compile(
     r"\u200b-\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069\ufeff]"
 )
 
+REQUIRED_CITATION_CLAIMS = [
+    "doctrinal_claim",
+    "practice_guidance",
+    "text_interpretation",
+]
+
 
 def sanitize_generated(content: str) -> str:
     """Strip control characters from generated content before persisting."""
@@ -36,8 +42,32 @@ def sanitize_generated(content: str) -> str:
     return _CONTROL_CHARS.sub("", content)
 
 
+def derive_citation_contract(sources: list[dict]) -> dict:
+    """Build the exact version-1 contract for a non-empty source manifest."""
+    if not isinstance(sources, list) or not sources:
+        raise ValueError("sources must be a non-empty list")
+
+    source_types: list[str] = []
+    for index, source in enumerate(sources):
+        source_type = source.get("type") if isinstance(source, dict) else None
+        if not isinstance(source_type, str) or not source_type.strip():
+            raise ValueError(
+                f"sources[{index}].type must be a non-empty string"
+            )
+        source_types.append(source_type)
+
+    return {
+        "version": 1,
+        "claim_policy": "declared_sources_only",
+        "required_for": list(REQUIRED_CITATION_CLAIMS),
+        "allowed_source_types": sorted(set(source_types)),
+        "minimum_claim_coverage": 0.9,
+        "live_retrieval_allowed": True,
+    }
+
+
 SKILL_MD_TEMPLATE = """---
-name: master_{slug}
+name: master-{slug}
 description: 依据{name}（{tradition}{school}）的教学风格与教义体系
 user-invocable: true
 ---
@@ -62,11 +92,12 @@ user-invocable: true
 2. 依据 voice.md Layer 1-3 确定回答的风格和方式
 3. 依据 teaching.md 检索相关教义内容
 4. 以该法师的风格组织回答
-5. 必须附经文出处，格式：【《经名》卷N】→ https://fojin.app/texts/{{text_id}}
-6. 遇到超出范围的问题，坦诚说明并建议查阅相关传承
+5. 教义断言、修行指导、文本解释必须引用 `meta.json.sources[]` 中的 `source_id`，且来源类型须列于 `citation_contract.allowed_source_types`
+6. live 结果只有在返回的来源类型与标识可解析到上述声明来源时才可引用；否则剥离相关断言
+7. 遇到超出范围的问题，坦诚说明并建议查阅相关传承
 """
 
-DISCLAIMER = "本内容依据历史佛教文献生成，仅供参考学习。如需正式修行指导，请亲近善知识。所有回答均附经文出处，可通过 FoJin (fojin.app) 查阅原文。"
+DISCLAIMER = "本内容依据历史佛教文献生成，仅供参考学习。如需正式修行指导，请亲近善知识。所有回答均须附 persona 已声明且可核验的来源。"
 
 
 def slugify(name: str) -> str:
@@ -93,12 +124,22 @@ def create_teacher(
     voice_content: str,
     fojin_entity_id: Optional[str] = None,
     sources: Optional[list] = None,
+    citation_contract: Optional[dict] = None,
 ) -> str:
     """Create a new teacher skill directory."""
+    source_manifest = sources if sources is not None else []
+    expected_contract = derive_citation_contract(source_manifest)
+    if citation_contract is None:
+        citation_contract = expected_contract
+    elif citation_contract != expected_contract:
+        raise ValueError(
+            "citation_contract must equal the contract derived from sources[].type"
+        )
+
     teaching_content = sanitize_generated(teaching_content)
     voice_content = sanitize_generated(voice_content)
     slug = slugify(name)
-    teacher_dir = os.path.join(base_dir, slug)
+    teacher_dir = os.path.join(base_dir, f"master-{slug}")
     os.makedirs(teacher_dir, exist_ok=True)
     os.makedirs(os.path.join(teacher_dir, "versions"), exist_ok=True)
 
@@ -119,7 +160,8 @@ def create_teacher(
     meta = {
         "name": name, "slug": slug, "tradition": tradition, "school": school,
         "era": era, "languages": languages, "fojin_entity_id": fojin_entity_id,
-        "sources": sources or [], "version": "1.0.0",
+        "sources": source_manifest, "citation_contract": citation_contract,
+        "version": "1.0.0",
         "created_at": datetime.now().strftime("%Y-%m-%d"),
         "updated_at": datetime.now().strftime("%Y-%m-%d"),
         "disclaimer": DISCLAIMER,

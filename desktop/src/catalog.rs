@@ -28,8 +28,9 @@ impl QualityLevel {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum SkillKind {
+    #[default]
     Persona,
     MetaSkill,
 }
@@ -83,12 +84,6 @@ impl SkillDiagnostics {
             source_index_present: skill_dir.join("sources").join("INDEX.md").is_file(),
             kind: detect_skill_kind(&skill_dir),
         }
-    }
-}
-
-impl Default for SkillKind {
-    fn default() -> Self {
-        Self::Persona
     }
 }
 

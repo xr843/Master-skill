@@ -10,6 +10,21 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.10.1] — 2026-07-13
+
+### Added — complete distribution and source contracts
+- Added one catalog-driven inventory for all 19 public skills: 15 personas, 3 teaching modes, and the self-contained `create-master` generator.
+- Added versioned citation contracts to all 15 personas with equal support for CBETA, BDRC / Toh, SuttaCentral / PTS, and compliant compiled teachings.
+- Added real offline CLIs for source collection, manifest/final verification, and generator smoke builds; the npm tarball test now executes the installed runtime after deleting the extracted package source.
+
+### Fixed — truthful upgrades and quality gates
+- Preserved user-generated `create-master/masters/` content across reinstall and `update --all` while still removing stale packaged runtime files.
+- Made graded fidelity failures return non-zero, restored all 15 voice-rule suites, and made smoke-target selection decimal-safe and fail-closed.
+- Made citation validation, strict lore validation, full Python tests, Rust formatting, strict Clippy, locked Rust tests, and locked builds hard CI gates.
+
+### Ethics — source-neutral provenance
+- Replaced CBETA-only global generation rules with the declared-source citation contract and documented the offline verifier's real boundary: it validates manifest/meta identity and membership, not free-text claims or HTTP reachability.
+
 ## [0.10.0] — 2026-07-10
 
 ### Fixed — release binary repo-root resolution
@@ -479,7 +494,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/xr843/Master-skill/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/xr843/Master-skill/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/xr843/Master-skill/releases/tag/v0.9.1
 [0.9.0]: https://github.com/xr843/Master-skill/releases/tag/v0.9.0

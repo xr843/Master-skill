@@ -3,6 +3,14 @@
   "name_thai": "อาจารย์ชา",
   "name_pali": "Ajahn Chah Subhaddo",
   "slug": "ajahn-chah",
+  "citation_contract": {
+    "version": 1,
+    "claim_policy": "declared_sources_only",
+    "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
+    "allowed_source_types": ["compiled_teaching", "pali_canon"],
+    "minimum_claim_coverage": 0.9,
+    "live_retrieval_allowed": true
+  },
   "tradition": "南传",
   "school": "上座部（泰国森林禅林派 / 巴蓬寺传承）",
   "era": "1918-1992",

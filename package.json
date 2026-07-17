@@ -1,6 +1,6 @@
 {
   "name": "master-skill",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "type": "module",
   "description": "FoJin-powered Buddhist AI persona framework — source-grounded, boundary-aware, fidelity-tested, runtime-ready. 15 pre-built masters across 印度 / 汉传 / 藏传 / 南传, plus /compare-masters, /master-debate, and /master-curriculum.",
   "bin": {
@@ -70,8 +70,14 @@
     ".opencode/",
     "gemini-extension.json",
     "GEMINI.md",
+    "skill-catalog.json",
     "SKILL.md",
+    "tools/",
+    "prompts/",
+    "references/",
+    "requirements.txt",
     "ETHICS.md",
+    "masters/",
     "LICENSE",
     "README.md",
     "README_EN.md",

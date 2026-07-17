@@ -1,6 +1,14 @@
 {
   "name": "慧能大师",
   "slug": "huineng",
+  "citation_contract": {
+    "version": 1,
+    "claim_policy": "declared_sources_only",
+    "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
+    "allowed_source_types": ["cbeta"],
+    "minimum_claim_coverage": 0.9,
+    "live_retrieval_allowed": true
+  },
   "tradition": "汉传",
   "school": "禅宗",
   "era": "638-713",

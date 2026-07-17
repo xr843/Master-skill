@@ -16,10 +16,21 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, "..");
 const CLI = path.join(REPO, "bin", "cli.mjs");
+const CATALOG_PATH = path.join(REPO, "skill-catalog.json");
+const PYTHON = process.env.PYTHON || (process.platform === "win32" ? "python" : "python3");
 
-function run(args, env = {}) {
+function npmExecutionOptions(platform = process.platform) {
+  return { shell: platform === "win32" };
+}
+
+test("npm pack enables a shell only on Windows", () => {
+  assert.deepEqual(npmExecutionOptions("win32"), { shell: true });
+  assert.deepEqual(npmExecutionOptions("linux"), { shell: false });
+});
+
+function run(args, env = {}, cli = CLI) {
   try {
-    const stdout = execFileSync(process.execPath, [CLI, ...args], {
+    const stdout = execFileSync(process.execPath, [cli, ...args], {
       encoding: "utf8",
       env: { ...process.env, ...env },
     });
@@ -29,6 +40,17 @@ function run(args, env = {}) {
     // assertion failure reads as "crashed", not a confusing null-vs-1 diff.
     return { stdout: (err.stdout || "") + (err.stderr || ""), code: err.status ?? -1 };
   }
+}
+
+function catalogFixture(t, catalog, setup = () => {}) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "master-skill-catalog-test-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(root, "bin"), { recursive: true });
+  fs.copyFileSync(CLI, path.join(root, "bin", "cli.mjs"));
+  fs.writeFileSync(path.join(root, "package.json"), '{"version":"0.0.0-test"}');
+  fs.writeFileSync(path.join(root, "skill-catalog.json"), JSON.stringify(catalog));
+  setup(root);
+  return { root, cli: path.join(root, "bin", "cli.mjs") };
 }
 
 function tmpHome(t) {
@@ -46,6 +68,29 @@ const prebuiltMasters = fs
   .filter((d) => d.isDirectory() && d.name !== "compare")
   .map((d) => d.name);
 
+test("skill catalog declares 19 unique installable skills", () => {
+  const catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, "utf8"));
+  assert.equal(catalog.version, 1);
+  assert.equal(catalog.skills.length, 19);
+  const counts = catalog.skills.reduce((groups, skill) => {
+    (groups[skill.kind] ||= []).push(skill);
+    return groups;
+  }, {});
+  assert.equal(counts.persona.length, 15);
+  assert.equal(counts["teaching-mode"].length, 3);
+  assert.equal(counts.generator.length, 1);
+  for (const field of ["name", "source", "install_dir"]) {
+    assert.equal(new Set(catalog.skills.map((skill) => skill[field])).size, 19);
+  }
+  const aliases = catalog.skills.flatMap((skill) => skill.aliases);
+  assert.equal(new Set(aliases).size, aliases.length);
+  const generator = catalog.skills.find((skill) => skill.name === "create-master");
+  assert.deepEqual(generator.bundle_paths, [
+    "SKILL.md", "tools", "prompts", "references", "requirements.txt",
+    "ETHICS.md", "masters",
+  ]);
+});
+
 test("list names every prebuilt master with its description", () => {
   const { stdout, code } = run(["list"]);
   assert.equal(code, 0);
@@ -58,6 +103,16 @@ test("list names every prebuilt master with its description", () => {
   assert.match(stdout, /master-huineng\s+\S/);
 });
 
+test("list groups every public skill by kind", () => {
+  const { stdout, code } = run(["list"]);
+  assert.equal(code, 0);
+  assert.match(stdout, /Personas \(15\)/);
+  assert.match(stdout, /Teaching modes \(3\)/);
+  assert.match(stdout, /Generator \(1\)/);
+  assert.match(stdout, /compare-masters/);
+  assert.match(stdout, /create-master/);
+});
+
 test("list --json returns machine-readable master inventory", () => {
   const { stdout, code } = run(["list", "--json"]);
   assert.equal(code, 0);
@@ -68,6 +123,19 @@ test("list --json returns machine-readable master inventory", () => {
     payload.masters.some((master) => master.name === "master-huineng" && master.description),
     "missing master-huineng inventory item"
   );
+});
+
+test("list --json exposes all skills while retaining masters compatibility", () => {
+  const result = run(["list", "--json"]);
+  assert.equal(result.code, 0);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.count, prebuiltMasters.length);
+  assert.equal(payload.skillCount, 19);
+  assert.equal(payload.skills.length, 19);
+  assert.equal(payload.categoryCounts.persona, 15);
+  assert.equal(payload.categoryCounts["teaching-mode"], 3);
+  assert.equal(payload.categoryCounts.generator, 1);
+  assert.ok(Array.isArray(payload.masters));
 });
 
 test("--version prints the package.json version", () => {
@@ -85,6 +153,8 @@ test("help shows the current version, not a hardcoded one", () => {
   assert.match(stdout, /master-skill doctor/);
   assert.match(stdout, /master-skill inspect <name>/);
   assert.match(stdout, /master-skill update --all/);
+  assert.match(stdout, /Remove installed skills/);
+  assert.doesNotMatch(stdout, /Remove installed masters/);
 });
 
 test("doctor reports local runtime paths and available skills", (t) => {
@@ -174,6 +244,22 @@ test("install accepts short and full names", (t) => {
   assert.ok(fs.existsSync(path.join(skillsDir(home), "master-fazang", "SKILL.md")));
 });
 
+test("public compare-masters name installs to its public directory", (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "compare-masters"], env).code, 0);
+  assert.ok(fs.existsSync(path.join(skillsDir(home), "compare-masters", "SKILL.md")));
+});
+
+test("install create-master copies a self-contained generator bundle", (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "create-master"], env).code, 0);
+  const root = path.join(skillsDir(home), "create-master");
+  for (const required of [
+    "SKILL.md", "tools/sutra_collector.py", "prompts/intake.md",
+    "references/workflow-details.md", "requirements.txt", "ETHICS.md", "masters",
+  ]) assert.ok(fs.existsSync(path.join(root, required)), `missing ${required}`);
+});
+
 test("reinstall clears stale files from a previous version", (t) => {
   const { home, env } = tmpHome(t);
   run(["install", "zhiyi"], env);
@@ -183,6 +269,31 @@ test("reinstall clears stale files from a previous version", (t) => {
   assert.equal(code, 0);
   assert.ok(!fs.existsSync(stale), "stale file survived reinstall");
   assert.ok(fs.existsSync(path.join(skillsDir(home), "master-zhiyi", "SKILL.md")));
+});
+
+test("updating create-master preserves user-generated personas", (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "create-master"], env).code, 0);
+
+  const generatorRoot = path.join(skillsDir(home), "create-master");
+  const customMaster = path.join(generatorRoot, "masters", "my-custom-master");
+  fs.mkdirSync(customMaster, { recursive: true });
+  fs.writeFileSync(
+    path.join(customMaster, "meta.json"),
+    JSON.stringify({ name: "My Custom Master", version: "1.0.0" })
+  );
+  fs.writeFileSync(path.join(customMaster, "SKILL.md"), "user-generated\n");
+  const staleRuntime = path.join(generatorRoot, "stale-runtime.txt");
+  fs.writeFileSync(staleRuntime, "old package content\n");
+
+  const result = run(["update", "--all"], env);
+  assert.equal(result.code, 0, result.stdout);
+  assert.equal(
+    fs.readFileSync(path.join(customMaster, "SKILL.md"), "utf8"),
+    "user-generated\n"
+  );
+  assert.ok(fs.existsSync(path.join(customMaster, "meta.json")));
+  assert.ok(!fs.existsSync(staleRuntime), "stale generator runtime survived update");
 });
 
 test("install of an unknown master exits non-zero", (t) => {
@@ -226,6 +337,13 @@ test("uninstall removes an installed master", (t) => {
   assert.ok(!fs.existsSync(path.join(skillsDir(home), "master-zhiyi")));
 });
 
+test("uninstall resolves a public teaching-mode name", (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "compare-masters"], env).code, 0);
+  assert.equal(run(["uninstall", "compare-masters"], env).code, 0);
+  assert.ok(!fs.existsSync(path.join(skillsDir(home), "compare-masters")));
+});
+
 test("uninstall of a not-installed master exits non-zero", (t) => {
   const { env } = tmpHome(t);
   const { stdout, code } = run(["uninstall", "zhiyi"], env);
@@ -245,6 +363,18 @@ test("install --all installs every prebuilt master", (t) => {
   }
 });
 
+test("install --all installs all 19 public skill directories", (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "--all"], env).code, 0);
+  const catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, "utf8"));
+  for (const skill of catalog.skills) {
+    assert.ok(
+      fs.existsSync(path.join(skillsDir(home), skill.install_dir, "SKILL.md")),
+      skill.name
+    );
+  }
+});
+
 test("update --all reinstalls every master and clears stale files", (t) => {
   const { home, env } = tmpHome(t);
   run(["install", "zhiyi"], env);
@@ -253,7 +383,7 @@ test("update --all reinstalls every master and clears stale files", (t) => {
 
   const { stdout, code } = run(["update", "--all"], env);
   assert.equal(code, 0);
-  assert.match(stdout, new RegExp(`Updating all ${prebuiltMasters.length} masters`));
+  assert.match(stdout, /Updating all 19 skills/);
   assert.ok(!fs.existsSync(stale), "stale file survived update --all");
   for (const name of prebuiltMasters) {
     assert.ok(
@@ -275,9 +405,300 @@ test("unknown command exits non-zero", () => {
   assert.equal(code, 1);
 });
 
+test("catalog name fields reject non-strings before filesystem mutation", (t) => {
+  const cases = [];
+  for (const invalid of [123, true, null]) {
+    cases.push({
+      label: `name ${String(invalid)}`,
+      mutate(skill) { skill.name = invalid; },
+      expected: /Invalid skill catalog: skills\[0\]\.name/,
+    });
+    cases.push({
+      label: `install_dir ${String(invalid)}`,
+      mutate(skill) { skill.install_dir = invalid; },
+      expected: /Invalid skill catalog: skills\[0\]\.install_dir/,
+    });
+    cases.push({
+      label: `alias ${String(invalid)}`,
+      mutate(skill) { skill.aliases = [invalid]; },
+      expected: /Invalid skill catalog: skills\[0\]\.aliases/,
+    });
+  }
+
+  for (const fixtureCase of cases) {
+    const skill = {
+      name: "demo",
+      kind: "persona",
+      source: "prebuilt/demo",
+      install_dir: "demo",
+      aliases: ["demo-alias"],
+    };
+    fixtureCase.mutate(skill);
+    const fixture = catalogFixture(
+      t,
+      { version: 1, skills: [skill] },
+      (root) => {
+        const source = path.join(root, "prebuilt", "demo");
+        fs.mkdirSync(source, { recursive: true });
+        fs.writeFileSync(path.join(source, "SKILL.md"), "---\nname: demo\n---\n");
+      }
+    );
+    const { home, env } = tmpHome(t);
+    const result = run(["install", "demo"], env, fixture.cli);
+    assert.equal(result.code, 1, fixtureCase.label);
+    assert.match(result.stdout, fixtureCase.expected, fixtureCase.label);
+    assert.ok(!fs.existsSync(skillsDir(home)), `${fixtureCase.label} mutated the filesystem`);
+  }
+});
+
+test("catalog rejects alias and canonical-name collisions in either record order", (t) => {
+  const aliasOwner = {
+    name: "demo-one",
+    kind: "persona",
+    source: "prebuilt/demo-one",
+    install_dir: "demo-one",
+    aliases: ["demo-two"],
+  };
+  const canonicalOwner = {
+    name: "demo-two",
+    kind: "persona",
+    source: "prebuilt/demo-two",
+    install_dir: "demo-two",
+    aliases: ["two"],
+  };
+  const orders = [
+    [aliasOwner, canonicalOwner],
+    [canonicalOwner, aliasOwner],
+  ];
+
+  for (const [index, skills] of orders.entries()) {
+    const fixture = catalogFixture(
+      t,
+      { version: 1, skills },
+      (root) => {
+        for (const name of ["demo-one", "demo-two"]) {
+          const source = path.join(root, "prebuilt", name);
+          fs.mkdirSync(source, { recursive: true });
+          fs.writeFileSync(path.join(source, "SKILL.md"), "---\nname: demo\n---\n");
+        }
+      }
+    );
+    const { home, env } = tmpHome(t);
+    const result = run(["install", "demo-two"], env, fixture.cli);
+    assert.equal(result.code, 1, `record order ${index + 1}`);
+    assert.match(
+      result.stdout,
+      /Invalid skill catalog: alias "demo-two" conflicts with skill/,
+      `record order ${index + 1}`
+    );
+    assert.ok(!fs.existsSync(skillsDir(home)), `record order ${index + 1} mutated filesystem`);
+  }
+});
+
+test("invalid catalogs fail before filesystem mutation", (t) => {
+  const cases = [
+    {
+      name: "unsupported version",
+      catalog: { version: 2, skills: [] },
+      expected: /Invalid skill catalog: version must be 1/,
+    },
+    {
+      name: "unsafe source path",
+      catalog: {
+        version: 1,
+        skills: [{
+          name: "demo", kind: "persona", source: "../escape",
+          install_dir: "demo", aliases: ["demo-alias"],
+        }],
+      },
+      expected: /Invalid skill catalog:.*source/,
+    },
+    {
+      name: "duplicate alias",
+      catalog: {
+        version: 1,
+        skills: [
+          {
+            name: "demo-one", kind: "persona", source: "prebuilt/demo-one",
+            install_dir: "demo-one", aliases: ["duplicate"],
+          },
+          {
+            name: "demo-two", kind: "persona", source: "prebuilt/demo-two",
+            install_dir: "demo-two", aliases: ["duplicate"],
+          },
+        ],
+      },
+      setup(root) {
+        for (const name of ["demo-one", "demo-two"]) {
+          const source = path.join(root, "prebuilt", name);
+          fs.mkdirSync(source, { recursive: true });
+          fs.writeFileSync(path.join(source, "SKILL.md"), "---\nname: demo\n---\n");
+        }
+      },
+      expected: /Invalid skill catalog: duplicate alias/,
+    },
+    {
+      name: "missing source",
+      catalog: {
+        version: 1,
+        skills: [{
+          name: "demo", kind: "persona", source: "prebuilt/demo",
+          install_dir: "demo", aliases: ["demo-alias"],
+        }],
+      },
+      expected: /Invalid skill catalog: source does not exist/,
+    },
+    {
+      name: "missing generator bundle entry",
+      catalog: {
+        version: 1,
+        skills: [{
+          name: "create-master", kind: "generator", source: ".",
+          install_dir: "create-master", aliases: ["create-master"],
+          bundle_paths: ["missing-runtime"],
+        }],
+      },
+      expected: /Invalid skill catalog: bundle path does not exist/,
+    },
+  ];
+
+  for (const fixtureCase of cases) {
+    const fixture = catalogFixture(t, fixtureCase.catalog, fixtureCase.setup);
+    const { home, env } = tmpHome(t);
+    const result = run(["install", "demo"], env, fixture.cli);
+    assert.equal(result.code, 1, fixtureCase.name);
+    assert.match(result.stdout, fixtureCase.expected, fixtureCase.name);
+    assert.ok(!fs.existsSync(skillsDir(home)), `${fixtureCase.name} mutated the filesystem`);
+  }
+});
+
+test("packed npm artifact installs all skills with the complete generator runtime", (t) => {
+  const packOutput = execFileSync("npm", ["pack", "--silent"], {
+    cwd: REPO,
+    encoding: "utf8",
+    ...npmExecutionOptions(),
+  });
+  const tarballName = packOutput.trim().split(/\r?\n/).at(-1);
+  const tarballPath = path.join(REPO, tarballName);
+  t.after(() => fs.rmSync(tarballPath, { force: true }));
+
+  const extractRoot = fs.mkdtempSync(path.join(os.tmpdir(), "master-skill-pack-test-"));
+  t.after(() => fs.rmSync(extractRoot, { recursive: true, force: true }));
+  execFileSync("tar", ["-xzf", tarballPath, "-C", extractRoot]);
+
+  const packageRoot = path.join(extractRoot, "package");
+  const packagedCli = path.join(packageRoot, "bin", "cli.mjs");
+  const { home, env } = tmpHome(t);
+  const result = run(["install", "--all"], env, packagedCli);
+  assert.equal(result.code, 0, result.stdout);
+
+  const catalog = JSON.parse(
+    fs.readFileSync(path.join(packageRoot, "skill-catalog.json"), "utf8")
+  );
+  for (const skill of catalog.skills) {
+    assert.ok(
+      fs.existsSync(path.join(skillsDir(home), skill.install_dir, "SKILL.md")),
+      `missing packed install ${skill.name}`
+    );
+  }
+
+  const generatorRoot = path.join(skillsDir(home), "create-master");
+  for (const required of [
+    "SKILL.md", "tools/sutra_collector.py", "prompts/intake.md",
+    "references/workflow-details.md", "requirements.txt", "ETHICS.md", "masters",
+  ]) {
+    assert.ok(
+      fs.existsSync(path.join(generatorRoot, required)),
+      `missing packed generator runtime ${required}`
+    );
+  }
+
+  // Prove the installed generator is operational without reaching back into
+  // the transient npm extraction. This is the real publication boundary: the
+  // package source disappears before any generator entry point is invoked.
+  fs.rmSync(packageRoot, { recursive: true, force: true });
+  assert.ok(!fs.existsSync(packageRoot), "packed source extraction still exists");
+
+  const collectedPath = path.join(home, "offline-collected.json");
+  const generatedRoot = path.join(home, "offline-generated-masters");
+  const collectorOutput = execFileSync(
+    PYTHON,
+    [
+      path.join(generatorRoot, "tools", "sutra_collector.py"),
+      "--offline-smoke",
+      "--name", "Offline Demo",
+      "--tradition", "南传",
+      "--output", collectedPath,
+    ],
+    { encoding: "utf8", cwd: generatorRoot }
+  );
+  assert.equal(collectorOutput.trim(), `collected data written: ${collectedPath}`);
+
+  const initialCheck = execFileSync(
+    PYTHON,
+    [
+      path.join(generatorRoot, "tools", "verify_sources.py"),
+      "--check-links", collectedPath,
+    ],
+    { encoding: "utf8", cwd: generatorRoot }
+  );
+  assert.equal(initialCheck.trim(), "declared sources OK (1 sources)");
+
+  const builderOutput = execFileSync(
+    PYTHON,
+    [
+      path.join(generatorRoot, "tools", "master_builder.py"),
+      "--offline-smoke",
+      "--output", generatedRoot,
+    ],
+    { encoding: "utf8", cwd: generatorRoot }
+  );
+  const generated = JSON.parse(builderOutput);
+  assert.ok(fs.existsSync(generated.meta_path), "offline builder did not write meta.json");
+  assert.ok(
+    fs.existsSync(generated.review_input_path),
+    "offline builder did not persist the doctrine review input"
+  );
+
+  const finalCheck = execFileSync(
+    PYTHON,
+    [
+      path.join(generatorRoot, "tools", "verify_sources.py"),
+      "--final-check", generated.teacher_dir,
+    ],
+    { encoding: "utf8", cwd: generatorRoot }
+  );
+  assert.equal(finalCheck.trim(), "final source check OK (1 sources)");
+});
+
+test("both READMEs document the complete npm installation contract", () => {
+  const chinese = fs.readFileSync(path.join(REPO, "README.md"), "utf8");
+  const english = fs.readFileSync(path.join(REPO, "README_EN.md"), "utf8");
+
+  assert.match(chinese, /全部 19 个 Skill：15 位祖师、3 个教学模式，以及 `create-master` 生成器/);
+  assert.match(english, /all 19 skills: 15 personas, 3 teaching modes, and the `create-master` generator/);
+  for (const readme of [chinese, english]) {
+    assert.match(readme, /npx master-skill install compare-masters/);
+    assert.match(readme, /npx master-skill install create-master/);
+  }
+});
+
+test("both README clone examples install compare under its public name", () => {
+  for (const filename of ["README.md", "README_EN.md"]) {
+    const readme = fs.readFileSync(path.join(REPO, filename), "utf8");
+    assert.match(readme, /for d in prebuilt\/master-\*\/;/, filename);
+    assert.match(
+      readme,
+      /ln -sf "\$\(pwd\)\/prebuilt\/compare" ~\/\.claude\/skills\/compare-masters/,
+      filename
+    );
+    assert.doesNotMatch(readme, /for d in prebuilt\/\*\/;/, filename);
+  }
+});
+
 test("fidelity runner --json emits parseable JSON without text banners", () => {
   const stdout = execFileSync(
-    "python3",
+    PYTHON,
     [
       path.join(REPO, "scripts", "test-fidelity.py"),
       "--master",
@@ -309,6 +730,16 @@ test("list parses frontmatter from CRLF files", (t) => {
   fs.mkdirSync(path.join(tree, "bin"));
   fs.copyFileSync(CLI, path.join(tree, "bin", "cli.mjs"));
   fs.writeFileSync(path.join(tree, "package.json"), '{"version": "0.0.0-test"}');
+  fs.writeFileSync(path.join(tree, "skill-catalog.json"), JSON.stringify({
+    version: 1,
+    skills: [{
+      name: "master-crlf",
+      kind: "persona",
+      source: "prebuilt/master-crlf",
+      install_dir: "master-crlf",
+      aliases: ["crlf", "master-crlf"],
+    }],
+  }));
   const masterDir = path.join(tree, "prebuilt", "master-crlf");
   fs.mkdirSync(masterDir, { recursive: true });
   fs.writeFileSync(

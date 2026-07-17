@@ -141,10 +141,10 @@ This project is built out of respect for Buddhist traditions. All content is gen
 ## Features
 
 - **15 pre-built masters across four traditions**: 1 印度 (Madhyamaka · Nāgārjuna) + 8 汉传 (Yogācāra, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, cross-tradition) + 3 藏传 (Kadam · Atiśa; Gelug · Tsongkhapa; Kagyu · Milarepa) + 3 南传 (Theravāda commentator · Buddhaghosa; Burmese vipassanā · Mahasi Sayadaw; Thai Forest · Ajahn Chah) — plus a `compare-masters` multi-master comparison meta-skill, ready to use out of the box
-- **Provenance enforcement**: Every master ships with authoritative source IDs (CBETA / BDRC / SuttaCentral) and FoJin text IDs in frontmatter; every doctrinal claim must carry a scriptural citation
+- **Provenance enforcement**: Every master ships with declared source IDs (CBETA / BDRC / Toh / SuttaCentral / PTS / compliant compiled teachings); live retrieval adds a FoJin locator only when a real `text_id` is returned, and every doctrinal claim must carry a source citation
 - **Offline source passages**: `sources/` captures key passages from each master's core canon, so citations still work when FoJin is unreachable
 - **Progressive disclosure**: SKILL.md is a decision tree + quick reference; `references/` and `sources/` are loaded on demand to keep context lean
-- **HARD-GATE discipline**: Both `/create-master` and every prebuilt master embed hard rules — no unverified CBETA ID, no uncited doctrinal claim, no fictional personas
+- **HARD-GATE discipline**: Both `/create-master` and every prebuilt master require doctrinal claims, practice guidance, and text interpretation to cite that persona's declared sources (CBETA / BDRC / Toh / SuttaCentral / PTS / compliant compiled teachings); fabricated source IDs and fictional personas are forbidden
 - **Two-stage independent review**: The generation pipeline forces a "doctrinal accuracy → voice consistency" review before write; FAIL triggers up to 2 rounds of automatic repair
 - **Automated fidelity tests**: Each master's `tests/fidelity.jsonl` holds 10+ Q&A samples (the `compare-masters` meta-skill holds 18) validating citations and keyword coverage; CI runs a dry-run on every push
 - **Unified multi-platform plugin**: Claude Code, Cursor, Codex CLI, OpenCode, and Gemini CLI share one `prebuilt/` tree, with a session-start hook injecting the master list on every platform
@@ -177,9 +177,17 @@ The v1.0 track prioritizes framework stability over adding more masters. See [do
 
 **NPX (recommended, no global state)**
 
+`npx master-skill install --all` installs all 19 skills: 15 personas, 3 teaching modes, and the `create-master` generator. The generator is copied as a self-contained runtime, so it remains usable after the transient npx package directory is removed; reinstall and `update --all` refresh the runtime while preserving user-generated personas under `create-master/masters/`.
+
 ```bash
-npx master-skill install --all    # Install all 15 masters
-npx master-skill list             # List available masters
+# Install individual public skills
+npx master-skill install master-zhiyi
+npx master-skill install compare-masters
+npx master-skill install create-master
+
+# Install or list the complete 19-skill catalog
+npx master-skill install --all
+npx master-skill list
 ```
 
 **Global install (frequent use / offline-friendly)**
@@ -196,7 +204,8 @@ npm update -g master-skill             # Pull next minor / patch
 ```bash
 git clone https://github.com/xr843/Master-skill ~/Master-skill
 cd ~/Master-skill && pip install -r requirements.txt
-for d in prebuilt/*/; do ln -sf "$(pwd)/$d" ~/.claude/skills/"$(basename $d)"; done
+for d in prebuilt/master-*/; do ln -sf "$(pwd)/$d" ~/.claude/skills/"$(basename $d)"; done
+ln -sf "$(pwd)/prebuilt/compare" ~/.claude/skills/compare-masters
 ln -sf "$(pwd)" ~/.claude/skills/create-master
 ```
 
@@ -414,7 +423,7 @@ SKILL.md (AgentSkills entry: decision tree + quick reference)
     |                           +-- references/       (loaded on demand)
     |                           |   +-- teaching.md
     |                           |   +-- voice.md
-    |                           +-- sources/          (offline CBETA passages)
+    |                           +-- sources/          (offline declared-source passages)
     |                           |   +-- *.md
     |                           +-- tests/
     |                               +-- fidelity.jsonl  (CI dry-run samples)
@@ -457,7 +466,7 @@ Master-skill connects to the FoJin API via `tools/fojin_bridge.py` to enable:
 - Runtime RAG retrieval for grounding answers in real texts
 - Source passage extraction with provenance tracking
 
-All citations include traceable FoJin links to ensure transparency of sources.
+Every citation must resolve to the persona's declared source ID. A FoJin locator is added only when live retrieval returns a real `text_id`; otherwise the corresponding official catalog or offline declared source is used.
 
 ---
 
@@ -473,8 +482,8 @@ All citations include traceable FoJin links to ensure transparency of sources.
 
 **Will:**
 
-- Cite source texts faithfully, with FoJin links on every response
-- Retrieve real texts via runtime RAG, not relying solely on AI training data
+- Cite declared sources faithfully with traceable source IDs, adding a FoJin locator only when a real `text_id` is available
+- Use runtime RAG only when the citation contract permits it and offline material is insufficient; never present model memory as a primary text
 - Acknowledge clearly when a question falls outside scope
 - Encourage users to seek out qualified masters and authentic practice
 
@@ -486,9 +495,9 @@ All citations include traceable FoJin links to ensure transparency of sources.
 
 Yes. Each prebuilt master ships with `prebuilt/<name>/sources/` — key passages from that master's core canon, stored offline. When FoJin is down, the master degrades to offline mode and declares "currently running on offline passages" in the reply. The `/create-master` pipeline asks the user to switch to manual-input mode when the API fails, so you can paste source text and continue.
 
-**Q: What does a valid CBETA citation look like, and how is it verified?**
+**Q: What does a valid CBETA citation look like, and how are sources verified?**
 
-Every CBETA citation must carry a `Txxn####` identifier (for example, the Lotus Sutra is `T9n262`). `scripts/validate.py` lints the frontmatter `sources` block; `tools/verify_sources.py` checks every FoJin `text_id` against the live API before writing. Broken links are downgraded to FoJin search URLs — no dead references make it into the final file.
+CBETA citations use a `Txxn####` identifier (for example, the Lotus Sutra is `T09n0262`); Tibetan, Pali, and compiled-teaching personas use the BDRC / Toh, SuttaCentral / PTS, or teaching IDs declared in `meta.json.sources[]`. `scripts/validate-citation-contract.py` and `tools/verify_sources.py --check-links/--final-check` validate source families, identifier shapes, declared membership, and contract consistency offline. They do not parse free-text citations or guarantee HTTP reachability. The legacy online `verify_sources.py --fix` audit covers CBETA / FoJin links only.
 
 **Q: `npx master-skill install` fails with ENOTEMPTY or a permission error — what now?**
 
@@ -508,9 +517,9 @@ See "Contributing" below. The short version: follow the v0.3 layout under `prebu
 
 Contributions are welcome: new prebuilt masters, corrections to source attributions, offline passage additions, or toolchain improvements.
 
-New masters must follow the v0.3 layout: `prebuilt/<name>/` containing SKILL.md (with provenance frontmatter and a decision tree), `references/teaching.md` and `references/voice.md` (loaded on demand), `sources/*.md` (offline CBETA passages), and `tests/fidelity.jsonl` (5+ Q&A fidelity samples). Run `python3 scripts/validate.py --strict` for zero errors, and make sure the CI fidelity dry-run passes before opening a PR.
+New masters must follow the v0.3 layout: `prebuilt/<name>/` containing SKILL.md (with provenance routing and a decision tree), `meta.json` (declared sources plus citation contract), `references/teaching.md` and `references/voice.md` (loaded on demand), `sources/*.md` (offline declared-source passages), and `tests/fidelity.jsonl` (5+ Q&A fidelity samples). Run `python3 scripts/validate.py --strict` and `python3 scripts/validate-citation-contract.py` for zero errors, and make sure the CI fidelity dry-run passes before opening a PR.
 
-Before submitting, verify that sources trace back to CBETA, content is faithful to historical documents, and no sectarian bias is introduced.
+Before submitting, verify that every source resolves to the persona's declared source family, content is faithful to historical documents, and no sectarian bias is introduced.
 
 ---
 

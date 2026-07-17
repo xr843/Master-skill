@@ -52,7 +52,7 @@
 - 多写法名（如"鸠摩罗什"/"鸠摩罗什婆"）→ 优先 FoJin KG 中的**标准名称**
 - 已存在（预置或已生成） → 提示：
 
-  > "「{name}」已存在，可直接使用 /{slug} 调用。如需重新生成，请先执行 /delete-master {slug}。"
+  > "「{name}」已存在，可直接使用 /master-{slug} 调用。如需重新生成，请先执行 /delete-master {slug}。"
 
 - 在世法师 / 圆寂未足版权期 → 走 `references/ethics-runtime.md` §版权分级 Tier B/C 流程
 
@@ -61,7 +61,7 @@
 ### 采集内容
 
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/tools/sutra_collector.py --name "<法师名>" --tradition "<传承>"
+python3 ${CLAUDE_SKILL_DIR}/tools/sutra_collector.py --name "<法师名>" --tradition "<传承>" --output collected_data.json
 ```
 
 包括：
@@ -97,7 +97,9 @@ FoJin API 返回错误或不可达 → 向用户说明：
 python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --check-links collected_data.json
 ```
 
-无效链接标记并在 Step 3 排除。详细引用规则 → `references/source-conventions.md`。
+该命令离线检查来源家族、ID 格式、声明归属与自动派生的 citation contract；它不请求外部站点。
+格式或归属无效的来源须在 Step 3 前排除。外部可达性如有需要，应另作人工或可选在线核验。
+详细引用规则 → `references/source-conventions.md`。
 
 ### 采集结果确认
 
@@ -169,11 +171,14 @@ python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --check-links collected_data
 
 ### 教义准确性审查
 
-`prompts/doctrine_reviewer.md` 对 teaching.md：
+生成器先从 `sources[].type` 派生 citation contract，并在内存中保留同一个 sources/contract 对象。
+`prompts/doctrine_reviewer.md` 接收这个**生成器内存上下文**及 teaching.md：
 - 经证覆盖率（目标 ≥ 90%）
-- CBETA / BDRC / SC ID 归属准确性
+- 各来源家族 ID 的声明归属准确性
 - 宗派边界越界（如让慧能讲三士道）
 - 输出：PASS / PASS WITH WARNINGS / FAIL
+
+最终 spec 与 `meta.json` 必须复用同一个 contract；写入器会重新按 `sources[].type` 派生并拒绝漂移。
 
 FAIL → 自动修复严重问题后重审，**最多 2 轮**。仍 FAIL → 报告问题请求人工介入。
 
@@ -230,22 +235,28 @@ FAIL → 自动修复后重审。
 ## Step 5：写入文件细则
 
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/tools/master_builder.py --name "<法师名>" --output masters/
+python3 ${CLAUDE_SKILL_DIR}/tools/master_builder.py --spec generated-master.json --output masters/
 ```
 
-### 写入前终验
+`generated-master.json` 是审查通过后的生成规格，必含 `name`、`tradition`、`school`、`era`、
+`languages`、`teaching_content`、`voice_content`、`sources`，并可携带审查所用的同一
+`citation_contract`。若携带的 contract 与来源家族自动派生结果不同，构建立即失败。
+
+### 生成后终验
 
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check masters/{slug}/
+python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check masters/master-{slug}/
 ```
 
-无效链接 → 替换为 FoJin 搜索链接（降级策略），确保用户始终能找到相关内容。
+`--final-check` 离线验证 persona 目录包含 `SKILL.md`、`teaching.md`、`voice.md`、`meta.json`，
+并验证 `meta.json` 的来源家族、ID 格式、声明归属与 citation contract。它不会解析
+`teaching.md` 的自由文本引文，也不检查外部链接 HTTP 状态；外部可达性是独立的人工或可选在线步骤。
 
 ### 生成目录结构
 
 ```
-masters/{slug}/
-├── SKILL.md          # /{slug} 触发（完整角色定义）
+masters/master-{slug}/
+├── SKILL.md          # /master-{slug} 触发（完整角色定义）
 ├── teaching.md       # 教义体系（可单独使用）
 ├── voice.md          # 说法风格（可单独使用）
 └── meta.json         # 元数据（版本、生成时间、数据来源）
@@ -254,12 +265,12 @@ masters/{slug}/
 ### 角色注册（按运行环境）
 
 **Claude Code 用户**
-1. 生成的 SKILL.md 已放置在 `masters/{slug}/`
+1. 生成的 SKILL.md 已放置在 `masters/master-{slug}/`
 2. 确保 `masters/` 在 Claude Code skill 搜索路径中（检查 `.claude/settings.json` 的 `skillDirs` 配置）
-3. 完成后自动可通过 `/{slug}` 触发
+3. 完成后自动可通过 `/master-{slug}` 触发
 
 **OpenClaw 用户**
-1. 将 `masters/{slug}/` 复制到 OpenClaw 的 skills 目录
+1. 将 `masters/master-{slug}/` 复制到 OpenClaw 的 skills 目录
 2. 在 OpenClaw 配置中注册新 skill
 3. 参考 OpenClaw 文档完成注册流程
 
@@ -267,8 +278,8 @@ masters/{slug}/
 
 ```
 已生成「{master_name}」教学角色
-  目录：masters/{slug}/
-  调用命令：/{slug}
+  目录：masters/master-{slug}/
+  调用命令：/master-{slug}
   包含文件：SKILL.md, teaching.md, voice.md, meta.json
   数据来源：{n} 条经文，{m} 个知识图谱实体
 ```
@@ -292,7 +303,7 @@ masters/{slug}/
 
 **版本自动递增**：
 - 每次追加 → meta.json `version` 自动 minor 递增（1.0.0 → 1.1.0）
-- 旧版本自动归档到 `masters/{slug}/.versions/`
+- 旧版本自动归档到 `masters/master-{slug}/versions/`
 - `/master-rollback` 可回退到任意历史版本
 
 ### 纠正模式

@@ -3,6 +3,14 @@
   "name_pali": "Buddhaghosa",
   "name_meaning": "佛之声 (the Voice of the Buddha)",
   "slug": "buddhaghosa",
+  "citation_contract": {
+    "version": 1,
+    "claim_policy": "declared_sources_only",
+    "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
+    "allowed_source_types": ["pali_canon", "pali_commentary", "pali_treatise"],
+    "minimum_claim_coverage": 0.9,
+    "live_retrieval_allowed": true
+  },
   "tradition": "南传",
   "school": "上座部 (Theravāda)·斯里兰卡大寺派 (Mahāvihāra)",
   "era": "5世纪",

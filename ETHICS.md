@@ -8,12 +8,12 @@
 
 **所有通过 Master-skill 生成的对话、文本、回答，均为 AI 合成内容，不是真实祖师的著作、开示或教言。**
 
-- 每位预置法师的回答均由大型语言模型基于 CBETA 经典文献 + `teaching.md` / `voice.md` 合成，**不代表**历史上该法师的原话、亲口开示或亲笔著作
+- 每位预置法师的回答均由大型语言模型基于该 persona 声明的原典来源（CBETA、BDRC / Toh、SuttaCentral / PTS 或合规编纂开示）+ `teaching.md` / `voice.md` 合成，**不代表**历史上该法师的原话、亲口开示或亲笔著作
 - AI 角色对祖师表达风格的还原是**近似**，非权威：语言选词、句式节奏、比喻用法由模型生成，不可直接引用为"某法师说过"
-- 所有引经据典的 CBETA 编号来自 `sources/` 离线片段或 FoJin 实时检索，但**回答中的文义阐释**是 AI 组合生成，可能与祖师原文含义有偏差
+- 所有引经据典的来源标识必须来自 persona 的 `meta.json.sources[]`；即使来源标识真实，**回答中的文义阐释**仍是 AI 组合生成，可能与祖师原文含义有偏差
 - 使用时请始终默认："这是基于文献的 AI 学习辅助"，不是"与祖师对话"。前者是工具，后者是误解
 
-如你在任何公开场合引用、转发、发表由本项目生成的文本，**必须明确标注 AI 生成属性与原始出处**（CBETA 经号 / FoJin 链接）。将 AI 生成内容作为祖师原话传播，既违反本协议，也违背佛教"不妄语"的基本戒律。
+如你在任何公开场合引用、转发、发表由本项目生成的文本，**必须明确标注 AI 生成属性与原始出处**（来源家族、声明 ID、题名及可用定位信息）。将 AI 生成内容作为祖师原话传播，既违反本协议，也违背佛教"不妄语"的基本戒律。
 
 ---
 
@@ -171,7 +171,7 @@ Master-skill 采取**双轨授权**，代码与内容分开授权：
 | 源代码（`scripts/`、`tools/`、`bin/`、`hooks/`、`.github/`、workflow、CI） | **MIT** | 任意使用、修改、商用 | 去除版权声明 |
 | 预置法师内容（`prebuilt/**/SKILL.md`、`teaching.md`、`voice.md`、`sources/*.md`、`fidelity.jsonl`） | **CC BY-NC-SA 4.0** | 署名 + 非商用 + 相同方式共享下任意使用 | 未署名、纯商业闭源分发 |
 | Prompts 模板（`prompts/**`） | **CC BY 4.0** | 署名后任意使用 | 去署名 |
-| FoJin 检索返回的原始经文 | **CBETA 知识共用 非商业性 禁止改作 3.0** | 遵循 CBETA 原协议 | 违反 CBETA 协议 |
+| FoJin 检索返回的原始经文 / 元数据 / 编纂开示 | **按返回来源族、具体版本与权利人的原始许可**（CBETA、BDRC / Toh、SuttaCentral / PTS、compiled teachings 各自适用） | 在对应许可与合理引用范围内使用并保留出处 | 把某一来源许可套用于其他来源、移除归属、超授权复制或商用 |
 
 **商业化使用（含但不限于）：**
 - SaaS 付费问答服务嵌入 Master-skill 法师内容
@@ -184,24 +184,30 @@ Master-skill 采取**双轨授权**，代码与内容分开授权：
 
 ## 5. 数据来源透明 (Data Provenance)
 
-每位法师 `SKILL.md` frontmatter 必须声明：
+每位 persona 的 `meta.json` 必须声明来源清单与同源 citation contract：
 
-```yaml
-sources:
-  - title: {经典名称}
-    cbeta_id: {CBETA 编号，如 T30n1579}
-    fojin_text_id: {FoJin 内部 ID}
-citation_format: "【《{title}》卷{juan}，{cbeta_id}】"
-verified_by: {维护者 GitHub 用户名}
-verified_at: {YYYY-MM-DD}
+```json
+{
+  "sources": [
+    {"type": "cbeta | tibetan_canon | pali_canon | compiled_teaching | ...", "id": "来源族内的声明 ID", "title": "经典或开示题名"}
+  ],
+  "citation_contract": {
+    "version": 1,
+    "claim_policy": "declared_sources_only",
+    "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
+    "allowed_source_types": ["由 sources[].type 自动派生"],
+    "minimum_claim_coverage": 0.9,
+    "live_retrieval_allowed": true
+  }
+}
 ```
 
 **HARD-GATE 铁律：**
-- 无 CBETA 经号的教义断言不得写入 `teaching.md`
-- 不得捏造 CBETA 编号（CI `scripts/validate.py` 会对照 FoJin 反查）
+- 教义断言、修行指导与文本解释若不能解析到 `meta.json.sources[]` 的声明来源，不得写入 `teaching.md`
+- 不得捏造来源 ID，来源类型必须属于 `citation_contract.allowed_source_types`
 - 不得为虚构人物、合成 persona、无史实记载者建立 `prebuilt/`
 
-违反以上任一，PR 将被自动驳回。
+`scripts/validate-citation-contract.py` 与 `verify_sources.py --check-links/--final-check` 会离线检查来源清单、家族 ID 与合同一致性；它们不解析正文自由文本，也不保证外部站点可达。违反以上任一，PR 将被自动驳回。
 
 ---
 

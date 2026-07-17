@@ -263,7 +263,22 @@ def run_tests(
     }
 
 
-def main():
+def results_failed(results: list[dict], dry_run: bool) -> bool:
+    """Return whether collected fidelity results require a failing exit status."""
+    if dry_run:
+        return any("error" in suite for suite in results)
+    return any(
+        "error" in suite
+        or suite.get("failed", 0) > 0
+        or any(
+            case.get("status") in {"FAIL", "api_error"}
+            for case in suite.get("results", [])
+        )
+        for suite in results
+    )
+
+
+def main() -> int:
     parser = argparse.ArgumentParser(description="Master-skill fidelity test runner")
     parser.add_argument("--master", type=str, help="Test a specific master")
     parser.add_argument("--all", action="store_true", help="Test all masters with fidelity.jsonl")
@@ -322,6 +337,8 @@ def main():
             else:
                 print(f"  {r['master']}: {r.get('passed', 0)}/{r['total']} ({r.get('pass_rate', 'N/A')})")
 
+    return 1 if results_failed(all_results, args.dry_run) else 0
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

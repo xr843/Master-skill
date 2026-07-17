@@ -12,6 +12,23 @@ on:
       - 'hooks/**'
       - 'desktop/**'
       - 'package.json'
+      - 'skill-catalog.json'
+      - 'SKILL.md'
+      - 'references/**'
+      - 'ETHICS.md'
+      - 'requirements.txt'
+      - 'README.md'
+      - 'README_EN.md'
+      - 'CONTRIBUTING.md'
+      - 'CHANGELOG.md'
+      - 'docs/PRD.md'
+      - 'docs/v1-framework-roadmap.md'
+      - 'masters/**'
+      - '.claude-plugin/**'
+      - '.cursor-plugin/**'
+      - 'gemini-extension.json'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+      - '.github/ISSUE_TEMPLATE/**'
       - '.github/workflows/validate-and-test.yml'
   # No paths: filter on pull_request — the "Validate" and "Fidelity smoke"
   # jobs are branch-protection-required checks, so they must run on EVERY
@@ -24,7 +41,7 @@ on:
   schedule:
     # Weekly full fidelity sweep — Mondays 04:00 UTC. Per-PR CI only runs a
     # 1-fixture smoke; this is the only run that grades all 160+ fixtures and
-    # catches regressions the smoke rotation would take 14 weeks to surface.
+    # catches regressions the smoke rotation would take 15 weeks to surface.
     - cron: '0 4 * * 1'
 
 # Least privilege: this workflow only reads the repo and runs tests. No job
@@ -60,15 +77,17 @@ jobs:
       - name: Validate persona-fidelity schema (v0.8) — explicit
         run: python scripts/validate-persona-fidelity.py
 
+      - name: Validate citation contracts
+        run: python scripts/validate-citation-contract.py
+
       - name: Validate cross_critique schema
         run: python scripts/validate-cross-critique.py
 
       - name: Check platform manifest version consistency (v0.8 — hard gate)
         run: python scripts/check-manifest-versions.py
 
-      - name: Validate lore_triggers content (v0.8 — advisory)
-        continue-on-error: true
-        run: python scripts/validate-lore-triggers-content.py
+      - name: Validate lore_triggers content (v0.8 — hard gate)
+        run: python scripts/validate-lore-triggers-content.py --strict
 
       - name: Test session-start hook lineage sanitization
         run: bash hooks/tests/test_session_start.sh
@@ -76,7 +95,7 @@ jobs:
       - name: Test run-hook wrapper dispatch (bash + POSIX sh)
         run: bash hooks/tests/test_run_hook.sh
 
-      - name: Run validator and tool unit tests
+      - name: Run Python tests
         run: python -m pytest tests/ scripts/tests/ -v
 
       - name: Dry-run fidelity tests
@@ -84,6 +103,36 @@ jobs:
 
       - name: Run CLI tests
         run: node --test tests/cli.test.mjs
+
+  python-compat:
+    name: Generator compatibility (Python 3.9)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.9"
+
+      - name: Install generator dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run Python 3.9 generator smoke
+        run: |
+          python -m compileall -q tools scripts
+          TMP_DIR="$(mktemp -d)"
+          trap 'rm -rf "$TMP_DIR"' EXIT
+          python tools/sutra_collector.py \
+            --offline-smoke --name "Offline Demo" --tradition "南传" \
+            --output "$TMP_DIR/collected.json"
+          python tools/verify_sources.py --check-links "$TMP_DIR/collected.json"
+          python tools/master_builder.py \
+            --offline-smoke --output "$TMP_DIR/masters" \
+            > "$TMP_DIR/builder.json"
+          PERSONA_DIR=$(python -c \
+            'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["teacher_dir"])' \
+            "$TMP_DIR/builder.json")
+          python tools/verify_sources.py --final-check "$PERSONA_DIR"
 
   # bin/cli.mjs is the one piece of code every npx user executes, and its
   # path handling broke silently on Windows before this fix (URL.pathname
@@ -98,6 +147,13 @@ jobs:
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: "20"
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.11"
+
+      - name: Install generator dependencies
+        run: python -m pip install -r requirements.txt
 
       - name: Run CLI tests
         run: node --test tests/cli.test.mjs
@@ -129,11 +185,17 @@ jobs:
           rustc --version
           cargo --version
 
+      - name: Check desktop formatting
+        run: cargo fmt --manifest-path desktop/Cargo.toml -- --check
+
+      - name: Lint desktop app
+        run: cargo clippy --locked --manifest-path desktop/Cargo.toml --all-targets -- -D warnings
+
       - name: Test desktop app
-        run: cargo test --manifest-path desktop/Cargo.toml
+        run: cargo test --locked --manifest-path desktop/Cargo.toml
 
       - name: Build desktop app
-        run: cargo build --manifest-path desktop/Cargo.toml
+        run: cargo build --locked --manifest-path desktop/Cargo.toml
 
   fidelity-smoke:
     name: Fidelity smoke (1 master × 1 fixture)
@@ -159,17 +221,28 @@ jobs:
         id: pick
         run: |
           # If the PR touches a specific prebuilt master, smoke-test that one.
-          # Otherwise rotate by day-of-year so coverage stays uniform across all 14.
+          # The selector ignores meta-skills and incomplete directories, then
+          # rotates over every discovered persona for any invalid changed target.
           BASE="${{ github.base_ref || 'main' }}"
-          CHANGED=$(git diff --name-only "origin/${BASE}...HEAD" 2>/dev/null \
-            | grep -oP 'prebuilt/\K[^/]+' | grep -v '^compare$' | head -n1 || true)
-          if [ -z "$CHANGED" ]; then
-            MASTERS=(master-xuanzang master-kumarajiva master-huineng master-zhiyi \
-                     master-fazang master-yinguang master-ouyi master-xuyun \
-                     master-atisha master-tsongkhapa master-milarepa \
-                     master-buddhaghosa master-mahasi-sayadaw master-ajahn-chah)
-            IDX=$(( $(date +%j) % ${#MASTERS[@]} ))
-            CHANGED=${MASTERS[$IDX]}
+          if ! DIFF_OUTPUT=$(git diff --name-only "origin/${BASE}...HEAD"); then
+            echo "::error::git diff failed while selecting the fidelity smoke target."
+            exit 1
+          fi
+          mapfile -t CHANGED_CANDIDATES < <(
+            printf '%s\n' "$DIFF_OUTPUT" \
+              | sed -nE 's#^prebuilt/([^/]+)/.*#\1#p' \
+              | awk '!seen[$0]++'
+          )
+          SELECTOR_ARGS=()
+          for CANDIDATE in "${CHANGED_CANDIDATES[@]}"; do
+            SELECTOR_ARGS+=(--changed "$CANDIDATE")
+          done
+          if ! CHANGED=$(python scripts/select-fidelity-smoke.py \
+            --prebuilt prebuilt \
+            --day-of-year "$(date +%j)" \
+            "${SELECTOR_ARGS[@]}"); then
+            echo "::error::Fidelity smoke target selection failed."
+            exit 1
           fi
           echo "master=$CHANGED" >> "$GITHUB_OUTPUT"
           echo "Smoke target: $CHANGED"
@@ -188,6 +261,11 @@ jobs:
           if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
             echo "::warning::ANTHROPIC_API_KEY not configured — smoke is advisory on this run (expected on forks)."
             echo '{"skipped": true, "reason": "no_api_key"}' > fidelity-smoke.json
+            {
+              echo "### Fidelity grading skipped"
+              echo
+              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but model grading did not run."
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           python scripts/test-fidelity.py \
@@ -237,6 +315,11 @@ jobs:
           if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
             echo "::warning::ANTHROPIC_API_KEY not configured — full fidelity sweep is advisory (structural validation in the validate job still gates)."
             echo '{"skipped": true, "reason": "no_api_key"}' > fidelity-results.json
+            {
+              echo "### Fidelity grading skipped"
+              echo
+              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but model grading did not run."
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           python scripts/test-fidelity.py --all --json > fidelity-results.json

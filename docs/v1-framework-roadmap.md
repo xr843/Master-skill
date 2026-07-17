@@ -10,7 +10,7 @@ The four pillars map directly to implementation work:
 
 | Pillar | v1.0 meaning |
 |---|---|
-| Source-grounded | Every doctrinal claim is backed by declared offline sources or FoJin live retrieval |
+| Source-grounded | Every doctrinal claim is backed by the persona's declared sources; live retrieval is used only when its contract permits it |
 | Boundary-aware | Runtime answers obey ethics, copyright, and religious-practice boundaries |
 | Fidelity-tested | Every master has deterministic fixtures and persona-fidelity coverage |
 | Runtime-ready | npm install, hooks, slash commands, and FoJin fallback behave predictably |
@@ -26,9 +26,12 @@ Status: in progress.
 
 ## Phase 2: Citation Contract
 
-- Standardize citation expectations for CBETA, BDRC, Toh, PTS, SuttaCentral, and compiled teachings.
-- Add a machine-readable citation contract to `meta.json` after validating the schema shape on 2-3 representative masters.
-- Extend validators to reject undeclared IDs in new or changed masters.
+Status: implemented in v0.10.1; fidelity coverage continues in Phase 3.
+
+- Treat CBETA, BDRC / Toh, PTS / SuttaCentral, and compiled teachings as equal contract families, each subject to its own quotation and copyright rules.
+- Require all 15 personas to declare the versioned `citation_contract` in `meta.json`.
+- Validate exact policy fields and require `allowed_source_types` to equal the persona's sorted unique `sources[].type` values.
+- Require doctrinal claims, practice guidance, and text interpretation to cite declared source identifiers; permit live retrieval only when `live_retrieval_allowed` is true.
 - Add one citation-focused fidelity case per master if missing.
 
 ## Phase 3: Full Persona-Fidelity Coverage
@@ -40,7 +43,7 @@ Minimum per master:
 - 1 RAW case: instruction following and boundary behavior.
 - 1 SPE case: school-specific doctrinal fidelity.
 - 1 CUS case: voice/style fidelity using `signature_phrases` and `style.qa`.
-- 1 citation case: answer must cite a declared or live source.
+- 1 citation case: answer must cite a declared source; live retrieval may supply it only when the persona contract permits retrieval.
 
 Evaluation policy:
 
