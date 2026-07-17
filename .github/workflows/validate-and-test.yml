@@ -76,8 +76,8 @@ jobs:
       - name: Test run-hook wrapper dispatch (bash + POSIX sh)
         run: bash hooks/tests/test_run_hook.sh
 
-      - name: Run validator unit tests
-        run: python -m pytest scripts/tests/ -v
+      - name: Run validator and tool unit tests
+        run: python -m pytest tests/ scripts/tests/ -v
 
       - name: Dry-run fidelity tests
         run: python scripts/test-fidelity.py --all --dry-run
