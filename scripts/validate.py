@@ -14,9 +14,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
+
+import yaml
 
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 
@@ -48,41 +49,20 @@ def parse_frontmatter(path: Path) -> tuple[dict, str, list[str]]:
     if end is None:
         return {}, text, lines
 
-    # Minimal YAML parse (no pyyaml dependency)
-    fm: dict = {}
-    current_key = None
-    current_list: list | None = None
-    for line in lines[1:end]:
-        # list item
-        if line.startswith("  - ") and current_key:
-            if current_list is None:
-                current_list = []
-            item = line.strip().lstrip("- ").strip()
-            # Try inline dict (title: xxx)
-            if ":" in item:
-                parts = item.split(":", 1)
-                if current_list and isinstance(current_list[-1], dict):
-                    current_list[-1][parts[0].strip()] = parts[1].strip()
-                else:
-                    current_list.append({parts[0].strip(): parts[1].strip()})
-            else:
-                current_list.append(item)
-            continue
-        # Save accumulated list
-        if current_list is not None and current_key:
-            fm[current_key] = current_list
-            current_list = None
-        # key: value
-        match = re.match(r"^(\w[\w_-]*):\s*(.*)", line)
-        if match:
-            current_key = match.group(1)
-            value = match.group(2).strip().strip('"').strip("'")
-            if value:
-                fm[current_key] = value
-            # If empty value, might be a list starting next line
-    # Flush last list
-    if current_list is not None and current_key:
-        fm[current_key] = current_list
+    # This was a hand-rolled parser, from back when pyyaml was not a
+    # dependency. It matched list items only as `  - `, so a 4-space
+    # continuation line like `    cbeta_id: T48n2008` matched neither that nor
+    # the `key:` regex (which is anchored at column 0) and fell through to the
+    # list-flush branch — clearing the accumulated list on every continuation
+    # and letting the next `  - ` overwrite it. Every master kept exactly one
+    # source and no cbeta_id at all, so the sources[] rules below inspected
+    # data that was never in the file.
+    try:
+        fm = yaml.safe_load("\n".join(lines[1:end])) or {}
+    except yaml.YAMLError as exc:
+        raise ValueError(f"{path}: invalid YAML frontmatter — {exc}") from exc
+    if not isinstance(fm, dict):
+        raise ValueError(f"{path}: frontmatter is not a mapping")
 
     body = "\n".join(lines[end + 1 :])
     return fm, body, lines
