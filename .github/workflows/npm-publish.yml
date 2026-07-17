@@ -42,7 +42,49 @@ permissions:
   id-token: write
 
 jobs:
+  # Nothing gated `publish` before v0.10.1: it ran on `release: published`
+  # with no `needs:`, so a red tag published anyway — and npm publishes are
+  # permanent, with no token to revoke under OIDC. Validate & Test runs on
+  # push, but a release is its own event and never waited for it. Re-run the
+  # suites here rather than inspect the tag's check-runs: this also covers
+  # workflow_dispatch, where no push run need exist at all. Releases are rare,
+  # so the duplicated minutes are worth a gate that cannot be skipped.
+  gate:
+    name: Full suite (publish gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: "24"
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest
+
+      # Validators, the fidelity dry-run, and the node suite — which packs a
+      # real tarball, installs it, deletes the extracted source and exercises
+      # what is left. That is the artifact this workflow is about to publish.
+      - name: npm test
+        run: npm test
+
+      # Not in `npm test`: the hooks ship in the tarball, and the wrapper
+      # hung on every Unix install for all of v0.10.0 with nothing to catch it.
+      - name: Hook suites
+        run: npm run test:hook
+
+      # Not in `npm test` either: scripts/ and tools/ ship too.
+      - name: Python suites
+        run: python -m pytest tests/ scripts/tests/ -v
+
   publish:
+    needs: gate
     runs-on: ubuntu-latest
     environment:
       name: npm
