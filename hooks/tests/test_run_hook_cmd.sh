@@ -41,7 +41,12 @@ cleanup() { rm -rf "$TMP_DIR"; }
 trap cleanup EXIT
 
 mkdir -p "$TMP_DIR/hooks"
-sed 's/$/\r/' "$WRAPPER" > "$TMP_DIR/hooks/run-hook.cmd"
+# Strip any CR before adding one: a Windows checkout already holds CRLF, and
+# appending blindly yields CR CR LF. cmd.exe then reads the argument to
+# `setlocal enabledelayedexpansion` with a trailing CR, rejects it, leaves
+# delayed expansion off, and !ERRORLEVEL! stays literal — which looks exactly
+# like the bug this file tests.
+sed 's/\r*$/\r/' "$WRAPPER" > "$TMP_DIR/hooks/run-hook.cmd"
 
 # Stage two hooks: one that fails with a distinctive code, one that succeeds.
 printf '#!/usr/bin/env bash\necho "failing hook ran"\nexit 42\n' \
