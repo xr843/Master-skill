@@ -4,10 +4,14 @@ Verifies:
 1. Every voice.md contains the 首轮身份中立原则 rule in Layer 0
 2. Every voice.md's 开场方式 and 称呼方式 sections are tiered into 首轮中立 / 身份已知后
 3. The 首轮中立 section does NOT contain identity-assuming address terms
-4. voice.md and SKILL.md PART B stay in sync
+
+A fourth case asserted SKILL.md inlined voice.md as "PART B". The v0.3
+rebuild (937b642, 88debde) moved masters to progressive disclosure —
+SKILL.md now points at references/voice.md instead of inlining it, and
+the PART B marker exists in no file — so that case, and the
+tools/sync_skill_from_voice.py it pointed at, were dropped.
 """
 
-import re
 from pathlib import Path
 import pytest
 
@@ -20,11 +24,21 @@ IDENTITY_TERMS = [
     "大众", "道友",
 ]
 
-# Get all master slugs that have a voice.md
+# Get all master slugs that have a voice.md. It lives under references/;
+# globbing prebuilt/<slug>/voice.md matched nothing, so every case below
+# was parametrized over an empty set and skipped — this file asserted
+# nothing at all while reporting green.
 MASTER_SLUGS = sorted([
     d.name for d in PREBUILT_DIR.iterdir()
-    if d.is_dir() and (d / "voice.md").exists()
+    if d.is_dir() and (d / "references" / "voice.md").exists()
 ])
+
+# An empty parameter set skips instead of failing, which is how the wrong
+# path above stayed invisible. Refuse to run rather than report a silent pass.
+assert MASTER_SLUGS, (
+    f"no prebuilt master has references/voice.md under {PREBUILT_DIR} — "
+    "voice rules would be silently unchecked"
+)
 
 
 @pytest.fixture(params=MASTER_SLUGS)
@@ -34,12 +48,7 @@ def slug(request):
 
 @pytest.fixture
 def voice_content(slug):
-    return (PREBUILT_DIR / slug / "voice.md").read_text(encoding="utf-8")
-
-
-@pytest.fixture
-def skill_content(slug):
-    return (PREBUILT_DIR / slug / "SKILL.md").read_text(encoding="utf-8")
+    return (PREBUILT_DIR / slug / "references" / "voice.md").read_text(encoding="utf-8")
 
 
 def test_layer0_contains_neutrality_rule(slug, voice_content):
@@ -112,18 +121,3 @@ def test_neutral_address_has_no_identity_terms(slug, voice_content):
     )
 
 
-def test_skill_md_contains_voice_body(slug, voice_content, skill_content):
-    """SKILL.md PART B must contain voice.md body (excluding title)."""
-    # Strip voice.md's first # Title line
-    voice_lines = voice_content.split("\n")
-    if voice_lines[0].startswith("# "):
-        voice_body = "\n".join(voice_lines[1:]).lstrip("\n")
-    else:
-        voice_body = voice_content
-    voice_body = voice_body.rstrip()
-
-    # Check SKILL.md contains the same body
-    assert voice_body in skill_content, (
-        f"{slug}/SKILL.md PART B is out of sync with voice.md. "
-        f"Run: python3 tools/sync_skill_from_voice.py --slug {slug}"
-    )

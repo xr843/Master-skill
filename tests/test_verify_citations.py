@@ -74,6 +74,44 @@ def test_multiple_ids_in_one_block():
     assert r["fabricated"] == []
 
 
+def test_fabricated_id_touching_cjk_is_flagged():
+    """伪造经号紧贴汉字 → 仍须判 fabricated。
+
+    Python 的 \\w 覆盖 CJK,故「一」与「T」之间不存在 \\b 边界。用 \\b 划界时
+    整块引文被 `if not ids: continue` 跳过,而格式跑偏正是模型最可能编造经号
+    的时候 —— 反幻觉门恰好在最需要它的场景失效。
+    """
+    ans = "此义见于彼经。【《伪造经》卷一T99n9999】"
+    r = audit_answer(HUINENG, ans)
+    assert "T99n9999" in r["fabricated"]
+
+
+def test_fabricated_id_followed_by_cjk_is_flagged():
+    """经号后紧跟汉字(尾侧无 \\b)→ 仍须判 fabricated。"""
+    ans = "此义见于彼经。【《伪造经》X9999卷一】"
+    r = audit_answer(HUINENG, ans)
+    assert "X9999" in r["fabricated"]
+
+
+def test_declared_id_touching_cjk_is_recognized():
+    """真实经号紧贴汉字 → 须认作 offline,而非视若无睹。"""
+    ans = "见性成佛。【《坛经》卷一T48n2008】"
+    r = audit_answer(HUINENG, ans)
+    assert "T48n2008" in r["offline"]
+    assert r["fabricated"] == []
+
+
+def test_id_inside_latin_token_not_parsed_as_cbeta():
+    """经号嵌在拉丁词内(如标识符/文件名)不算引文,避免误杀。
+
+    与 CJK 相邻不同:汉字紧邻是真实引文格式,拉丁字母紧邻通常意味着它是更长
+    token 的一部分。
+    """
+    ans = "构建产物见【FakeSutraT99n9999】。"
+    r = audit_answer(HUINENG, ans)
+    assert r["fabricated"] == [] and r["offline"] == [] and r["live"] == []
+
+
 def test_load_declared_ids_real_master():
     """从真实 meta.json 读出慧能声明源。"""
     ids = load_declared_ids("huineng")
