@@ -1,6 +1,15 @@
-: ; # Polyglot wrapper — runs as cmd.exe on Windows, bash on Unix
-: ; exec bash "$0" "$@" 2>/dev/null
-: ; exit
+: ; # Polyglot wrapper — runs as cmd.exe on Windows, bash on Unix.
+: ; # Dispatch $1 by name. This line once read `exec bash "$0" "$@"`,
+: ; # which re-exec'd this same file forever; hooks.json runs the wrapper
+: ; # with "async": false, so every session start spun until the harness
+: ; # hook timeout while 2>/dev/null hid the cause. Keep this half POSIX —
+: ; # the file has no shebang, so /bin/sh interprets it, and that is dash
+: ; # on Debian/Ubuntu where ${@:2} is a "Bad substitution" error.
+: ; HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+: ; HOOK="${1:-}"
+: ; [ "$#" -gt 0 ] && shift
+: ; exec bash "$HOOK_DIR/$HOOK" "$@"
+: ; exit 1
 @echo off
 setlocal enabledelayedexpansion
 

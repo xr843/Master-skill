@@ -73,6 +73,9 @@ jobs:
       - name: Test session-start hook lineage sanitization
         run: bash hooks/tests/test_session_start.sh
 
+      - name: Test run-hook wrapper dispatch (bash + POSIX sh)
+        run: bash hooks/tests/test_run_hook.sh
+
       - name: Run validator unit tests
         run: python -m pytest scripts/tests/ -v
 
