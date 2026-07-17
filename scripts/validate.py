@@ -254,6 +254,32 @@ def _run_promptfoo_configs_subcheck() -> list[str]:
         return [f"promptfoo-configs sub-check failed to run: {exc}"]
 
 
+def _run_curriculum_sources_subcheck() -> list[str]:
+    """Run the curriculum source validator as a sub-check.
+
+    master-curriculum/SKILL.md claims CI enforces this, but the script was
+    wired into no workflow, no npm script and no sub-check — only its own unit
+    tests, which build synthetic trees under tmp_path. It has never run against
+    the real references/, so a curriculum recommending a sutra no master
+    declares would have shipped unnoticed. Returns a list of error strings.
+    """
+    curriculum_dir = PREBUILT_DIR / "master-curriculum"
+    if not curriculum_dir.exists():
+        return []
+    try:
+        import importlib.util
+
+        spec_path = (
+            Path(__file__).resolve().parent / "validate-curriculum-sources.py"
+        )
+        spec = importlib.util.spec_from_file_location("vcs", spec_path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.validate(PREBUILT_DIR)
+    except Exception as exc:  # pragma: no cover — surfaces to user
+        return [f"curriculum-sources sub-check failed to run: {exc}"]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Master-skill SKILL.md linter")
     parser.add_argument("--master", type=str, help="Lint a specific master only")
@@ -273,6 +299,11 @@ def main():
         "--skip-manifest-versions",
         action="store_true",
         help="Skip the v0.8 manifest version-drift gate",
+    )
+    parser.add_argument(
+        "--skip-curriculum-sources",
+        action="store_true",
+        help="Skip the curriculum source gate",
     )
     parser.add_argument(
         "--skip-lore-triggers-content",
@@ -320,6 +351,13 @@ def main():
         if manifest_errors:
             has_errors = True
 
+    # --- curriculum source gate (full-tree only, HARD gate) ---
+    curriculum_errors: list[str] = []
+    if not args.master and not args.skip_curriculum_sources:
+        curriculum_errors = _run_curriculum_sources_subcheck()
+        if curriculum_errors:
+            has_errors = True
+
     # --- v0.8 lore_triggers-content advisory sub-check ---
     # ADVISORY ONLY: warnings printed but never affect has_errors.
     lore_warnings: list[str] = []
@@ -334,6 +372,8 @@ def main():
             out["promptfoo_configs"] = promptfoo_errors
         if manifest_errors:
             out["manifest_versions"] = manifest_errors
+        if curriculum_errors:
+            out["curriculum_sources"] = curriculum_errors
         if lore_warnings:
             out["lore_triggers_content_advisory"] = lore_warnings
         print(json.dumps(out, indent=2, ensure_ascii=False))
@@ -343,6 +383,7 @@ def main():
             and not persona_errors
             and not promptfoo_errors
             and not manifest_errors
+            and not curriculum_errors
             and not lore_warnings
         )
         if nothing_to_report:
@@ -366,6 +407,11 @@ def main():
                 print("Manifest version-drift gate (v0.8):")
                 for e in manifest_errors:
                     print(f"  [ERROR] {e}")
+            if curriculum_errors:
+                print()
+                print("Curriculum source gate:")
+                for e in curriculum_errors:
+                    print(f"  [ERROR] {e}")
             if lore_warnings:
                 print()
                 print(
@@ -381,6 +427,7 @@ def main():
                 len(persona_errors)
                 + len(promptfoo_errors)
                 + len(manifest_errors)
+                + len(curriculum_errors)
             )
             total_warns += len(lore_warnings)
             print(

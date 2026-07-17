@@ -122,6 +122,17 @@ def test_parse_frontmatter_rejects_invalid_yaml(tmp_path):
         raise AssertionError("invalid YAML frontmatter was accepted")
 
 
+def test_curriculum_sources_subcheck_is_wired_in():
+    """The curriculum gate must be reachable from validate.py.
+
+    master-curriculum/SKILL.md claims CI enforces it, but the script was in no
+    workflow, no npm script and no sub-check — only unit tests over synthetic
+    trees. It passed against the real references/ by luck, never by check.
+    """
+    assert hasattr(validate_module, "_run_curriculum_sources_subcheck")
+    assert validate_module._run_curriculum_sources_subcheck() == []
+
+
 def test_every_prebuilt_skill_has_parseable_frontmatter():
     """Every shipped SKILL.md must parse — this is the case that would have
     caught master-curriculum and master-debate before they shipped."""
