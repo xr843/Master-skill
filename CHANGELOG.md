@@ -10,7 +10,20 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
-## [0.10.1] — 2026-07-13
+## [0.10.1] — 2026-07-17
+
+### Fixed — three defects that shipped in v0.10.0
+- Fixed `hooks/run-hook.cmd` re-exec'ing itself forever on Unix. Line 2 ran `exec bash "$0" "$@"`, where `$0` is the wrapper; with no shebang the calling shell interprets the file and re-execs it. `hooks.json` mounts it on SessionStart with `"async": false`, so every startup, clear and compact blocked until the harness hook timeout while `2>/dev/null` hid the cause. Affected every plugin install on Unix since the hook was introduced.
+- Fixed the anti-fabrication citation check missing any id adjacent to Chinese text. `_CBETA_ID` bounded with `\b`, and Python's `\w` covers CJK, so `【《伪造经》卷一T99n9999】` parsed as containing no id at all and the whole citation block was skipped — the check only fired when an id happened to follow a comma or `》`.
+- Fixed hook exit codes being lost on Windows. Both `exit /b %ERRORLEVEL%` sites sit in parenthesized blocks that cmd.exe expands at parse time, freezing the value to before the loop and reporting every failed hook as success.
+
+### Fixed — gates that reported green without running
+- Pointed CI and `pytest.ini` at both test suites. CI passed `pytest scripts/tests/` explicitly, overriding `testpaths = tests`: the suites were disjoint, so CI never ran `tests/` and a bare `pytest` never ran `scripts/tests/`.
+- Fixed `tests/test_voice_rules.py` globbing `prebuilt/<slug>/voice.md` when voice.md lives under `references/`. The empty glob left every case parametrized over an empty set and skipped, asserting nothing while reporting green; an empty set now fails at import. With the path fixed, six masters — the three Tibetan and three Theravada, all added after the rules landed — proved to have drifted to a `**首轮中立**` section header against the other nine's `**首轮中立称呼**`. Their content was already identity-neutral; the headers are normalized.
+- Added `hooks/tests/test_run_hook.sh` and `hooks/tests/test_run_hook_cmd.sh`. Nothing exercised the wrapper before, on any platform, which is how the hang and the lost exit code reached a release.
+
+### Removed
+- Removed `tools/sync_skill_from_voice.py`, which served the pre-v0.3 "PART B inlining" architecture that progressive disclosure replaced. The PART B marker exists in no SKILL.md, so the tool globbed an empty slug list and `--verify` returned 0 without checking anything.
 
 ### Added — complete distribution and source contracts
 - Added one catalog-driven inventory for all 19 public skills: 15 personas, 3 teaching modes, and the self-contained `create-master` generator.
