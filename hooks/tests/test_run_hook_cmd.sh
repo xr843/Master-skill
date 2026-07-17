@@ -56,7 +56,12 @@ printf '#!/usr/bin/env bash\necho "ok hook ran"\nexit 0\n' \
 chmod +x "$TMP_DIR/hooks/failing-hook" "$TMP_DIR/hooks/ok-hook"
 
 run_via_cmd() {
-    "$CMD_EXE" /c "cd /d $WIN_TMP && hooks\\run-hook.cmd $1" >/dev/null 2>&1
+    # MSYS_NO_PATHCONV / MSYS2_ARG_CONV_EXCL: Git bash rewrites arguments that
+    # look like Unix paths, turning /c into C:\. cmd.exe then sees no /c, opens
+    # an interactive session and exits 0 — indistinguishable from the lost exit
+    # code this file tests. Both are inert under WSL.
+    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' \
+        "$CMD_EXE" /c "cd /d $WIN_TMP && hooks\\run-hook.cmd $1" >/dev/null 2>&1
 }
 
 # --- Case 1: a failing hook must not be reported as success -------------
