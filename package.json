@@ -13,7 +13,7 @@
     "validate:persona-fidelity": "python3 scripts/validate-persona-fidelity.py",
     "validate:lore-content": "python3 scripts/validate-lore-triggers-content.py",
     "validate:versions": "python3 scripts/check-manifest-versions.py",
-    "test:hook": "bash hooks/tests/test_session_start.sh && bash hooks/tests/test_run_hook.sh",
+    "test:hook": "bash hooks/tests/test_session_start.sh && bash hooks/tests/test_run_hook.sh && bash hooks/tests/test_run_hook_cmd.sh",
     "test:cli": "node --test tests/cli.test.mjs",
     "test": "python3 scripts/validate.py --strict && python3 scripts/validate-fidelity.py && python3 scripts/validate-persona-fidelity.py && python3 scripts/check-manifest-versions.py && python3 scripts/test-fidelity.py --all --dry-run && node --test tests/cli.test.mjs",
     "test:smoke": "python3 scripts/test-fidelity.py --master yinguang --max-tests 1",

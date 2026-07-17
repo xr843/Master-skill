@@ -24,14 +24,18 @@ for %%B in (
 ) do (
     if exist %%B (
         %%B "%HOOK_DIR%%HOOK%" %2 %3 %4 %5
-        exit /b %ERRORLEVEL%
+        rem !...!, not %...%: cmd.exe expands %ERRORLEVEL% while parsing the
+        rem whole parenthesized block, so it would freeze to the value from
+        rem before the loop and report every hook failure as success. This is
+        rem what `setlocal enabledelayedexpansion` above is for.
+        exit /b !ERRORLEVEL!
     )
 )
 
 :: Fallback: try bash from PATH
 where bash >nul 2>&1 && (
     bash "%HOOK_DIR%%HOOK%" %2 %3 %4 %5
-    exit /b %ERRORLEVEL%
+    exit /b !ERRORLEVEL!
 )
 
 :: No bash found — exit silently
