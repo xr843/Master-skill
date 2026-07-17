@@ -14,9 +14,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
+
+import yaml
 
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 
@@ -48,41 +49,20 @@ def parse_frontmatter(path: Path) -> tuple[dict, str, list[str]]:
     if end is None:
         return {}, text, lines
 
-    # Minimal YAML parse (no pyyaml dependency)
-    fm: dict = {}
-    current_key = None
-    current_list: list | None = None
-    for line in lines[1:end]:
-        # list item
-        if line.startswith("  - ") and current_key:
-            if current_list is None:
-                current_list = []
-            item = line.strip().lstrip("- ").strip()
-            # Try inline dict (title: xxx)
-            if ":" in item:
-                parts = item.split(":", 1)
-                if current_list and isinstance(current_list[-1], dict):
-                    current_list[-1][parts[0].strip()] = parts[1].strip()
-                else:
-                    current_list.append({parts[0].strip(): parts[1].strip()})
-            else:
-                current_list.append(item)
-            continue
-        # Save accumulated list
-        if current_list is not None and current_key:
-            fm[current_key] = current_list
-            current_list = None
-        # key: value
-        match = re.match(r"^(\w[\w_-]*):\s*(.*)", line)
-        if match:
-            current_key = match.group(1)
-            value = match.group(2).strip().strip('"').strip("'")
-            if value:
-                fm[current_key] = value
-            # If empty value, might be a list starting next line
-    # Flush last list
-    if current_list is not None and current_key:
-        fm[current_key] = current_list
+    # This was a hand-rolled parser, from back when pyyaml was not a
+    # dependency. It matched list items only as `  - `, so a 4-space
+    # continuation line like `    cbeta_id: T48n2008` matched neither that nor
+    # the `key:` regex (which is anchored at column 0) and fell through to the
+    # list-flush branch — clearing the accumulated list on every continuation
+    # and letting the next `  - ` overwrite it. Every master kept exactly one
+    # source and no cbeta_id at all, so the sources[] rules below inspected
+    # data that was never in the file.
+    try:
+        fm = yaml.safe_load("\n".join(lines[1:end])) or {}
+    except yaml.YAMLError as exc:
+        raise ValueError(f"{path}: invalid YAML frontmatter — {exc}") from exc
+    if not isinstance(fm, dict):
+        raise ValueError(f"{path}: frontmatter is not a mapping")
 
     body = "\n".join(lines[end + 1 :])
     return fm, body, lines
@@ -274,6 +254,32 @@ def _run_promptfoo_configs_subcheck() -> list[str]:
         return [f"promptfoo-configs sub-check failed to run: {exc}"]
 
 
+def _run_curriculum_sources_subcheck() -> list[str]:
+    """Run the curriculum source validator as a sub-check.
+
+    master-curriculum/SKILL.md claims CI enforces this, but the script was
+    wired into no workflow, no npm script and no sub-check — only its own unit
+    tests, which build synthetic trees under tmp_path. It has never run against
+    the real references/, so a curriculum recommending a sutra no master
+    declares would have shipped unnoticed. Returns a list of error strings.
+    """
+    curriculum_dir = PREBUILT_DIR / "master-curriculum"
+    if not curriculum_dir.exists():
+        return []
+    try:
+        import importlib.util
+
+        spec_path = (
+            Path(__file__).resolve().parent / "validate-curriculum-sources.py"
+        )
+        spec = importlib.util.spec_from_file_location("vcs", spec_path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.validate(PREBUILT_DIR)
+    except Exception as exc:  # pragma: no cover — surfaces to user
+        return [f"curriculum-sources sub-check failed to run: {exc}"]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Master-skill SKILL.md linter")
     parser.add_argument("--master", type=str, help="Lint a specific master only")
@@ -293,6 +299,11 @@ def main():
         "--skip-manifest-versions",
         action="store_true",
         help="Skip the v0.8 manifest version-drift gate",
+    )
+    parser.add_argument(
+        "--skip-curriculum-sources",
+        action="store_true",
+        help="Skip the curriculum source gate",
     )
     parser.add_argument(
         "--skip-lore-triggers-content",
@@ -340,6 +351,13 @@ def main():
         if manifest_errors:
             has_errors = True
 
+    # --- curriculum source gate (full-tree only, HARD gate) ---
+    curriculum_errors: list[str] = []
+    if not args.master and not args.skip_curriculum_sources:
+        curriculum_errors = _run_curriculum_sources_subcheck()
+        if curriculum_errors:
+            has_errors = True
+
     # --- v0.8 lore_triggers-content advisory sub-check ---
     # ADVISORY ONLY: warnings printed but never affect has_errors.
     lore_warnings: list[str] = []
@@ -354,6 +372,8 @@ def main():
             out["promptfoo_configs"] = promptfoo_errors
         if manifest_errors:
             out["manifest_versions"] = manifest_errors
+        if curriculum_errors:
+            out["curriculum_sources"] = curriculum_errors
         if lore_warnings:
             out["lore_triggers_content_advisory"] = lore_warnings
         print(json.dumps(out, indent=2, ensure_ascii=False))
@@ -363,6 +383,7 @@ def main():
             and not persona_errors
             and not promptfoo_errors
             and not manifest_errors
+            and not curriculum_errors
             and not lore_warnings
         )
         if nothing_to_report:
@@ -386,6 +407,11 @@ def main():
                 print("Manifest version-drift gate (v0.8):")
                 for e in manifest_errors:
                     print(f"  [ERROR] {e}")
+            if curriculum_errors:
+                print()
+                print("Curriculum source gate:")
+                for e in curriculum_errors:
+                    print(f"  [ERROR] {e}")
             if lore_warnings:
                 print()
                 print(
@@ -401,6 +427,7 @@ def main():
                 len(persona_errors)
                 + len(promptfoo_errors)
                 + len(manifest_errors)
+                + len(curriculum_errors)
             )
             total_warns += len(lore_warnings)
             print(
