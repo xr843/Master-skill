@@ -254,10 +254,11 @@ def test_tibetan_opening_mutation_detects_persona_specific_term():
     content = (
         PREBUILT_DIR / "master-milarepa" / "references" / "voice.md"
     ).read_text(encoding="utf-8")
-    mutated = content.replace(
-        "**首轮中立开场**：",
-        "**首轮中立开场**：\n- \"金刚兄弟，且听一歌……\"",
-        1,
+    header = "**首轮中立开场**："
+    mutated = content.replace(header, f"{header}\n- \"金刚兄弟，且听一歌……\"", 1)
+    assert mutated != content, (
+        f"mutation did not apply — {header} not found in voice.md; "
+        "a no-op replace leaves this test asserting nothing"
     )
 
     assert "金刚兄弟" in _neutral_opening_violations(mutated)
@@ -267,10 +268,11 @@ def test_theravada_address_mutation_detects_persona_specific_term():
     content = (
         PREBUILT_DIR / "master-mahasi-sayadaw" / "references" / "voice.md"
     ).read_text(encoding="utf-8")
-    mutated = content.replace(
-        "**首轮中立**：",
-        "**首轮中立**：禅修者 / ",
-        1,
+    header = "**首轮中立称呼**："
+    mutated = content.replace(header, f"{header}禅修者 / ", 1)
+    assert mutated != content, (
+        f"mutation did not apply — {header} not found in voice.md; "
+        "a no-op replace leaves this test asserting nothing"
     )
 
     assert "禅修者" in _neutral_address_violations(mutated)

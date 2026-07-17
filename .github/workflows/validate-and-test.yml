@@ -92,6 +92,9 @@ jobs:
       - name: Test session-start hook lineage sanitization
         run: bash hooks/tests/test_session_start.sh
 
+      - name: Test run-hook wrapper dispatch (bash + POSIX sh)
+        run: bash hooks/tests/test_run_hook.sh
+
       - name: Run Python tests
         run: python -m pytest tests/ scripts/tests/ -v
 
@@ -154,6 +157,12 @@ jobs:
 
       - name: Run CLI tests
         run: node --test tests/cli.test.mjs
+
+      # The Unix job runs the same wrapper through bash and sh; only here can
+      # the cmd.exe half execute at all.
+      - name: Test run-hook wrapper exit codes (cmd.exe)
+        shell: bash
+        run: bash hooks/tests/test_run_hook_cmd.sh
 
   desktop-rust:
     name: Desktop Rust tests
