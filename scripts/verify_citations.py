@@ -33,7 +33,14 @@ _SAFE_MASTER = re.compile(r"^[A-Za-z0-9_-]+$")
 
 # CBETA id 形态:T48n2008 / T08n0235(藏经卷+n+编号),及 API 返回的 X1218 / X0303
 # (无卷号)。无 `n` 的形态只认 T/X 两个集合,避免误吞 Wikidata 的 Q1234 / P5008。
-_CBETA_ID = re.compile(r"\b(?:[A-Z]{1,2}\d+n\d+|[TX]\d{3,})\b")
+#
+# 边界不能用 \b:Python 的 \w 覆盖 CJK,故「卷一T99n9999」的「一」与「T」之间
+# 没有 \b,整块引文会被 audit_answer 当作无 id 跳过 —— 而格式跑偏正是模型最可能
+# 编造经号的时候。改判「前后不是拉丁字母或数字」:汉字紧邻属真实引文形态,须命中;
+# 拉丁字母紧邻(FakeSutraT99n9999)通常意味着它只是更长 token 的一部分,不算引文。
+_CBETA_ID = re.compile(
+    r"(?<![0-9A-Za-z])(?:[A-Z]{1,2}\d+n\d+|[TX]\d{3,})(?![0-9A-Za-z])"
+)
 # 引文块 【…】
 _CITATION_BLOCK = re.compile(r"【([^】]*)】")
 # live 链接 fojin.app/texts/<数字>
