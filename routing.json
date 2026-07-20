@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "_comment": "Machine-readable routing table. Persona keywords are NOT duplicated here — they live in each prebuilt/<slug>/meta.json search_scope.keywords and are read at match time. This file holds only what has no other machine-readable home: teaching-mode short-circuit order, the topic->pairing fallback, and the scoring constants. scripts/validate-routing.py enforces that every keyword set is pairwise disjoint (no string appears twice, and no string is a substring of another row's string), so a match can never depend on iteration order.",
+  "weights": {
+    "keyword_hit": 3
+  },
+  "_min_keyword_length_comment": "Persona keywords shorter than this are ignored when scoring. Seven single-character doctrinal atoms (空 戒 定 慧 苦 禅 业) live in meta.json search_scope.keywords, and matching by containment made them fire on ordinary Chinese: 「有空吗」 scored Kumārajīva and Nāgārjuna, 「我戒烟了」 scored Buddhaghosa. Every one of them also appears inside a longer keyword (空性 / 持戒 / 戒定慧 / 毕竟空 …), so dropping them costs no real recall; queries that only carry the bare atom fall through to topic_pairings, which is what that layer is for.",
+  "min_keyword_length": 2,
+  "mode_rules": [
+    {
+      "mode": "master-curriculum",
+      "order": 1,
+      "note": "纵向 / 时序：请求学修路径，不是比较",
+      "keywords": [
+        "学习计划",
+        "学修次第",
+        "入门",
+        "先学什么",
+        "从哪开始",
+        "开始学",
+        "应该读",
+        "下一步读什么",
+        "路径推荐",
+        "按什么顺序",
+        "curriculum",
+        "roadmap"
+      ]
+    },
+    {
+      "mode": "master-debate",
+      "order": 2,
+      "note": "横向 / 对立：4 轮立论-反驳-回应-综合",
+      "keywords": [
+        "辩论",
+        "各执一词",
+        "谁更对",
+        "高下",
+        "之争",
+        "之辩",
+        "分判",
+        "debate"
+      ]
+    },
+    {
+      "mode": "compare-masters",
+      "order": 3,
+      "note": "横向 / 并列：单轮多祖师平铺对比",
+      "keywords": [
+        "对比",
+        "比较",
+        "不同",
+        "各派怎么看",
+        "各位祖师",
+        "多个角度",
+        "异同",
+        "compare"
+      ]
+    }
+  ],
+  "topic_pairings": [
+    {
+      "id": "pureland",
+      "keywords": ["念佛", "往生", "净土"],
+      "masters": ["master-yinguang", "master-ouyi"],
+      "note": "净土专精 + 跨宗派"
+    },
+    {
+      "id": "chan-practice",
+      "keywords": ["参禅", "话头", "开悟"],
+      "masters": ["master-huineng", "master-xuyun"],
+      "note": "古今禅宗对比"
+    },
+    {
+      "id": "yogacara-vs-madhyamaka",
+      "keywords": ["唯识", "空有", "性相", "法相"],
+      "masters": ["master-xuanzang", "master-kumarajiva"],
+      "note": "唯识 vs 中观"
+    },
+    {
+      "id": "panjiao",
+      "keywords": ["判教", "圆融", "止观"],
+      "masters": ["master-zhiyi", "master-fazang"],
+      "note": "天台 vs 华严"
+    },
+    {
+      "id": "integrated-path",
+      "keywords": ["修行次第", "综合法门"],
+      "masters": ["master-ouyi", "master-yinguang"],
+      "note": "综合 vs 专修"
+    },
+    {
+      "id": "vinaya",
+      "keywords": ["戒律", "持戒", "律仪", "行持"],
+      "masters": ["master-xuyun", "master-atisha", "master-buddhaghosa"],
+      "note": "汉传禅门律 vs 印藏菩萨律 vs 上座部律藏注释（合并原「戒律/行持/日常」与「戒律/持戒/律仪」两行，去除键冲突）"
+    },
+    {
+      "id": "emptiness",
+      "keywords": ["般若", "空性", "中观", "缘起性空", "应成", "毕竟空"],
+      "masters": ["master-kumarajiva", "master-tsongkhapa", "master-huineng"],
+      "note": "早期中观译师 · 应成中观精确分判 · 禅宗直指（合并原「般若/空性」与「中观/缘起性空/应成」两行）"
+    },
+    {
+      "id": "lamrim",
+      "keywords": ["道次第", "三士道", "下士道", "中士道", "上士道", "lam rim"],
+      "masters": ["master-atisha", "master-tsongkhapa"],
+      "note": "印藏桥梁源头 vs 格鲁派系统化"
+    },
+    {
+      "id": "consciousness",
+      "keywords": ["心识", "阿赖耶", "心所", "末那"],
+      "masters": ["master-xuanzang", "master-buddhaghosa", "master-huineng"],
+      "note": "唯识 vs 上座部阿毗达摩 vs 禅宗直指"
+    },
+    {
+      "id": "ascetic",
+      "keywords": ["苦行", "闭关", "山中修行", "头陀"],
+      "masters": ["master-xuyun", "master-milarepa"],
+      "note": "汉传禅门头陀 vs 藏传瑜伽士传统"
+    },
+    {
+      "id": "mindfulness",
+      "keywords": ["正念", "观心", "觉知"],
+      "masters": ["master-huineng", "master-ajahn-chah", "master-mahasi-sayadaw"],
+      "note": "禅宗自性 vs 南传 sati 朴素 vs 缅甸标记法"
+    },
+    {
+      "id": "meditation-objects",
+      "keywords": ["禅修方法", "业处", "所缘"],
+      "masters": ["master-buddhaghosa", "master-mahasi-sayadaw", "master-ajahn-chah"],
+      "note": "论藏四十种业处 vs 标记法腹部起伏 vs 朴素观心"
+    },
+    {
+      "id": "insight-stages",
+      "keywords": ["七清净", "十六观智", "观智"],
+      "masters": ["master-buddhaghosa", "master-mahasi-sayadaw"],
+      "note": "《清净道论》原典 vs 现代缅甸应用（原行含「道次第」，已移除以避免与 lamrim 冲突）"
+    },
+    {
+      "id": "renunciation",
+      "keywords": ["出离心", "暇满", "无常"],
+      "masters": ["master-yinguang", "master-atisha", "master-ajahn-chah"],
+      "note": "净土 · 噶当 · 上座部跨传统出离观对比"
+    },
+    {
+      "id": "bodhicitta",
+      "keywords": ["菩提心", "慈悲", "自他相换"],
+      "masters": ["master-atisha", "master-ouyi"],
+      "note": "印藏自他相换 vs 跨宗派融通"
+    },
+    {
+      "id": "teacher",
+      "keywords": ["上师", "善知识", "依止"],
+      "masters": ["master-xuyun", "master-atisha", "master-tsongkhapa"],
+      "note": "汉传善知识 vs 噶当依止论 vs 格鲁视师如佛"
+    },
+    {
+      "id": "scholastic",
+      "keywords": ["论师风格", "经院严密", "因明"],
+      "masters": ["master-xuanzang", "master-tsongkhapa", "master-buddhaghosa"],
+      "note": "唯识 · 应成中观 · 上座部三大论师传统"
+    },
+    {
+      "id": "four-traditions",
+      "keywords": ["四大传统", "四方对照"],
+      "masters": [
+        "master-nagarjuna",
+        "master-huineng",
+        "master-tsongkhapa",
+        "master-buddhaghosa"
+      ],
+      "note": "印度中观 · 禅 · 应成中观 · 上座部论藏，四方系统对照"
+    },
+    {
+      "id": "cross-tradition-meditation",
+      "keywords": ["跨传统禅修", "大手印"],
+      "masters": ["master-huineng", "master-milarepa", "master-ajahn-chah"],
+      "note": "禅 · 大手印 · 森林禅，跨传统禅修法"
+    }
+  ],
+  "default_pairing": ["master-kumarajiva", "master-yinguang"]
+}

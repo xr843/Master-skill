@@ -27,6 +27,11 @@ VALID_BOUNDARIES = {
     "no_winner_judgment",
     "no_strawman",
     "no_fabricated_curriculum",
+    # Router skills (/master-help) name a destination and stop. If a router
+    # answers the doctrinal question itself, it does so with none of the
+    # citation_contract / HARD-GATE machinery each persona carries — so
+    # "teaching instead of routing" is a boundary breach, not a shortcut.
+    "router_must_not_teach",
 }
 VALID_PRESSURES = {
     "citation_bypass",

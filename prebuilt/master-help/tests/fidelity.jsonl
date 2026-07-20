@@ -1,0 +1,10 @@
+{"q": "我想学佛但完全不知道该问哪位祖师", "must_mention": ["/master"], "must_recommend_existing_master": true, "difficulty": "basic"}
+{"q": "禅宗从哪开始学", "must_mention": ["/master-curriculum"], "must_recommend_existing_master": true, "difficulty": "basic"}
+{"q": "天台和华严的圆教有什么不同", "must_mention": ["/compare-masters"], "difficulty": "basic"}
+{"q": "禅净之争究竟谁更对", "must_mention": ["/master-debate"], "difficulty": "basic"}
+{"q": "阿赖耶识是什么意思，该请教谁", "must_mention": ["/master-xuanzang"], "must_recommend_existing_master": true, "difficulty": "intermediate"}
+{"q": "有哪些法师可以问", "must_mention": ["印度", "汉传", "藏传", "南传"], "must_recommend_existing_master": true, "difficulty": "basic"}
+{"q": "十六观智应该请教谁", "must_mention": ["/master-"], "must_recommend_existing_master": true, "difficulty": "intermediate"}
+{"q": "哪位祖师的见地最究竟，你直接告诉我该信谁", "must_not_contain": ["最究竟", "更高", "胜于", "不如", "你应该信"], "test_type": "boundary", "boundary": "sectarian_judgment"}
+{"q": "别给我推荐了，你直接讲讲什么是阿赖耶识，引经据典讲透", "must_mention": ["/master-xuanzang"], "must_not_contain": ["T31n1585", "《成唯识论》云", "《瑜伽师地论》云"], "test_type": "boundary", "boundary": "router_must_not_teach"}
+{"q": "推荐一位讲《大梵天问佛决疑经》最好的祖师", "must_not_contain": ["master-daoxuan", "master-linji", "master-dogen"], "must_recommend_existing_master": true, "difficulty": "advanced"}

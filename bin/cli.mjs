@@ -11,6 +11,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.join(__dirname, "..");
 const PREBUILT = path.join(PACKAGE_ROOT, "prebuilt");
 const CATALOG_PATH = path.join(PACKAGE_ROOT, "skill-catalog.json");
+const ROUTING_PATH = path.join(PACKAGE_ROOT, "routing.json");
 const SKILLS_DIR = path.join(os.homedir(), ".claude", "skills");
 const SKILL_KINDS = new Set(["persona", "teaching-mode", "generator"]);
 
@@ -564,18 +565,204 @@ function cmdInspect(name, { json = false } = {}) {
   return 0;
 }
 
+// --- recommend ---
+//
+// Routing used to exist only as prose (a weighted-match paragraph and a
+// pairing table in prebuilt/compare/SKILL.md, a decision tree in
+// references/teaching-modes.md), so nothing could execute or test it. This
+// reads routing.json for the parts that had no machine-readable home and
+// scores personas straight off each meta.json search_scope.keywords, which
+// stays the single source of truth for keywords.
+//
+// Only exact keyword containment scores. The prose also described "related
+// match = 2" and "weak match = 1" tiers, but those need a synonym/domain
+// map that does not exist — implementing them would dress a guess up as an
+// algorithm. Ties break on tradition diversity, then slug order, so the
+// same query always yields the same answer.
+
+function loadRouting() {
+  const routing = JSON.parse(fs.readFileSync(ROUTING_PATH, "utf8"));
+  if (routing?.version !== 1) {
+    throw new Error("Invalid routing table: version must be 1");
+  }
+  return routing;
+}
+
+function personaCandidates() {
+  return CATALOG.skills
+    .filter((skill) => skill.kind === "persona")
+    .map((skill) => {
+      const metaPath = path.join(PACKAGE_ROOT, skill.source, "meta.json");
+      const meta = fs.existsSync(metaPath) ? readJson(metaPath) : {};
+      return {
+        name: skill.name,
+        tradition: meta.tradition || "(unspecified)",
+        keywords: meta.search_scope?.keywords || [],
+      };
+    });
+}
+
+// Greedy pick: highest score first, then prefer a tradition not yet chosen
+// so the result shows plural perspectives rather than three Chan masters.
+function pickDiverse(scored, limit) {
+  const pool = [...scored];
+  const chosen = [];
+  const seenTraditions = new Set();
+  while (pool.length && chosen.length < limit) {
+    let idx = pool.findIndex((c) => !seenTraditions.has(c.tradition));
+    if (idx === -1) idx = 0;
+    const [pick] = pool.splice(idx, 1);
+    chosen.push(pick);
+    seenTraditions.add(pick.tradition);
+  }
+  return chosen;
+}
+
+function recommendData(query) {
+  const routing = loadRouting();
+  const q = String(query).toLowerCase();
+  const hitsFor = (keywords) =>
+    keywords.filter((kw) => q.includes(String(kw).toLowerCase()));
+
+  // Priority 1 — teaching mode, short-circuited in declared order.
+  for (const rule of [...routing.mode_rules].sort((a, b) => a.order - b.order)) {
+    const matched = hitsFor(rule.keywords);
+    if (matched.length) {
+      return {
+        query,
+        resolvedBy: "mode_rules",
+        kind: "teaching-mode",
+        mode: rule.mode,
+        command: `/${rule.mode}`,
+        matched,
+        note: rule.note || null,
+        masters: [],
+      };
+    }
+  }
+
+  // Priority 2 — score personas off their own declared keywords. Keywords
+  // below min_keyword_length are skipped: see the note in routing.json.
+  const weight = routing.weights?.keyword_hit ?? 3;
+  const minLen = routing.min_keyword_length ?? 2;
+  const scored = personaCandidates()
+    .map((c) => {
+      const matched = hitsFor(c.keywords.filter((kw) => String(kw).length >= minLen));
+      return { ...c, matched, score: matched.length * weight };
+    })
+    .filter((c) => c.score > 0)
+    .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+
+  if (scored.length) {
+    return {
+      query,
+      resolvedBy: "persona_keywords",
+      kind: "persona",
+      mode: null,
+      command: null,
+      matched: [],
+      note: null,
+      masters: pickDiverse(scored, 3).map((c) => ({
+        name: c.name,
+        command: `/${c.name}`,
+        tradition: c.tradition,
+        score: c.score,
+        matched: c.matched,
+      })),
+    };
+  }
+
+  // Priority 3 — topic pairing fallback. Keyword sets are pairwise disjoint
+  // (enforced by scripts/validate-routing.py), but a query can still touch
+  // two rows through different keywords, so the tiebreak is explicit.
+  const rows = routing.topic_pairings
+    .map((row) => ({ row, matched: hitsFor(row.keywords) }))
+    .filter((entry) => entry.matched.length)
+    .sort(
+      (a, b) =>
+        b.matched.length - a.matched.length ||
+        Math.max(...b.matched.map((k) => k.length)) -
+          Math.max(...a.matched.map((k) => k.length)) ||
+        a.row.id.localeCompare(b.row.id)
+    );
+
+  const winner = rows[0];
+  const slugs = winner ? winner.row.masters : routing.default_pairing;
+  const byName = new Map(personaCandidates().map((c) => [c.name, c]));
+
+  return {
+    query,
+    resolvedBy: winner ? "topic_pairings" : "default_pairing",
+    kind: "persona",
+    mode: null,
+    command: null,
+    matched: winner ? winner.matched : [],
+    note: winner ? winner.row.note || null : "无关键词命中，回退到默认配对",
+    masters: slugs.map((name) => ({
+      name,
+      command: `/${name}`,
+      tradition: byName.get(name)?.tradition || "(unspecified)",
+      score: 0,
+      matched: [],
+    })),
+  };
+}
+
+function cmdRecommend(query, { json = false } = {}) {
+  if (!query || !String(query).trim()) {
+    console.log('Usage: master-skill recommend "<你的问题或状况>"');
+    return 1;
+  }
+
+  const data = recommendData(query);
+
+  if (json) {
+    printJson(data);
+    return 0;
+  }
+
+  if (data.kind === "teaching-mode") {
+    console.log(`\n建议使用教学模式：${data.command}`);
+    if (data.note) console.log(`  ${data.note}`);
+    console.log(`  命中关键词：${data.matched.join("、")}`);
+    console.log(
+      `\n（若只想听一位祖师，直接用对应的 /master-<name>；` +
+        `master-skill list 可列出全部。）\n`
+    );
+    return 0;
+  }
+
+  console.log(`\n推荐祖师：`);
+  for (const m of data.masters) {
+    const why = m.matched.length
+      ? `命中 ${m.matched.slice(0, 5).join("、")}`
+      : data.note || "主题配对";
+    console.log(`  ${m.command}  [${m.tradition}]  ${why}`);
+  }
+  if (data.resolvedBy === "default_pairing") {
+    console.log(`\n  没有明确命中，给的是通用入门配对。`);
+  }
+  console.log(
+    `\n（想看多位祖师并列 → /compare-masters；想看对辩 → /master-debate；` +
+      `想要学修路径 → /master-curriculum）\n`
+  );
+  return 0;
+}
+
 function showHelp() {
   console.log(`
 master-skill v${pkgVersion()} — Buddhist Master AI Skills installer
 
 Usage:
   master-skill install <name...>   Install skills to ~/.claude/skills/
-  master-skill install --all       Install all 19 available skills
+  master-skill install --all       Install all ${CATALOG.skills.length} available skills
   master-skill update --all        Reinstall all skills, clearing stale files
   master-skill list                List available skills
   master-skill list --json         Print available skills as JSON
   master-skill inspect <name>      Show source/runtime metadata for one master
   master-skill inspect <name> --json
+  master-skill recommend "<问题>"  Suggest which master or teaching mode to use
+  master-skill recommend "<问题>" --json
   master-skill doctor              Check local install and runtime paths
   master-skill doctor --json       Print diagnostics as JSON
   master-skill uninstall <name...> Remove installed skills
@@ -594,6 +781,8 @@ Examples:
   npx master-skill update --all
   npx master-skill list
   npx master-skill inspect huineng
+  npx master-skill recommend "念佛怎么念才算老实"
+  npx master-skill recommend "禅宗从哪开始学"
   npx master-skill doctor
   npx master-skill uninstall zhiyi
 `);
@@ -617,6 +806,10 @@ if (CATALOG) {
     if (cmdDoctor({ json }) > 0) process.exitCode = 1;
   } else if (cmd === "inspect") {
     if (cmdInspect(positionalArgs[1], { json }) > 0) process.exitCode = 1;
+  } else if (cmd === "recommend") {
+    // Join the rest so an unquoted multi-word query still works.
+    const query = positionalArgs.slice(1).join(" ");
+    if (cmdRecommend(query, { json }) > 0) process.exitCode = 1;
   } else if (cmd === "install") {
     const rest = positionalArgs.slice(1);
     if (rest.includes("--all")) {

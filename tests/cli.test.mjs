@@ -68,19 +68,19 @@ const prebuiltMasters = fs
   .filter((d) => d.isDirectory() && d.name !== "compare")
   .map((d) => d.name);
 
-test("skill catalog declares 19 unique installable skills", () => {
+test("skill catalog declares 20 unique installable skills", () => {
   const catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, "utf8"));
   assert.equal(catalog.version, 1);
-  assert.equal(catalog.skills.length, 19);
+  assert.equal(catalog.skills.length, 20);
   const counts = catalog.skills.reduce((groups, skill) => {
     (groups[skill.kind] ||= []).push(skill);
     return groups;
   }, {});
   assert.equal(counts.persona.length, 15);
-  assert.equal(counts["teaching-mode"].length, 3);
+  assert.equal(counts["teaching-mode"].length, 4);
   assert.equal(counts.generator.length, 1);
   for (const field of ["name", "source", "install_dir"]) {
-    assert.equal(new Set(catalog.skills.map((skill) => skill[field])).size, 19);
+    assert.equal(new Set(catalog.skills.map((skill) => skill[field])).size, 20);
   }
   const aliases = catalog.skills.flatMap((skill) => skill.aliases);
   assert.equal(new Set(aliases).size, aliases.length);
@@ -107,7 +107,7 @@ test("list groups every public skill by kind", () => {
   const { stdout, code } = run(["list"]);
   assert.equal(code, 0);
   assert.match(stdout, /Personas \(15\)/);
-  assert.match(stdout, /Teaching modes \(3\)/);
+  assert.match(stdout, /Teaching modes \(4\)/);
   assert.match(stdout, /Generator \(1\)/);
   assert.match(stdout, /compare-masters/);
   assert.match(stdout, /create-master/);
@@ -130,10 +130,10 @@ test("list --json exposes all skills while retaining masters compatibility", () 
   assert.equal(result.code, 0);
   const payload = JSON.parse(result.stdout);
   assert.equal(payload.count, prebuiltMasters.length);
-  assert.equal(payload.skillCount, 19);
-  assert.equal(payload.skills.length, 19);
+  assert.equal(payload.skillCount, 20);
+  assert.equal(payload.skills.length, 20);
   assert.equal(payload.categoryCounts.persona, 15);
-  assert.equal(payload.categoryCounts["teaching-mode"], 3);
+  assert.equal(payload.categoryCounts["teaching-mode"], 4);
   assert.equal(payload.categoryCounts.generator, 1);
   assert.ok(Array.isArray(payload.masters));
 });
@@ -363,7 +363,7 @@ test("install --all installs every prebuilt master", (t) => {
   }
 });
 
-test("install --all installs all 19 public skill directories", (t) => {
+test("install --all installs all 20 public skill directories", (t) => {
   const { home, env } = tmpHome(t);
   assert.equal(run(["install", "--all"], env).code, 0);
   const catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, "utf8"));
@@ -383,7 +383,7 @@ test("update --all reinstalls every master and clears stale files", (t) => {
 
   const { stdout, code } = run(["update", "--all"], env);
   assert.equal(code, 0);
-  assert.match(stdout, /Updating all 19 skills/);
+  assert.match(stdout, /Updating all 20 skills/);
   assert.ok(!fs.existsSync(stale), "stale file survived update --all");
   for (const name of prebuiltMasters) {
     assert.ok(
@@ -675,8 +675,8 @@ test("both READMEs document the complete npm installation contract", () => {
   const chinese = fs.readFileSync(path.join(REPO, "README.md"), "utf8");
   const english = fs.readFileSync(path.join(REPO, "README_EN.md"), "utf8");
 
-  assert.match(chinese, /全部 19 个 Skill：15 位祖师、3 个教学模式，以及 `create-master` 生成器/);
-  assert.match(english, /all 19 skills: 15 personas, 3 teaching modes, and the `create-master` generator/);
+  assert.match(chinese, /全部 20 个 Skill：15 位祖师、4 个教学模式（含 `\/master-help` 路由），以及 `create-master` 生成器/);
+  assert.match(english, /all 20 skills: 15 personas, 4 teaching modes \(including the `\/master-help` router\), and the `create-master` generator/);
   for (const readme of [chinese, english]) {
     assert.match(readme, /npx master-skill install compare-masters/);
     assert.match(readme, /npx master-skill install create-master/);
@@ -751,4 +751,118 @@ test("list parses frontmatter from CRLF files", (t) => {
     encoding: "utf8",
   });
   assert.match(stdout, /master-crlf\s+CRLF survives parsing/);
+});
+
+// --- recommend ---
+//
+// The mode-routing cases below are lifted verbatim from the "示例输入分类"
+// table in references/teaching-modes.md, which already ships ten user
+// utterances labelled with their expected mode. Reusing them keeps the
+// executable router and the prose decision tree from drifting apart: if
+// someone edits that table, these tests are where the disagreement surfaces.
+
+function recommendJson(query) {
+  const { stdout, code } = run(["recommend", query, "--json"]);
+  assert.equal(code, 0, `recommend exited ${code} for ${query}`);
+  return JSON.parse(stdout);
+}
+
+const MODE_FIXTURES = [
+  ["禅宗和净土宗怎么比较", "compare-masters"],
+  ["禅净之争究竟谁更对", "master-debate"],
+  ["我想学禅宗从哪开始", "master-curriculum"],
+  ["天台和华严的圆教有什么不同", "compare-masters"],
+  ["性相之辩玄奘和鸠摩罗什会怎么辩", "master-debate"],
+  ["刚开始学藏传，应该读什么", "master-curriculum"],
+  ["应成中观和顿悟禅的分判", "master-debate"],
+  ["印光大师和虚云老和尚的修法异同", "compare-masters"],
+  ["中观、唯识、华严的判教高下", "master-debate"],
+  ["想综合学习汉传佛教，应该按什么顺序", "master-curriculum"],
+];
+
+for (const [query, expected] of MODE_FIXTURES) {
+  test(`recommend routes "${query}" to ${expected}`, () => {
+    const data = recommendJson(query);
+    assert.equal(data.kind, "teaching-mode");
+    assert.equal(data.mode, expected);
+    assert.equal(data.resolvedBy, "mode_rules");
+    assert.ok(data.matched.length > 0, "a mode match must name its keywords");
+  });
+}
+
+test("recommend scores personas off meta.json keywords", () => {
+  const data = recommendJson("阿赖耶识是什么");
+  assert.equal(data.resolvedBy, "persona_keywords");
+  assert.equal(data.masters[0].name, "master-xuanzang");
+  assert.ok(data.masters[0].matched.includes("阿赖耶识"));
+});
+
+test("recommend prefers distinct traditions when scores tie", () => {
+  const data = recommendJson("菩提心怎么发");
+  const traditions = data.masters.map((m) => m.tradition);
+  assert.equal(new Set(traditions).size, traditions.length);
+});
+
+test("recommend caps at three masters", () => {
+  for (const q of ["菩提心怎么发", "正念怎么修", "戒定慧"]) {
+    assert.ok(recommendJson(q).masters.length <= 3, `${q} returned too many`);
+  }
+});
+
+// Seven single-character doctrinal atoms (空 戒 定 慧 苦 禅 业) sit in
+// meta.json keyword lists. Matching by containment made them fire on
+// ordinary Chinese, so routing.json.min_keyword_length excludes them.
+test("recommend ignores single-character keywords", () => {
+  for (const q of ["有空吗", "我戒烟了", "苦不苦", "今天天气不错"]) {
+    const data = recommendJson(q);
+    assert.equal(data.resolvedBy, "default_pairing", `${q} false-matched`);
+  }
+});
+
+test("recommend falls back to the default pairing with a reason", () => {
+  const data = recommendJson("今天天气不错");
+  assert.deepEqual(
+    data.masters.map((m) => m.name),
+    ["master-kumarajiva", "master-yinguang"]
+  );
+  assert.ok(data.note, "the fallback must say why it fired");
+});
+
+test("recommend is deterministic", () => {
+  for (const q of ["菩提心怎么发", "念佛怎么念才算老实", "什么是空性"]) {
+    assert.deepEqual(recommendJson(q), recommendJson(q), `${q} varied between runs`);
+  }
+});
+
+test("recommend joins an unquoted multi-word query", () => {
+  const { stdout, code } = run(["recommend", "阿赖耶识", "是什么", "--json"]);
+  assert.equal(code, 0);
+  assert.equal(JSON.parse(stdout).masters[0].name, "master-xuanzang");
+});
+
+test("recommend without a query prints usage and exits 1", () => {
+  const { stdout, code } = run(["recommend"]);
+  assert.equal(code, 1);
+  assert.match(stdout, /Usage: master-skill recommend/);
+});
+
+test("recommend appears in help", () => {
+  const { stdout } = run(["--help"]);
+  assert.match(stdout, /master-skill recommend/);
+});
+
+test("routing.json passes its validator", () => {
+  const { stdout, code } = (() => {
+    try {
+      return {
+        stdout: execFileSync(PYTHON, [path.join(REPO, "scripts", "validate-routing.py")], {
+          encoding: "utf8",
+        }),
+        code: 0,
+      };
+    } catch (err) {
+      return { stdout: (err.stdout || "") + (err.stderr || ""), code: err.status ?? -1 };
+    }
+  })();
+  assert.equal(code, 0, `validate-routing.py failed:\n${stdout}`);
 });

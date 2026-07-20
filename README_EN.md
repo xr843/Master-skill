@@ -177,7 +177,7 @@ The v1.0 track prioritizes framework stability over adding more masters. See [do
 
 **NPX (recommended, no global state)**
 
-`npx master-skill install --all` installs all 19 skills: 15 personas, 3 teaching modes, and the `create-master` generator. The generator is copied as a self-contained runtime, so it remains usable after the transient npx package directory is removed; reinstall and `update --all` refresh the runtime while preserving user-generated personas under `create-master/masters/`.
+`npx master-skill install --all` installs all 20 skills: 15 personas, 4 teaching modes (including the `/master-help` router), and the `create-master` generator. The generator is copied as a self-contained runtime, so it remains usable after the transient npx package directory is removed; reinstall and `update --all` refresh the runtime while preserving user-generated personas under `create-master/masters/`.
 
 ```bash
 # Install individual public skills
@@ -185,10 +185,41 @@ npx master-skill install master-zhiyi
 npx master-skill install compare-masters
 npx master-skill install create-master
 
-# Install or list the complete 19-skill catalog
+# Install or list the complete 20-skill catalog
 npx master-skill install --all
 npx master-skill list
+
+# Not sure who to ask? Describe the question and let it route
+npx master-skill recommend "念佛怎么念才算老实"
+npx master-skill recommend "禅宗从哪开始学"
 ```
+
+**Not sure which master or teaching mode to use?**
+
+Two entry points share one routing table (`routing.json` at the repo root, plus
+each persona's `meta.json` `search_scope.keywords`):
+
+| Entry point | Where |
+|-------------|-------|
+| `master-skill recommend "<question>"` | Terminal; deterministic scoring, supports `--json` |
+| `/master-help` | In-chat; just ask "who should I ask?" |
+
+Resolution short-circuits in order: **learning path → debate → comparison → single master.**
+It names a destination and stops — the master it routes to answers under its own
+`citation_contract` and boundary rules.
+
+```bash
+$ master-skill recommend "十六观智是什么"
+
+推荐祖师：
+  /master-buddhaghosa  [南传]  命中 十六观智
+  /master-mahasi-sayadaw  [南传]  命中 十六观智、观智
+```
+
+> Only keywords of length ≥ 2 score. The seven single-character doctrinal atoms
+> (空 戒 定 慧 苦 禅 业) fire inside ordinary Chinese — "有空吗" ("are you free?")
+> used to route to Madhyamaka — so they are excluded; queries carrying only a bare
+> atom fall through to the topic-pairing fallback.
 
 **Global install (frequent use / offline-friendly)**
 
