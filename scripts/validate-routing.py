@@ -138,21 +138,27 @@ def validate(root: Path = ROOT) -> list:
             problems.append(f"mode_rules: {mode!r} has no keywords")
 
     # 3 — masters resolve
+    situations = routing.get("situations") or []
+    if not isinstance(situations, list):
+        problems.append("routing.json: situations must be an array")
+        situations = []
+
     referenced = set()
-    for row in pairings:
-        rid = row.get("id", "<unnamed>")
-        if not row.get("keywords"):
-            problems.append(f"topic_pairings: {rid!r} has no keywords")
-        row_masters = row.get("masters", [])
-        if not row_masters:
-            problems.append(f"topic_pairings: {rid!r} has no masters")
-        for slug in row_masters:
-            referenced.add(slug)
-            if slug not in personas:
-                problems.append(
-                    f"topic_pairings: {rid!r} references {slug!r}, which is "
-                    f"not a kind:persona skill in skill-catalog.json"
-                )
+    for section, rows in (("topic_pairings", pairings), ("situations", situations)):
+        for row in rows:
+            rid = row.get("id", "<unnamed>")
+            if not row.get("keywords"):
+                problems.append(f"{section}: {rid!r} has no keywords")
+            row_masters = row.get("masters", [])
+            if not row_masters:
+                problems.append(f"{section}: {rid!r} has no masters")
+            for slug in row_masters:
+                referenced.add(slug)
+                if slug not in personas:
+                    problems.append(
+                        f"{section}: {rid!r} references {slug!r}, which is "
+                        f"not a kind:persona skill in skill-catalog.json"
+                    )
     for slug in default_pairing:
         referenced.add(slug)
         if slug not in personas:
@@ -161,9 +167,24 @@ def validate(root: Path = ROOT) -> list:
                 f"skill-catalog.json"
             )
 
-    # 4 / 5 — disjointness
+    # 4 / 5 — disjointness within each section
     problems += _disjoint_problems("mode_rules", mode_rules)
     problems += _disjoint_problems("topic_pairings", pairings)
+    problems += _disjoint_problems("situations", situations)
+
+    # 5b — a situation keyword that also triggers a mode is dead code: the
+    # mode layer short-circuits first, so the situation row can never fire.
+    mode_kws = {kw for r in mode_rules for kw in r.get("keywords", [])}
+    for row in situations:
+        rid = row.get("id", "<unnamed>")
+        for kw in row.get("keywords", []):
+            for mkw in mode_kws:
+                if kw == mkw or kw in mkw or mkw in kw:
+                    problems.append(
+                        f"situations: {rid!r} keyword {kw!r} collides with "
+                        f"mode_rules keyword {mkw!r} — mode_rules is evaluated "
+                        f"first, so this situation row is unreachable"
+                    )
 
     # 6 — order is a clean 1..N
     orders = [r.get("order") for r in mode_rules]
@@ -178,8 +199,9 @@ def validate(root: Path = ROOT) -> list:
     # 7 — no unreachable persona
     for slug in sorted(personas - referenced):
         problems.append(
-            f"coverage: persona {slug!r} appears in no topic_pairing and is "
-            f"not in default_pairing — it can never be recommended"
+            f"coverage: persona {slug!r} appears in no topic_pairing or "
+            f"situation and is not in default_pairing — it can never be "
+            f"recommended"
         )
 
     # 8 — persona keywords still exist (recommend scores off them)
@@ -220,6 +242,7 @@ def main() -> int:
         routing = _read_json(ROUTING_PATH)
         print(
             f"routing.json ok — {len(routing.get('mode_rules', []))} mode rules, "
+            f"{len(routing.get('situations', []))} situations, "
             f"{len(routing.get('topic_pairings', []))} topic pairings, "
             f"all keyword sets pairwise disjoint."
         )
