@@ -866,3 +866,57 @@ test("routing.json passes its validator", () => {
   })();
   assert.equal(code, 0, `validate-routing.py failed:\n${stdout}`);
 });
+
+// --- situations (vernacular routing) ---
+//
+// These rows come from the 「你的状况」 table in README.md, which is keyed on
+// what a beginner actually feels ("坐不住") rather than on doctrine ("四念处").
+// Four of them used to fall through to the default pairing because no
+// search_scope.keywords entry carries that wording. Binding the table to tests
+// keeps README, routing.json and the CLI from drifting apart — the same
+// contract the teaching-modes fixtures above enforce for mode routing.
+
+const SITUATION_FIXTURES = [
+  ["妄念纷飞坐不住", ["master-xuyun", "master-zhiyi", "master-ajahn-chah"], "situations"],
+  ["读经文看不懂逻辑", ["master-xuanzang"], "situations"],
+  ["学佛很久但无力感", ["master-yinguang"], "situations"],
+  ["想学最朴素的禅修", ["master-ajahn-chah"], "situations"],
+  ["想系统学华严", ["master-fazang"], "persona_keywords"],
+  ["对苦行闭关好奇", ["master-milarepa"], "persona_keywords"],
+  ["想了解上座部论藏体系", ["master-buddhaghosa"], "persona_keywords"],
+  ["想做密集内观禅修", ["master-mahasi-sayadaw"], "persona_keywords"],
+  ["想学完整的道次第", ["master-atisha", "master-tsongkhapa"], "topic_pairings"],
+];
+
+for (const [query, expected, layer] of SITUATION_FIXTURES) {
+  test(`README situation "${query}" routes via ${layer}`, () => {
+    const data = recommendJson(query);
+    assert.equal(data.resolvedBy, layer);
+    assert.deepEqual(data.masters.map((m) => m.name), expected);
+  });
+}
+
+// 空性 is the ordinary modern rendering of śūnyatā, but neither Madhyamaka
+// master declared it — both listed only 性空 — so the query used to surface
+// Milarepa alone.
+test("空性 reaches the Madhyamaka masters", () => {
+  const data = recommendJson("想了解空性");
+  assert.equal(data.resolvedBy, "persona_keywords");
+  const names = data.masters.map((m) => m.name);
+  assert.ok(names.includes("master-nagarjuna"), `got ${names}`);
+  assert.ok(names.includes("master-kumarajiva"), `got ${names}`);
+});
+
+// An explicit doctrinal term is stronger evidence than a felt-state phrase,
+// so the keyword layer must win when both could match.
+test("persona keywords outrank situations", () => {
+  const data = recommendJson("念佛的时候妄念很多");
+  assert.equal(data.resolvedBy, "persona_keywords");
+  assert.ok(data.masters.some((m) => m.name === "master-yinguang"));
+});
+
+test("mode routing outranks situations", () => {
+  const data = recommendJson("我妄念很多，禅修应该从哪开始学");
+  assert.equal(data.resolvedBy, "mode_rules");
+  assert.equal(data.mode, "master-curriculum");
+});

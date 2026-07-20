@@ -618,6 +618,37 @@ function pickDiverse(scored, limit) {
   return chosen;
 }
 
+// Shared by the situations and topic_pairings layers. Keyword sets are
+// pairwise disjoint within each section (enforced by validate-routing.py),
+// but a query can still touch two rows through different keywords — so the
+// tiebreak is explicit and total: most hits, then longest single hit, then
+// row id, which leaves no room for iteration order to decide.
+function pickRow(rows, hitsFor) {
+  return (
+    rows
+      .map((row) => ({ row, matched: hitsFor(row.keywords) }))
+      .filter((entry) => entry.matched.length)
+      .sort(
+        (a, b) =>
+          b.matched.length - a.matched.length ||
+          Math.max(...b.matched.map((k) => k.length)) -
+            Math.max(...a.matched.map((k) => k.length)) ||
+          a.row.id.localeCompare(b.row.id)
+      )[0] || null
+  );
+}
+
+function expandSlugs(slugs) {
+  const byName = new Map(personaCandidates().map((c) => [c.name, c]));
+  return slugs.map((name) => ({
+    name,
+    command: `/${name}`,
+    tradition: byName.get(name)?.tradition || "(unspecified)",
+    score: 0,
+    matched: [],
+  }));
+}
+
 function recommendData(query) {
   const routing = loadRouting();
   const q = String(query).toLowerCase();
@@ -672,39 +703,50 @@ function recommendData(query) {
     };
   }
 
-  // Priority 3 — topic pairing fallback. Keyword sets are pairwise disjoint
-  // (enforced by scripts/validate-routing.py), but a query can still touch
-  // two rows through different keywords, so the tiebreak is explicit.
-  const rows = routing.topic_pairings
-    .map((row) => ({ row, matched: hitsFor(row.keywords) }))
-    .filter((entry) => entry.matched.length)
-    .sort(
-      (a, b) =>
-        b.matched.length - a.matched.length ||
-        Math.max(...b.matched.map((k) => k.length)) -
-          Math.max(...a.matched.map((k) => k.length)) ||
-        a.row.id.localeCompare(b.row.id)
-    );
+  // Priority 3 — vernacular felt-state. A beginner types 坐不住, not 四念处,
+  // and search_scope.keywords carry no such wording, so these queries used to
+  // land on the default pairing. Placed after keyword scoring (an explicit
+  // doctrinal term is a stronger signal) and before topic_pairings (which was
+  // authored to pair masters for /compare-masters, not to answer "ask who?").
+  const situation = pickRow(routing.situations || [], hitsFor);
+  if (situation) {
+    return {
+      query,
+      resolvedBy: "situations",
+      kind: "persona",
+      mode: null,
+      command: null,
+      matched: situation.matched,
+      note: situation.row.note || null,
+      masters: expandSlugs(situation.row.masters),
+    };
+  }
 
-  const winner = rows[0];
-  const slugs = winner ? winner.row.masters : routing.default_pairing;
-  const byName = new Map(personaCandidates().map((c) => [c.name, c]));
+  // Priority 4 — topic pairing fallback.
+  const pairing = pickRow(routing.topic_pairings, hitsFor);
+  if (pairing) {
+    return {
+      query,
+      resolvedBy: "topic_pairings",
+      kind: "persona",
+      mode: null,
+      command: null,
+      matched: pairing.matched,
+      note: pairing.row.note || null,
+      masters: expandSlugs(pairing.row.masters),
+    };
+  }
 
+  // Priority 5 — nothing matched at all.
   return {
     query,
-    resolvedBy: winner ? "topic_pairings" : "default_pairing",
+    resolvedBy: "default_pairing",
     kind: "persona",
     mode: null,
     command: null,
-    matched: winner ? winner.matched : [],
-    note: winner ? winner.row.note || null : "无关键词命中，回退到默认配对",
-    masters: slugs.map((name) => ({
-      name,
-      command: `/${name}`,
-      tradition: byName.get(name)?.tradition || "(unspecified)",
-      score: 0,
-      matched: [],
-    })),
+    matched: [],
+    note: "无关键词命中，回退到默认配对",
+    masters: expandSlugs(routing.default_pairing),
   };
 }
 

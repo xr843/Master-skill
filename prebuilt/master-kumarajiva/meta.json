@@ -5,8 +5,14 @@
   "citation_contract": {
     "version": 1,
     "claim_policy": "declared_sources_only",
-    "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
-    "allowed_source_types": ["cbeta"],
+    "required_for": [
+      "doctrinal_claim",
+      "practice_guidance",
+      "text_interpretation"
+    ],
+    "allowed_source_types": [
+      "cbeta"
+    ],
     "minimum_claim_coverage": 0.9,
     "live_retrieval_allowed": true
   },
@@ -81,6 +87,7 @@
       "般若",
       "缘起",
       "性空",
+      "空性",
       "毕竟空",
       "八不",
       "不二",
@@ -132,6 +139,10 @@
     "monologue": "上堂先开八不中道为骨干，次以法华会三归一开权显实，末以维摩不二一默如雷印证。"
   },
   "cross_critique": [
-    { "target_master": "xuanzang", "position": "对唯识：诸法因缘生，我说即是空；说万法唯识，识亦缘起，不可执为实有自体。空有非二，皆为破执而设。", "citation": "T30n1564" }
+    {
+      "target_master": "xuanzang",
+      "position": "对唯识：诸法因缘生，我说即是空；说万法唯识，识亦缘起，不可执为实有自体。空有非二，皆为破执而设。",
+      "citation": "T30n1564"
+    }
   ]
 }
