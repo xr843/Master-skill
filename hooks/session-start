@@ -64,7 +64,10 @@ done
 
 # Build the context message
 CONTEXT="Master-skill plugin loaded. Available Buddhist masters:
-${MASTERS_LIST}  /compare-masters — multi-tradition comparison
+${MASTERS_LIST}  /master-help — not sure which master or mode? start here
+  /compare-masters — multi-tradition comparison
+  /master-debate — 4-round adversarial dialectic between masters
+  /master-curriculum — staged learning path within a tradition
   /create-master — generate new master from FoJin knowledge graph
 
 All doctrinal responses include CBETA citations linked to fojin.app."

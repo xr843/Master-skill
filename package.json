@@ -15,7 +15,7 @@
     "validate:versions": "python3 scripts/check-manifest-versions.py",
     "test:hook": "bash hooks/tests/test_session_start.sh && bash hooks/tests/test_run_hook.sh && bash hooks/tests/test_run_hook_cmd.sh",
     "test:cli": "node --test tests/cli.test.mjs",
-    "test": "python3 scripts/validate.py --strict && python3 scripts/validate-fidelity.py && python3 scripts/validate-persona-fidelity.py && python3 scripts/check-manifest-versions.py && python3 scripts/test-fidelity.py --all --dry-run && node --test tests/cli.test.mjs",
+    "test": "python3 scripts/validate.py --strict && python3 scripts/validate-fidelity.py && python3 scripts/validate-persona-fidelity.py && python3 scripts/check-manifest-versions.py && python3 scripts/validate-routing.py && python3 scripts/test-fidelity.py --all --dry-run && node --test tests/cli.test.mjs",
     "test:smoke": "python3 scripts/test-fidelity.py --master yinguang --max-tests 1",
     "prepack": "node bin/cli.mjs list"
   },
@@ -71,6 +71,7 @@
     "gemini-extension.json",
     "GEMINI.md",
     "skill-catalog.json",
+    "routing.json",
     "SKILL.md",
     "tools/",
     "prompts/",

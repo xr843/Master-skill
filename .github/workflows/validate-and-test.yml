@@ -89,6 +89,12 @@ jobs:
       - name: Validate lore_triggers content (v0.8 — hard gate)
         run: python scripts/validate-lore-triggers-content.py --strict
 
+      # Enforces that routing.json keyword sets stay pairwise disjoint. The
+      # pairing table this replaced shipped three collisions (戒律, 道次第,
+      # 中观/空性), which made a match depend on iteration order.
+      - name: Validate routing table (v0.11 — hard gate)
+        run: python scripts/validate-routing.py
+
       - name: Test session-start hook lineage sanitization
         run: bash hooks/tests/test_session_start.sh
 
