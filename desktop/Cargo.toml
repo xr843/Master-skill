@@ -16,5 +16,7 @@ path = "src/main.rs"
 anyhow = "1"
 eframe = "0.31"
 egui = "0.31"
+fs4 = { version = "1.1", default-features = false, features = ["sync"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+tempfile = "3"
