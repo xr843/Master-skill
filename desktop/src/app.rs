@@ -253,6 +253,63 @@ fn trace_action_requires_writer(action: &TraceAction) -> bool {
     )
 }
 
+struct TraceStoreAccess {
+    traces: TraceStore,
+    lease: Option<TraceStoreLease>,
+    read_only_reason: Option<String>,
+    load_message: Option<String>,
+}
+
+fn open_trace_store(trace_path: &std::path::Path, capacity: usize) -> TraceStoreAccess {
+    let (mut lease, mut read_only_reason) = match TraceStoreLease::try_acquire(trace_path) {
+        Ok(Some(lease)) => (Some(lease), None),
+        Ok(None) => (
+            None,
+            Some(format!(
+                "Trace store is in use by another process; this window is read-only: {}",
+                trace_path.display()
+            )),
+        ),
+        Err(error) => (
+            None,
+            Some(format!(
+                "Trace store writer lease failed; this window is read-only: {error:#}"
+            )),
+        ),
+    };
+    let load_result = match &lease {
+        Some(lease) => lease.load(capacity),
+        None => TraceStore::load_read_only_from_path(trace_path, capacity),
+    };
+
+    match load_result {
+        Ok(traces) => TraceStoreAccess {
+            traces,
+            lease,
+            read_only_reason,
+            load_message: None,
+        },
+        Err(error) => {
+            lease = None;
+            let load_message = format!("Trace history load failed: {error:#}");
+            let preservation_reason = format!(
+                "Trace history could not be loaded; this window is read-only to preserve {}",
+                trace_path.display()
+            );
+            read_only_reason = Some(match read_only_reason {
+                Some(reason) => format!("{reason}; {preservation_reason}"),
+                None => preservation_reason,
+            });
+            TraceStoreAccess {
+                traces: TraceStore::new(capacity),
+                lease,
+                read_only_reason,
+                load_message: Some(load_message),
+            }
+        }
+    }
+}
+
 struct MetricCard {
     title: &'static str,
     value: String,
@@ -338,33 +395,12 @@ pub(crate) const TRACE_STORE_CAPACITY: usize = 200;
 impl MasterSkillApp {
     pub fn new() -> Self {
         let trace_path = desktop_trace_store_path();
-        let (trace_lease, read_only_reason) = match TraceStoreLease::try_acquire(&trace_path) {
-            Ok(Some(lease)) => (Some(lease), None),
-            Ok(None) => (
-                None,
-                Some(format!(
-                    "Trace store is in use by another process; this window is read-only: {}",
-                    trace_path.display()
-                )),
-            ),
-            Err(error) => (
-                None,
-                Some(format!(
-                    "Trace store writer lease failed; this window is read-only: {error:#}"
-                )),
-            ),
-        };
-        let trace_load_result = match &trace_lease {
-            Some(lease) => lease.load(TRACE_STORE_CAPACITY),
-            None => TraceStore::load_read_only_from_path(&trace_path, TRACE_STORE_CAPACITY),
-        };
-        let (traces, trace_load_message) = match trace_load_result {
-            Ok(traces) => (traces, None),
-            Err(err) => (
-                TraceStore::new(TRACE_STORE_CAPACITY),
-                Some(format!("Trace history load failed: {err:#}")),
-            ),
-        };
+        let TraceStoreAccess {
+            traces,
+            lease: trace_lease,
+            read_only_reason,
+            load_message: trace_load_message,
+        } = open_trace_store(&trace_path, TRACE_STORE_CAPACITY);
         let mut app = Self {
             client: CliClient::default(),
             inventory: None,
@@ -2628,9 +2664,10 @@ fn desktop_trace_store_path_from_env(
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
     use std::path::PathBuf;
     use std::sync::mpsc::channel;
-    use std::time::{Duration, Instant};
+    use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
     use crate::catalog::{SkillKind, SkillRow};
     use crate::trace::{
@@ -2639,9 +2676,63 @@ mod tests {
     };
 
     use super::{
-        finish_disconnected_trace, poll_pending_task, trace_action_requires_writer, PendingTask,
-        PendingTaskEvent, TaskResult,
+        finish_disconnected_trace, open_trace_store, poll_pending_task,
+        trace_action_requires_writer, PendingTask, PendingTaskEvent, TaskResult,
     };
+
+    fn temp_trace_path(label: &str) -> PathBuf {
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        std::env::temp_dir()
+            .join(format!("master-skill-desktop-app-{label}-{suffix}"))
+            .join("desktop-traces.json")
+    }
+
+    #[test]
+    fn contended_trace_access_opens_read_only() {
+        let path = temp_trace_path("contended");
+        let first = crate::trace::TraceStoreLease::try_acquire(&path)
+            .unwrap()
+            .unwrap();
+
+        let access = open_trace_store(&path, 10);
+
+        assert!(access.lease.is_none());
+        assert!(access
+            .read_only_reason
+            .as_deref()
+            .is_some_and(|reason| reason.contains("read-only")));
+        drop(access);
+        drop(first);
+        fs::remove_dir_all(path.parent().unwrap()).ok();
+    }
+
+    #[test]
+    fn invalid_trace_file_drops_writer_lease_and_preserves_source() {
+        let path = temp_trace_path("invalid");
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        let original = r#"{"schema_version":2,"next_id":1,"records":[]}"#;
+        fs::write(&path, original).unwrap();
+
+        let access = open_trace_store(&path, 10);
+
+        assert!(access.lease.is_none());
+        assert!(access
+            .read_only_reason
+            .as_deref()
+            .is_some_and(|reason| reason.contains("preserve")));
+        assert!(access
+            .load_message
+            .as_deref()
+            .is_some_and(|message| message.contains("unsupported trace schema version 2")));
+        assert_eq!(fs::read_to_string(&path).unwrap(), original);
+        assert!(crate::trace::TraceStoreLease::try_acquire(&path)
+            .unwrap()
+            .is_some());
+        fs::remove_dir_all(path.parent().unwrap()).ok();
+    }
 
     #[test]
     fn disconnected_pending_task_is_removed_and_marks_trace_failed() {

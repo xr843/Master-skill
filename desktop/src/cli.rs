@@ -244,6 +244,28 @@ mod command_error_tests {
         assert!(message.contains("stdout:"));
         assert!(message.contains("stderr:"));
     }
+
+    #[test]
+    fn nonzero_error_retains_status_and_both_streams() {
+        let client = CliClient::new(std::env::current_dir().unwrap());
+        let mut command = Command::new(std::env::current_exe().unwrap());
+        command
+            .args([
+                "--exact",
+                "command::tests::command_runner_helper",
+                "--nocapture",
+            ])
+            .env("MASTER_SKILL_COMMAND_RUNNER_HELPER", "failure");
+
+        let error = client
+            .run_command(&mut command, "test command failed")
+            .unwrap_err();
+        let message = format!("{error:#}");
+
+        assert!(message.contains("status"));
+        assert!(message.contains("failure stdout marker"));
+        assert!(message.contains("failure stderr marker"));
+    }
 }
 
 #[cfg(test)]

@@ -112,6 +112,10 @@ mod tests {
             let stderr = vec![b'e'; 128 * 1024];
             io::stdout().write_all(&stdout).unwrap();
             io::stderr().write_all(&stderr).unwrap();
+        } else if mode == "failure" {
+            io::stdout().write_all(b"failure stdout marker").unwrap();
+            io::stderr().write_all(b"failure stderr marker").unwrap();
+            std::process::exit(7);
         } else if mode == "sleep" {
             std::thread::sleep(Duration::from_secs(5));
         }

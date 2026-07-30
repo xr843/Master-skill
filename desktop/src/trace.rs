@@ -1980,6 +1980,9 @@ impl TraceStore {
             .unwrap_or(0)
             .saturating_add(1)
             .max(store.next_id);
+        if store.next_id == u64::MAX {
+            return Err(anyhow!("trace record ID space is exhausted"));
+        }
         if mark_running_interrupted {
             store.mark_running_records_interrupted();
         }
@@ -5162,6 +5165,26 @@ mod tests {
         let error = TraceStore::load_from_path(&path, 10).unwrap_err();
 
         assert!(format!("{error:#}").contains("unsupported trace schema version 2"));
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn rejects_trace_store_with_exhausted_record_ids() {
+        let directory = temp_dir("trace-id-exhausted");
+        let path = directory.join("desktop-traces.json");
+        fs::create_dir_all(&directory).unwrap();
+        fs::write(
+            &path,
+            format!(
+                r#"{{"schema_version":1,"next_id":{},"records":[]}}"#,
+                u64::MAX
+            ),
+        )
+        .unwrap();
+
+        let error = TraceStore::load_from_path(&path, 10).unwrap_err();
+
+        assert!(format!("{error:#}").contains("record ID space is exhausted"));
         fs::remove_dir_all(directory).unwrap();
     }
 
