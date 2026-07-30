@@ -31,6 +31,27 @@ from pathlib import Path
 from verify_citations import audit_answer, load_declared_ids
 
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
+SCHEMA_VERSION = 1
+
+
+def suite_common(master_name: str, dry_run: bool, outcome: str) -> dict:
+    """Return fields shared by every fidelity JSON v1 suite."""
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "master": master_name,
+        "mode": "dry_run" if dry_run else "graded",
+        "outcome": outcome,
+    }
+
+
+def suite_error(master_name: str, dry_run: bool, message: str) -> dict:
+    """Return a fidelity JSON v1 suite for a precondition or execution error."""
+    return {
+        **suite_common(master_name, dry_run, "error"),
+        "total": 0,
+        "results": [],
+        "error": message,
+    }
 
 
 def load_skill_context(master_dir: Path) -> str:
@@ -143,11 +164,19 @@ def run_tests(
     """Run fidelity tests for a master. Returns summary."""
     master_dir = PREBUILT_DIR / master_name
     if not master_dir.exists():
-        return {"error": f"Master '{master_name}' not found"}
+        return suite_error(
+            master_name,
+            dry_run,
+            f"Master '{master_name}' not found",
+        )
 
     tests = load_tests(master_dir)
     if not tests:
-        return {"error": f"No fidelity.jsonl found for '{master_name}'"}
+        return suite_error(
+            master_name,
+            dry_run,
+            f"No fidelity.jsonl found for '{master_name}'",
+        )
 
     if max_tests is not None and max_tests > 0:
         # Prefer easier/basic tests when capping — smoke suite should hit
@@ -171,7 +200,11 @@ def run_tests(
                 "difficulty": test.get("difficulty", "unknown"),
                 "status": "dry_run",
             })
-        return {"master": master_name, "total": len(tests), "results": results}
+        return {
+            **suite_common(master_name, dry_run, "completed"),
+            "total": len(tests),
+            "results": results,
+        }
 
     # Load skill context
     system_prompt = load_skill_context(master_dir)
@@ -180,11 +213,19 @@ def run_tests(
     try:
         import anthropic
     except ImportError:
-        return {"error": "anthropic package not installed. Run: pip install anthropic"}
+        return suite_error(
+            master_name,
+            dry_run,
+            "anthropic package not installed. Run: pip install anthropic",
+        )
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        return {"error": "ANTHROPIC_API_KEY environment variable not set"}
+        return suite_error(
+            master_name,
+            dry_run,
+            "ANTHROPIC_API_KEY environment variable not set",
+        )
 
     client = anthropic.Anthropic(api_key=api_key)
 
@@ -253,7 +294,7 @@ def run_tests(
                 print(f"FAIL ({failures})")
 
     return {
-        "master": master_name,
+        **suite_common(master_name, dry_run, "completed"),
         "model": model,
         "total": len(tests),
         "passed": passed,

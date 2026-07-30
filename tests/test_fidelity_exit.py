@@ -43,6 +43,40 @@ def test_top_level_error_fails(runner):
     assert runner.results_failed([{"error": "missing key"}], False) is True
 
 
+def test_dry_run_emits_versioned_completed_suite(runner):
+    suite = runner.run_tests(
+        "master-huineng",
+        dry_run=True,
+        max_tests=1,
+        quiet=True,
+    )
+
+    assert suite["schema_version"] == 1
+    assert suite["master"] == "master-huineng"
+    assert suite["mode"] == "dry_run"
+    assert suite["outcome"] == "completed"
+    assert suite["total"] == 1
+    assert len(suite["results"]) == 1
+    assert "passed" not in suite
+    assert "failed" not in suite
+
+
+def test_missing_master_emits_versioned_error_suite(runner):
+    assert runner.run_tests(
+        "master-does-not-exist",
+        dry_run=False,
+        quiet=True,
+    ) == {
+        "schema_version": 1,
+        "master": "master-does-not-exist",
+        "mode": "graded",
+        "outcome": "error",
+        "total": 0,
+        "results": [],
+        "error": "Master 'master-does-not-exist' not found",
+    }
+
+
 def test_missing_master_exits_nonzero_with_clean_json_stdout():
     result = subprocess.run(
         [
@@ -60,5 +94,14 @@ def test_missing_master_exits_nonzero_with_clean_json_stdout():
 
     assert result.returncode == 1
     payload = json.loads(result.stdout)
-    assert len(payload) == 1
-    assert "error" in payload[0]
+    assert payload == [
+        {
+            "schema_version": 1,
+            "master": "master-does-not-exist",
+            "mode": "graded",
+            "outcome": "error",
+            "total": 0,
+            "results": [],
+            "error": "Master 'master-does-not-exist' not found",
+        }
+    ]
