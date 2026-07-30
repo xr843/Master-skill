@@ -91,11 +91,22 @@ def load_tests(master_dir: Path) -> list[dict]:
     ):
         if line.strip():
             try:
-                tests.append(json.loads(line))
+                test = json.loads(line)
             except json.JSONDecodeError as error:
                 raise ValueError(
                     f"Invalid fidelity.jsonl line {line_number}: {error.msg}"
                 ) from error
+            if not isinstance(test, dict):
+                raise ValueError(
+                    f"Invalid fidelity.jsonl line {line_number}: expected a JSON object"
+                )
+            question = test.get("q")
+            if not isinstance(question, str) or not question.strip():
+                raise ValueError(
+                    f"Invalid fidelity.jsonl line {line_number}: "
+                    "expected a non-empty string q"
+                )
+            tests.append(test)
     return tests
 
 

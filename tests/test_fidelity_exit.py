@@ -97,6 +97,26 @@ def test_invalid_fidelity_file_emits_versioned_error_suite(runner, monkeypatch, 
     assert "line 2" in suite["error"]
 
 
+def test_fidelity_case_without_question_emits_versioned_error_suite(
+    runner, monkeypatch, tmp_path
+):
+    master_dir = tmp_path / "master-broken"
+    (master_dir / "tests").mkdir(parents=True)
+    (master_dir / "tests" / "fidelity.jsonl").write_text(
+        '{"difficulty":"basic"}\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "PREBUILT_DIR", tmp_path)
+
+    suite = runner.run_tests("master-broken", dry_run=True, quiet=True)
+
+    assert suite["outcome"] == "error"
+    assert suite["total"] == 0
+    assert suite["results"] == []
+    assert "line 1" in suite["error"]
+    assert "non-empty string q" in suite["error"]
+
+
 def test_missing_master_exits_nonzero_with_clean_json_stdout():
     result = subprocess.run(
         [

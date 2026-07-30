@@ -226,9 +226,11 @@ impl EvaluationRunHistoryItem {
     }
 
     fn pass_rate_basis(&self) -> usize {
-        (self.passed_count * 10_000)
-            .checked_div(self.total_count)
-            .unwrap_or(0)
+        if self.total_count == 0 {
+            return 0;
+        }
+        let basis = (self.passed_count as u128 * 10_000) / self.total_count as u128;
+        basis.min(usize::MAX as u128) as usize
     }
 
     pub fn matches_filter(&self, filter: EvaluationRunHistoryFilter) -> bool {
@@ -1071,11 +1073,19 @@ fn evaluation_case_statuses(
 ) -> Result<Vec<EvaluationCaseStatus>, String> {
     cases
         .iter()
-        .map(|case| match EvaluationCaseStatus::from_wire(&case.status) {
-            EvaluationCaseStatus::Unknown(status) => Err(format!(
-                "invalid fidelity suite: unknown case status {status:?}"
-            )),
-            status => Ok(status),
+        .map(|case| {
+            if case.index.checked_add(1).is_none() {
+                return Err(format!(
+                    "invalid fidelity suite: case index {} cannot be displayed one-based",
+                    case.index
+                ));
+            }
+            match EvaluationCaseStatus::from_wire(&case.status) {
+                EvaluationCaseStatus::Unknown(status) => Err(format!(
+                    "invalid fidelity suite: unknown case status {status:?}"
+                )),
+                status => Ok(status),
+            }
         })
         .collect()
 }
@@ -1269,6 +1279,14 @@ fn compare_evaluation_runs(
             std::cmp::Ordering::Less => EvaluationRunTrend::Regressed,
             std::cmp::Ordering::Equal => EvaluationRunTrend::Stable,
         }
+    }
+}
+
+fn signed_usize_delta(current: usize, previous: usize) -> isize {
+    if current >= previous {
+        current.saturating_sub(previous).min(isize::MAX as usize) as isize
+    } else {
+        -(previous.saturating_sub(current).min(isize::MAX as usize) as isize)
     }
 }
 
@@ -2153,10 +2171,10 @@ impl TraceStore {
                 previous_trace_id: previous.trace_id,
                 current_failed_count,
                 previous_failed_count,
-                failed_delta: current_failed_count as isize - previous_failed_count as isize,
+                failed_delta: signed_usize_delta(current_failed_count, previous_failed_count),
                 current_pass_rate,
                 previous_pass_rate,
-                pass_rate_delta_points: current_pass_rate as isize - previous_pass_rate as isize,
+                pass_rate_delta_points: signed_usize_delta(current_pass_rate, previous_pass_rate),
                 action: current.action.clone(),
             });
         }
@@ -3210,6 +3228,47 @@ mod tests {
     }
 
     #[test]
+    fn rejects_case_index_that_cannot_be_displayed_one_based() {
+        let mut store = TraceStore::new(10);
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "master-huineng fidelity finished",
+            format!(
+                r#"[{{
+                  "schema_version": 1,
+                  "master": "master-huineng",
+                  "mode": "graded",
+                  "outcome": "completed",
+                  "total": 1,
+                  "passed": 1,
+                  "failed": 0,
+                  "results": [
+                    {{"index": {}, "question": "overflow", "status": "PASS"}}
+                  ]
+                }}]"#,
+                usize::MAX
+            ),
+            Duration::from_millis(50),
+        );
+
+        let errors = store.records.back().unwrap().evaluation_errors();
+        assert_eq!(errors.len(), 1);
+        assert_eq!(
+            errors[0].kind,
+            EvaluationEvidenceErrorKind::MalformedPayload
+        );
+        assert!(errors[0].message.contains("index"));
+    }
+
+    #[test]
     fn rejects_evaluation_payload_for_wrong_skill_scope() {
         let mut store = TraceStore::new(10);
         let run = store.begin_with_action(
@@ -4140,6 +4199,24 @@ mod tests {
     }
 
     #[test]
+    fn pass_rate_calculation_handles_large_legacy_counts() {
+        let item = EvaluationRunHistoryItem {
+            trace_id: 1,
+            scope: "master-huineng".to_string(),
+            status: TraceStatus::Succeeded,
+            passed_count: usize::MAX,
+            total_count: usize::MAX,
+            failed_count: 0,
+            mode: EvaluationMode::Graded,
+            duration_ms: None,
+            action: None,
+            trend: EvaluationRunTrend::New,
+        };
+
+        assert_eq!(item.pass_rate_percent(), 100);
+    }
+
+    #[test]
     fn annotates_evaluation_run_history_with_scope_trends() {
         let mut store = TraceStore::new(10);
 
@@ -4806,6 +4883,47 @@ mod tests {
                 slug: "huineng".to_string()
             })
         );
+    }
+
+    #[test]
+    fn saturates_large_legacy_regression_deltas() {
+        let mut store = TraceStore::new(10);
+        let old_run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("legacy fidelity"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            old_run,
+            "legacy fidelity finished",
+            "Testing: master-huineng\nResult: 0/1 passed (0%)",
+            Duration::from_millis(50),
+        );
+        let new_run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("legacy fidelity"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            new_run,
+            "legacy fidelity finished",
+            format!(
+                "Testing: master-huineng\nResult: 0/{} passed (0%)",
+                usize::MAX
+            ),
+            Duration::from_millis(50),
+        );
+
+        let regressions = store.evaluation_regressions(8);
+
+        assert_eq!(regressions.len(), 1);
+        assert_eq!(regressions[0].failed_delta, isize::MAX);
     }
 
     #[test]

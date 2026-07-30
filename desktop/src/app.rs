@@ -99,6 +99,7 @@ impl EvaluationWindow {
 fn suite_matches_filter(
     row: &SkillRow,
     latest_result: Option<&EvaluationRunResult>,
+    latest_graded_result: Option<&EvaluationRunResult>,
     filter: SuiteFilter,
 ) -> bool {
     match filter {
@@ -107,7 +108,7 @@ fn suite_matches_filter(
         SuiteFilter::Attention => row.quality_level() == QualityLevel::Attention,
         SuiteFilter::Missing => row.quality_level() == QualityLevel::Missing,
         SuiteFilter::NotRun => latest_result.is_none(),
-        SuiteFilter::FailedRun => latest_result.is_some_and(|result| {
+        SuiteFilter::FailedRun => latest_graded_result.is_some_and(|result| {
             !result.is_dry_run()
                 && result.total_count > 0
                 && result.passed_count < result.total_count
@@ -1521,6 +1522,12 @@ impl MasterSkillApp {
             .into_iter()
             .map(|result| (result.slug.clone(), result))
             .collect();
+        let latest_graded_results: BTreeMap<_, _> = self
+            .traces
+            .latest_graded_evaluation_results_by_slug()
+            .into_iter()
+            .map(|result| (result.slug.clone(), result))
+            .collect();
         ui.horizontal_wrapped(|ui| {
             ui.label("Filter");
             for filter in [
@@ -1543,8 +1550,12 @@ impl MasterSkillApp {
             .clone()
             .into_iter()
             .filter(|row| {
-                suite_matches_filter(row, latest_results.get(&row.slug), self.suite_filter)
-                    && suite_matches_query(row, &self.suite_query)
+                suite_matches_filter(
+                    row,
+                    latest_results.get(&row.slug),
+                    latest_graded_results.get(&row.slug),
+                    self.suite_filter,
+                ) && suite_matches_query(row, &self.suite_query)
             })
             .collect();
         if rows.is_empty() {
@@ -2507,34 +2518,47 @@ mod tests {
             mode: EvaluationMode::Graded,
             trace_id: 2,
         };
+        let later_dry_run = EvaluationRunResult {
+            slug: "zhiyi".to_string(),
+            passed_count: 0,
+            total_count: 10,
+            mode: EvaluationMode::DryRun,
+            trace_id: 3,
+        };
 
         assert!(super::suite_matches_filter(
             &ready,
+            Some(&passing_run),
             Some(&passing_run),
             super::SuiteFilter::Ready
         ));
         assert!(super::suite_matches_filter(
             &attention,
+            Some(&later_dry_run),
             Some(&failed_run),
             super::SuiteFilter::Attention
         ));
         assert!(super::suite_matches_filter(
             &missing,
             None,
+            None,
             super::SuiteFilter::Missing
         ));
         assert!(super::suite_matches_filter(
             &missing,
             None,
+            None,
             super::SuiteFilter::NotRun
         ));
         assert!(super::suite_matches_filter(
             &attention,
+            Some(&later_dry_run),
             Some(&failed_run),
             super::SuiteFilter::FailedRun
         ));
         assert!(!super::suite_matches_filter(
             &ready,
+            Some(&passing_run),
             Some(&passing_run),
             super::SuiteFilter::FailedRun
         ));
