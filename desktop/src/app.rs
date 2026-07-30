@@ -2706,6 +2706,7 @@ mod tests {
             has_citation_format: complete_contract,
             fidelity_case_count: case_count,
             fidelity_cases: Vec::new(),
+            fidelity_error: None,
             source_index_present: complete_contract,
             kind: SkillKind::Persona,
         }
