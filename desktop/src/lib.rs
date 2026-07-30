@@ -3,6 +3,7 @@ pub mod baseline;
 pub mod catalog;
 pub mod cli;
 pub mod command;
+pub mod desktop_args;
 pub mod fonts;
 pub mod layout;
 pub mod model;
