@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs;
 use std::path::Path;
 use std::time::Duration;
@@ -161,6 +161,12 @@ pub struct EvaluationEvidenceError {
     pub slug: Option<String>,
     pub kind: EvaluationEvidenceErrorKind,
     pub message: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum EvaluationEvidenceScope {
+    All,
+    Skill(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1212,10 +1218,13 @@ fn classify_failure_text(text: &str) -> Option<FailureKind> {
 
 fn annotate_evaluation_run_trends(history: &mut [EvaluationRunHistoryItem]) {
     for index in 0..history.len() {
-        let Some(previous) = history[index + 1..]
-            .iter()
-            .find(|candidate| candidate.scope == history[index].scope)
-        else {
+        if history[index].mode != EvaluationMode::Graded {
+            history[index].trend = EvaluationRunTrend::New;
+            continue;
+        }
+        let Some(previous) = history[index + 1..].iter().find(|candidate| {
+            candidate.scope == history[index].scope && candidate.mode == EvaluationMode::Graded
+        }) else {
             history[index].trend = EvaluationRunTrend::New;
             continue;
         };
@@ -1898,6 +1907,83 @@ impl TraceStore {
             .find(|result| result.slug == slug)
     }
 
+    pub fn latest_graded_evaluation_result_for(&self, slug: &str) -> Option<EvaluationRunResult> {
+        self.records
+            .iter()
+            .rev()
+            .flat_map(TraceRecord::evaluation_results)
+            .find(|result| result.slug == slug && result.mode == EvaluationMode::Graded)
+    }
+
+    pub fn latest_graded_evaluation_results_by_slug(&self) -> Vec<EvaluationRunResult> {
+        let mut results = BTreeMap::new();
+        for result in self
+            .records
+            .iter()
+            .rev()
+            .flat_map(TraceRecord::evaluation_results)
+            .filter(|result| result.mode == EvaluationMode::Graded)
+        {
+            results.entry(result.slug.clone()).or_insert(result);
+        }
+
+        results.into_values().collect()
+    }
+
+    pub fn latest_evaluation_errors(&self) -> Vec<EvaluationEvidenceError> {
+        let mut handled_scopes = BTreeSet::new();
+        let mut current_errors = Vec::new();
+
+        for record in self.records.iter().rev() {
+            let Some(action) = record.action.as_ref() else {
+                continue;
+            };
+            match action {
+                TraceAction::FidelityDryRunSkill { slug } => {
+                    let scope = EvaluationEvidenceScope::Skill(slug.clone());
+                    if !handled_scopes.insert(scope) {
+                        continue;
+                    }
+
+                    if let Some(mut error) = record
+                        .parsed_evaluation_evidence()
+                        .errors
+                        .into_iter()
+                        .next()
+                    {
+                        if error.slug.is_none() {
+                            error.slug = Some(slug.clone());
+                        }
+                        current_errors.push(error);
+                    }
+                }
+                TraceAction::FidelityDryRunAll => {
+                    let evidence = record.parsed_evaluation_evidence();
+                    let has_errors = !evidence.errors.is_empty();
+                    for error in evidence.errors {
+                        let scope = error
+                            .slug
+                            .as_ref()
+                            .map(|slug| EvaluationEvidenceScope::Skill(slug.clone()))
+                            .unwrap_or(EvaluationEvidenceScope::All);
+                        if handled_scopes.insert(scope) {
+                            current_errors.push(error);
+                        }
+                    }
+                    for run in evidence.runs {
+                        handled_scopes.insert(EvaluationEvidenceScope::Skill(run.slug));
+                    }
+                    if !has_errors {
+                        handled_scopes.insert(EvaluationEvidenceScope::All);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        current_errors
+    }
+
     pub fn latest_evaluation_results_by_slug(&self) -> Vec<EvaluationRunResult> {
         let mut results = BTreeMap::new();
         for result in self
@@ -1969,10 +2055,9 @@ impl TraceStore {
                 continue;
             }
 
-            let Some(previous) = history[index + 1..]
-                .iter()
-                .find(|candidate| candidate.scope == current.scope)
-            else {
+            let Some(previous) = history[index + 1..].iter().find(|candidate| {
+                candidate.scope == current.scope && candidate.mode == EvaluationMode::Graded
+            }) else {
                 continue;
             };
 
@@ -1999,12 +2084,9 @@ impl TraceStore {
     }
 
     pub fn latest_evaluation_case_results_for(&self, slug: &str) -> Vec<EvaluationCaseResult> {
-        self.records
-            .iter()
-            .rev()
-            .flat_map(TraceRecord::evaluation_case_results)
-            .filter(|result| result.slug == slug)
-            .collect()
+        self.latest_evaluation_case_results_by_slug()
+            .remove(slug)
+            .unwrap_or_default()
     }
 
     pub fn evaluation_run_coverage(&self, total_skill_count: usize) -> EvaluationRunCoverage {
@@ -2018,7 +2100,7 @@ impl TraceStore {
     }
 
     pub fn evaluation_failure_insights(&self) -> EvaluationFailureInsights {
-        let latest_cases = self.latest_evaluation_case_results_by_slug();
+        let latest_cases = self.latest_graded_evaluation_case_results_by_slug();
         let mut insights = EvaluationFailureInsights::default();
         let mut failure_counts_by_slug: BTreeMap<String, usize> = BTreeMap::new();
 
@@ -2058,7 +2140,7 @@ impl TraceStore {
 
     pub fn evaluation_failure_queue(&self) -> Vec<EvaluationFailureItem> {
         let mut queue: Vec<_> = self
-            .latest_evaluation_case_results_by_slug()
+            .latest_graded_evaluation_case_results_by_slug()
             .into_values()
             .flatten()
             .filter(|result| result.status.is_failure() || result.has_failure_evidence())
@@ -2152,12 +2234,58 @@ impl TraceStore {
     ) -> BTreeMap<String, Vec<EvaluationCaseResult>> {
         let mut latest_by_slug = BTreeMap::new();
         for record in self.records.iter().rev() {
-            let mut record_results: BTreeMap<String, Vec<EvaluationCaseResult>> = BTreeMap::new();
+            let run_slugs: Vec<_> = record
+                .evaluation_results()
+                .into_iter()
+                .map(|result| result.slug)
+                .collect();
+            let mut record_results: BTreeMap<String, Vec<EvaluationCaseResult>> = run_slugs
+                .iter()
+                .cloned()
+                .map(|slug| (slug, Vec::new()))
+                .collect();
             for result in record.evaluation_case_results() {
                 record_results
                     .entry(result.slug.clone())
                     .or_default()
                     .push(result);
+            }
+
+            for (slug, results) in record_results {
+                latest_by_slug.entry(slug).or_insert(results);
+            }
+        }
+
+        latest_by_slug
+    }
+
+    fn latest_graded_evaluation_case_results_by_slug(
+        &self,
+    ) -> BTreeMap<String, Vec<EvaluationCaseResult>> {
+        let mut latest_by_slug = BTreeMap::new();
+        for record in self.records.iter().rev() {
+            let graded_slugs: Vec<_> = record
+                .evaluation_results()
+                .into_iter()
+                .filter(|result| result.mode == EvaluationMode::Graded)
+                .map(|result| result.slug)
+                .collect();
+            if graded_slugs.is_empty() {
+                continue;
+            }
+
+            let mut record_results: BTreeMap<String, Vec<EvaluationCaseResult>> = graded_slugs
+                .iter()
+                .cloned()
+                .map(|slug| (slug, Vec::new()))
+                .collect();
+            for result in record.evaluation_case_results() {
+                if graded_slugs.contains(&result.slug) {
+                    record_results
+                        .entry(result.slug.clone())
+                        .or_default()
+                        .push(result);
+                }
             }
 
             for (slug, results) in record_results {
@@ -2632,6 +2760,141 @@ mod tests {
     }
 
     #[test]
+    fn latest_case_results_do_not_merge_history() {
+        let mut store = TraceStore::new(10);
+        let old_run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            old_run,
+            "master-huineng fidelity finished",
+            r#"[{
+              "schema_version": 1,
+              "master": "master-huineng",
+              "mode": "graded",
+              "outcome": "completed",
+              "total": 1,
+              "passed": 0,
+              "failed": 1,
+              "results": [
+                {"index": 0, "question": "旧结果", "status": "FAIL"}
+              ]
+            }]"#,
+            Duration::from_millis(50),
+        );
+        let new_run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            new_run,
+            "master-huineng fidelity finished",
+            r#"[{
+              "schema_version": 1,
+              "master": "master-huineng",
+              "mode": "graded",
+              "outcome": "completed",
+              "total": 1,
+              "passed": 1,
+              "failed": 0,
+              "results": [
+                {"index": 0, "question": "新结果", "status": "PASS"}
+              ]
+            }]"#,
+            Duration::from_millis(50),
+        );
+
+        let cases = store.latest_evaluation_case_results_for("huineng");
+        assert_eq!(cases.len(), 1);
+        assert_eq!(cases[0].status, EvaluationCaseStatus::Pass);
+        assert_eq!(cases[0].trace_id, new_run);
+        assert_eq!(cases[0].question, "新结果");
+    }
+
+    #[test]
+    fn later_dry_run_preserves_graded_evidence() {
+        let mut store = TraceStore::new(10);
+        let graded_run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            graded_run,
+            "master-huineng fidelity finished",
+            r#"[{
+              "schema_version": 1,
+              "master": "master-huineng",
+              "mode": "graded",
+              "outcome": "completed",
+              "total": 1,
+              "passed": 1,
+              "failed": 0,
+              "results": [
+                {"index": 0, "question": "已评分", "status": "PASS"}
+              ]
+            }]"#,
+            Duration::from_millis(50),
+        );
+        let dry_run = store.begin_with_action(
+            "Running master-huineng fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            dry_run,
+            "master-huineng fidelity dry-run finished",
+            r#"[{
+              "schema_version": 1,
+              "master": "master-huineng",
+              "mode": "dry_run",
+              "outcome": "completed",
+              "total": 1,
+              "results": [
+                {"index": 0, "question": "仅结构检查", "status": "dry_run"}
+              ]
+            }]"#,
+            Duration::from_millis(50),
+        );
+
+        let latest = store.latest_evaluation_result_for("huineng").unwrap();
+        assert_eq!(latest.trace_id, dry_run);
+        assert!(latest.is_dry_run());
+
+        let latest_graded = store
+            .latest_graded_evaluation_result_for("huineng")
+            .unwrap();
+        assert_eq!(latest_graded.trace_id, graded_run);
+        assert_eq!(latest_graded.mode, EvaluationMode::Graded);
+        let graded_results = store.latest_graded_evaluation_results_by_slug();
+        assert_eq!(graded_results, vec![latest_graded]);
+
+        let insights = store.evaluation_failure_insights();
+        assert_eq!(insights.total_cases, 1);
+        assert_eq!(insights.pass_cases, 1);
+        assert_eq!(insights.dry_run_cases, 0);
+
+        let history = store.evaluation_run_history(2);
+        assert_eq!(history[0].trace_id, dry_run);
+        assert_eq!(history[0].trend, EvaluationRunTrend::New);
+    }
+
+    #[test]
     fn parses_v1_evaluation_modes_and_case_statuses() {
         let mut store = TraceStore::new(10);
         let run = store.begin_with_action(
@@ -2882,6 +3145,130 @@ mod tests {
         assert_eq!(errors[0].kind, EvaluationEvidenceErrorKind::Execution);
         assert_eq!(errors[0].slug.as_deref(), Some("huineng"));
         assert!(errors[0].message.contains("python exited"));
+    }
+
+    #[test]
+    fn selects_only_current_evaluation_errors_per_skill_scope() {
+        let mut store = TraceStore::new(10);
+
+        let huineng_error = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_error_with_detail(
+            huineng_error,
+            "master-huineng fidelity failed",
+            "old huineng failure",
+            Duration::from_millis(50),
+        );
+
+        let zhiyi_error = store.begin_with_action(
+            "Running master-zhiyi fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "zhiyi".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-zhiyi --json"),
+            "Queued.",
+        );
+        store.finish_error_with_detail(
+            zhiyi_error,
+            "master-zhiyi fidelity failed",
+            "current zhiyi failure",
+            Duration::from_millis(50),
+        );
+
+        let huineng_success = store.begin_with_action(
+            "Running master-huineng fidelity dry-run",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --dry-run --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            huineng_success,
+            "master-huineng fidelity finished",
+            r#"[{
+              "schema_version": 1,
+              "master": "master-huineng",
+              "mode": "dry_run",
+              "outcome": "completed",
+              "total": 1,
+              "results": [
+                {"index": 0, "question": "结构检查", "status": "dry_run"}
+              ]
+            }]"#,
+            Duration::from_millis(50),
+        );
+
+        let xuanzang_error = store.begin_with_action(
+            "Running master-xuanzang fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "xuanzang".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-xuanzang --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            xuanzang_error,
+            "master-xuanzang fidelity finished",
+            "[",
+            Duration::from_millis(50),
+        );
+
+        let errors = store.latest_evaluation_errors();
+        assert_eq!(errors.len(), 2);
+        assert_eq!(errors[0].slug.as_deref(), Some("xuanzang"));
+        assert_eq!(errors[1].slug.as_deref(), Some("zhiyi"));
+        assert!(!errors
+            .iter()
+            .any(|error| error.slug.as_deref() == Some("huineng")));
+    }
+
+    #[test]
+    fn successful_all_scope_run_replaces_older_all_scope_error() {
+        let mut store = TraceStore::new(10);
+        let failed_all = store.begin_with_action(
+            "Running all fidelity suites",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --json"),
+            "Queued.",
+        );
+        store.finish_error_with_detail(
+            failed_all,
+            "all fidelity suites failed",
+            "runner exited before producing JSON",
+            Duration::from_millis(50),
+        );
+        assert_eq!(store.latest_evaluation_errors().len(), 1);
+
+        let successful_all = store.begin_with_action(
+            "Running all fidelity suites",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --dry-run --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            successful_all,
+            "all fidelity suites finished",
+            r#"[{
+              "schema_version": 1,
+              "master": "master-huineng",
+              "mode": "dry_run",
+              "outcome": "completed",
+              "total": 1,
+              "results": [
+                {"index": 0, "question": "结构检查", "status": "dry_run"}
+              ]
+            }]"#,
+            Duration::from_millis(50),
+        );
+
+        assert!(store.latest_evaluation_errors().is_empty());
     }
 
     #[test]
@@ -3260,7 +3647,7 @@ mod tests {
     }
 
     #[test]
-    fn keeps_pass_rate_not_applicable_for_dry_run_only_cases() {
+    fn keeps_graded_insights_empty_for_dry_run_only_cases() {
         let mut store = TraceStore::new(10);
 
         let run = store.begin_with_action(
@@ -3296,8 +3683,8 @@ mod tests {
 
         let insights = store.evaluation_failure_insights();
 
-        assert_eq!(insights.total_cases, 2);
-        assert_eq!(insights.dry_run_cases, 2);
+        assert_eq!(insights.total_cases, 0);
+        assert_eq!(insights.dry_run_cases, 0);
         assert_eq!(insights.graded_cases(), 0);
         assert_eq!(insights.pass_rate_label(), "N/A");
     }
