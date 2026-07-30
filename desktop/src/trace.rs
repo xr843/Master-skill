@@ -1916,6 +1916,18 @@ impl TraceStore {
     }
 
     pub fn load_from_path(path: &Path, capacity: usize) -> Result<Self> {
+        Self::load_from_path_with_interruption_policy(path, capacity, true)
+    }
+
+    pub fn load_read_only_from_path(path: &Path, capacity: usize) -> Result<Self> {
+        Self::load_from_path_with_interruption_policy(path, capacity, false)
+    }
+
+    fn load_from_path_with_interruption_policy(
+        path: &Path,
+        capacity: usize,
+        mark_running_interrupted: bool,
+    ) -> Result<Self> {
         if !path.is_file() {
             return Ok(Self::new(capacity));
         }
@@ -1968,7 +1980,9 @@ impl TraceStore {
             .unwrap_or(0)
             .saturating_add(1)
             .max(store.next_id);
-        store.mark_running_records_interrupted();
+        if mark_running_interrupted {
+            store.mark_running_records_interrupted();
+        }
         store.enforce_capacity();
         Ok(store)
     }
@@ -5201,6 +5215,24 @@ mod tests {
         assert_eq!(record.summary, "Interrupted before completion.");
         assert!(record.detail.contains("Desktop manager closed"));
 
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn read_only_load_preserves_running_records_owned_by_writer() {
+        let path = temp_path("trace-read-only");
+        let mut store = TraceStore::new(10);
+        store.begin_with_action(
+            "Running full validation",
+            TraceAction::FullValidation,
+            Some("npm test"),
+            "Queued.",
+        );
+        store.save_to_path(&path).unwrap();
+
+        let restored = TraceStore::load_read_only_from_path(&path, 10).unwrap();
+
+        assert_eq!(restored.recent()[0].status, TraceStatus::Running);
         fs::remove_file(path).unwrap();
     }
 

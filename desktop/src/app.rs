@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
-use std::sync::mpsc::{channel, Receiver};
+use std::sync::mpsc::{channel, Receiver, TryRecvError};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -26,7 +26,7 @@ use crate::trace::{
     EvaluationFailurePriority, EvaluationRegressionItem, EvaluationRemediationPlan,
     EvaluationRunCoverage, EvaluationRunHistoryFilter, EvaluationRunHistoryItem,
     EvaluationRunResult, EvaluationRunTrend, EvaluationTrendSummary, TraceAction, TraceFailureItem,
-    TraceListFilter, TraceStatus, TraceStore,
+    TraceListFilter, TraceStatus, TraceStore, TraceStoreLease,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -152,8 +152,7 @@ pub struct MasterSkillApp {
     tradition_filter: Option<String>,
     log: String,
     log_lines: Vec<String>,
-    task_rx: Option<Receiver<TaskEnvelope>>,
-    busy_label: Option<String>,
+    pending_task: Option<PendingTask>,
     console_section: ConsoleSection,
     log_expanded: bool,
     trace_filter: TraceListFilter,
@@ -163,7 +162,8 @@ pub struct MasterSkillApp {
     run_history_filter: EvaluationRunHistoryFilter,
     evaluation_window: EvaluationWindow,
     traces: TraceStore,
-    trace_path: PathBuf,
+    trace_lease: Option<TraceStoreLease>,
+    read_only_reason: Option<String>,
 }
 
 struct Snapshot {
@@ -182,10 +182,75 @@ struct TaskOutcome {
 
 type TaskResult = std::result::Result<TaskOutcome, String>;
 
-struct TaskEnvelope {
-    trace_id: u64,
+struct PendingTask {
+    trace_id: Option<u64>,
+    label: String,
+    started: Instant,
+    receiver: Receiver<TaskResult>,
+}
+
+enum PendingTaskEvent {
+    Pending,
+    Completed {
+        trace_id: Option<u64>,
+        elapsed: Duration,
+        result: Box<TaskResult>,
+    },
+    Disconnected {
+        trace_id: Option<u64>,
+        elapsed: Duration,
+    },
+}
+
+fn poll_pending_task(pending_task: &mut Option<PendingTask>) -> PendingTaskEvent {
+    let Some(pending) = pending_task.as_ref() else {
+        return PendingTaskEvent::Pending;
+    };
+    let receive_result = pending.receiver.try_recv();
+    if matches!(receive_result, Err(TryRecvError::Empty)) {
+        return PendingTaskEvent::Pending;
+    }
+
+    let pending = pending_task
+        .take()
+        .expect("pending task disappeared while polling");
+    match receive_result {
+        Ok(result) => PendingTaskEvent::Completed {
+            trace_id: pending.trace_id,
+            elapsed: pending.started.elapsed(),
+            result: Box::new(result),
+        },
+        Err(TryRecvError::Disconnected) => PendingTaskEvent::Disconnected {
+            trace_id: pending.trace_id,
+            elapsed: pending.started.elapsed(),
+        },
+        Err(TryRecvError::Empty) => unreachable!("empty receive returned after early check"),
+    }
+}
+
+const WORKER_DISCONNECTED_MESSAGE: &str = "Task worker disconnected before reporting a result";
+
+fn finish_disconnected_trace(
+    traces: &mut TraceStore,
+    trace_id: Option<u64>,
     elapsed: Duration,
-    result: TaskResult,
+) -> String {
+    if let Some(trace_id) = trace_id {
+        traces.finish_error_with_detail(
+            trace_id,
+            WORKER_DISCONNECTED_MESSAGE,
+            WORKER_DISCONNECTED_MESSAGE,
+            elapsed,
+        );
+    }
+    WORKER_DISCONNECTED_MESSAGE.to_string()
+}
+
+fn trace_action_requires_writer(action: &TraceAction) -> bool {
+    !matches!(
+        action,
+        TraceAction::Refresh | TraceAction::InspectSkill { .. }
+    )
 }
 
 struct MetricCard {
@@ -273,14 +338,33 @@ pub(crate) const TRACE_STORE_CAPACITY: usize = 200;
 impl MasterSkillApp {
     pub fn new() -> Self {
         let trace_path = desktop_trace_store_path();
-        let (traces, trace_load_message) =
-            match TraceStore::load_from_path(&trace_path, TRACE_STORE_CAPACITY) {
-                Ok(traces) => (traces, None),
-                Err(err) => (
-                    TraceStore::new(TRACE_STORE_CAPACITY),
-                    Some(format!("Trace history load failed: {err:#}")),
-                ),
-            };
+        let (trace_lease, read_only_reason) = match TraceStoreLease::try_acquire(&trace_path) {
+            Ok(Some(lease)) => (Some(lease), None),
+            Ok(None) => (
+                None,
+                Some(format!(
+                    "Trace store is in use by another process; this window is read-only: {}",
+                    trace_path.display()
+                )),
+            ),
+            Err(error) => (
+                None,
+                Some(format!(
+                    "Trace store writer lease failed; this window is read-only: {error:#}"
+                )),
+            ),
+        };
+        let trace_load_result = match &trace_lease {
+            Some(lease) => lease.load(TRACE_STORE_CAPACITY),
+            None => TraceStore::load_read_only_from_path(&trace_path, TRACE_STORE_CAPACITY),
+        };
+        let (traces, trace_load_message) = match trace_load_result {
+            Ok(traces) => (traces, None),
+            Err(err) => (
+                TraceStore::new(TRACE_STORE_CAPACITY),
+                Some(format!("Trace history load failed: {err:#}")),
+            ),
+        };
         let mut app = Self {
             client: CliClient::default(),
             inventory: None,
@@ -293,8 +377,7 @@ impl MasterSkillApp {
             tradition_filter: None,
             log: "Starting desktop manager...".to_string(),
             log_lines: vec!["Starting desktop manager...".to_string()],
-            task_rx: None,
-            busy_label: None,
+            pending_task: None,
             console_section: ConsoleSection::Overview,
             log_expanded: false,
             trace_filter: TraceListFilter::All,
@@ -304,9 +387,13 @@ impl MasterSkillApp {
             run_history_filter: EvaluationRunHistoryFilter::All,
             evaluation_window: EvaluationWindow::Recent8,
             traces,
-            trace_path,
+            trace_lease,
+            read_only_reason,
         };
         if let Some(message) = trace_load_message {
+            app.set_log(message);
+        }
+        if let Some(message) = app.read_only_reason.clone() {
             app.set_log(message);
         }
         app.refresh_all();
@@ -362,7 +449,10 @@ impl MasterSkillApp {
     }
 
     fn persist_traces(&mut self) {
-        if let Err(err) = self.traces.save_to_path(&self.trace_path) {
+        let Some(lease) = self.trace_lease.as_ref() else {
+            return;
+        };
+        if let Err(err) = lease.save(&self.traces) {
             self.set_log(format!("Trace history save failed: {err:#}"));
         }
     }
@@ -378,7 +468,19 @@ impl MasterSkillApp {
     }
 
     fn is_busy(&self) -> bool {
-        self.task_rx.is_some()
+        self.pending_task.is_some()
+    }
+
+    fn is_read_only(&self) -> bool {
+        self.trace_lease.is_none()
+    }
+
+    fn can_mutate(&self) -> bool {
+        !self.is_busy() && !self.is_read_only()
+    }
+
+    fn can_start_trace_action(&self, action: &TraceAction) -> bool {
+        !self.is_busy() && (!self.is_read_only() || !trace_action_requires_writer(action))
     }
 
     fn start_task_with_action<F>(
@@ -395,61 +497,97 @@ impl MasterSkillApp {
             return;
         }
 
+        if self.is_read_only()
+            && action
+                .as_ref()
+                .map(trace_action_requires_writer)
+                .unwrap_or(true)
+        {
+            let reason = self
+                .read_only_reason
+                .clone()
+                .unwrap_or_else(|| "the trace store writer lease is unavailable".to_string());
+            self.set_log(format!("Action unavailable in read-only mode: {reason}"));
+            return;
+        }
+
         let client = self.client.clone();
         let label = label.into();
-        let trace_id = if let Some(action) = action {
-            self.traces
-                .begin_with_action(label.clone(), action, command, "Queued.")
+        let command = command.map(Into::into);
+        let trace_id = if self.is_read_only() {
+            None
+        } else if let Some(action) = action {
+            Some(
+                self.traces
+                    .begin_with_action(label.clone(), action, command, "Queued."),
+            )
         } else {
-            self.traces
-                .begin_with_detail(label.clone(), command, "Queued.")
+            Some(
+                self.traces
+                    .begin_with_detail(label.clone(), command, "Queued."),
+            )
         };
-        self.persist_traces();
+        if trace_id.is_some() {
+            self.persist_traces();
+        }
         let (tx, rx) = channel();
-        self.task_rx = Some(rx);
-        self.busy_label = Some(label.clone());
+        self.pending_task = Some(PendingTask {
+            trace_id,
+            label: label.clone(),
+            started: Instant::now(),
+            receiver: rx,
+        });
         self.set_log(format!("{label}..."));
 
         thread::spawn(move || {
-            let started = Instant::now();
             let result = task(client).map_err(|err| format!("{err:#}"));
-            let _ = tx.send(TaskEnvelope {
-                trace_id,
-                elapsed: started.elapsed(),
-                result,
-            });
+            let _ = tx.send(result);
         });
     }
 
     fn poll_task(&mut self) {
-        let envelope = self.task_rx.as_ref().and_then(|rx| rx.try_recv().ok());
-        if let Some(envelope) = envelope {
-            self.task_rx = None;
-            self.busy_label = None;
-            match envelope.result {
+        match poll_pending_task(&mut self.pending_task) {
+            PendingTaskEvent::Pending => {}
+            PendingTaskEvent::Completed {
+                trace_id,
+                elapsed,
+                result,
+            } => match *result {
                 Ok(outcome) => {
                     if let Some(snapshot) = outcome.snapshot {
                         self.apply_snapshot(snapshot);
                     }
-                    self.traces.finish_success_with_detail(
-                        envelope.trace_id,
-                        outcome.message.clone(),
-                        outcome.detail.clone(),
-                        envelope.elapsed,
-                    );
-                    self.persist_traces();
+                    if let Some(trace_id) = trace_id {
+                        self.traces.finish_success_with_detail(
+                            trace_id,
+                            outcome.message.clone(),
+                            outcome.detail.clone(),
+                            elapsed,
+                        );
+                        self.persist_traces();
+                    }
                     self.set_log(outcome.message);
                 }
                 Err(message) => {
-                    self.traces.finish_error_with_detail(
-                        envelope.trace_id,
-                        first_line(&message),
-                        message.clone(),
-                        envelope.elapsed,
-                    );
-                    self.persist_traces();
+                    if let Some(trace_id) = trace_id {
+                        self.traces.finish_error_with_detail(
+                            trace_id,
+                            first_line(&message),
+                            message.clone(),
+                            elapsed,
+                        );
+                        self.persist_traces();
+                    }
                     self.set_log(message);
                 }
+            },
+            PendingTaskEvent::Disconnected { trace_id, elapsed } => {
+                let traced = trace_id.is_some();
+                let message = finish_disconnected_trace(&mut self.traces, trace_id, elapsed);
+                if traced {
+                    self.persist_traces();
+                }
+                self.set_log(message);
             }
         }
     }
@@ -620,23 +758,26 @@ impl MasterSkillApp {
                 self.start_refresh();
             }
             if ui
-                .add_enabled(!busy, egui::Button::new("Install all"))
+                .add_enabled(self.can_mutate(), egui::Button::new("Install all"))
                 .clicked()
             {
                 self.start_install_all();
             }
             if ui
-                .add_enabled(!busy, egui::Button::new("Update all"))
+                .add_enabled(self.can_mutate(), egui::Button::new("Update all"))
                 .clicked()
             {
                 self.start_update_all();
             }
-            if let Some(label) = &self.busy_label {
+            if let Some(pending) = &self.pending_task {
                 ui.separator();
                 ui.spinner();
-                ui.label(label);
+                ui.label(&pending.label);
             }
         });
+        if let Some(reason) = &self.read_only_reason {
+            ui.colored_label(egui::Color32::from_rgb(220, 170, 80), reason);
+        }
         ui.horizontal(|ui| {
             for section in [
                 ConsoleSection::Overview,
@@ -928,7 +1069,6 @@ impl MasterSkillApp {
     }
 
     fn show_evaluation_center(&mut self, ui: &mut egui::Ui) {
-        let busy = self.is_busy();
         let summary = evaluation_summary(&self.rows);
         let gate = evaluation_gate_snapshot(&self.rows, &self.traces, self.evaluation_window);
         let run_history: Vec<_> = gate
@@ -943,13 +1083,13 @@ impl MasterSkillApp {
             "Fidelity coverage, tradition distribution, and validation actions.",
             |ui| {
                 if ui
-                    .add_enabled(!busy, egui::Button::new("Run full validation"))
+                    .add_enabled(self.can_mutate(), egui::Button::new("Run full validation"))
                     .clicked()
                 {
                     self.start_full_validation();
                 }
                 if ui
-                    .add_enabled(!busy, egui::Button::new("Run fidelity dry-run"))
+                    .add_enabled(self.can_mutate(), egui::Button::new("Run fidelity dry-run"))
                     .clicked()
                 {
                     self.start_fidelity_dry_run();
@@ -1059,7 +1199,6 @@ impl MasterSkillApp {
         remediation_plan: &EvaluationRemediationPlan,
     ) {
         ui.heading("Decision Brief");
-        let busy = self.is_busy();
         let mut decision_action = None;
         let mut copy_report = false;
         let mut copy_plan = false;
@@ -1072,7 +1211,12 @@ impl MasterSkillApp {
             ui.strong(&brief.headline);
             ui.separator();
             if ui
-                .add_enabled(!busy, egui::Button::new(brief.action.label()))
+                .add_enabled(
+                    !self.is_busy()
+                        && (!self.is_read_only()
+                            || matches!(&brief.action, EvaluationDecisionAction::OpenSkill { .. })),
+                    egui::Button::new(brief.action.label()),
+                )
                 .clicked()
             {
                 decision_action = Some(brief.action.clone());
@@ -1178,7 +1322,6 @@ impl MasterSkillApp {
             return;
         }
 
-        let busy = self.is_busy();
         let mut action_to_rerun = None;
         let mut skill_to_open = None;
         egui::ScrollArea::horizontal()
@@ -1222,7 +1365,9 @@ impl MasterSkillApp {
                             ui.horizontal(|ui| {
                                 if ui
                                     .add_enabled(
-                                        !busy && item.action.is_some(),
+                                        item.action.as_ref().is_some_and(|action| {
+                                            self.can_start_trace_action(action)
+                                        }),
                                         egui::Button::new("Rerun"),
                                     )
                                     .clicked()
@@ -1330,7 +1475,6 @@ impl MasterSkillApp {
             return;
         }
 
-        let busy = self.is_busy();
         let mut skill_to_open = None;
         let mut skill_to_run = None;
         egui::ScrollArea::horizontal()
@@ -1367,7 +1511,12 @@ impl MasterSkillApp {
                                         if ui.button("Open").clicked() {
                                             skill_to_open = Some(item.slug.clone());
                                         }
-                                        if ui.add_enabled(!busy, egui::Button::new("Run")).clicked()
+                                        if ui
+                                            .add_enabled(
+                                                self.can_mutate(),
+                                                egui::Button::new("Run"),
+                                            )
+                                            .clicked()
                                         {
                                             skill_to_run = Some(item.slug.clone());
                                         }
@@ -1411,7 +1560,6 @@ impl MasterSkillApp {
             return;
         }
 
-        let busy = self.is_busy();
         let mut action_to_rerun = None;
         let mut skill_to_open = None;
         egui::ScrollArea::horizontal()
@@ -1458,7 +1606,9 @@ impl MasterSkillApp {
                                     ui.horizontal(|ui| {
                                         if ui
                                             .add_enabled(
-                                                !busy && item.action.is_some(),
+                                                item.action.as_ref().is_some_and(|action| {
+                                                    self.can_start_trace_action(action)
+                                                }),
                                                 egui::Button::new("Rerun"),
                                             )
                                             .clicked()
@@ -1608,7 +1758,7 @@ impl MasterSkillApp {
     fn show_trace_center(&mut self, ui: &mut egui::Ui) {
         let summary = self.traces.summary();
         let failure_queue = self.traces.trace_failure_queue(6);
-        let can_clear = summary.total > 0 && summary.running == 0;
+        let can_clear = summary.total > 0 && summary.running == 0 && self.can_mutate();
         Self::show_workspace_header(
             ui,
             "Run Trace Center",
@@ -1692,7 +1842,6 @@ impl MasterSkillApp {
             return;
         }
 
-        let busy = self.is_busy();
         let mut action_to_rerun = None;
         let mut skill_to_open = None;
 
@@ -1754,7 +1903,10 @@ impl MasterSkillApp {
                             ui.horizontal(|ui| {
                                 if ui
                                     .add_enabled(
-                                        !busy && record.can_rerun(),
+                                        record.can_rerun()
+                                            && record.action.as_ref().is_some_and(|action| {
+                                                self.can_start_trace_action(action)
+                                            }),
                                         egui::Button::new("Rerun"),
                                     )
                                     .clicked()
@@ -1799,7 +1951,6 @@ impl MasterSkillApp {
             return;
         }
 
-        let busy = self.is_busy();
         let mut action_to_rerun = None;
         let mut skill_to_open = None;
         egui::ScrollArea::horizontal()
@@ -1837,7 +1988,9 @@ impl MasterSkillApp {
                                     ui.horizontal(|ui| {
                                         if ui
                                             .add_enabled(
-                                                !busy && item.action.is_some(),
+                                                item.action.as_ref().is_some_and(|action| {
+                                                    self.can_start_trace_action(action)
+                                                }),
                                                 egui::Button::new("Rerun"),
                                             )
                                             .clicked()
@@ -2087,7 +2240,7 @@ impl MasterSkillApp {
             }
             if ui
                 .add_enabled(
-                    !self.is_busy() && !cases.is_empty(),
+                    self.can_mutate() && !cases.is_empty(),
                     egui::Button::new("Run skill dry-run"),
                 )
                 .clicked()
@@ -2157,7 +2310,6 @@ impl MasterSkillApp {
             return;
         }
 
-        let busy = self.is_busy();
         let mut operation_to_start = None;
         egui::Grid::new("recommended-actions-grid")
             .num_columns(4)
@@ -2182,7 +2334,10 @@ impl MasterSkillApp {
                             ui.label("manual");
                         }
                         operation => {
-                            if ui.add_enabled(!busy, egui::Button::new("Run")).clicked() {
+                            if ui
+                                .add_enabled(self.can_mutate(), egui::Button::new("Run"))
+                                .clicked()
+                            {
                                 operation_to_start = Some(operation.clone());
                             }
                         }
@@ -2269,13 +2424,13 @@ impl MasterSkillApp {
                 ui.separator();
                 if master.installed {
                     if ui
-                        .add_enabled(!self.is_busy(), egui::Button::new("Uninstall"))
+                        .add_enabled(self.can_mutate(), egui::Button::new("Uninstall"))
                         .clicked()
                     {
                         self.start_uninstall(master.slug.clone());
                     }
                 } else if ui
-                    .add_enabled(!self.is_busy(), egui::Button::new("Install"))
+                    .add_enabled(self.can_mutate(), egui::Button::new("Install"))
                     .clicked()
                 {
                     self.start_install(master.slug.clone());
@@ -2474,13 +2629,64 @@ fn desktop_trace_store_path_from_env(
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
+    use std::sync::mpsc::channel;
+    use std::time::{Duration, Instant};
 
     use crate::catalog::{SkillKind, SkillRow};
     use crate::trace::{
         EvaluationDecisionAction, EvaluationDecisionBrief, EvaluationDecisionPosture,
         EvaluationMode, EvaluationRunResult, TraceAction, TraceStore,
     };
-    use std::time::Duration;
+
+    use super::{
+        finish_disconnected_trace, poll_pending_task, trace_action_requires_writer, PendingTask,
+        PendingTaskEvent, TaskResult,
+    };
+
+    #[test]
+    fn disconnected_pending_task_is_removed_and_marks_trace_failed() {
+        let mut traces = TraceStore::new(10);
+        let trace_id = traces.begin_with_action(
+            "Running full validation",
+            TraceAction::FullValidation,
+            Some("npm test"),
+            "Queued.",
+        );
+        let (sender, receiver) = channel::<TaskResult>();
+        drop(sender);
+        let mut pending = Some(PendingTask {
+            trace_id: Some(trace_id),
+            label: "Running full validation".to_string(),
+            started: Instant::now(),
+            receiver,
+        });
+
+        let event = poll_pending_task(&mut pending);
+        let PendingTaskEvent::Disconnected { trace_id, elapsed } = event else {
+            panic!("expected disconnected event");
+        };
+        let message = finish_disconnected_trace(&mut traces, trace_id, elapsed);
+
+        assert!(pending.is_none());
+        assert_eq!(traces.recent()[0].status, crate::trace::TraceStatus::Failed);
+        assert_eq!(
+            message,
+            "Task worker disconnected before reporting a result"
+        );
+    }
+
+    #[test]
+    fn read_only_policy_allows_browsing_but_rejects_trace_writes() {
+        assert!(!trace_action_requires_writer(&TraceAction::Refresh));
+        assert!(!trace_action_requires_writer(&TraceAction::InspectSkill {
+            slug: "huineng".to_string(),
+        }));
+        assert!(trace_action_requires_writer(&TraceAction::InstallAll));
+        assert!(trace_action_requires_writer(&TraceAction::FullValidation));
+        assert!(trace_action_requires_writer(
+            &TraceAction::FidelityDryRunAll
+        ));
+    }
 
     #[test]
     fn trace_store_path_prefers_xdg_data_home() {
