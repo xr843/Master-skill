@@ -108,7 +108,9 @@ fn suite_matches_filter(
         SuiteFilter::Missing => row.quality_level() == QualityLevel::Missing,
         SuiteFilter::NotRun => latest_result.is_none(),
         SuiteFilter::FailedRun => latest_result.is_some_and(|result| {
-            !result.dry_run && result.total_count > 0 && result.passed_count < result.total_count
+            !result.is_dry_run()
+                && result.total_count > 0
+                && result.passed_count < result.total_count
         }),
     }
 }
@@ -1447,7 +1449,7 @@ impl MasterSkillApp {
                                         Self::evaluation_trend_color(item.trend),
                                         item.trend.label(),
                                     );
-                                    ui.label(if item.dry_run { "dry-run" } else { "graded" });
+                                    ui.label(item.mode.label());
                                     ui.label(
                                         item.duration_ms
                                             .map(|duration| format!("{duration} ms"))
@@ -2112,14 +2114,14 @@ impl MasterSkillApp {
                             ui.label(case.citation_assertion_count.to_string());
                             ui.label(case.keyword_assertion_count.to_string());
                             if let Some(result) = case_results.get(&case.index) {
-                                ui.label(result.status.as_str());
+                                ui.label(result.status.label());
                                 ui.label(result.failure_summary());
                             } else {
                                 ui.label(
                                     latest_result
                                         .as_ref()
                                         .map(|result| {
-                                            if result.dry_run {
+                                            if result.is_dry_run() {
                                                 "N/A dry-run".to_string()
                                             } else {
                                                 result.label()
@@ -2466,7 +2468,7 @@ mod tests {
     use crate::catalog::{SkillKind, SkillRow};
     use crate::trace::{
         EvaluationDecisionAction, EvaluationDecisionBrief, EvaluationDecisionPosture,
-        EvaluationRunResult, TraceAction, TraceStore,
+        EvaluationMode, EvaluationRunResult, TraceAction, TraceStore,
     };
     use std::time::Duration;
 
@@ -2496,14 +2498,14 @@ mod tests {
             slug: "huineng".to_string(),
             passed_count: 12,
             total_count: 12,
-            dry_run: false,
+            mode: EvaluationMode::Graded,
             trace_id: 1,
         };
         let failed_run = EvaluationRunResult {
             slug: "zhiyi".to_string(),
             passed_count: 8,
             total_count: 10,
-            dry_run: false,
+            mode: EvaluationMode::Graded,
             trace_id: 2,
         };
 
@@ -2602,7 +2604,7 @@ mod tests {
         traces.finish_success_with_detail(
             run,
             "master-huineng fidelity dry-run finished",
-            r#"[{"master": "master-huineng", "results": [
+            r#"[{"master": "master-huineng", "passed": 1, "results": [
               {"index": 0, "question": "通过", "status": "PASS"},
               {"index": 1, "question": "失败", "status": "FAIL"}
             ]}]"#,

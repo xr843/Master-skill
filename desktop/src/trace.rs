@@ -123,19 +123,67 @@ pub struct TraceRecord {
     pub duration_ms: Option<u128>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EvaluationMode {
+    DryRun,
+    Graded,
+}
+
+impl EvaluationMode {
+    pub fn is_dry_run(self) -> bool {
+        self == Self::DryRun
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::DryRun => "dry-run",
+            Self::Graded => "graded",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum EvaluationSuiteOutcome {
+    Completed,
+    Error(String),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EvaluationEvidenceErrorKind {
+    Execution,
+    MalformedPayload,
+    UnsupportedVersion,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EvaluationEvidenceError {
+    pub trace_id: u64,
+    pub slug: Option<String>,
+    pub kind: EvaluationEvidenceErrorKind,
+    pub message: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EvaluationRunResult {
     pub slug: String,
     pub passed_count: usize,
     pub total_count: usize,
-    pub dry_run: bool,
+    pub mode: EvaluationMode,
     pub trace_id: u64,
 }
 
 impl EvaluationRunResult {
     pub fn label(&self) -> String {
-        let mode = if self.dry_run { "N/A" } else { "graded" };
+        let mode = if self.mode.is_dry_run() {
+            "N/A"
+        } else {
+            "graded"
+        };
         format!("{}/{} {mode}", self.passed_count, self.total_count)
+    }
+
+    pub fn is_dry_run(&self) -> bool {
+        self.mode.is_dry_run()
     }
 }
 
@@ -147,7 +195,7 @@ pub struct EvaluationRunHistoryItem {
     pub passed_count: usize,
     pub total_count: usize,
     pub failed_count: usize,
-    pub dry_run: bool,
+    pub mode: EvaluationMode,
     pub duration_ms: Option<u128>,
     pub action: Option<TraceAction>,
     pub trend: EvaluationRunTrend,
@@ -155,8 +203,16 @@ pub struct EvaluationRunHistoryItem {
 
 impl EvaluationRunHistoryItem {
     pub fn result_label(&self) -> String {
-        let mode = if self.dry_run { "N/A" } else { "graded" };
+        let mode = if self.mode.is_dry_run() {
+            "N/A"
+        } else {
+            "graded"
+        };
         format!("{}/{} {mode}", self.passed_count, self.total_count)
+    }
+
+    pub fn is_dry_run(&self) -> bool {
+        self.mode.is_dry_run()
     }
 
     pub fn pass_rate_percent(&self) -> usize {
@@ -262,12 +318,47 @@ pub struct EvaluationRegressionItem {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub enum EvaluationCaseStatus {
+    Pass,
+    Fail,
+    DryRun,
+    ApiError,
+    Unknown(String),
+}
+
+impl EvaluationCaseStatus {
+    fn from_wire(value: &str) -> Self {
+        match value {
+            value if value.eq_ignore_ascii_case("PASS") => Self::Pass,
+            value if value.eq_ignore_ascii_case("FAIL") => Self::Fail,
+            value if value.eq_ignore_ascii_case("dry_run") => Self::DryRun,
+            value if value.eq_ignore_ascii_case("api_error") => Self::ApiError,
+            value => Self::Unknown(value.to_string()),
+        }
+    }
+
+    pub fn label(&self) -> &str {
+        match self {
+            Self::Pass => "PASS",
+            Self::Fail => "FAIL",
+            Self::DryRun => "dry_run",
+            Self::ApiError => "api_error",
+            Self::Unknown(value) => value,
+        }
+    }
+
+    fn is_failure(&self) -> bool {
+        matches!(self, Self::Fail | Self::ApiError)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EvaluationCaseResult {
     pub slug: String,
     pub case_index: usize,
     pub question: String,
     pub difficulty: Option<String>,
-    pub status: String,
+    pub status: EvaluationCaseStatus,
     pub missing_cites: Vec<String>,
     pub missing_mentions: Vec<String>,
     pub forbidden_found: Vec<String>,
@@ -286,10 +377,10 @@ impl EvaluationCaseResult {
         push_detail_part(&mut parts, "fabricated cites", &self.fabricated_cites);
 
         if parts.is_empty() {
-            match self.status.as_str() {
-                "PASS" => "pass".to_string(),
-                "dry_run" => "dry-run only".to_string(),
-                value => value.to_string(),
+            match &self.status {
+                EvaluationCaseStatus::Pass => "pass".to_string(),
+                EvaluationCaseStatus::DryRun => "dry-run only".to_string(),
+                value => value.label().to_string(),
             }
         } else {
             parts.join("; ")
@@ -396,25 +487,27 @@ impl TraceRecord {
     }
 
     pub fn evaluation_results(&self) -> Vec<EvaluationRunResult> {
-        if !matches!(
-            self.action,
-            Some(TraceAction::FidelityDryRunAll | TraceAction::FidelityDryRunSkill { .. })
-        ) {
-            return Vec::new();
-        }
-
-        parse_evaluation_results(self.id, &self.detail)
+        self.parsed_evaluation_evidence().runs
     }
 
     pub fn evaluation_case_results(&self) -> Vec<EvaluationCaseResult> {
+        self.parsed_evaluation_evidence().cases
+    }
+
+    pub fn evaluation_errors(&self) -> Vec<EvaluationEvidenceError> {
+        self.parsed_evaluation_evidence().errors
+    }
+
+    fn parsed_evaluation_evidence(&self) -> ParsedEvaluationEvidence {
         if !matches!(
             self.action,
             Some(TraceAction::FidelityDryRunAll | TraceAction::FidelityDryRunSkill { .. })
-        ) {
-            return Vec::new();
+        ) || self.status == TraceStatus::Running
+        {
+            return ParsedEvaluationEvidence::default();
         }
 
-        parse_evaluation_case_results(self.id, &self.detail)
+        parse_evaluation_evidence(self)
     }
 
     fn evaluation_run_history_item(&self) -> Option<EvaluationRunHistoryItem> {
@@ -427,12 +520,22 @@ impl TraceRecord {
 
         let cases = self.evaluation_case_results();
         if !cases.is_empty() {
-            let passed_count = cases.iter().filter(|case| case.status == "PASS").count();
+            let passed_count = cases
+                .iter()
+                .filter(|case| case.status == EvaluationCaseStatus::Pass)
+                .count();
             let failed_count = cases
                 .iter()
-                .filter(|case| case.status == "FAIL" || case.has_failure_evidence())
+                .filter(|case| case.status.is_failure() || case.has_failure_evidence())
                 .count();
-            let dry_run = cases.iter().all(|case| case.status == "dry_run");
+            let mode = if cases
+                .iter()
+                .all(|case| case.status == EvaluationCaseStatus::DryRun)
+            {
+                EvaluationMode::DryRun
+            } else {
+                EvaluationMode::Graded
+            };
             return Some(EvaluationRunHistoryItem {
                 trace_id: self.id,
                 scope: self.evaluation_scope_label(),
@@ -440,7 +543,7 @@ impl TraceRecord {
                 passed_count,
                 total_count: cases.len(),
                 failed_count,
-                dry_run,
+                mode,
                 duration_ms: self.duration_ms,
                 action: self.action.clone(),
                 trend: EvaluationRunTrend::New,
@@ -454,8 +557,12 @@ impl TraceRecord {
 
         let passed_count: usize = results.iter().map(|result| result.passed_count).sum();
         let total_count: usize = results.iter().map(|result| result.total_count).sum();
-        let dry_run = results.iter().all(|result| result.dry_run);
-        let failed_count = if dry_run {
+        let mode = if results.iter().all(EvaluationRunResult::is_dry_run) {
+            EvaluationMode::DryRun
+        } else {
+            EvaluationMode::Graded
+        };
+        let failed_count = if mode.is_dry_run() {
             0
         } else {
             total_count.saturating_sub(passed_count)
@@ -468,7 +575,7 @@ impl TraceRecord {
             passed_count,
             total_count,
             failed_count,
-            dry_run,
+            mode,
             duration_ms: self.duration_ms,
             action: self.action.clone(),
             trend: EvaluationRunTrend::New,
@@ -484,127 +591,563 @@ impl TraceRecord {
     }
 }
 
-fn parse_evaluation_case_results(trace_id: u64, detail: &str) -> Vec<EvaluationCaseResult> {
-    let Ok(value) = serde_json::from_str::<serde_json::Value>(detail) else {
-        return Vec::new();
-    };
-    let Some(suites) = value.as_array() else {
-        return Vec::new();
-    };
+#[derive(Clone, Debug, Deserialize)]
+struct EvaluationCaseWire {
+    index: usize,
+    #[serde(default)]
+    question: Option<String>,
+    #[serde(default)]
+    difficulty: Option<String>,
+    status: String,
+    #[serde(default)]
+    missing_cites: Vec<String>,
+    #[serde(default)]
+    missing_mentions: Vec<String>,
+    #[serde(default)]
+    forbidden_found: Vec<String>,
+    #[serde(default)]
+    boundary_violations: Vec<String>,
+    #[serde(default)]
+    fabricated_cites: Vec<String>,
+}
 
-    let mut case_results = Vec::new();
-    for suite in suites {
-        let Some(master_name) = suite.get("master").and_then(serde_json::Value::as_str) else {
-            continue;
-        };
-        let Some(slug) = master_name.strip_prefix("master-") else {
-            continue;
-        };
-        let Some(results) = suite.get("results").and_then(serde_json::Value::as_array) else {
-            continue;
-        };
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+enum EvaluationModeWire {
+    DryRun,
+    Graded,
+}
 
-        for result in results {
-            let Some(index) = result.get("index").and_then(serde_json::Value::as_u64) else {
-                continue;
-            };
-            let Some(status) = result.get("status").and_then(serde_json::Value::as_str) else {
-                continue;
-            };
-            case_results.push(EvaluationCaseResult {
-                slug: slug.to_string(),
-                case_index: index as usize + 1,
-                question: result
-                    .get("question")
-                    .and_then(serde_json::Value::as_str)
-                    .unwrap_or("untitled case")
-                    .to_string(),
-                difficulty: result
-                    .get("difficulty")
-                    .and_then(serde_json::Value::as_str)
-                    .map(str::to_string),
-                status: status.to_string(),
-                missing_cites: json_string_array(result, "missing_cites"),
-                missing_mentions: json_string_array(result, "missing_mentions"),
-                forbidden_found: json_string_array(result, "forbidden_found"),
-                boundary_violations: json_string_array(result, "boundary_violations"),
-                fabricated_cites: json_string_array(result, "fabricated_cites"),
-                trace_id,
-            });
+impl From<EvaluationModeWire> for EvaluationMode {
+    fn from(value: EvaluationModeWire) -> Self {
+        match value {
+            EvaluationModeWire::DryRun => Self::DryRun,
+            EvaluationModeWire::Graded => Self::Graded,
         }
     }
-
-    case_results
 }
 
-fn json_string_array(value: &serde_json::Value, key: &str) -> Vec<String> {
-    value
-        .get(key)
-        .and_then(serde_json::Value::as_array)
-        .map(|items| {
-            items
-                .iter()
-                .filter_map(serde_json::Value::as_str)
-                .map(str::to_string)
-                .collect()
-        })
-        .unwrap_or_default()
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+enum EvaluationOutcomeWire {
+    Completed,
+    Error,
 }
 
-/// Parses a trace record's `detail` into per-skill evaluation results.
-///
-/// The GUI (`app.rs`) and headless `--baseline` (`baseline.rs`) both run
-/// `scripts/test-fidelity.py ... --json` and store the *full* raw stdout as
-/// `detail` (see `output.trim().to_string()` in both call sites -
-/// `summarize_command_output` only truncates the separate summary message).
-/// So real dry-runs always produce JSON here; the plain-text `Testing: /
-/// Result:` format only appears in trace records persisted before `--json`
-/// was added to every dry-run invocation. Try JSON first, then fall back to
-/// the legacy text format for backward compatibility with those old records.
-fn parse_evaluation_results(trace_id: u64, detail: &str) -> Vec<EvaluationRunResult> {
-    parse_evaluation_results_json(trace_id, detail)
-        .unwrap_or_else(|| parse_evaluation_results_text(trace_id, detail))
+#[derive(Debug, Deserialize)]
+struct EvaluationSuiteV1 {
+    schema_version: u64,
+    master: String,
+    mode: EvaluationModeWire,
+    outcome: EvaluationOutcomeWire,
+    total: usize,
+    results: Vec<EvaluationCaseWire>,
+    #[serde(default)]
+    passed: Option<usize>,
+    #[serde(default)]
+    failed: Option<usize>,
+    #[serde(default)]
+    error: Option<String>,
 }
 
-/// Parses the real `--json` shape produced by `scripts/test-fidelity.py`:
-/// a top-level array of `{"master": "master-<slug>", "total": N, "results":
-/// [...], "passed": N}` objects (`"passed"` is only present for graded runs;
-/// dry-runs omit it and every result has `"status": "dry_run"`). Returns
-/// `None` when `detail` is not that JSON shape at all, so the caller can fall
-/// back to the legacy text parser.
-fn parse_evaluation_results_json(trace_id: u64, detail: &str) -> Option<Vec<EvaluationRunResult>> {
-    let value = serde_json::from_str::<serde_json::Value>(detail).ok()?;
-    let suites = value.as_array()?;
+#[derive(Debug, Deserialize)]
+struct LegacyEvaluationSuite {
+    master: String,
+    #[serde(default)]
+    total: Option<usize>,
+    #[serde(default)]
+    results: Vec<EvaluationCaseWire>,
+    #[serde(default)]
+    passed: Option<usize>,
+    #[serde(default)]
+    error: Option<String>,
+}
 
-    let mut results = Vec::new();
-    for suite in suites {
-        let Some(master_name) = suite.get("master").and_then(serde_json::Value::as_str) else {
-            continue;
-        };
-        let Some(slug) = master_name.strip_prefix("master-") else {
-            continue;
-        };
-        let Some(results_array) = suite.get("results").and_then(serde_json::Value::as_array) else {
-            continue;
-        };
+#[derive(Debug)]
+struct CompletedEvaluationSuite {
+    run: EvaluationRunResult,
+    cases: Vec<EvaluationCaseResult>,
+}
 
-        let total_count = suite
-            .get("total")
-            .and_then(serde_json::Value::as_u64)
-            .map(|value| value as usize)
-            .unwrap_or(results_array.len());
-        let passed = suite.get("passed").and_then(serde_json::Value::as_u64);
+#[derive(Default)]
+struct ParsedEvaluationEvidence {
+    runs: Vec<EvaluationRunResult>,
+    cases: Vec<EvaluationCaseResult>,
+    errors: Vec<EvaluationEvidenceError>,
+}
 
-        results.push(EvaluationRunResult {
-            slug: slug.to_string(),
-            passed_count: passed.unwrap_or(0) as usize,
-            total_count,
-            dry_run: passed.is_none(),
-            trace_id,
-        });
+impl ParsedEvaluationEvidence {
+    fn push_completed(&mut self, suite: CompletedEvaluationSuite) {
+        self.runs.push(suite.run);
+        self.cases.extend(suite.cases);
+    }
+}
+
+fn parse_evaluation_evidence(record: &TraceRecord) -> ParsedEvaluationEvidence {
+    let fallback_slug = record.related_skill_slug();
+    match serde_json::from_str::<serde_json::Value>(&record.detail) {
+        Ok(value) => parse_evaluation_json_value(record.id, value, fallback_slug),
+        Err(json_error) => {
+            let runs = parse_evaluation_results_text(record.id, &record.detail);
+            if !runs.is_empty() {
+                return ParsedEvaluationEvidence {
+                    runs,
+                    ..ParsedEvaluationEvidence::default()
+                };
+            }
+
+            let looks_like_json =
+                matches!(record.detail.trim_start().chars().next(), Some('[' | '{'));
+            let kind = if record.status == TraceStatus::Failed && !looks_like_json {
+                EvaluationEvidenceErrorKind::Execution
+            } else {
+                EvaluationEvidenceErrorKind::MalformedPayload
+            };
+            let message = if kind == EvaluationEvidenceErrorKind::Execution {
+                nonempty_evaluation_error_message(&record.detail, &record.summary)
+            } else {
+                format!("invalid fidelity JSON: {json_error}")
+            };
+            ParsedEvaluationEvidence {
+                errors: vec![evaluation_evidence_error(
+                    record.id,
+                    fallback_slug,
+                    kind,
+                    message,
+                )],
+                ..ParsedEvaluationEvidence::default()
+            }
+        }
+    }
+}
+
+fn parse_evaluation_json_value(
+    trace_id: u64,
+    value: serde_json::Value,
+    fallback_slug: Option<&str>,
+) -> ParsedEvaluationEvidence {
+    let Some(suites) = value.as_array() else {
+        return ParsedEvaluationEvidence {
+            errors: vec![evaluation_evidence_error(
+                trace_id,
+                fallback_slug,
+                EvaluationEvidenceErrorKind::MalformedPayload,
+                "invalid fidelity suite: expected a top-level JSON array",
+            )],
+            ..ParsedEvaluationEvidence::default()
+        };
+    };
+
+    if suites.is_empty() {
+        return ParsedEvaluationEvidence {
+            errors: vec![evaluation_evidence_error(
+                trace_id,
+                fallback_slug,
+                EvaluationEvidenceErrorKind::MalformedPayload,
+                "invalid fidelity suite: the suite array is empty",
+            )],
+            ..ParsedEvaluationEvidence::default()
+        };
     }
 
-    Some(results)
+    let mut parsed = ParsedEvaluationEvidence::default();
+    for (suite_index, suite) in suites.iter().enumerate() {
+        let result = if suite.get("schema_version").is_some() {
+            parse_evaluation_suite_v1(trace_id, suite.clone(), fallback_slug)
+        } else {
+            parse_legacy_evaluation_suite(trace_id, suite.clone(), fallback_slug)
+        };
+        match result {
+            Ok(completed) => parsed.push_completed(completed),
+            Err(mut error) => {
+                error.message = format!("suite {}: {}", suite_index + 1, error.message);
+                parsed.errors.push(error);
+            }
+        }
+    }
+    parsed
+}
+
+fn parse_evaluation_suite_v1(
+    trace_id: u64,
+    value: serde_json::Value,
+    fallback_slug: Option<&str>,
+) -> Result<CompletedEvaluationSuite, EvaluationEvidenceError> {
+    let slug = evaluation_slug_from_value(&value, fallback_slug);
+    let version = value
+        .get("schema_version")
+        .and_then(serde_json::Value::as_u64)
+        .ok_or_else(|| {
+            evaluation_evidence_error(
+                trace_id,
+                slug.as_deref(),
+                EvaluationEvidenceErrorKind::MalformedPayload,
+                "invalid fidelity v1 suite: schema_version must be an integer",
+            )
+        })?;
+    if version != 1 {
+        return Err(evaluation_evidence_error(
+            trace_id,
+            slug.as_deref(),
+            EvaluationEvidenceErrorKind::UnsupportedVersion,
+            format!("unsupported fidelity schema version {version}"),
+        ));
+    }
+
+    let suite: EvaluationSuiteV1 = serde_json::from_value(value).map_err(|error| {
+        evaluation_evidence_error(
+            trace_id,
+            slug.as_deref(),
+            EvaluationEvidenceErrorKind::MalformedPayload,
+            format!("invalid fidelity v1 suite: {error}"),
+        )
+    })?;
+    if suite.schema_version != version {
+        return Err(evaluation_evidence_error(
+            trace_id,
+            slug.as_deref(),
+            EvaluationEvidenceErrorKind::MalformedPayload,
+            "invalid fidelity v1 suite: schema_version changed during parsing",
+        ));
+    }
+    let slug = normalized_master_slug(&suite.master).ok_or_else(|| {
+        evaluation_evidence_error(
+            trace_id,
+            fallback_slug,
+            EvaluationEvidenceErrorKind::MalformedPayload,
+            "invalid fidelity v1 suite: master must start with master-",
+        )
+    })?;
+    let outcome = match suite.outcome {
+        EvaluationOutcomeWire::Completed => EvaluationSuiteOutcome::Completed,
+        EvaluationOutcomeWire::Error => {
+            EvaluationSuiteOutcome::Error(suite.error.clone().unwrap_or_default())
+        }
+    };
+    if let EvaluationSuiteOutcome::Error(message) = outcome {
+        if suite.total != 0 || !suite.results.is_empty() || message.trim().is_empty() {
+            return Err(evaluation_evidence_error(
+                trace_id,
+                Some(&slug),
+                EvaluationEvidenceErrorKind::MalformedPayload,
+                "invalid fidelity error suite: expected total 0, empty results, and a non-empty error",
+            ));
+        }
+        return Err(evaluation_evidence_error(
+            trace_id,
+            Some(&slug),
+            EvaluationEvidenceErrorKind::Execution,
+            message.trim(),
+        ));
+    }
+
+    if suite.error.is_some() {
+        return Err(evaluation_evidence_error(
+            trace_id,
+            Some(&slug),
+            EvaluationEvidenceErrorKind::MalformedPayload,
+            "invalid completed fidelity suite: error must be omitted",
+        ));
+    }
+    let mode = EvaluationMode::from(suite.mode);
+    let statuses = evaluation_case_statuses(&suite.results).map_err(|message| {
+        evaluation_evidence_error(
+            trace_id,
+            Some(&slug),
+            EvaluationEvidenceErrorKind::MalformedPayload,
+            message,
+        )
+    })?;
+    if suite.total != suite.results.len() {
+        return Err(evaluation_evidence_error(
+            trace_id,
+            Some(&slug),
+            EvaluationEvidenceErrorKind::MalformedPayload,
+            format!(
+                "invalid fidelity suite: total {} does not match {} result(s)",
+                suite.total,
+                suite.results.len()
+            ),
+        ));
+    }
+
+    let passed_count = match mode {
+        EvaluationMode::DryRun => {
+            if suite.passed.is_some()
+                || suite.failed.is_some()
+                || statuses
+                    .iter()
+                    .any(|status| !matches!(status, EvaluationCaseStatus::DryRun))
+            {
+                return Err(evaluation_evidence_error(
+                    trace_id,
+                    Some(&slug),
+                    EvaluationEvidenceErrorKind::MalformedPayload,
+                    "invalid dry-run suite: graded counts must be omitted and every status must be dry_run",
+                ));
+            }
+            0
+        }
+        EvaluationMode::Graded => {
+            let passed = suite.passed.ok_or_else(|| {
+                evaluation_evidence_error(
+                    trace_id,
+                    Some(&slug),
+                    EvaluationEvidenceErrorKind::MalformedPayload,
+                    "invalid graded suite: passed is required",
+                )
+            })?;
+            let failed = suite.failed.ok_or_else(|| {
+                evaluation_evidence_error(
+                    trace_id,
+                    Some(&slug),
+                    EvaluationEvidenceErrorKind::MalformedPayload,
+                    "invalid graded suite: failed is required",
+                )
+            })?;
+            if passed.saturating_add(failed) != suite.total
+                || statuses
+                    .iter()
+                    .any(|status| matches!(status, EvaluationCaseStatus::DryRun))
+            {
+                return Err(evaluation_evidence_error(
+                    trace_id,
+                    Some(&slug),
+                    EvaluationEvidenceErrorKind::MalformedPayload,
+                    "invalid graded suite: counts or case modes are inconsistent",
+                ));
+            }
+            let parsed_passed = statuses
+                .iter()
+                .filter(|status| matches!(status, EvaluationCaseStatus::Pass))
+                .count();
+            let parsed_failed = statuses
+                .iter()
+                .filter(|status| {
+                    matches!(
+                        status,
+                        EvaluationCaseStatus::Fail | EvaluationCaseStatus::ApiError
+                    )
+                })
+                .count();
+            if parsed_passed != passed || parsed_failed != failed {
+                return Err(evaluation_evidence_error(
+                    trace_id,
+                    Some(&slug),
+                    EvaluationEvidenceErrorKind::MalformedPayload,
+                    "invalid graded suite: passed/failed counts do not match case statuses",
+                ));
+            }
+            passed
+        }
+    };
+
+    Ok(completed_evaluation_suite(
+        trace_id,
+        slug,
+        mode,
+        passed_count,
+        suite.total,
+        suite.results,
+        statuses,
+    ))
+}
+
+fn parse_legacy_evaluation_suite(
+    trace_id: u64,
+    value: serde_json::Value,
+    fallback_slug: Option<&str>,
+) -> Result<CompletedEvaluationSuite, EvaluationEvidenceError> {
+    let value_slug = evaluation_slug_from_value(&value, fallback_slug);
+    if let Some(error) = value.get("error") {
+        let message = error.as_str().map(str::trim).unwrap_or_default();
+        if message.is_empty() {
+            return Err(evaluation_evidence_error(
+                trace_id,
+                value_slug.as_deref(),
+                EvaluationEvidenceErrorKind::MalformedPayload,
+                "invalid legacy fidelity error suite: error must be a non-empty string",
+            ));
+        }
+        return Err(evaluation_evidence_error(
+            trace_id,
+            value_slug.as_deref(),
+            EvaluationEvidenceErrorKind::Execution,
+            message,
+        ));
+    }
+
+    let suite: LegacyEvaluationSuite = serde_json::from_value(value).map_err(|error| {
+        evaluation_evidence_error(
+            trace_id,
+            value_slug.as_deref(),
+            EvaluationEvidenceErrorKind::MalformedPayload,
+            format!("invalid legacy fidelity suite: {error}"),
+        )
+    })?;
+    if suite.error.is_some() {
+        return Err(evaluation_evidence_error(
+            trace_id,
+            value_slug.as_deref(),
+            EvaluationEvidenceErrorKind::MalformedPayload,
+            "invalid legacy fidelity suite: error cannot accompany results",
+        ));
+    }
+    let slug = normalized_master_slug(&suite.master).ok_or_else(|| {
+        evaluation_evidence_error(
+            trace_id,
+            fallback_slug,
+            EvaluationEvidenceErrorKind::MalformedPayload,
+            "invalid legacy fidelity suite: master must start with master-",
+        )
+    })?;
+    let statuses = evaluation_case_statuses(&suite.results).map_err(|message| {
+        evaluation_evidence_error(
+            trace_id,
+            Some(&slug),
+            EvaluationEvidenceErrorKind::MalformedPayload,
+            message,
+        )
+    })?;
+    let mode = if suite.passed.is_some() {
+        if statuses
+            .iter()
+            .any(|status| matches!(status, EvaluationCaseStatus::DryRun))
+        {
+            return Err(evaluation_evidence_error(
+                trace_id,
+                Some(&slug),
+                EvaluationEvidenceErrorKind::MalformedPayload,
+                "invalid legacy graded suite: dry_run status conflicts with passed",
+            ));
+        }
+        EvaluationMode::Graded
+    } else if !statuses.is_empty()
+        && statuses
+            .iter()
+            .all(|status| matches!(status, EvaluationCaseStatus::DryRun))
+    {
+        EvaluationMode::DryRun
+    } else {
+        return Err(evaluation_evidence_error(
+            trace_id,
+            Some(&slug),
+            EvaluationEvidenceErrorKind::MalformedPayload,
+            "ambiguous legacy fidelity suite: expected passed or all dry_run statuses",
+        ));
+    };
+    let total_count = suite.total.unwrap_or(suite.results.len());
+    let passed_count = suite.passed.unwrap_or(0);
+    if passed_count > total_count {
+        return Err(evaluation_evidence_error(
+            trace_id,
+            Some(&slug),
+            EvaluationEvidenceErrorKind::MalformedPayload,
+            "invalid legacy fidelity suite: passed exceeds total",
+        ));
+    }
+
+    Ok(completed_evaluation_suite(
+        trace_id,
+        slug,
+        mode,
+        passed_count,
+        total_count,
+        suite.results,
+        statuses,
+    ))
+}
+
+fn evaluation_case_statuses(
+    cases: &[EvaluationCaseWire],
+) -> Result<Vec<EvaluationCaseStatus>, String> {
+    cases
+        .iter()
+        .map(|case| match EvaluationCaseStatus::from_wire(&case.status) {
+            EvaluationCaseStatus::Unknown(status) => Err(format!(
+                "invalid fidelity suite: unknown case status {status:?}"
+            )),
+            status => Ok(status),
+        })
+        .collect()
+}
+
+fn completed_evaluation_suite(
+    trace_id: u64,
+    slug: String,
+    mode: EvaluationMode,
+    passed_count: usize,
+    total_count: usize,
+    cases: Vec<EvaluationCaseWire>,
+    statuses: Vec<EvaluationCaseStatus>,
+) -> CompletedEvaluationSuite {
+    let cases = cases
+        .into_iter()
+        .zip(statuses)
+        .map(|(case, status)| EvaluationCaseResult {
+            slug: slug.clone(),
+            case_index: case.index + 1,
+            question: case.question.unwrap_or_else(|| "untitled case".to_string()),
+            difficulty: case.difficulty,
+            status,
+            missing_cites: case.missing_cites,
+            missing_mentions: case.missing_mentions,
+            forbidden_found: case.forbidden_found,
+            boundary_violations: case.boundary_violations,
+            fabricated_cites: case.fabricated_cites,
+            trace_id,
+        })
+        .collect();
+
+    CompletedEvaluationSuite {
+        run: EvaluationRunResult {
+            slug,
+            passed_count,
+            total_count,
+            mode,
+            trace_id,
+        },
+        cases,
+    }
+}
+
+fn normalized_master_slug(master: &str) -> Option<String> {
+    let slug = master.strip_prefix("master-")?;
+    (!slug.is_empty()).then(|| slug.to_string())
+}
+
+fn evaluation_slug_from_value(
+    value: &serde_json::Value,
+    fallback_slug: Option<&str>,
+) -> Option<String> {
+    value
+        .get("master")
+        .and_then(serde_json::Value::as_str)
+        .and_then(normalized_master_slug)
+        .or_else(|| fallback_slug.map(str::to_string))
+}
+
+fn evaluation_evidence_error(
+    trace_id: u64,
+    slug: Option<&str>,
+    kind: EvaluationEvidenceErrorKind,
+    message: impl Into<String>,
+) -> EvaluationEvidenceError {
+    EvaluationEvidenceError {
+        trace_id,
+        slug: slug.map(str::to_string),
+        kind,
+        message: message.into(),
+    }
+}
+
+fn nonempty_evaluation_error_message(detail: &str, summary: &str) -> String {
+    let detail = detail.trim();
+    if detail.is_empty() {
+        summary.trim().to_string()
+    } else {
+        detail.to_string()
+    }
 }
 
 fn parse_evaluation_results_text(trace_id: u64, detail: &str) -> Vec<EvaluationRunResult> {
@@ -624,7 +1167,11 @@ fn parse_evaluation_results_text(trace_id: u64, detail: &str) -> Vec<EvaluationR
                         slug,
                         passed_count,
                         total_count,
-                        dry_run: rest.contains("(N/A)"),
+                        mode: if rest.contains("(N/A)") {
+                            EvaluationMode::DryRun
+                        } else {
+                            EvaluationMode::Graded
+                        },
                         trace_id,
                     });
                 }
@@ -1465,8 +2012,8 @@ impl TraceStore {
         EvaluationRunCoverage {
             total_skill_count,
             run_skill_count: results.len(),
-            dry_run_count: results.iter().filter(|result| result.dry_run).count(),
-            graded_count: results.iter().filter(|result| !result.dry_run).count(),
+            dry_run_count: results.iter().filter(|result| result.is_dry_run()).count(),
+            graded_count: results.iter().filter(|result| !result.is_dry_run()).count(),
         }
     }
 
@@ -1478,13 +2025,13 @@ impl TraceStore {
         for result in latest_cases.into_values().flatten() {
             insights.total_cases += 1;
 
-            match result.status.as_str() {
-                "PASS" => insights.pass_cases += 1,
-                "dry_run" => insights.dry_run_cases += 1,
+            match &result.status {
+                EvaluationCaseStatus::Pass => insights.pass_cases += 1,
+                EvaluationCaseStatus::DryRun => insights.dry_run_cases += 1,
                 _ => {}
             }
 
-            if result.status == "FAIL" || result.has_failure_evidence() {
+            if result.status.is_failure() || result.has_failure_evidence() {
                 insights.failed_cases += 1;
                 *failure_counts_by_slug
                     .entry(result.slug.clone())
@@ -1514,7 +2061,7 @@ impl TraceStore {
             .latest_evaluation_case_results_by_slug()
             .into_values()
             .flatten()
-            .filter(|result| result.status == "FAIL" || result.has_failure_evidence())
+            .filter(|result| result.status.is_failure() || result.has_failure_evidence())
             .map(|result| {
                 let priority = result.failure_priority();
                 let failure_summary = result.failure_summary();
@@ -1522,7 +2069,7 @@ impl TraceStore {
                     slug: result.slug,
                     case_index: result.case_index,
                     question: result.question,
-                    status: result.status,
+                    status: result.status.label().to_string(),
                     priority,
                     failure_summary,
                     trace_id: result.trace_id,
@@ -1630,12 +2177,12 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     use super::{
-        EvaluationDecisionAction, EvaluationDecisionBrief, EvaluationDecisionPosture,
-        EvaluationEvidenceReport, EvaluationFailureInsights, EvaluationFailureItem,
-        EvaluationFailurePriority, EvaluationRegressionItem, EvaluationRemediationPlan,
-        EvaluationRunCoverage, EvaluationRunHistoryFilter, EvaluationRunHistoryItem,
-        EvaluationRunTrend, EvaluationTrendSummary, FailureKind, TraceAction, TraceListFilter,
-        TraceStatus, TraceStore,
+        EvaluationCaseStatus, EvaluationDecisionAction, EvaluationDecisionBrief,
+        EvaluationDecisionPosture, EvaluationEvidenceErrorKind, EvaluationEvidenceReport,
+        EvaluationFailureInsights, EvaluationFailureItem, EvaluationFailurePriority,
+        EvaluationMode, EvaluationRegressionItem, EvaluationRemediationPlan, EvaluationRunCoverage,
+        EvaluationRunHistoryFilter, EvaluationRunHistoryItem, EvaluationRunTrend,
+        EvaluationTrendSummary, FailureKind, TraceAction, TraceListFilter, TraceStatus, TraceStore,
     };
 
     fn temp_path(name: &str) -> PathBuf {
@@ -1990,7 +2537,7 @@ mod tests {
         assert_eq!(result.slug, "huineng");
         assert_eq!(result.passed_count, 0);
         assert_eq!(result.total_count, 12);
-        assert!(result.dry_run);
+        assert!(result.is_dry_run());
         assert_eq!(result.label(), "0/12 N/A");
     }
 
@@ -2077,11 +2624,264 @@ mod tests {
 
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].case_index, 1);
-        assert_eq!(results[0].status, "dry_run");
+        assert_eq!(results[0].status, EvaluationCaseStatus::DryRun);
         assert_eq!(results[0].difficulty.as_deref(), Some("basic"));
         assert_eq!(results[0].trace_id, run);
         assert_eq!(results[1].case_index, 2);
         assert_eq!(results[1].question, "顿悟怎么修？");
+    }
+
+    #[test]
+    fn parses_v1_evaluation_modes_and_case_statuses() {
+        let mut store = TraceStore::new(10);
+        let run = store.begin_with_action(
+            "Running fidelity suites",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "fidelity suites finished",
+            r#"[
+              {
+                "schema_version": 1,
+                "master": "master-huineng",
+                "mode": "dry_run",
+                "outcome": "completed",
+                "total": 1,
+                "results": [
+                  {"index": 0, "question": "结构检查", "status": "dry_run"}
+                ]
+              },
+              {
+                "schema_version": 1,
+                "master": "master-zhiyi",
+                "mode": "graded",
+                "outcome": "completed",
+                "total": 2,
+                "passed": 1,
+                "failed": 1,
+                "results": [
+                  {"index": 0, "question": "通过", "status": "PASS"},
+                  {"index": 1, "question": "失败", "status": "FAIL"}
+                ]
+              }
+            ]"#,
+            Duration::from_millis(50),
+        );
+
+        let results = store.latest_evaluation_results_by_slug();
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].slug, "huineng");
+        assert_eq!(results[0].mode, EvaluationMode::DryRun);
+        assert_eq!(results[0].passed_count, 0);
+        assert_eq!(results[1].slug, "zhiyi");
+        assert_eq!(results[1].mode, EvaluationMode::Graded);
+        assert_eq!(results[1].passed_count, 1);
+
+        let huineng_cases = store.latest_evaluation_case_results_for("huineng");
+        assert_eq!(huineng_cases[0].status, EvaluationCaseStatus::DryRun);
+        let zhiyi_cases = store.latest_evaluation_case_results_for("zhiyi");
+        assert_eq!(zhiyi_cases[0].status, EvaluationCaseStatus::Pass);
+        assert_eq!(zhiyi_cases[1].status, EvaluationCaseStatus::Fail);
+    }
+
+    #[test]
+    fn rejects_ambiguous_legacy_evaluation_json() {
+        let mut store = TraceStore::new(10);
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "master-huineng fidelity finished",
+            r#"[{
+              "master": "master-huineng",
+              "total": 1,
+              "results": [
+                {"index": 0, "question": "模式不明确", "status": "PASS"}
+              ]
+            }]"#,
+            Duration::from_millis(50),
+        );
+
+        assert!(store.latest_evaluation_result_for("huineng").is_none());
+        assert!(store
+            .latest_evaluation_case_results_for("huineng")
+            .is_empty());
+        let errors = store.records.back().unwrap().evaluation_errors();
+        assert_eq!(errors.len(), 1);
+        assert_eq!(
+            errors[0].kind,
+            EvaluationEvidenceErrorKind::MalformedPayload
+        );
+    }
+
+    #[test]
+    fn exposes_v1_evaluation_error_outcome_as_execution_evidence() {
+        let mut store = TraceStore::new(10);
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_error_with_detail(
+            run,
+            "master-huineng fidelity failed",
+            r#"[{
+              "schema_version": 1,
+              "master": "master-huineng",
+              "mode": "graded",
+              "outcome": "error",
+              "total": 0,
+              "results": [],
+              "error": "ANTHROPIC_API_KEY environment variable not set"
+            }]"#,
+            Duration::from_millis(50),
+        );
+
+        let errors = store.records.back().unwrap().evaluation_errors();
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].trace_id, run);
+        assert_eq!(errors[0].slug.as_deref(), Some("huineng"));
+        assert_eq!(errors[0].kind, EvaluationEvidenceErrorKind::Execution);
+        assert!(errors[0].message.contains("ANTHROPIC_API_KEY"));
+    }
+
+    #[test]
+    fn reports_malformed_json_as_evaluation_evidence_error() {
+        let mut store = TraceStore::new(10);
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "master-huineng fidelity finished",
+            "[",
+            Duration::from_millis(50),
+        );
+
+        let errors = store.records.back().unwrap().evaluation_errors();
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].slug.as_deref(), Some("huineng"));
+        assert_eq!(
+            errors[0].kind,
+            EvaluationEvidenceErrorKind::MalformedPayload
+        );
+    }
+
+    #[test]
+    fn reports_unsupported_evaluation_schema_version() {
+        let mut store = TraceStore::new(10);
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "master-huineng fidelity finished",
+            r#"[{
+              "schema_version": 2,
+              "master": "master-huineng",
+              "mode": "graded",
+              "outcome": "completed",
+              "total": 0,
+              "passed": 0,
+              "failed": 0,
+              "results": []
+            }]"#,
+            Duration::from_millis(50),
+        );
+
+        let errors = store.records.back().unwrap().evaluation_errors();
+        assert_eq!(errors.len(), 1);
+        assert_eq!(
+            errors[0].kind,
+            EvaluationEvidenceErrorKind::UnsupportedVersion
+        );
+        assert!(errors[0].message.contains('2'));
+    }
+
+    #[test]
+    fn reports_unknown_case_status_as_malformed_evidence() {
+        let mut store = TraceStore::new(10);
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "master-huineng fidelity finished",
+            r#"[{
+              "schema_version": 1,
+              "master": "master-huineng",
+              "mode": "graded",
+              "outcome": "completed",
+              "total": 1,
+              "passed": 0,
+              "failed": 1,
+              "results": [
+                {"index": 0, "question": "未知状态", "status": "SKIPPED"}
+              ]
+            }]"#,
+            Duration::from_millis(50),
+        );
+
+        assert!(store.latest_evaluation_result_for("huineng").is_none());
+        let errors = store.records.back().unwrap().evaluation_errors();
+        assert_eq!(errors.len(), 1);
+        assert_eq!(
+            errors[0].kind,
+            EvaluationEvidenceErrorKind::MalformedPayload
+        );
+        assert!(errors[0].message.contains("SKIPPED"));
+    }
+
+    #[test]
+    fn reports_failed_evaluation_trace_as_execution_evidence() {
+        let mut store = TraceStore::new(10);
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_error_with_detail(
+            run,
+            "fidelity command failed",
+            "python exited before producing JSON",
+            Duration::from_millis(50),
+        );
+
+        let errors = store.records.back().unwrap().evaluation_errors();
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].kind, EvaluationEvidenceErrorKind::Execution);
+        assert_eq!(errors[0].slug.as_deref(), Some("huineng"));
+        assert!(errors[0].message.contains("python exited"));
     }
 
     #[test]
@@ -2102,6 +2902,7 @@ mod tests {
             r#"[
               {
                 "master": "master-huineng",
+                "passed": 0,
                 "total": 1,
                 "results": [
                   {
@@ -2279,7 +3080,7 @@ mod tests {
         assert_eq!(result.slug, "zhiyi");
         assert_eq!(result.passed_count, 0);
         assert_eq!(result.total_count, 3);
-        assert!(result.dry_run);
+        assert!(result.is_dry_run());
         assert_eq!(result.trace_id, run);
     }
 
@@ -2384,6 +3185,7 @@ mod tests {
             r#"[
               {
                 "master": "master-huineng",
+                "passed": 0,
                 "results": [
                   {
                     "index": 0,
@@ -2409,6 +3211,7 @@ mod tests {
             r#"[
               {
                 "master": "master-huineng",
+                "passed": 1,
                 "results": [
                   {
                     "index": 0,
@@ -2426,6 +3229,7 @@ mod tests {
               },
               {
                 "master": "master-zhiyi",
+                "passed": 0,
                 "results": [
                   {
                     "index": 0,
@@ -2516,6 +3320,7 @@ mod tests {
             r#"[
               {
                 "master": "master-huineng",
+                "passed": 0,
                 "results": [
                   {
                     "index": 0,
@@ -2541,6 +3346,7 @@ mod tests {
             r#"[
               {
                 "master": "master-huineng",
+                "passed": 1,
                 "results": [
                   {
                     "index": 0,
@@ -2558,6 +3364,7 @@ mod tests {
               },
               {
                 "master": "master-zhiyi",
+                "passed": 0,
                 "results": [
                   {
                     "index": 0,
@@ -2603,6 +3410,7 @@ mod tests {
             r#"[
               {
                 "master": "master-huineng",
+                "passed": 0,
                 "results": [
                   {
                     "index": 0,
@@ -2613,6 +3421,7 @@ mod tests {
               },
               {
                 "master": "master-zhiyi",
+                "passed": 0,
                 "results": [
                   {
                     "index": 0,
@@ -2624,6 +3433,7 @@ mod tests {
               },
               {
                 "master": "master-xuanzang",
+                "passed": 0,
                 "results": [
                   {
                     "index": 0,
@@ -2678,6 +3488,7 @@ mod tests {
             r#"[
               {
                 "master": "master-huineng",
+                "passed": 1,
                 "results": [
                   {"index": 0, "question": "通过", "status": "PASS"},
                   {"index": 1, "question": "失败", "status": "FAIL"}
@@ -2685,6 +3496,7 @@ mod tests {
               },
               {
                 "master": "master-zhiyi",
+                "passed": 1,
                 "results": [
                   {"index": 0, "question": "通过", "status": "PASS"}
                 ]
@@ -2701,7 +3513,7 @@ mod tests {
         assert_eq!(history[0].passed_count, 2);
         assert_eq!(history[0].total_count, 3);
         assert_eq!(history[0].failed_count, 1);
-        assert!(!history[0].dry_run);
+        assert!(!history[0].is_dry_run());
         assert_eq!(history[0].duration_ms, Some(55));
         assert_eq!(history[0].action, Some(TraceAction::FidelityDryRunAll));
 
@@ -2710,7 +3522,7 @@ mod tests {
         assert_eq!(history[1].passed_count, 0);
         assert_eq!(history[1].total_count, 12);
         assert_eq!(history[1].failed_count, 0);
-        assert!(history[1].dry_run);
+        assert!(history[1].is_dry_run());
         assert_eq!(
             history[1].action,
             Some(TraceAction::FidelityDryRunSkill {
@@ -2737,6 +3549,7 @@ mod tests {
             r#"[
               {
                 "master": "master-huineng",
+                "passed": 0,
                 "results": [
                   {"index": 0, "question": "失败一", "status": "FAIL"},
                   {"index": 1, "question": "失败二", "status": "FAIL"}
@@ -2758,6 +3571,7 @@ mod tests {
             r#"[
               {
                 "master": "master-huineng",
+                "passed": 1,
                 "results": [
                   {"index": 0, "question": "通过", "status": "PASS"}
                 ]
@@ -2780,6 +3594,7 @@ mod tests {
             r#"[
               {
                 "master": "master-huineng",
+                "passed": 1,
                 "results": [
                   {"index": 0, "question": "通过", "status": "PASS"},
                   {"index": 1, "question": "仍失败", "status": "FAIL"}
@@ -2801,6 +3616,7 @@ mod tests {
             r#"[
               {
                 "master": "master-huineng",
+                "passed": 0,
                 "results": [
                   {"index": 0, "question": "失败", "status": "FAIL"}
                 ]
@@ -2836,7 +3652,7 @@ mod tests {
         store.finish_success_with_detail(
             old_huineng,
             "master-huineng fidelity run finished",
-            r#"[{"master": "master-huineng", "results": [
+            r#"[{"master": "master-huineng", "passed": 0, "results": [
               {"index": 0, "question": "失败一", "status": "FAIL"},
               {"index": 1, "question": "失败二", "status": "FAIL"}
             ]}]"#,
@@ -2852,7 +3668,7 @@ mod tests {
         store.finish_success_with_detail(
             old_all,
             "fidelity run finished",
-            r#"[{"master": "master-huineng", "results": [
+            r#"[{"master": "master-huineng", "passed": 1, "results": [
               {"index": 0, "question": "通过", "status": "PASS"}
             ]}]"#,
             Duration::from_millis(45),
@@ -2869,7 +3685,7 @@ mod tests {
         store.finish_success_with_detail(
             new_huineng,
             "master-huineng fidelity run finished",
-            r#"[{"master": "master-huineng", "results": [
+            r#"[{"master": "master-huineng", "passed": 1, "results": [
               {"index": 0, "question": "通过", "status": "PASS"},
               {"index": 1, "question": "仍失败", "status": "FAIL"}
             ]}]"#,
@@ -2885,7 +3701,7 @@ mod tests {
         store.finish_success_with_detail(
             new_all,
             "fidelity run finished",
-            r#"[{"master": "master-huineng", "results": [
+            r#"[{"master": "master-huineng", "passed": 0, "results": [
               {"index": 0, "question": "失败", "status": "FAIL"}
             ]}]"#,
             Duration::from_millis(50),
@@ -2924,7 +3740,7 @@ mod tests {
             old_huineng,
             "master-huineng fidelity run finished",
             r#"[
-              {"master": "master-huineng", "results": [
+              {"master": "master-huineng", "passed": 0, "results": [
                 {"index": 0, "question": "失败一", "status": "FAIL"},
                 {"index": 1, "question": "失败二", "status": "FAIL"}
               ]}
@@ -2942,7 +3758,7 @@ mod tests {
             old_all,
             "fidelity run finished",
             r#"[
-              {"master": "master-huineng", "results": [
+              {"master": "master-huineng", "passed": 1, "results": [
                 {"index": 0, "question": "通过", "status": "PASS"}
               ]}
             ]"#,
@@ -2961,7 +3777,7 @@ mod tests {
             new_huineng,
             "master-huineng fidelity run finished",
             r#"[
-              {"master": "master-huineng", "results": [
+              {"master": "master-huineng", "passed": 1, "results": [
                 {"index": 0, "question": "通过", "status": "PASS"},
                 {"index": 1, "question": "仍失败", "status": "FAIL"}
               ]}
@@ -2979,7 +3795,7 @@ mod tests {
             new_all,
             "fidelity run finished",
             r#"[
-              {"master": "master-huineng", "results": [
+              {"master": "master-huineng", "passed": 0, "results": [
                 {"index": 0, "question": "失败", "status": "FAIL"}
               ]}
             ]"#,
@@ -3125,7 +3941,7 @@ mod tests {
             passed_count: 10,
             total_count: 12,
             failed_count: 2,
-            dry_run: true,
+            mode: EvaluationMode::DryRun,
             duration_ms: Some(150),
             action: Some(TraceAction::FidelityDryRunSkill {
                 slug: "huineng".to_string(),
@@ -3208,7 +4024,7 @@ mod tests {
             passed_count: 8,
             total_count: 10,
             failed_count: 2,
-            dry_run: false,
+            mode: EvaluationMode::Graded,
             duration_ms: Some(120),
             action: Some(TraceAction::FidelityDryRunSkill {
                 slug: "huineng".to_string(),
@@ -3258,7 +4074,7 @@ mod tests {
             old_huineng,
             "master-huineng fidelity run finished",
             r#"[
-              {"master": "master-huineng", "results": [
+              {"master": "master-huineng", "passed": 2, "results": [
                 {"index": 0, "question": "通过一", "status": "PASS"},
                 {"index": 1, "question": "通过二", "status": "PASS"}
               ]}
@@ -3276,7 +4092,7 @@ mod tests {
             old_all,
             "fidelity run finished",
             r#"[
-              {"master": "master-zhiyi", "results": [
+              {"master": "master-zhiyi", "passed": 0, "results": [
                 {"index": 0, "question": "失败", "status": "FAIL"}
               ]}
             ]"#,
@@ -3295,7 +4111,7 @@ mod tests {
             new_huineng,
             "master-huineng fidelity run finished",
             r#"[
-              {"master": "master-huineng", "results": [
+              {"master": "master-huineng", "passed": 1, "results": [
                 {"index": 0, "question": "通过", "status": "PASS"},
                 {"index": 1, "question": "回归失败", "status": "FAIL"}
               ]}
@@ -3313,7 +4129,7 @@ mod tests {
             new_all,
             "fidelity run finished",
             r#"[
-              {"master": "master-zhiyi", "results": [
+              {"master": "master-zhiyi", "passed": 1, "results": [
                 {"index": 0, "question": "通过", "status": "PASS"}
               ]}
             ]"#,
