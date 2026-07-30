@@ -99,6 +99,7 @@ impl EvaluationWindow {
 fn suite_matches_filter(
     row: &SkillRow,
     latest_result: Option<&EvaluationRunResult>,
+    latest_graded_result: Option<&EvaluationRunResult>,
     filter: SuiteFilter,
 ) -> bool {
     match filter {
@@ -107,8 +108,10 @@ fn suite_matches_filter(
         SuiteFilter::Attention => row.quality_level() == QualityLevel::Attention,
         SuiteFilter::Missing => row.quality_level() == QualityLevel::Missing,
         SuiteFilter::NotRun => latest_result.is_none(),
-        SuiteFilter::FailedRun => latest_result.is_some_and(|result| {
-            !result.dry_run && result.total_count > 0 && result.passed_count < result.total_count
+        SuiteFilter::FailedRun => latest_graded_result.is_some_and(|result| {
+            !result.is_dry_run()
+                && result.total_count > 0
+                && result.passed_count < result.total_count
         }),
     }
 }
@@ -972,14 +975,17 @@ impl MasterSkillApp {
                 healthy: summary.missing_suite_count == 0,
             },
             MetricCard {
-                title: "Run Coverage",
-                value: gate.run_coverage.label(),
-                detail: format!(
-                    "{} dry-run / {} graded",
-                    gate.run_coverage.dry_run_count, gate.run_coverage.graded_count
-                ),
-                healthy: summary.skill_count > 0
-                    && gate.run_coverage.run_skill_count == summary.skill_count,
+                title: "Structural Coverage",
+                value: gate.run_coverage.structural_label(),
+                detail: format!("{} latest dry-run", gate.run_coverage.dry_run_skill_count),
+                healthy: gate.run_coverage.is_structurally_complete(),
+            },
+            MetricCard {
+                title: "Graded Coverage",
+                value: gate.run_coverage.graded_label(),
+                detail: format!("{} current error(s)", gate.run_coverage.current_error_count),
+                healthy: gate.run_coverage.is_graded_complete()
+                    && gate.run_coverage.current_error_count == 0,
             },
             MetricCard {
                 title: "Ready",
@@ -1267,11 +1273,7 @@ impl MasterSkillApp {
             MetricCard {
                 title: "Pass Rate",
                 value: insights.pass_rate_label(),
-                detail: format!(
-                    "{} graded / {} dry-run",
-                    insights.graded_cases(),
-                    insights.dry_run_cases
-                ),
+                detail: format!("{} graded case(s)", insights.graded_cases()),
                 healthy: insights.failed_cases == 0,
             },
             MetricCard {
@@ -1290,7 +1292,7 @@ impl MasterSkillApp {
         Self::show_metric_cards(ui, &cards);
 
         if insights.total_cases == 0 {
-            ui.small("Run a fidelity dry-run with JSON output to populate case-level insights.");
+            ui.small("No graded case evidence is available. Attach a graded fidelity result to populate behavioral insights.");
             return;
         }
 
@@ -1447,7 +1449,7 @@ impl MasterSkillApp {
                                         Self::evaluation_trend_color(item.trend),
                                         item.trend.label(),
                                     );
-                                    ui.label(if item.dry_run { "dry-run" } else { "graded" });
+                                    ui.label(item.mode.label());
                                     ui.label(
                                         item.duration_ms
                                             .map(|duration| format!("{duration} ms"))
@@ -1520,6 +1522,12 @@ impl MasterSkillApp {
             .into_iter()
             .map(|result| (result.slug.clone(), result))
             .collect();
+        let latest_graded_results: BTreeMap<_, _> = self
+            .traces
+            .latest_graded_evaluation_results_by_slug()
+            .into_iter()
+            .map(|result| (result.slug.clone(), result))
+            .collect();
         ui.horizontal_wrapped(|ui| {
             ui.label("Filter");
             for filter in [
@@ -1542,8 +1550,12 @@ impl MasterSkillApp {
             .clone()
             .into_iter()
             .filter(|row| {
-                suite_matches_filter(row, latest_results.get(&row.slug), self.suite_filter)
-                    && suite_matches_query(row, &self.suite_query)
+                suite_matches_filter(
+                    row,
+                    latest_results.get(&row.slug),
+                    latest_graded_results.get(&row.slug),
+                    self.suite_filter,
+                ) && suite_matches_query(row, &self.suite_query)
             })
             .collect();
         if rows.is_empty() {
@@ -2112,14 +2124,14 @@ impl MasterSkillApp {
                             ui.label(case.citation_assertion_count.to_string());
                             ui.label(case.keyword_assertion_count.to_string());
                             if let Some(result) = case_results.get(&case.index) {
-                                ui.label(result.status.as_str());
+                                ui.label(result.status.label());
                                 ui.label(result.failure_summary());
                             } else {
                                 ui.label(
                                     latest_result
                                         .as_ref()
                                         .map(|result| {
-                                            if result.dry_run {
+                                            if result.is_dry_run() {
                                                 "N/A dry-run".to_string()
                                             } else {
                                                 result.label()
@@ -2466,7 +2478,7 @@ mod tests {
     use crate::catalog::{SkillKind, SkillRow};
     use crate::trace::{
         EvaluationDecisionAction, EvaluationDecisionBrief, EvaluationDecisionPosture,
-        EvaluationRunResult, TraceAction, TraceStore,
+        EvaluationMode, EvaluationRunResult, TraceAction, TraceStore,
     };
     use std::time::Duration;
 
@@ -2496,44 +2508,57 @@ mod tests {
             slug: "huineng".to_string(),
             passed_count: 12,
             total_count: 12,
-            dry_run: false,
+            mode: EvaluationMode::Graded,
             trace_id: 1,
         };
         let failed_run = EvaluationRunResult {
             slug: "zhiyi".to_string(),
             passed_count: 8,
             total_count: 10,
-            dry_run: false,
+            mode: EvaluationMode::Graded,
             trace_id: 2,
+        };
+        let later_dry_run = EvaluationRunResult {
+            slug: "zhiyi".to_string(),
+            passed_count: 0,
+            total_count: 10,
+            mode: EvaluationMode::DryRun,
+            trace_id: 3,
         };
 
         assert!(super::suite_matches_filter(
             &ready,
             Some(&passing_run),
+            Some(&passing_run),
             super::SuiteFilter::Ready
         ));
         assert!(super::suite_matches_filter(
             &attention,
+            Some(&later_dry_run),
             Some(&failed_run),
             super::SuiteFilter::Attention
         ));
         assert!(super::suite_matches_filter(
             &missing,
             None,
+            None,
             super::SuiteFilter::Missing
         ));
         assert!(super::suite_matches_filter(
             &missing,
             None,
+            None,
             super::SuiteFilter::NotRun
         ));
         assert!(super::suite_matches_filter(
             &attention,
+            Some(&later_dry_run),
             Some(&failed_run),
             super::SuiteFilter::FailedRun
         ));
         assert!(!super::suite_matches_filter(
             &ready,
+            Some(&passing_run),
             Some(&passing_run),
             super::SuiteFilter::FailedRun
         ));
@@ -2602,7 +2627,7 @@ mod tests {
         traces.finish_success_with_detail(
             run,
             "master-huineng fidelity dry-run finished",
-            r#"[{"master": "master-huineng", "results": [
+            r#"[{"master": "master-huineng", "passed": 1, "results": [
               {"index": 0, "question": "通过", "status": "PASS"},
               {"index": 1, "question": "失败", "status": "FAIL"}
             ]}]"#,
@@ -2630,7 +2655,7 @@ mod tests {
             snapshot.decision_brief.posture,
             EvaluationDecisionPosture::Attention
         );
-        assert_eq!(snapshot.run_coverage.label(), "1/1");
+        assert_eq!(snapshot.run_coverage.structural_label(), "1/1");
         assert_eq!(snapshot.failure_insights.failed_cases, 1);
         assert_eq!(snapshot.failure_queue.len(), 1);
         assert_eq!(snapshot.all_run_history.len(), 2);
@@ -2704,6 +2729,7 @@ mod tests {
             has_citation_format: complete_contract,
             fidelity_case_count: case_count,
             fidelity_cases: Vec::new(),
+            fidelity_error: None,
             source_index_present: complete_contract,
             kind: SkillKind::Persona,
         }
