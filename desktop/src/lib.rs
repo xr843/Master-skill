@@ -2,6 +2,7 @@ pub mod app;
 pub mod baseline;
 pub mod catalog;
 pub mod cli;
+pub mod command;
 pub mod fonts;
 pub mod layout;
 pub mod model;
