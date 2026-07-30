@@ -1,9 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs;
-use std::path::Path;
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use anyhow::Result;
+use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
@@ -1818,7 +1819,87 @@ fn decision_action_for_regressed_scope(scope: &str) -> EvaluationDecisionAction 
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+const TRACE_STORE_SCHEMA_VERSION: u64 = 1;
+
+#[derive(Debug, Deserialize)]
+struct TraceStoreFileV1 {
+    schema_version: u64,
+    next_id: u64,
+    records: VecDeque<TraceRecord>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LegacyTraceStoreFile {
+    capacity: usize,
+    next_id: u64,
+    records: VecDeque<TraceRecord>,
+}
+
+#[derive(Serialize)]
+struct TraceStoreFileV1Ref<'a> {
+    schema_version: u64,
+    next_id: u64,
+    records: &'a VecDeque<TraceRecord>,
+}
+
+#[derive(Debug)]
+pub struct TraceStoreLease {
+    trace_path: PathBuf,
+    _lock_file: fs::File,
+}
+
+impl TraceStoreLease {
+    pub fn try_acquire(trace_path: &Path) -> Result<Option<Self>> {
+        let parent = trace_store_parent(trace_path);
+        fs::create_dir_all(parent).with_context(|| {
+            format!(
+                "failed to create trace store directory {}",
+                parent.display()
+            )
+        })?;
+
+        let mut lock_name = trace_path.as_os_str().to_os_string();
+        lock_name.push(".lock");
+        let lock_path = PathBuf::from(lock_name);
+        let lock_file = fs::OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(&lock_path)
+            .with_context(|| format!("failed to open trace lock {}", lock_path.display()))?;
+
+        match fs4::FileExt::try_lock(&lock_file) {
+            Ok(()) => Ok(Some(Self {
+                trace_path: trace_path.to_path_buf(),
+                _lock_file: lock_file,
+            })),
+            Err(fs4::TryLockError::WouldBlock) => Ok(None),
+            Err(fs4::TryLockError::Error(error)) => Err(error)
+                .with_context(|| format!("failed to lock trace store {}", trace_path.display())),
+        }
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.trace_path
+    }
+
+    pub fn load(&self, capacity: usize) -> Result<TraceStore> {
+        TraceStore::load_from_path(&self.trace_path, capacity)
+    }
+
+    pub fn save(&self, store: &TraceStore) -> Result<()> {
+        store.save_to_path(&self.trace_path)
+    }
+}
+
+fn trace_store_parent(path: &Path) -> &Path {
+    path.parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."))
+}
+
+#[derive(Clone, Debug)]
 pub struct TraceStore {
     capacity: usize,
     next_id: u64,
@@ -1835,13 +1916,62 @@ impl TraceStore {
     }
 
     pub fn load_from_path(path: &Path, capacity: usize) -> Result<Self> {
+        Self::load_from_path_with_interruption_policy(path, capacity, true)
+    }
+
+    pub fn load_read_only_from_path(path: &Path, capacity: usize) -> Result<Self> {
+        Self::load_from_path_with_interruption_policy(path, capacity, false)
+    }
+
+    fn load_from_path_with_interruption_policy(
+        path: &Path,
+        capacity: usize,
+        mark_running_interrupted: bool,
+    ) -> Result<Self> {
         if !path.is_file() {
             return Ok(Self::new(capacity));
         }
 
-        let content = fs::read_to_string(path)?;
-        let mut store: Self = serde_json::from_str(&content)?;
-        store.capacity = capacity;
+        let content = fs::read_to_string(path)
+            .with_context(|| format!("failed to read trace store {}", path.display()))?;
+        let value: serde_json::Value = serde_json::from_str(&content)
+            .with_context(|| format!("failed to parse trace store {}", path.display()))?;
+        let (next_id, records) = if let Some(raw_version) = value.get("schema_version") {
+            let version = raw_version.as_u64().ok_or_else(|| {
+                anyhow!(
+                    "invalid trace schema_version in {}: expected a positive integer",
+                    path.display()
+                )
+            })?;
+            if version != TRACE_STORE_SCHEMA_VERSION {
+                return Err(anyhow!("unsupported trace schema version {version}"));
+            }
+            let payload: TraceStoreFileV1 = serde_json::from_value(value).with_context(|| {
+                format!(
+                    "invalid trace schema version 1 payload in {}",
+                    path.display()
+                )
+            })?;
+            if payload.schema_version != TRACE_STORE_SCHEMA_VERSION {
+                return Err(anyhow!(
+                    "unsupported trace schema version {}",
+                    payload.schema_version
+                ));
+            }
+            (payload.next_id, payload.records)
+        } else {
+            let payload: LegacyTraceStoreFile =
+                serde_json::from_value(value).with_context(|| {
+                    format!("invalid legacy trace store payload in {}", path.display())
+                })?;
+            let _legacy_capacity = payload.capacity;
+            (payload.next_id, payload.records)
+        };
+        let mut store = Self {
+            capacity,
+            next_id,
+            records,
+        };
         store.next_id = store
             .records
             .iter()
@@ -1850,17 +1980,51 @@ impl TraceStore {
             .unwrap_or(0)
             .saturating_add(1)
             .max(store.next_id);
-        store.mark_running_records_interrupted();
+        if store.next_id == u64::MAX {
+            return Err(anyhow!("trace record ID space is exhausted"));
+        }
+        if mark_running_interrupted {
+            store.mark_running_records_interrupted();
+        }
         store.enforce_capacity();
         Ok(store)
     }
 
     pub fn save_to_path(&self, path: &Path) -> Result<()> {
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        let content = serde_json::to_string_pretty(self)?;
-        fs::write(path, content)?;
+        let content = serde_json::to_vec_pretty(&TraceStoreFileV1Ref {
+            schema_version: TRACE_STORE_SCHEMA_VERSION,
+            next_id: self.next_id,
+            records: &self.records,
+        })
+        .context("failed to serialize trace store")?;
+        let parent = trace_store_parent(path);
+        fs::create_dir_all(parent).with_context(|| {
+            format!(
+                "failed to create trace store directory {}",
+                parent.display()
+            )
+        })?;
+
+        let mut temporary = tempfile::NamedTempFile::new_in(parent).with_context(|| {
+            format!(
+                "failed to create temporary trace file in {}",
+                parent.display()
+            )
+        })?;
+        temporary
+            .write_all(&content)
+            .context("failed to write temporary trace file")?;
+        temporary
+            .flush()
+            .context("failed to flush temporary trace file")?;
+        temporary
+            .as_file()
+            .sync_all()
+            .context("failed to sync temporary trace file")?;
+        temporary
+            .persist(path)
+            .map_err(|error| error.error)
+            .with_context(|| format!("failed to replace trace store {}", path.display()))?;
         Ok(())
     }
 
@@ -2416,6 +2580,7 @@ mod tests {
         EvaluationMode, EvaluationRegressionItem, EvaluationRemediationPlan, EvaluationRunCoverage,
         EvaluationRunHistoryFilter, EvaluationRunHistoryItem, EvaluationRunTrend,
         EvaluationTrendSummary, FailureKind, TraceAction, TraceListFilter, TraceStatus, TraceStore,
+        TraceStoreLease,
     };
 
     fn temp_path(name: &str) -> PathBuf {
@@ -2424,6 +2589,14 @@ mod tests {
             .unwrap()
             .as_nanos();
         std::env::temp_dir().join(format!("master-skill-desktop-{name}-{suffix}.json"))
+    }
+
+    fn temp_dir(name: &str) -> PathBuf {
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        std::env::temp_dir().join(format!("master-skill-desktop-{name}-{suffix}"))
     }
 
     #[test]
@@ -4964,6 +5137,88 @@ mod tests {
     }
 
     #[test]
+    fn loads_legacy_trace_file_and_rewrites_schema_v1() {
+        let directory = temp_dir("trace-legacy");
+        let path = directory.join("desktop-traces.json");
+        fs::create_dir_all(&directory).unwrap();
+        fs::write(&path, r#"{"capacity":99,"next_id":7,"records":[]}"#).unwrap();
+
+        let store = TraceStore::load_from_path(&path, 10).unwrap();
+        store.save_to_path(&path).unwrap();
+        let value: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+
+        assert_eq!(value["schema_version"], 1);
+        assert_eq!(value["next_id"], 7);
+        assert!(value.get("capacity").is_none());
+        assert!(value["records"].is_array());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn rejects_unknown_trace_schema_version() {
+        let directory = temp_dir("trace-version");
+        let path = directory.join("desktop-traces.json");
+        fs::create_dir_all(&directory).unwrap();
+        fs::write(&path, r#"{"schema_version":2,"next_id":1,"records":[]}"#).unwrap();
+
+        let error = TraceStore::load_from_path(&path, 10).unwrap_err();
+
+        assert!(format!("{error:#}").contains("unsupported trace schema version 2"));
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn rejects_trace_store_with_exhausted_record_ids() {
+        let directory = temp_dir("trace-id-exhausted");
+        let path = directory.join("desktop-traces.json");
+        fs::create_dir_all(&directory).unwrap();
+        fs::write(
+            &path,
+            format!(
+                r#"{{"schema_version":1,"next_id":{},"records":[]}}"#,
+                u64::MAX
+            ),
+        )
+        .unwrap();
+
+        let error = TraceStore::load_from_path(&path, 10).unwrap_err();
+
+        assert!(format!("{error:#}").contains("record ID space is exhausted"));
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn versioned_trace_file_round_trips_without_capacity() {
+        let directory = temp_dir("trace-v1");
+        let path = directory.join("desktop-traces.json");
+        let mut store = TraceStore::new(10);
+        store.begin("one");
+
+        store.save_to_path(&path).unwrap();
+        let restored = TraceStore::load_from_path(&path, 3).unwrap();
+        let value: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+
+        assert_eq!(restored.summary().total, 1);
+        assert_eq!(value["schema_version"], 1);
+        assert!(value.get("capacity").is_none());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn only_one_trace_store_lease_can_hold_a_path() {
+        let directory = temp_dir("trace-lease");
+        let path = directory.join("desktop-traces.json");
+        let first = TraceStoreLease::try_acquire(&path).unwrap().unwrap();
+
+        assert!(TraceStoreLease::try_acquire(&path).unwrap().is_none());
+        drop(first);
+        assert!(TraceStoreLease::try_acquire(&path).unwrap().is_some());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
     fn marks_persisted_running_traces_as_interrupted_on_load() {
         let path = temp_path("trace-interrupted");
         let mut store = TraceStore::new(10);
@@ -4983,6 +5238,24 @@ mod tests {
         assert_eq!(record.summary, "Interrupted before completion.");
         assert!(record.detail.contains("Desktop manager closed"));
 
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn read_only_load_preserves_running_records_owned_by_writer() {
+        let path = temp_path("trace-read-only");
+        let mut store = TraceStore::new(10);
+        store.begin_with_action(
+            "Running full validation",
+            TraceAction::FullValidation,
+            Some("npm test"),
+            "Queued.",
+        );
+        store.save_to_path(&path).unwrap();
+
+        let restored = TraceStore::load_read_only_from_path(&path, 10).unwrap();
+
+        assert_eq!(restored.recent()[0].status, TraceStatus::Running);
         fs::remove_file(path).unwrap();
     }
 
