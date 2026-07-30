@@ -974,14 +974,17 @@ impl MasterSkillApp {
                 healthy: summary.missing_suite_count == 0,
             },
             MetricCard {
-                title: "Run Coverage",
-                value: gate.run_coverage.label(),
-                detail: format!(
-                    "{} dry-run / {} graded",
-                    gate.run_coverage.dry_run_count, gate.run_coverage.graded_count
-                ),
-                healthy: summary.skill_count > 0
-                    && gate.run_coverage.run_skill_count == summary.skill_count,
+                title: "Structural Coverage",
+                value: gate.run_coverage.structural_label(),
+                detail: format!("{} latest dry-run", gate.run_coverage.dry_run_skill_count),
+                healthy: gate.run_coverage.is_structurally_complete(),
+            },
+            MetricCard {
+                title: "Graded Coverage",
+                value: gate.run_coverage.graded_label(),
+                detail: format!("{} current error(s)", gate.run_coverage.current_error_count),
+                healthy: gate.run_coverage.is_graded_complete()
+                    && gate.run_coverage.current_error_count == 0,
             },
             MetricCard {
                 title: "Ready",
@@ -1269,11 +1272,7 @@ impl MasterSkillApp {
             MetricCard {
                 title: "Pass Rate",
                 value: insights.pass_rate_label(),
-                detail: format!(
-                    "{} graded / {} dry-run",
-                    insights.graded_cases(),
-                    insights.dry_run_cases
-                ),
+                detail: format!("{} graded case(s)", insights.graded_cases()),
                 healthy: insights.failed_cases == 0,
             },
             MetricCard {
@@ -1292,7 +1291,7 @@ impl MasterSkillApp {
         Self::show_metric_cards(ui, &cards);
 
         if insights.total_cases == 0 {
-            ui.small("Run a fidelity dry-run with JSON output to populate case-level insights.");
+            ui.small("No graded case evidence is available. Attach a graded fidelity result to populate behavioral insights.");
             return;
         }
 
@@ -2632,7 +2631,7 @@ mod tests {
             snapshot.decision_brief.posture,
             EvaluationDecisionPosture::Attention
         );
-        assert_eq!(snapshot.run_coverage.label(), "1/1");
+        assert_eq!(snapshot.run_coverage.structural_label(), "1/1");
         assert_eq!(snapshot.failure_insights.failed_cases, 1);
         assert_eq!(snapshot.failure_queue.len(), 1);
         assert_eq!(snapshot.all_run_history.len(), 2);

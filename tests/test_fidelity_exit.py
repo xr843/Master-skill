@@ -77,6 +77,26 @@ def test_missing_master_emits_versioned_error_suite(runner):
     }
 
 
+def test_invalid_fidelity_file_emits_versioned_error_suite(runner, monkeypatch, tmp_path):
+    master_dir = tmp_path / "master-broken"
+    (master_dir / "tests").mkdir(parents=True)
+    (master_dir / "tests" / "fidelity.jsonl").write_text(
+        '{"q":"valid"}\n{"q":\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "PREBUILT_DIR", tmp_path)
+
+    suite = runner.run_tests("master-broken", dry_run=True, quiet=True)
+
+    assert suite["schema_version"] == 1
+    assert suite["master"] == "master-broken"
+    assert suite["mode"] == "dry_run"
+    assert suite["outcome"] == "error"
+    assert suite["total"] == 0
+    assert suite["results"] == []
+    assert "line 2" in suite["error"]
+
+
 def test_missing_master_exits_nonzero_with_clean_json_stdout():
     result = subprocess.run(
         [

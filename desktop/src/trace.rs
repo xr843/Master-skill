@@ -824,6 +824,7 @@ fn parse_evaluation_suite_v1(
             "invalid fidelity v1 suite: master must start with master-",
         )
     })?;
+    validate_evaluation_scope(trace_id, &slug, fallback_slug)?;
     let outcome = match suite.outcome {
         EvaluationOutcomeWire::Completed => EvaluationSuiteOutcome::Completed,
         EvaluationOutcomeWire::Error => {
@@ -1007,6 +1008,7 @@ fn parse_legacy_evaluation_suite(
             "invalid legacy fidelity suite: master must start with master-",
         )
     })?;
+    validate_evaluation_scope(trace_id, &slug, fallback_slug)?;
     let statuses = evaluation_case_statuses(&suite.results).map_err(|message| {
         evaluation_evidence_error(
             trace_id,
@@ -1120,6 +1122,26 @@ fn completed_evaluation_suite(
 fn normalized_master_slug(master: &str) -> Option<String> {
     let slug = master.strip_prefix("master-")?;
     (!slug.is_empty()).then(|| slug.to_string())
+}
+
+fn validate_evaluation_scope(
+    trace_id: u64,
+    actual_slug: &str,
+    expected_slug: Option<&str>,
+) -> Result<(), EvaluationEvidenceError> {
+    if let Some(expected_slug) = expected_slug {
+        if actual_slug != expected_slug {
+            return Err(evaluation_evidence_error(
+                trace_id,
+                Some(expected_slug),
+                EvaluationEvidenceErrorKind::MalformedPayload,
+                format!(
+                    "invalid fidelity suite scope: expected master-{expected_slug}, got master-{actual_slug}"
+                ),
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn evaluation_slug_from_value(
@@ -1273,18 +1295,30 @@ pub struct TraceFailureItem {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct EvaluationRunCoverage {
     pub total_skill_count: usize,
-    pub run_skill_count: usize,
-    pub dry_run_count: usize,
-    pub graded_count: usize,
+    pub structural_run_skill_count: usize,
+    pub graded_run_skill_count: usize,
+    pub dry_run_skill_count: usize,
+    pub current_error_count: usize,
 }
 
 impl EvaluationRunCoverage {
-    pub fn label(&self) -> String {
-        format!("{}/{}", self.run_skill_count, self.total_skill_count)
+    pub fn structural_label(&self) -> String {
+        format!(
+            "{}/{}",
+            self.structural_run_skill_count, self.total_skill_count
+        )
     }
 
-    pub fn is_complete(&self) -> bool {
-        self.total_skill_count > 0 && self.run_skill_count >= self.total_skill_count
+    pub fn graded_label(&self) -> String {
+        format!("{}/{}", self.graded_run_skill_count, self.total_skill_count)
+    }
+
+    pub fn is_structurally_complete(&self) -> bool {
+        self.total_skill_count > 0 && self.structural_run_skill_count >= self.total_skill_count
+    }
+
+    pub fn is_graded_complete(&self) -> bool {
+        self.total_skill_count > 0 && self.graded_run_skill_count >= self.total_skill_count
     }
 }
 
@@ -1430,6 +1464,24 @@ impl EvaluationDecisionBrief {
             };
         }
 
+        if coverage.current_error_count > 0 {
+            return Self {
+                posture: EvaluationDecisionPosture::Blocked,
+                headline: "Evaluation evidence error".to_string(),
+                primary_risk: format!(
+                    "{} current evaluation error(s)",
+                    coverage.current_error_count
+                ),
+                evidence:
+                    "The newest attempt for at least one evaluation scope did not produce valid evidence."
+                        .to_string(),
+                recommendation:
+                    "Rerun the affected evaluation scopes and inspect execution or payload errors before release."
+                        .to_string(),
+                action: EvaluationDecisionAction::RerunAll,
+            };
+        }
+
         if insights.failed_cases > 0 {
             let action = insights
                 .top_failure_skill_slug
@@ -1451,27 +1503,48 @@ impl EvaluationDecisionBrief {
             };
         }
 
-        if !coverage.is_complete() {
+        if !coverage.is_structurally_complete() {
             let missing_runs = coverage
                 .total_skill_count
-                .saturating_sub(coverage.run_skill_count);
+                .saturating_sub(coverage.structural_run_skill_count);
             return Self {
                 posture: EvaluationDecisionPosture::Unproven,
                 headline: "Evaluation coverage incomplete".to_string(),
-                primary_risk: format!("{} skills have latest runs", coverage.label()),
+                primary_risk: format!(
+                    "{} skills have structural runs",
+                    coverage.structural_label()
+                ),
                 evidence: format!("{missing_runs} skill(s) without a current run"),
-                recommendation: "Run fidelity dry-run to establish a current baseline.".to_string(),
+                recommendation: "Run fidelity dry-run to establish structural baseline coverage."
+                    .to_string(),
                 action: EvaluationDecisionAction::RunFidelityBaseline,
+            };
+        }
+
+        if !coverage.is_graded_complete() {
+            let missing_runs = coverage
+                .total_skill_count
+                .saturating_sub(coverage.graded_run_skill_count);
+            return Self {
+                posture: EvaluationDecisionPosture::Unproven,
+                headline: "Graded evidence incomplete".to_string(),
+                primary_risk: format!("{} skills have graded results", coverage.graded_label()),
+                evidence: format!(
+                    "Structural baseline complete; {missing_runs} skill(s) lack graded evidence"
+                ),
+                recommendation: "Attach complete graded fidelity evidence before release approval."
+                    .to_string(),
+                action: EvaluationDecisionAction::RunFullValidation,
             };
         }
 
         Self {
             posture: EvaluationDecisionPosture::Ready,
-            headline: "Evaluation baseline clear".to_string(),
+            headline: "Graded evaluation clear".to_string(),
             primary_risk: "No current regressions or failing cases".to_string(),
             evidence: format!(
-                "{} skills covered, {} recent run(s)",
-                coverage.run_skill_count, trend.total_runs
+                "{} skills graded, {} recent run(s)",
+                coverage.graded_run_skill_count, trend.total_runs
             ),
             recommendation: "Proceed with release review and keep monitoring new runs.".to_string(),
             action: EvaluationDecisionAction::RunFullValidation,
@@ -1515,10 +1588,21 @@ impl EvaluationEvidenceReport {
         markdown.push_str(&format!("- Next action: {}\n\n", brief.recommendation));
 
         markdown.push_str("## Coverage And Trend\n");
-        markdown.push_str(&format!("- Coverage: {} skills\n", coverage.label()));
         markdown.push_str(&format!(
-            "- Run modes: {} dry-run / {} graded\n",
-            coverage.dry_run_count, coverage.graded_count
+            "- Structural coverage: {} skills\n",
+            coverage.structural_label()
+        ));
+        markdown.push_str(&format!(
+            "- Graded coverage: {} skills\n",
+            coverage.graded_label()
+        ));
+        markdown.push_str(&format!(
+            "- Latest structural mode: {} dry-run skill(s)\n",
+            coverage.dry_run_skill_count
+        ));
+        markdown.push_str(&format!(
+            "- Current evaluation errors: {}\n",
+            coverage.current_error_count
         ));
         markdown.push_str(&format!(
             "- Trend: {} regressed / {} improved / {} stable / {} new\n\n",
@@ -1698,12 +1782,9 @@ fn default_remediation_action(brief: &EvaluationDecisionBrief) -> String {
         EvaluationDecisionPosture::Ready => {
             "Run full validation before release approval".to_string()
         }
-        EvaluationDecisionPosture::Unproven => {
-            "Run fidelity baseline for all skills to establish current coverage".to_string()
-        }
-        EvaluationDecisionPosture::Attention | EvaluationDecisionPosture::Blocked => {
-            brief.recommendation.clone()
-        }
+        EvaluationDecisionPosture::Unproven
+        | EvaluationDecisionPosture::Attention
+        | EvaluationDecisionPosture::Blocked => brief.recommendation.clone(),
     }
 }
 
@@ -2090,12 +2171,18 @@ impl TraceStore {
     }
 
     pub fn evaluation_run_coverage(&self, total_skill_count: usize) -> EvaluationRunCoverage {
-        let results = self.latest_evaluation_results_by_slug();
+        let structural_results = self.latest_evaluation_results_by_slug();
+        let graded_results = self.latest_graded_evaluation_results_by_slug();
         EvaluationRunCoverage {
             total_skill_count,
-            run_skill_count: results.len(),
-            dry_run_count: results.iter().filter(|result| result.is_dry_run()).count(),
-            graded_count: results.iter().filter(|result| !result.is_dry_run()).count(),
+            structural_run_skill_count: structural_results.len().min(total_skill_count),
+            graded_run_skill_count: graded_results.len().min(total_skill_count),
+            dry_run_skill_count: structural_results
+                .iter()
+                .filter(|result| result.is_dry_run())
+                .count()
+                .min(total_skill_count),
+            current_error_count: self.latest_evaluation_errors().len(),
         }
     }
 
@@ -3123,6 +3210,46 @@ mod tests {
     }
 
     #[test]
+    fn rejects_evaluation_payload_for_wrong_skill_scope() {
+        let mut store = TraceStore::new(10);
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "master-huineng fidelity finished",
+            r#"[{
+              "schema_version": 1,
+              "master": "master-zhiyi",
+              "mode": "graded",
+              "outcome": "completed",
+              "total": 1,
+              "passed": 1,
+              "failed": 0,
+              "results": [
+                {"index": 0, "question": "错误 scope", "status": "PASS"}
+              ]
+            }]"#,
+            Duration::from_millis(50),
+        );
+
+        assert!(store.latest_evaluation_result_for("zhiyi").is_none());
+        let errors = store.records.back().unwrap().evaluation_errors();
+        assert_eq!(errors.len(), 1);
+        assert_eq!(
+            errors[0].kind,
+            EvaluationEvidenceErrorKind::MalformedPayload
+        );
+        assert_eq!(errors[0].slug.as_deref(), Some("huineng"));
+        assert!(errors[0].message.contains("scope"));
+    }
+
+    #[test]
     fn reports_failed_evaluation_trace_as_execution_evidence() {
         let mut store = TraceStore::new(10);
         let run = store.begin_with_action(
@@ -3338,10 +3465,11 @@ mod tests {
         let coverage = store.evaluation_run_coverage(18);
 
         assert_eq!(coverage.total_skill_count, 18);
-        assert_eq!(coverage.run_skill_count, 2);
-        assert_eq!(coverage.dry_run_count, 2);
-        assert_eq!(coverage.graded_count, 0);
-        assert_eq!(coverage.label(), "2/18");
+        assert_eq!(coverage.structural_run_skill_count, 2);
+        assert_eq!(coverage.dry_run_skill_count, 2);
+        assert_eq!(coverage.graded_run_skill_count, 0);
+        assert_eq!(coverage.current_error_count, 0);
+        assert_eq!(coverage.structural_label(), "2/18");
     }
 
     /// Real (trimmed) `python3 scripts/test-fidelity.py --master master-zhiyi
@@ -3501,15 +3629,16 @@ mod tests {
         let coverage = store.evaluation_run_coverage(3);
 
         assert_eq!(coverage.total_skill_count, 3);
-        assert_eq!(coverage.run_skill_count, 3);
-        assert_eq!(coverage.dry_run_count, 3);
-        assert_eq!(coverage.graded_count, 0);
-        assert_eq!(coverage.label(), "3/3");
-        assert!(coverage.is_complete());
+        assert_eq!(coverage.structural_run_skill_count, 3);
+        assert_eq!(coverage.dry_run_skill_count, 3);
+        assert_eq!(coverage.graded_run_skill_count, 0);
+        assert_eq!(coverage.current_error_count, 0);
+        assert_eq!(coverage.structural_label(), "3/3");
+        assert!(coverage.is_structurally_complete());
     }
 
     #[test]
-    fn evaluation_gate_leaves_unproven_after_full_json_dry_run_baseline() {
+    fn complete_dry_run_coverage_is_unproven() {
         // Mirrors `master-skill-desktop --baseline` recording one real
         // `--json` dry-run trace per skill via the shared trace-store code
         // path (baseline.rs / app.rs), then computes the exact signals
@@ -3545,13 +3674,105 @@ mod tests {
         let trend = store.evaluation_trend_summary(20);
         let brief = EvaluationDecisionBrief::from_signals(&coverage, &trend, &insights);
 
-        assert!(coverage.is_complete());
-        assert_ne!(
-            brief.posture,
-            EvaluationDecisionPosture::Unproven,
-            "gate should leave Unproven once every skill has a current run: {brief:?}"
+        assert!(coverage.is_structurally_complete());
+        assert!(!coverage.is_graded_complete());
+        assert_eq!(brief.posture, EvaluationDecisionPosture::Unproven);
+        assert_eq!(brief.headline, "Graded evidence incomplete");
+    }
+
+    #[test]
+    fn complete_passing_graded_coverage_is_ready() {
+        let mut store = TraceStore::new(10);
+        let run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
         );
+        store.finish_success_with_detail(
+            run,
+            "master-huineng fidelity finished",
+            r#"[{
+              "schema_version": 1,
+              "master": "master-huineng",
+              "mode": "graded",
+              "outcome": "completed",
+              "total": 1,
+              "passed": 1,
+              "failed": 0,
+              "results": [
+                {"index": 0, "question": "已评分", "status": "PASS"}
+              ]
+            }]"#,
+            Duration::from_millis(50),
+        );
+
+        let coverage = store.evaluation_run_coverage(1);
+        let insights = store.evaluation_failure_insights();
+        let trend = store.evaluation_trend_summary(8);
+        let brief = EvaluationDecisionBrief::from_signals(&coverage, &trend, &insights);
+
+        assert!(coverage.is_structurally_complete());
+        assert!(coverage.is_graded_complete());
+        assert_eq!(coverage.current_error_count, 0);
         assert_eq!(brief.posture, EvaluationDecisionPosture::Ready);
+        assert_eq!(brief.headline, "Graded evaluation clear");
+    }
+
+    #[test]
+    fn current_evaluation_error_blocks_older_passing_evidence() {
+        let mut store = TraceStore::new(10);
+        let graded_run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            graded_run,
+            "master-huineng fidelity finished",
+            r#"[{
+              "schema_version": 1,
+              "master": "master-huineng",
+              "mode": "graded",
+              "outcome": "completed",
+              "total": 1,
+              "passed": 1,
+              "failed": 0,
+              "results": [
+                {"index": 0, "question": "旧通过", "status": "PASS"}
+              ]
+            }]"#,
+            Duration::from_millis(50),
+        );
+        let failed_run = store.begin_with_action(
+            "Running master-huineng fidelity",
+            TraceAction::FidelityDryRunSkill {
+                slug: "huineng".to_string(),
+            },
+            Some("python3 scripts/test-fidelity.py --master master-huineng --json"),
+            "Queued.",
+        );
+        store.finish_error_with_detail(
+            failed_run,
+            "master-huineng fidelity failed",
+            "runner failed before producing evidence",
+            Duration::from_millis(50),
+        );
+
+        let coverage = store.evaluation_run_coverage(1);
+        let insights = store.evaluation_failure_insights();
+        let trend = store.evaluation_trend_summary(8);
+        let brief = EvaluationDecisionBrief::from_signals(&coverage, &trend, &insights);
+
+        assert!(coverage.is_graded_complete());
+        assert_eq!(coverage.current_error_count, 1);
+        assert_eq!(brief.posture, EvaluationDecisionPosture::Blocked);
+        assert_eq!(brief.headline, "Evaluation evidence error");
     }
 
     #[test]
@@ -4204,9 +4425,10 @@ mod tests {
     fn builds_evaluation_decision_brief_from_quality_signals() {
         let coverage = EvaluationRunCoverage {
             total_skill_count: 3,
-            run_skill_count: 3,
-            dry_run_count: 3,
-            graded_count: 0,
+            structural_run_skill_count: 3,
+            graded_run_skill_count: 3,
+            dry_run_skill_count: 0,
+            current_error_count: 0,
         };
         let mut trend = EvaluationTrendSummary {
             total_runs: 3,
@@ -4238,6 +4460,15 @@ mod tests {
 
         trend.regressed_count = 0;
         trend.latest_regression_scope = None;
+
+        let errored = EvaluationRunCoverage {
+            current_error_count: 1,
+            ..coverage.clone()
+        };
+        let brief = EvaluationDecisionBrief::from_signals(&errored, &trend, &insights);
+        assert_eq!(brief.posture, EvaluationDecisionPosture::Blocked);
+        assert_eq!(brief.headline, "Evaluation evidence error");
+
         let brief = EvaluationDecisionBrief::from_signals(&coverage, &trend, &insights);
         assert_eq!(brief.posture, EvaluationDecisionPosture::Attention);
         assert_eq!(brief.headline, "Failing fidelity cases");
@@ -4254,19 +4485,27 @@ mod tests {
         insights.top_failure_skill_slug = None;
         insights.top_failure_skill_count = 0;
         let uncovered = EvaluationRunCoverage {
-            run_skill_count: 2,
+            structural_run_skill_count: 2,
             ..coverage.clone()
         };
         let brief = EvaluationDecisionBrief::from_signals(&uncovered, &trend, &insights);
         assert_eq!(brief.posture, EvaluationDecisionPosture::Unproven);
         assert_eq!(brief.headline, "Evaluation coverage incomplete");
-        assert_eq!(brief.primary_risk, "2/3 skills have latest runs");
+        assert_eq!(brief.primary_risk, "2/3 skills have structural runs");
         assert_eq!(brief.action, EvaluationDecisionAction::RunFidelityBaseline);
+
+        let graded_gap = EvaluationRunCoverage {
+            graded_run_skill_count: 2,
+            ..coverage.clone()
+        };
+        let brief = EvaluationDecisionBrief::from_signals(&graded_gap, &trend, &insights);
+        assert_eq!(brief.posture, EvaluationDecisionPosture::Unproven);
+        assert_eq!(brief.headline, "Graded evidence incomplete");
 
         let brief = EvaluationDecisionBrief::from_signals(&coverage, &trend, &insights);
         assert_eq!(brief.posture, EvaluationDecisionPosture::Ready);
         assert_eq!(brief.status_label(), "ready");
-        assert_eq!(brief.headline, "Evaluation baseline clear");
+        assert_eq!(brief.headline, "Graded evaluation clear");
         assert_eq!(brief.action, EvaluationDecisionAction::RunFullValidation);
     }
 
@@ -4274,9 +4513,10 @@ mod tests {
     fn renders_evaluation_evidence_report_for_release_review() {
         let coverage = EvaluationRunCoverage {
             total_skill_count: 3,
-            run_skill_count: 2,
-            dry_run_count: 2,
-            graded_count: 0,
+            structural_run_skill_count: 2,
+            graded_run_skill_count: 0,
+            dry_run_skill_count: 2,
+            current_error_count: 0,
         };
         let trend = EvaluationTrendSummary {
             total_runs: 2,
@@ -4350,7 +4590,10 @@ mod tests {
             .markdown
             .contains("# Master-skill Evaluation Evidence Report"));
         assert!(report.markdown.contains("- Status: blocked"));
-        assert!(report.markdown.contains("- Coverage: 2/3 skills"));
+        assert!(report
+            .markdown
+            .contains("- Structural coverage: 2/3 skills"));
+        assert!(report.markdown.contains("- Graded coverage: 0/3 skills"));
         assert!(report
             .markdown
             .contains("- Trend: 1 regressed / 0 improved / 1 stable / 0 new"));
@@ -4443,6 +4686,28 @@ mod tests {
         assert!(plan.markdown.contains("- [ ] Fix master-huineng case #3"));
         assert!(plan.markdown.contains("- [ ] Run `npm test`"));
         assert!(plan.markdown.contains("latest trace #42"));
+    }
+
+    #[test]
+    fn graded_gap_remediation_does_not_recommend_another_dry_run() {
+        let coverage = EvaluationRunCoverage {
+            total_skill_count: 1,
+            structural_run_skill_count: 1,
+            graded_run_skill_count: 0,
+            dry_run_skill_count: 1,
+            current_error_count: 0,
+        };
+        let brief = EvaluationDecisionBrief::from_signals(
+            &coverage,
+            &EvaluationTrendSummary::default(),
+            &EvaluationFailureInsights::default(),
+        );
+
+        let plan = EvaluationRemediationPlan::from_signals(&brief, &[], &[], &[]);
+
+        assert_eq!(brief.headline, "Graded evidence incomplete");
+        assert!(plan.items[0].contains("graded fidelity evidence"));
+        assert!(!plan.items[0].contains("baseline"));
     }
 
     #[test]

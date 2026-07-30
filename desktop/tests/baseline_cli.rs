@@ -135,20 +135,28 @@ fn baseline_flag_runs_headless_and_records_traces_for_all_master_skills() {
         .expect("failed to load trace store written by --baseline");
     let coverage = store.evaluation_run_coverage(expected_min);
     assert!(
-        coverage.is_complete(),
-        "expected full evaluation coverage after --baseline, got {}: {coverage:?}",
-        coverage.label()
+        coverage.is_structurally_complete(),
+        "expected full structural coverage after --baseline, got {}: {coverage:?}",
+        coverage.structural_label()
     );
-    assert_eq!(coverage.label(), format!("{expected_min}/{expected_min}"));
+    assert_eq!(
+        coverage.structural_label(),
+        format!("{expected_min}/{expected_min}")
+    );
+    assert!(
+        !coverage.is_graded_complete(),
+        "dry-run baseline must not count as graded evidence: {coverage:?}"
+    );
 
     let insights = store.evaluation_failure_insights();
     let trend = store.evaluation_trend_summary(expected_min * 2);
     let brief = EvaluationDecisionBrief::from_signals(&coverage, &trend, &insights);
-    assert_ne!(
+    assert_eq!(
         brief.posture,
         EvaluationDecisionPosture::Unproven,
-        "Quality Gate should leave Unproven after a full --baseline run: {brief:?}"
+        "Quality Gate must remain Unproven after a dry-run-only baseline: {brief:?}"
     );
+    assert_eq!(brief.headline, "Graded evidence incomplete");
 
     fs::remove_dir_all(&xdg_data_home).ok();
 }

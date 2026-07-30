@@ -85,9 +85,17 @@ def load_tests(master_dir: Path) -> list[dict]:
     if not fidelity_path.exists():
         return []
     tests = []
-    for line in fidelity_path.read_text(encoding="utf-8").strip().splitlines():
+    for line_number, line in enumerate(
+        fidelity_path.read_text(encoding="utf-8").splitlines(),
+        start=1,
+    ):
         if line.strip():
-            tests.append(json.loads(line))
+            try:
+                tests.append(json.loads(line))
+            except json.JSONDecodeError as error:
+                raise ValueError(
+                    f"Invalid fidelity.jsonl line {line_number}: {error.msg}"
+                ) from error
     return tests
 
 
@@ -170,7 +178,14 @@ def run_tests(
             f"Master '{master_name}' not found",
         )
 
-    tests = load_tests(master_dir)
+    try:
+        tests = load_tests(master_dir)
+    except (OSError, ValueError) as error:
+        return suite_error(
+            master_name,
+            dry_run,
+            f"Unable to load fidelity suite: {error}",
+        )
     if not tests:
         return suite_error(
             master_name,
