@@ -1,0 +1,59 @@
+name: Publish skills to ClawHub
+
+# ClawHub (https://clawhub.ai) is OpenClaw's public skill registry — the other
+# shelf these skills belong on, alongside npm and the Claude Code marketplace.
+#
+# Publishing needs a ClawHub account token. It cannot be minted from CI: the
+# reusable workflow itself says "GitHub OIDC trusted publishing for skills is
+# not supported yet". So the one manual step is:
+#
+#   1. npx clawhub login          (creates/authorises the account, prints a token)
+#   2. add that token as the repository secret CLAWHUB_TOKEN
+#   3. run this workflow with dry_run = false
+#
+# Until step 2 is done, only dry runs are possible — which is why dry_run
+# defaults to true rather than to the more useful value.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview only. Leave true until CLAWHUB_TOKEN exists."
+        type: boolean
+        default: true
+      owner:
+        description: "ClawHub owner/publisher handle. Blank = the token's own account."
+        type: string
+        default: ""
+
+jobs:
+  publish:
+    # Pinned to a commit rather than @main on purpose: this call hands a
+    # publish token to someone else's workflow, and that workflow checks out
+    # its own source at whatever ref it was invoked with. A moving ref would
+    # mean trusting every future commit in that repository in advance.
+    # Refreshing the pin is a deliberate, reviewable change.
+    uses: openclaw/clawhub/.github/workflows/skill-publish.yml@8aa76c1a7268749cc9eeabff570badf428ef4aaa
+    # Reusable workflows cannot escalate beyond what the caller grants, and the
+    # callee needs id-token: write for the OIDC handshake it uses to locate its
+    # own source. Granting less makes the job fail at that step.
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      # Each prebuilt/<skill>/ carries its own SKILL.md and supporting files.
+      # NOTE: ClawHub derives the published slug from the *folder name* —
+      # verified with `clawhub skill publish … --dry-run`, which reported
+      # "master-zhiyi" even though that skill's meta.json declares
+      # slug: zhiyi. Every folder here matches its slash command except
+      # prebuilt/compare, which would publish as the generic "compare"
+      # instead of "compare-masters". Rename the folder before the first real
+      # publish if that name matters — a slug is hard to take back.
+      root: prebuilt
+      dry_run: ${{ inputs.dry_run }}
+      owner: ${{ inputs.owner }}
+    secrets:
+      # Absent secret resolves to an empty string, which the callee accepts for
+      # dry runs and rejects for real publishes — the failure mode is a clear
+      # error, not a silent no-op.
+      clawhub_token: ${{ secrets.CLAWHUB_TOKEN }}
