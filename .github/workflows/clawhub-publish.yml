@@ -33,7 +33,7 @@ jobs:
     # its own source at whatever ref it was invoked with. A moving ref would
     # mean trusting every future commit in that repository in advance.
     # Refreshing the pin is a deliberate, reviewable change.
-    uses: openclaw/clawhub/.github/workflows/skill-publish.yml@8aa76c1a7268749cc9eeabff570badf428ef4aaa
+    uses: openclaw/clawhub/.github/workflows/skill-publish.yml@82313c2bb17fb8401c41c8ed2b0144d42b461ae7
     # Reusable workflows cannot escalate beyond what the caller grants, and the
     # callee needs id-token: write for the OIDC handshake it uses to locate its
     # own source. Granting less makes the job fail at that step.
