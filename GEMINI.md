@@ -1,2 +1,2 @@
 @./SKILL.md
-@./prebuilt/compare/SKILL.md
+@./prebuilt/compare-masters/SKILL.md

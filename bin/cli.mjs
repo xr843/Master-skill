@@ -235,7 +235,7 @@ function availableMasters() {
   if (!fs.existsSync(PREBUILT)) return [];
   return fs
     .readdirSync(PREBUILT, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && d.name !== "compare")
+    .filter((d) => d.isDirectory() && d.name !== "compare-masters")
     .map((d) => {
       const skillMd = path.join(PREBUILT, d.name, "SKILL.md");
       const fm = fs.existsSync(skillMd) ? parseFrontmatter(skillMd) : {};
@@ -568,7 +568,7 @@ function cmdInspect(name, { json = false } = {}) {
 // --- recommend ---
 //
 // Routing used to exist only as prose (a weighted-match paragraph and a
-// pairing table in prebuilt/compare/SKILL.md, a decision tree in
+// pairing table in prebuilt/compare-masters/SKILL.md, a decision tree in
 // references/teaching-modes.md), so nothing could execute or test it. This
 // reads routing.json for the parts that had no machine-readable home and
 // scores personas straight off each meta.json search_scope.keywords, which

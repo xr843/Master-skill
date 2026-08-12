@@ -42,13 +42,18 @@ jobs:
       id-token: write
     with:
       # Each prebuilt/<skill>/ carries its own SKILL.md and supporting files.
-      # NOTE: ClawHub derives the published slug from the *folder name* —
-      # verified with `clawhub skill publish … --dry-run`, which reported
-      # "master-zhiyi" even though that skill's meta.json declares
-      # slug: zhiyi. Every folder here matches its slash command except
-      # prebuilt/compare, which would publish as the generic "compare"
-      # instead of "compare-masters". Rename the folder before the first real
-      # publish if that name matters — a slug is hard to take back.
+      #
+      # ClawHub derives the published slug from the *folder name*, not from
+      # SKILL.md. Re-verified on clawhub CLI 0.23.3: publishing the folder
+      # formerly named prebuilt/compare reported "Would publish compare@1.0.0"
+      # even though its SKILL.md declares `name: compare-masters`. The CLI has
+      # a --slug flag, but the reusable workflow called below exposes no such
+      # input (skill_path, root, dry_run, owner, tags, registry, site, ref) —
+      # so via CI the folder name IS the slug, with no override.
+      #
+      # That folder is now prebuilt/compare-masters, so every folder here
+      # equals the name it publishes under. Keep that invariant: a slug is
+      # hard to take back once it is public.
       root: prebuilt
       dry_run: ${{ inputs.dry_run }}
       owner: ${{ inputs.owner }}

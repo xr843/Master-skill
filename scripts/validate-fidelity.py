@@ -138,7 +138,7 @@ def validate_master(master_dir: Path) -> list[str]:
             if field in test and not isinstance(test[field], list):
                 errors.append(f"{master_dir.name}:{i}: '{field}' must be a list")
 
-        if master_dir.name == "compare" and test_type not in {"boundary", "pressure"}:
+        if master_dir.name == "compare-masters" and test_type not in {"boundary", "pressure"}:
             sections = set(test.get("must_have_sections", []))
             missing = sorted(COMPARE_REQUIRED_SECTIONS - sections)
             if missing:

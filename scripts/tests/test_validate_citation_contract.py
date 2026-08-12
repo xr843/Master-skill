@@ -235,7 +235,7 @@ def test_repository_wording_uses_declared_source_contract():
     repository = Path(__file__).resolve().parents[2]
     runtime_paths = [
         repository / "SKILL.md",
-        repository / "prebuilt" / "compare" / "SKILL.md",
+        repository / "prebuilt" / "compare-masters" / "SKILL.md",
         repository / "prompts" / "doctrine_reviewer.md",
         repository / "references" / "ethics-runtime.md",
         repository / "references" / "source-conventions.md",
