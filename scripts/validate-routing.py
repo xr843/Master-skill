@@ -4,7 +4,7 @@
 `master-skill recommend` and the `/master-help` skill both route off this
 file. It exists because the routing knowledge used to live only as prose:
 a weighted-match paragraph and a 24-row pairing table inside
-prebuilt/compare/SKILL.md, plus a decision tree in
+prebuilt/compare-masters/SKILL.md, plus a decision tree in
 references/teaching-modes.md. Prose cannot be executed and cannot drift-check
 itself — the original pairing table shipped three key collisions (`戒律`,
 `道次第`, `中观/空性` each matched two or three rows), so which pairing a

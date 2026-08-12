@@ -154,7 +154,7 @@
     {
       "name": "compare-masters",
       "kind": "teaching-mode",
-      "source": "prebuilt/compare",
+      "source": "prebuilt/compare-masters",
       "install_dir": "compare-masters",
       "aliases": [
         "compare-masters"
