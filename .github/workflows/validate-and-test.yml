@@ -95,6 +95,15 @@ jobs:
       - name: Validate routing table (v0.11 — hard gate)
         run: python scripts/validate-routing.py
 
+      # Three shipped defects were the same shape: a gate examined an empty set
+      # and reported success (pytest.ini testpaths overridden so neither suite
+      # ran the other's cases; test_voice_rules.py parametrized over an empty
+      # glob; the fidelity smoke exiting 0 after grading nothing). A passing
+      # check is indistinguishable from one that did nothing unless something
+      # asserts otherwise — that is what this step is.
+      - name: Check gate liveness (every gate examined a non-empty set)
+        run: python scripts/check-gate-liveness.py
+
       - name: Test session-start hook lineage sanitization
         run: bash hooks/tests/test_session_start.sh
 
