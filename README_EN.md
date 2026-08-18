@@ -146,7 +146,7 @@ This project is built out of respect for Buddhist traditions. All content is gen
 - **Progressive disclosure**: SKILL.md is a decision tree + quick reference; `references/` and `sources/` are loaded on demand to keep context lean
 - **HARD-GATE discipline**: Both `/create-master` and every prebuilt master require doctrinal claims, practice guidance, and text interpretation to cite that persona's declared sources (CBETA / BDRC / Toh / SuttaCentral / PTS / compliant compiled teachings); fabricated source IDs and fictional personas are forbidden
 - **Two-stage independent review**: The generation pipeline forces a "doctrinal accuracy → voice consistency" review before write; FAIL triggers up to 2 rounds of automatic repair
-- **Automated fidelity tests**: Each master's `tests/fidelity.jsonl` holds 10+ Q&A samples (the `compare-masters` meta-skill holds 18) validating citations and keyword coverage; CI runs a dry-run on every push
+- **Automated fidelity tests**: Each master's `tests/fidelity.jsonl` holds 10+ Q&A samples (the `compare-masters` meta-skill holds 18) validating citations and keyword coverage; CI runs a dry-run on every push, and a graded run needs `ANTHROPIC_API_KEY` as a manual local/pre-release step — the first committed [baseline](#fidelity-baseline-first-real-run) landed 2026-08-18: 59/84 measured cases passed (70%), covering 40% of all 211 fixtures (see [eval/reports/](eval/reports/))
 - **Unified multi-platform plugin**: Claude Code, Cursor, Codex CLI, OpenCode, and Gemini CLI share one `prebuilt/` tree, with a session-start hook injecting the master list on every platform
 - **NPX one-shot install**: `npx master-skill install master-zhiyi` drops skills straight into Claude Code
 - **Offline toolchain**: `scripts/cite.py` (CBETA lookup), `scripts/query.py` (offline semantic search), `scripts/validate.py` (frontmatter linter)
@@ -161,10 +161,22 @@ Master-skill is not a prompt pack. It is a verifiable Buddhist AI persona framew
 |---|---|
 | Source-grounded | `sources[]`, offline excerpts, FoJin live fallback, and citation self-audits per master |
 | Boundary-aware | `ETHICS.md`, per-master Layer 0 HARD-GATE rules, copyright tiers, and boundary violation reporting |
-| Fidelity-tested | `tests/fidelity.jsonl`, persona-fidelity schema, and promptfoo RAW / SPE / CUS evals |
+| Fidelity-tested | `tests/fidelity.jsonl`, persona-fidelity schema, promptfoo RAW / SPE / CUS evals, [real measured baseline below](#fidelity-baseline-first-real-run) |
 | Runtime-ready | `prebuilt/master-*` AgentSkills, npm CLI, multi-platform hooks, and a FoJin runtime contract |
 
 The v1.0 track prioritizes framework stability over adding more masters. See [docs/v1-framework-roadmap.md](docs/v1-framework-roadmap.md) and [docs/fojin-runtime-contract.md](docs/fojin-runtime-contract.md).
+
+### Fidelity baseline (first real run)
+
+The 211 fixtures under `tests/fidelity.jsonl` used to be just fixtures — `scripts/test-fidelity.py` only printed to stdout, and no scored run had ever been committed. On 2026-08-18 we ran and committed the first real baseline (commit [`c697d5d`](https://github.com/xr843/Master-skill/commit/c697d5d3be78ce6738cf1f969ca057c7e4c16bb5), model `claude-sonnet-4-6`):
+
+| | Value |
+|---|---|
+| Passed / measured | **59 / 84 (70%)** |
+| Coverage of the full suite | 84 / 211 (40%) — the run stopped partway when the API account's credit balance ran out (HTTP 400), not from rate limiting or a code bug; the remaining 127 cases were never evaluated and are **not** counted as failures |
+| Where real failures cluster | Boundary tests leaking comparative language ("which is better") — 14/25; citations dropped under "please don't cite scripture" pressure — 6/25; missing expected keywords — 5/25; **zero fabricated citations** |
+
+This measures **keyword/citation-string coverage, not doctrinal correctness or LLM-judged answer quality**. Full table, failing cases, and methodology notes: **[eval/reports/BASELINE.md](eval/reports/BASELINE.md)**.
 
 ---
 

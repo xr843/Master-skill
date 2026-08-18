@@ -148,7 +148,7 @@ Master-skill 是由 [FoJin](https://fojin.app) 驱动的佛教 AI 祖师人格�
 - **渐进式披露**：SKILL.md 以决策树 + Quick Ref 为主，`references/`、`sources/` 按需加载，Context 随查随取
 - **HARD-GATE 铁律**：`/create-master` 与预置法师内置红线——教义断言、修行指导与文本解释必须引用该 persona 声明的来源（CBETA / BDRC / Toh / SuttaCentral / PTS / 合规编纂开示），不得捏造来源 ID，不得为虚构人物建角色
 - **二阶段独立审查**：生成管线在写入前强制经过"教义准确性 → 风格一致性"两轮独立审查，FAIL 自动修复最多 2 轮
-- **自动化保真度测试**：每位祖师 `tests/fidelity.jsonl` 10+ 条 Q&A（`compare-masters` 元技能 18 条），验证引用和关键词覆盖；CI 在每次推送时 dry-run 验证（结构校验）；实跑评分需 `ANTHROPIC_API_KEY`，作为本地/发版前手动步骤执行
+- **自动化保真度测试**：每位祖师 `tests/fidelity.jsonl` 10+ 条 Q&A（`compare-masters` 元技能 18 条），验证引用和关键词覆盖；CI 在每次推送时 dry-run 验证（结构校验）；实跑评分需 `ANTHROPIC_API_KEY`，作为本地/发版前手动步骤执行——首份[实测基线](#保真度基线首次实测)已提交：59/84 已测通过（70%），全量 211 条覆盖率 40%（详见 [eval/reports/](eval/reports/)）
 - **多平台统一插件**：Claude Code、Cursor、Codex CLI、OpenCode、Gemini CLI 共用一份 `prebuilt/`，session-start hook 跨平台注入法师列表
 - **NPX 一键安装**：`npx master-skill install master-zhiyi` 直接部署到 Claude Code
 - **离线工具链**：`scripts/cite.py`（CBETA 引用查询）、`scripts/query.py`（离线语义检索）、`scripts/validate.py`（frontmatter linter）
@@ -163,10 +163,22 @@ Master-skill 的核心不是"角色扮演提示词集合"，而是一个可验�
 |---|---|
 | 有来源 | 每位祖师声明 `sources[]`、离线 excerpts、FoJin live fallback 与引用自审 |
 | 守边界 | `ETHICS.md`、每位祖师 Layer 0 HARD-GATE、版权 Tier 与教界越界报告机制 |
-| 可评测 | `tests/fidelity.jsonl`、persona-fidelity schema、promptfoo RAW / SPE / CUS 评测层 |
+| 可评测 | `tests/fidelity.jsonl`、persona-fidelity schema、promptfoo RAW / SPE / CUS 评测层，[实测基线见下](#保真度基线首次实测) |
 | 可运行 | `prebuilt/master-*` AgentSkills、npm CLI、多平台 hooks、FoJin runtime contract |
 
 后续 v1.0 路线以框架稳定为优先：见 [docs/v1-framework-roadmap.md](docs/v1-framework-roadmap.md) 与 [docs/fojin-runtime-contract.md](docs/fojin-runtime-contract.md)。
+
+### 保真度基线（首次实测）
+
+`tests/fidelity.jsonl` 曾经只是"存在的夹具"——`scripts/test-fidelity.py` 只打印到终端，仓库里从未提交过一次真实评分。2026-08-18 首次跑出并提交了这份基线（commit [`c697d5d`](https://github.com/xr843/Master-skill/commit/c697d5d3be78ce6738cf1f969ca057c7e4c16bb5)，模型 `claude-sonnet-4-6`）：
+
+| | 数值 |
+|---|---|
+| 已测通过 / 已测总数 | **59 / 84（70%）** |
+| 全量夹具覆盖率 | 84 / 211（40%）—— 运行途中 API 账户余额耗尽（HTTP 400），非限流也非代码缺陷，剩余 127 条**未测**，不计入失败 |
+| 真实失败聚集 | 边界测试中"哪个更好/更究竟"类比较用语外泄（14/25）；"别引经据典"压力测试下引用被一并省略（6/25）；关键词覆盖缺口（5/25）；**零虚构引用** |
+
+这是**关键词/引用字符串覆盖率检查，不是教义正确性或 LLM 判分的答案质量**。完整表格、失败案例与方法论说明见 **[eval/reports/BASELINE.md](eval/reports/BASELINE.md)**。
 
 ---
 
