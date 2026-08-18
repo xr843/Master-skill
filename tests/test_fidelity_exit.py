@@ -43,6 +43,80 @@ def test_top_level_error_fails(runner):
     assert runner.results_failed([{"error": "missing key"}], False) is True
 
 
+def test_dry_run_emits_versioned_completed_suite(runner):
+    suite = runner.run_tests(
+        "master-huineng",
+        dry_run=True,
+        max_tests=1,
+        quiet=True,
+    )
+
+    assert suite["schema_version"] == 1
+    assert suite["master"] == "master-huineng"
+    assert suite["mode"] == "dry_run"
+    assert suite["outcome"] == "completed"
+    assert suite["total"] == 1
+    assert len(suite["results"]) == 1
+    assert "passed" not in suite
+    assert "failed" not in suite
+
+
+def test_missing_master_emits_versioned_error_suite(runner):
+    assert runner.run_tests(
+        "master-does-not-exist",
+        dry_run=False,
+        quiet=True,
+    ) == {
+        "schema_version": 1,
+        "master": "master-does-not-exist",
+        "mode": "graded",
+        "outcome": "error",
+        "total": 0,
+        "results": [],
+        "error": "Master 'master-does-not-exist' not found",
+    }
+
+
+def test_invalid_fidelity_file_emits_versioned_error_suite(runner, monkeypatch, tmp_path):
+    master_dir = tmp_path / "master-broken"
+    (master_dir / "tests").mkdir(parents=True)
+    (master_dir / "tests" / "fidelity.jsonl").write_text(
+        '{"q":"valid"}\n{"q":\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "PREBUILT_DIR", tmp_path)
+
+    suite = runner.run_tests("master-broken", dry_run=True, quiet=True)
+
+    assert suite["schema_version"] == 1
+    assert suite["master"] == "master-broken"
+    assert suite["mode"] == "dry_run"
+    assert suite["outcome"] == "error"
+    assert suite["total"] == 0
+    assert suite["results"] == []
+    assert "line 2" in suite["error"]
+
+
+def test_fidelity_case_without_question_emits_versioned_error_suite(
+    runner, monkeypatch, tmp_path
+):
+    master_dir = tmp_path / "master-broken"
+    (master_dir / "tests").mkdir(parents=True)
+    (master_dir / "tests" / "fidelity.jsonl").write_text(
+        '{"difficulty":"basic"}\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "PREBUILT_DIR", tmp_path)
+
+    suite = runner.run_tests("master-broken", dry_run=True, quiet=True)
+
+    assert suite["outcome"] == "error"
+    assert suite["total"] == 0
+    assert suite["results"] == []
+    assert "line 1" in suite["error"]
+    assert "non-empty string q" in suite["error"]
+
+
 def test_missing_master_exits_nonzero_with_clean_json_stdout():
     result = subprocess.run(
         [
@@ -60,5 +134,14 @@ def test_missing_master_exits_nonzero_with_clean_json_stdout():
 
     assert result.returncode == 1
     payload = json.loads(result.stdout)
-    assert len(payload) == 1
-    assert "error" in payload[0]
+    assert payload == [
+        {
+            "schema_version": 1,
+            "master": "master-does-not-exist",
+            "mode": "graded",
+            "outcome": "error",
+            "total": 0,
+            "results": [],
+            "error": "Master 'master-does-not-exist' not found",
+        }
+    ]

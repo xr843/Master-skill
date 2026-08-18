@@ -1,0 +1,171 @@
+name: Publish skills to ClawHub
+
+# ClawHub (https://clawhub.ai) is OpenClaw's public skill registry — the other
+# shelf these skills belong on, alongside npm and the Claude Code marketplace.
+#
+# Publishing needs a ClawHub account token in the repository secret
+# CLAWHUB_TOKEN. It cannot be minted from CI (ClawHub does not support GitHub
+# OIDC trusted publishing for skills), so that secret is set by hand, once.
+#
+# WHY THIS CALLS THE CLI DIRECTLY instead of openclaw/clawhub's reusable
+# skill-publish.yml, which it used before 2026-08-12:
+#
+#   The reusable workflow buckets each publish by its status, through a lookup
+#   that knows exactly three:
+#
+#       {"would-publish": ..., "published": ..., "unchanged": ...}
+#
+#   But clawhub CLI 0.23.3 emits five. When the registry answers
+#   publicationStatus="pending" — which is what it does for a first-time
+#   publish that still has to clear the SkillSpector scan — the CLI reports
+#   "pending-publication", the lookup raises KeyError, and the run is recorded
+#   as "Invalid publish output: 'pending-publication'".
+#
+#   On 2026-08-12 that turned a completely successful first publish of all 19
+#   skills into 19 red failures. The upload had already happened; only the
+#   report was wrong. Nothing upstream to bump to, either — the pin below was
+#   already the newest commit of that file.
+#
+#   A false red is worse than no check. So the loop lives here, where the
+#   status map can be complete and can be fixed the same day it breaks.
+#
+# Two rules this job keeps, both learned from that incident:
+#
+#   1. The CLI version is PINNED. A registry client that changes its output
+#      vocabulary underneath a parser is exactly what went wrong; letting
+#      @latest float would just reschedule it.
+#   2. An unrecognised status FAILS LOUDLY and names itself. It is never
+#      quietly counted as success — that would trade a false red for a false
+#      green, which is the worse of the two.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview only. No publish mutation is performed."
+        type: boolean
+        default: true
+      owner:
+        description: "ClawHub owner/publisher handle. Blank = the token's own account."
+        type: string
+        default: ""
+
+# Pinned: see rule 1 above.
+env:
+  CLAWHUB_CLI_VERSION: "0.23.3"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-node@v6.0.0
+        with:
+          node-version: "24"
+
+      - name: Install ClawHub CLI
+        run: npm install -g "clawhub@${CLAWHUB_CLI_VERSION}"
+
+      - name: Authenticate
+        # Dry runs need no account: the CLI resolves the slug and validates the
+        # folder locally. Keeping auth out of them means the preview can be run
+        # by anyone, including from a fork, without a token in reach.
+        if: ${{ !inputs.dry_run }}
+        env:
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+        run: |
+          if [ -z "$CLAWHUB_TOKEN" ]; then
+            echo "::error::CLAWHUB_TOKEN is not set. Add it as a repository secret," \
+                 "then re-run. Mint one at https://clawhub.ai/settings?view=tokens"
+            exit 1
+          fi
+          clawhub login --token "$CLAWHUB_TOKEN" --label "github-actions" >/dev/null
+          echo "Authenticated as: $(clawhub whoami)"
+
+      - name: Publish every skill in prebuilt/
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          OWNER: ${{ inputs.owner }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import subprocess
+          import sys
+
+          # Every status clawhub 0.23.3 can return, and whether it means the
+          # skill is where we want it. "pending-publication" and "submitted"
+          # are successes that are simply not visible yet: the upload landed
+          # and the registry is scanning it.
+          OK_STATUSES = {
+              "would-publish": "would publish",
+              "published": "published",
+              "unchanged": "already current",
+              "pending-publication": "uploaded — awaiting review",
+              "submitted": "uploaded — submitted",
+          }
+
+          dry_run = os.environ["DRY_RUN"] == "true"
+          owner = os.environ.get("OWNER", "").strip()
+          root = pathlib.Path("prebuilt")
+
+          folders = sorted(p for p in root.iterdir() if p.is_dir())
+          if not folders:
+              sys.exit(f"::error::No skill folders under {root}/")
+
+          results, failures = [], []
+          for folder in folders:
+              command = ["clawhub", "skill", "publish", str(folder.resolve()), "--json"]
+              if dry_run:
+                  command.append("--dry-run")
+              if owner:
+                  command += ["--owner", owner]
+
+              done = subprocess.run(command, capture_output=True, text=True)
+              if done.returncode != 0:
+                  message = done.stderr.strip() or done.stdout.strip() or f"exit {done.returncode}"
+                  failures.append((folder.name, message))
+                  continue
+
+              try:
+                  payload = json.loads(done.stdout)
+                  status = payload["status"]
+              except (KeyError, ValueError) as exc:
+                  failures.append((folder.name, f"unreadable CLI output: {exc}"))
+                  continue
+
+              if status not in OK_STATUSES:
+                  # Rule 2: name the unknown status so the fix is obvious.
+                  failures.append((
+                      folder.name,
+                      f"unknown status {status!r} from clawhub "
+                      f"{os.environ.get('CLAWHUB_CLI_VERSION', '?')} — add it to "
+                      f"OK_STATUSES in this workflow (or fix it if it is a real error)",
+                  ))
+                  continue
+
+              results.append((payload.get("slug", folder.name), status))
+
+          summary = pathlib.Path(os.environ["GITHUB_STEP_SUMMARY"])
+          with summary.open("a") as out:
+              out.write(f"## ClawHub {'dry run' if dry_run else 'publish'}\n\n")
+              out.write("| slug | outcome |\n|---|---|\n")
+              for slug, status in results:
+                  out.write(f"| `{slug}` | {OK_STATUSES[status]} |\n")
+              for name, message in failures:
+                  out.write(f"| `{name}` | ❌ {message} |\n")
+              out.write(f"\n{len(results)} ok, {len(failures)} failed.\n")
+
+          for slug, status in results:
+              print(f"  {slug}: {OK_STATUSES[status]}")
+          for name, message in failures:
+              print(f"::error::{name}: {message}")
+
+          print(f"\n{len(results)} ok, {len(failures)} failed.")
+          sys.exit(1 if failures else 0)
+          PY

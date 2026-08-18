@@ -22,7 +22,7 @@ use crate::app::{
     desktop_trace_store_path, first_line, summarize_command_output, TRACE_STORE_CAPACITY,
 };
 use crate::cli::CliClient;
-use crate::trace::{TraceAction, TraceStore};
+use crate::trace::{TraceAction, TraceStoreLease};
 
 /// Returns the `(label, command)` pair for running a single master skill's
 /// fidelity dry-run: `master-{slug}`'s progress label and the
@@ -68,7 +68,10 @@ pub fn run_headless_baseline() -> Result<i32> {
     }
 
     let store_path = desktop_trace_store_path();
-    let mut traces = TraceStore::load_from_path(&store_path, TRACE_STORE_CAPACITY)?;
+    let lease = TraceStoreLease::try_acquire(&store_path)?.ok_or_else(|| {
+        anyhow!("trace store {store_path:?} is locked by another desktop or baseline process")
+    })?;
+    let mut traces = lease.load(TRACE_STORE_CAPACITY)?;
 
     let total = slugs.len();
     let mut ok_count = 0usize;
@@ -108,7 +111,7 @@ pub fn run_headless_baseline() -> Result<i32> {
         }
     }
 
-    traces.save_to_path(&store_path)?;
+    lease.save(&traces)?;
     println!("baseline: {ok_count}/{total} ok");
 
     Ok(if ok_count == total { 0 } else { 1 })

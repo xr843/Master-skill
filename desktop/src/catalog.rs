@@ -66,6 +66,7 @@ impl FidelityCase {
 pub struct SkillDiagnostics {
     pub fidelity_case_count: usize,
     pub fidelity_cases: Vec<FidelityCase>,
+    pub fidelity_error: Option<String>,
     pub source_index_present: bool,
     pub kind: SkillKind,
 }
@@ -74,13 +75,25 @@ impl SkillDiagnostics {
     pub fn from_prebuilt_dir(prebuilt_dir: &Path, slug: &str) -> Self {
         let skill_dir = prebuilt_dir.join(format!("master-{slug}"));
         let fidelity_path = skill_dir.join("tests").join("fidelity.jsonl");
-        let fidelity_cases = fs::read_to_string(fidelity_path)
-            .map(|content| parse_fidelity_cases(&content))
-            .unwrap_or_default();
+        let (fidelity_cases, fidelity_error) = match fs::read_to_string(&fidelity_path) {
+            Ok(content) => match parse_fidelity_cases(&content) {
+                Ok(cases) => (cases, None),
+                Err(error) => (Vec::new(), Some(error)),
+            },
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => (Vec::new(), None),
+            Err(error) => (
+                Vec::new(),
+                Some(format!(
+                    "failed to read {}: {error}",
+                    fidelity_path.display()
+                )),
+            ),
+        };
 
         Self {
             fidelity_case_count: fidelity_cases.len(),
             fidelity_cases,
+            fidelity_error,
             source_index_present: skill_dir.join("sources").join("INDEX.md").is_file(),
             kind: detect_skill_kind(&skill_dir),
         }
@@ -106,39 +119,49 @@ fn detect_skill_kind(skill_dir: &Path) -> SkillKind {
     }
 }
 
-fn parse_fidelity_cases(content: &str) -> Vec<FidelityCase> {
-    content
-        .lines()
-        .filter(|line| !line.trim().is_empty())
-        .enumerate()
-        .map(|(index, line)| {
-            let value = serde_json::from_str::<serde_json::Value>(line).unwrap_or_default();
-            FidelityCase {
-                index: index + 1,
-                question: value
-                    .get("q")
-                    .or_else(|| value.get("prompt"))
-                    .and_then(serde_json::Value::as_str)
-                    .unwrap_or("untitled case")
-                    .to_string(),
-                difficulty: value
-                    .get("difficulty")
-                    .and_then(serde_json::Value::as_str)
-                    .map(str::to_string),
-                citation_assertion_count: json_array_len(&value, "must_cite"),
-                keyword_assertion_count: json_array_len(&value, "must_mention"),
-                structure_assertion_count: json_array_len(&value, "must_select_pair")
-                    + json_array_len(&value, "must_have_rounds")
-                    + json_array_len(&value, "must_have_sections")
-                    + usize::from(
-                        value
-                            .get("must_cite_per_round")
-                            .and_then(serde_json::Value::as_bool)
-                            .unwrap_or(false),
-                    ),
-            }
-        })
-        .collect()
+fn parse_fidelity_cases(content: &str) -> Result<Vec<FidelityCase>, String> {
+    let mut cases = Vec::new();
+    for (line_index, line) in content.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let value = serde_json::from_str::<serde_json::Value>(line)
+            .map_err(|error| format!("line {}: invalid JSON: {error}", line_index + 1))?;
+        let question = value
+            .get("q")
+            .or_else(|| value.get("prompt"))
+            .and_then(serde_json::Value::as_str)
+            .map(str::trim)
+            .filter(|question| !question.is_empty())
+            .ok_or_else(|| {
+                format!(
+                    "line {}: expected a non-empty string q or prompt",
+                    line_index + 1
+                )
+            })?;
+
+        cases.push(FidelityCase {
+            index: cases.len() + 1,
+            question: question.to_string(),
+            difficulty: value
+                .get("difficulty")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_string),
+            citation_assertion_count: json_array_len(&value, "must_cite"),
+            keyword_assertion_count: json_array_len(&value, "must_mention"),
+            structure_assertion_count: json_array_len(&value, "must_select_pair")
+                + json_array_len(&value, "must_have_rounds")
+                + json_array_len(&value, "must_have_sections")
+                + usize::from(
+                    value
+                        .get("must_cite_per_round")
+                        .and_then(serde_json::Value::as_bool)
+                        .unwrap_or(false),
+                ),
+        });
+    }
+
+    Ok(cases)
 }
 
 fn json_array_len(value: &serde_json::Value, key: &str) -> usize {
@@ -179,6 +202,7 @@ pub struct SkillRow {
     pub has_citation_format: bool,
     pub fidelity_case_count: usize,
     pub fidelity_cases: Vec<FidelityCase>,
+    pub fidelity_error: Option<String>,
     pub source_index_present: bool,
     pub kind: SkillKind,
 }
@@ -205,6 +229,7 @@ impl SkillRow {
                 .unwrap_or(false),
             fidelity_case_count: 0,
             fidelity_cases: Vec::new(),
+            fidelity_error: None,
             source_index_present: false,
             kind: SkillKind::Persona,
         }
@@ -217,6 +242,7 @@ impl SkillRow {
     pub fn apply_diagnostics(&mut self, diagnostics: SkillDiagnostics) {
         self.fidelity_case_count = diagnostics.fidelity_case_count;
         self.fidelity_cases = diagnostics.fidelity_cases;
+        self.fidelity_error = diagnostics.fidelity_error;
         self.source_index_present = diagnostics.source_index_present;
         self.kind = diagnostics.kind;
     }
@@ -227,7 +253,7 @@ impl SkillRow {
         }
 
         if self.kind == SkillKind::MetaSkill {
-            return if self.fidelity_case_count > 0 {
+            return if self.fidelity_case_count > 0 && self.fidelity_error.is_none() {
                 QualityLevel::Ready
             } else {
                 QualityLevel::Attention
@@ -239,6 +265,7 @@ impl SkillRow {
             && self.source_index_present
             && self.has_citation_format
             && self.fidelity_case_count > 0
+            && self.fidelity_error.is_none()
         {
             QualityLevel::Ready
         } else {
@@ -246,31 +273,33 @@ impl SkillRow {
         }
     }
 
-    pub fn diagnostic_gaps(&self) -> Vec<&'static str> {
+    pub fn diagnostic_gaps(&self) -> Vec<String> {
         let mut gaps = Vec::new();
 
         if !self.installed {
-            gaps.push("not installed");
+            gaps.push("not installed".to_string());
             return gaps;
         }
 
         if self.kind == SkillKind::Persona {
             if self.source_count == 0 {
-                gaps.push("missing sources");
+                gaps.push("missing sources".to_string());
             }
             if !self.source_index_present {
-                gaps.push("missing source index");
+                gaps.push("missing source index".to_string());
             }
             if !self.has_citation_format {
-                gaps.push("missing citation format");
+                gaps.push("missing citation format".to_string());
             }
             if !self.live_grounding {
-                gaps.push("live grounding off");
+                gaps.push("live grounding off".to_string());
             }
         }
 
-        if self.fidelity_case_count == 0 {
-            gaps.push("missing fidelity suite");
+        if let Some(error) = &self.fidelity_error {
+            gaps.push(format!("invalid fidelity suite: {error}"));
+        } else if self.fidelity_case_count == 0 {
+            gaps.push("missing fidelity suite".to_string());
         }
 
         gaps
@@ -334,7 +363,14 @@ impl SkillRow {
             }
         }
 
-        if self.fidelity_case_count == 0 {
+        if let Some(error) = &self.fidelity_error {
+            actions.push(DiagnosticAction {
+                title: "Repair fidelity suite".to_string(),
+                detail: format!("Fix tests/fidelity.jsonl before running the suite: {error}"),
+                operation: DiagnosticOperation::Manual,
+                command: None,
+            });
+        } else if self.fidelity_case_count == 0 {
             actions.push(DiagnosticAction {
                 title: "Add fidelity suite".to_string(),
                 detail: "Create tests/fidelity.jsonl, then dry-run the suite for this skill."
@@ -564,6 +600,7 @@ mod tests {
             has_citation_format: true,
             fidelity_case_count: 4,
             fidelity_cases: Vec::new(),
+            fidelity_error: None,
             source_index_present: true,
             kind: SkillKind::Persona,
         }
@@ -674,6 +711,44 @@ mod tests {
         assert_eq!(diagnostics.fidelity_cases[0].citation_assertion_count, 2);
         assert_eq!(diagnostics.fidelity_cases[0].keyword_assertion_count, 2);
         assert_eq!(diagnostics.fidelity_cases[0].total_assertion_count(), 4);
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn invalid_fidelity_jsonl_fails_closed() {
+        let root = temp_dir();
+        let skill_dir = root.join("master-huineng");
+        fs::create_dir_all(skill_dir.join("tests")).unwrap();
+        fs::write(
+            skill_dir.join("tests").join("fidelity.jsonl"),
+            "{\"q\":\"valid case\"}\n{\"q\":\n",
+        )
+        .unwrap();
+
+        let diagnostics = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "huineng");
+
+        assert_eq!(diagnostics.fidelity_case_count, 0);
+        assert!(diagnostics.fidelity_cases.is_empty());
+        assert!(diagnostics
+            .fidelity_error
+            .as_deref()
+            .is_some_and(|error| error.contains("line 2")));
+
+        let mut skill = row("huineng", "慧能大师", "汉传", true);
+        skill.apply_diagnostics(diagnostics);
+        assert_eq!(skill.quality_level(), QualityLevel::Attention);
+        assert!(skill
+            .diagnostic_summary()
+            .contains("invalid fidelity suite"));
+        assert!(skill.diagnostic_summary().contains("line 2"));
+        let actions = skill.diagnostic_actions();
+        assert_eq!(actions.last().unwrap().title, "Repair fidelity suite");
+        assert_eq!(
+            actions.last().unwrap().operation,
+            DiagnosticOperation::Manual
+        );
+        assert!(actions.last().unwrap().command.is_none());
 
         fs::remove_dir_all(root).unwrap();
     }
@@ -823,7 +898,11 @@ mod tests {
             "---\nname: master-curriculum\nkind: meta-skill\n---\n",
         )
         .unwrap();
-        fs::write(curriculum_dir.join("tests").join("fidelity.jsonl"), "{}\n").unwrap();
+        fs::write(
+            curriculum_dir.join("tests").join("fidelity.jsonl"),
+            "{\"prompt\":\"curriculum case\"}\n",
+        )
+        .unwrap();
 
         let debate_dir = root.join("master-debate");
         fs::create_dir_all(debate_dir.join("tests")).unwrap();
@@ -837,7 +916,11 @@ mod tests {
             "{\n  \"kind\": \"meta-skill\"\n}\n",
         )
         .unwrap();
-        fs::write(debate_dir.join("tests").join("fidelity.jsonl"), "{}\n").unwrap();
+        fs::write(
+            debate_dir.join("tests").join("fidelity.jsonl"),
+            "{\"prompt\":\"debate case\"}\n",
+        )
+        .unwrap();
 
         let curriculum = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "curriculum");
         let debate = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "debate");

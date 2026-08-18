@@ -1,8 +1,10 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::time::Duration;
 
 use anyhow::{anyhow, Context, Result};
 
+use crate::command::CommandRunner;
 use crate::model::{DoctorReport, MasterInspect, SkillInventory};
 
 #[derive(Clone, Debug)]
@@ -10,6 +12,7 @@ pub struct CliClient {
     repo_root: PathBuf,
     node_bin: String,
     home: Option<PathBuf>,
+    runner: CommandRunner,
 }
 
 impl CliClient {
@@ -18,11 +21,17 @@ impl CliClient {
             repo_root: repo_root.into(),
             node_bin: std::env::var("NODE").unwrap_or_else(|_| "node".to_string()),
             home: None,
+            runner: CommandRunner::default(),
         }
     }
 
     pub fn with_home(mut self, home: impl Into<PathBuf>) -> Self {
         self.home = Some(home.into());
+        self
+    }
+
+    pub fn with_command_timeout(mut self, timeout: Duration) -> Self {
+        self.runner = CommandRunner::new(timeout);
         self
     }
 
@@ -118,19 +127,31 @@ impl CliClient {
             command.env("HOME", home).env("USERPROFILE", home);
         }
 
-        let output = command.output().with_context(|| context.to_string())?;
-
-        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-        if output.status.success() {
-            return Ok(stdout);
+        let output = self
+            .runner
+            .run(command)
+            .with_context(|| context.to_string())?;
+        if !output.timed_out && output.status.success() {
+            return Ok(output.stdout);
         }
 
-        let stderr = String::from_utf8_lossy(&output.stderr);
+        let reason = if output.timed_out {
+            format!(
+                "command timed out after {} ms; terminated with status {}",
+                output.elapsed.as_millis(),
+                output.status
+            )
+        } else {
+            format!(
+                "command failed after {} ms with status {}",
+                output.elapsed.as_millis(),
+                output.status
+            )
+        };
         Err(anyhow!(
-            "command failed with status {}: {}{}",
-            output.status,
-            stdout,
-            stderr
+            "{context}: {reason}\nstdout:\n{}\nstderr:\n{}",
+            output.stdout,
+            output.stderr
         ))
     }
 }
@@ -191,6 +212,60 @@ fn find_repo_root_from(start: &Path) -> Option<PathBuf> {
         candidate = dir.parent();
     }
     None
+}
+
+#[cfg(test)]
+mod command_error_tests {
+    use super::CliClient;
+    use std::process::Command;
+    use std::time::Duration;
+
+    #[test]
+    fn timeout_error_retains_timing_status_and_both_streams() {
+        let client = CliClient::new(std::env::current_dir().unwrap())
+            .with_command_timeout(Duration::from_millis(100));
+        let mut command = Command::new(std::env::current_exe().unwrap());
+        command
+            .args([
+                "--exact",
+                "command::tests::command_runner_helper",
+                "--nocapture",
+            ])
+            .env("MASTER_SKILL_COMMAND_RUNNER_HELPER", "sleep");
+
+        let error = client
+            .run_command(&mut command, "test command failed")
+            .unwrap_err();
+        let message = format!("{error:#}");
+
+        assert!(message.contains("test command failed"));
+        assert!(message.contains("timed out after"));
+        assert!(message.contains("status"));
+        assert!(message.contains("stdout:"));
+        assert!(message.contains("stderr:"));
+    }
+
+    #[test]
+    fn nonzero_error_retains_status_and_both_streams() {
+        let client = CliClient::new(std::env::current_dir().unwrap());
+        let mut command = Command::new(std::env::current_exe().unwrap());
+        command
+            .args([
+                "--exact",
+                "command::tests::command_runner_helper",
+                "--nocapture",
+            ])
+            .env("MASTER_SKILL_COMMAND_RUNNER_HELPER", "failure");
+
+        let error = client
+            .run_command(&mut command, "test command failed")
+            .unwrap_err();
+        let message = format!("{error:#}");
+
+        assert!(message.contains("status"));
+        assert!(message.contains("failure stdout marker"));
+        assert!(message.contains("failure stderr marker"));
+    }
 }
 
 #[cfg(test)]

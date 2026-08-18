@@ -86,7 +86,7 @@ def test_meta_skill_before_persona_does_not_hide_changed_persona(tmp_path: Path)
     result = _run_selector(
         prebuilt,
         "008",
-        ["compare", "master-beta", "master-alpha"],
+        ["compare-masters", "master-beta", "master-alpha"],
     )
 
     assert result.returncode == 0, result.stderr
@@ -95,7 +95,7 @@ def test_meta_skill_before_persona_does_not_hide_changed_persona(tmp_path: Path)
 
 def test_discovery_ignores_meta_skills_and_empty_sources(tmp_path: Path):
     prebuilt = tmp_path / "prebuilt"
-    _write_meta(prebuilt, "compare", [{"id": "meta"}])
+    _write_meta(prebuilt, "compare-masters", [{"id": "meta"}])
     _write_meta(prebuilt, "master-empty", [])
     _write_meta(prebuilt, "master-valid", [{"id": "source"}])
 

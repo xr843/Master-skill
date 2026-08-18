@@ -20,7 +20,7 @@ def _write_fixture(tmp_path: Path, master_name: str, cases: list[dict]) -> Path:
 def test_compare_requires_framework_output_sections(tmp_path):
     master_dir = _write_fixture(
         tmp_path,
-        "compare",
+        "compare-masters",
         [
             {
                 "q": "禅和净怎么比较？",
@@ -52,7 +52,7 @@ def test_compare_accepts_required_framework_output_sections(tmp_path):
             "must_not_contain": ["更好"],
         }
     )
-    master_dir = _write_fixture(tmp_path, "compare", cases)
+    master_dir = _write_fixture(tmp_path, "compare-masters", cases)
 
     errors = validate_fidelity.validate_master(master_dir)
 

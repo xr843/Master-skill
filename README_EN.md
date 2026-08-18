@@ -243,7 +243,7 @@ npm update -g master-skill             # Pull next minor / patch
 git clone https://github.com/xr843/Master-skill ~/Master-skill
 cd ~/Master-skill && pip install -r requirements.txt
 for d in prebuilt/master-*/; do ln -sf "$(pwd)/$d" ~/.claude/skills/"$(basename $d)"; done
-ln -sf "$(pwd)/prebuilt/compare" ~/.claude/skills/compare-masters
+ln -sf "$(pwd)/prebuilt/compare-masters" ~/.claude/skills/compare-masters
 ln -sf "$(pwd)" ~/.claude/skills/create-master
 ```
 

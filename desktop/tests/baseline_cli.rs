@@ -3,7 +3,9 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use master_skill_desktop::trace::{EvaluationDecisionBrief, EvaluationDecisionPosture, TraceStore};
+use master_skill_desktop::trace::{
+    EvaluationDecisionBrief, EvaluationDecisionPosture, TraceStore, TraceStoreLease,
+};
 
 fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -135,22 +137,54 @@ fn baseline_flag_runs_headless_and_records_traces_for_all_master_skills() {
         .expect("failed to load trace store written by --baseline");
     let coverage = store.evaluation_run_coverage(expected_min);
     assert!(
-        coverage.is_complete(),
-        "expected full evaluation coverage after --baseline, got {}: {coverage:?}",
-        coverage.label()
+        coverage.is_structurally_complete(),
+        "expected full structural coverage after --baseline, got {}: {coverage:?}",
+        coverage.structural_label()
     );
-    assert_eq!(coverage.label(), format!("{expected_min}/{expected_min}"));
+    assert_eq!(
+        coverage.structural_label(),
+        format!("{expected_min}/{expected_min}")
+    );
+    assert!(
+        !coverage.is_graded_complete(),
+        "dry-run baseline must not count as graded evidence: {coverage:?}"
+    );
 
     let insights = store.evaluation_failure_insights();
     let trend = store.evaluation_trend_summary(expected_min * 2);
     let brief = EvaluationDecisionBrief::from_signals(&coverage, &trend, &insights);
-    assert_ne!(
+    assert_eq!(
         brief.posture,
         EvaluationDecisionPosture::Unproven,
-        "Quality Gate should leave Unproven after a full --baseline run: {brief:?}"
+        "Quality Gate must remain Unproven after a dry-run-only baseline: {brief:?}"
     );
+    assert_eq!(brief.headline, "Graded evidence incomplete");
 
     fs::remove_dir_all(&xdg_data_home).ok();
+}
+
+#[test]
+fn baseline_lock_contention_fails_clearly() {
+    let xdg_data_home = temp_xdg_data_home();
+    let store_path = xdg_data_home
+        .join("master-skill")
+        .join("desktop-traces.json");
+    let _lease = TraceStoreLease::try_acquire(&store_path)
+        .unwrap()
+        .expect("test must acquire the first lease");
+    let mut command = Command::new(env!("CARGO_BIN_EXE_master-skill-desktop"));
+    command
+        .arg("--baseline")
+        .current_dir(repo_root())
+        .env("XDG_DATA_HOME", &xdg_data_home);
+
+    let output = run_with_timeout(command, Duration::from_secs(10));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(stderr.contains("trace store"));
+    assert!(stderr.contains("another"));
+    fs::remove_dir_all(xdg_data_home).ok();
 }
 
 /// Builds a directory that *looks* like a Master-skill repo root to the

@@ -65,7 +65,7 @@ function skillsDir(home) {
 
 const prebuiltMasters = fs
   .readdirSync(path.join(REPO, "prebuilt"), { withFileTypes: true })
-  .filter((d) => d.isDirectory() && d.name !== "compare")
+  .filter((d) => d.isDirectory() && d.name !== "compare-masters")
   .map((d) => d.name);
 
 test("skill catalog declares 20 unique installable skills", () => {
@@ -689,7 +689,7 @@ test("both README clone examples install compare under its public name", () => {
     assert.match(readme, /for d in prebuilt\/master-\*\/;/, filename);
     assert.match(
       readme,
-      /ln -sf "\$\(pwd\)\/prebuilt\/compare" ~\/\.claude\/skills\/compare-masters/,
+      /ln -sf "\$\(pwd\)\/prebuilt\/compare-masters" ~\/\.claude\/skills\/compare-masters/,
       filename
     );
     assert.doesNotMatch(readme, /for d in prebuilt\/\*\/;/, filename);
