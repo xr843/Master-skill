@@ -21,8 +21,10 @@ on:
       - 'README_EN.md'
       - 'CONTRIBUTING.md'
       - 'CHANGELOG.md'
-      - 'docs/PRD.md'
-      - 'docs/v1-framework-roadmap.md'
+      # docs/ is load-bearing since the README slim-down: tests/cli.test.mjs
+      # asserts the npm install contract against docs/install*.md, so a change
+      # there must run CI like a change to the README used to.
+      - 'docs/**'
       - 'masters/**'
       - '.claude-plugin/**'
       - '.cursor-plugin/**'
