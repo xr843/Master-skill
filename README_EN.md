@@ -204,9 +204,16 @@ each persona's `meta.json` `search_scope.keywords`):
 | `master-skill recommend "<question>"` | Terminal; deterministic scoring, supports `--json` |
 | `/master-help` | In-chat; just ask "who should I ask?" |
 
-Resolution short-circuits in order: **learning path → debate → comparison → single master.**
-It names a destination and stops — the master it routes to answers under its own
-`citation_contract` and boundary rules.
+Resolution short-circuits in order: **learning path → debate → comparison →
+single master → plain-language situation → topic pairing.** It names a destination
+and stops — the master it routes to answers under its own `citation_contract`
+and boundary rules.
+
+The situation layer exists because `search_scope.keywords` are doctrinal
+retrieval terms: a beginner does not type 四念处, they type 坐不住 ("can't sit
+still"). Every row of the README's 「你的状况」 table is pinned by
+`tests/cli.test.mjs` — editing that table without updating the routing data
+fails the suite.
 
 ```bash
 $ master-skill recommend "十六观智是什么"

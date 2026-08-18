@@ -8,8 +8,15 @@
   "citation_contract": {
     "version": 1,
     "claim_policy": "declared_sources_only",
-    "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
-    "allowed_source_types": ["tibetan_canon", "tibetan_treatise"],
+    "required_for": [
+      "doctrinal_claim",
+      "practice_guidance",
+      "text_interpretation"
+    ],
+    "allowed_source_types": [
+      "tibetan_canon",
+      "tibetan_treatise"
+    ],
     "minimum_claim_coverage": 0.9,
     "live_retrieval_allowed": true
   },
@@ -17,7 +24,12 @@
   "school": "格鲁派 (dge lugs pa, '善规派') — 由其改革噶当派建立",
   "era": "1357-1419",
   "birthplace": "青海宗喀（'宗喀巴'即'宗喀人'之意，今西宁附近）",
-  "languages": ["bo", "sa", "zh", "en"],
+  "languages": [
+    "bo",
+    "sa",
+    "zh",
+    "en"
+  ],
   "fojin_entity_id": null,
   "sources": [
     {
@@ -87,6 +99,7 @@
       "应成中观",
       "dbu ma thal 'gyur ba",
       "缘起性空",
+      "空性",
       "无自性",
       "ngo bo nyid med pa",
       "戒律",
@@ -125,7 +138,15 @@
     "monologue": "上堂依菩提道次第广论开列三士道，举出离心菩提心空正见为骨干，归甘丹耳传之道次第。"
   },
   "cross_critique": [
-    { "target_master": "huineng", "position": "对禅宗顿悟：无次第直指乃极利根所行；中根以下若不依应成正理分别自相，离名言假施设即立自性见，反成执碍。", "citation": "Lam-rim-chen-mo" },
-    { "target_master": "ouyi", "position": "对天台净土合修：教观判摄虽善，然空性正见须用应成因明遮遣自相；若未破自性见，所行虽多终为有漏。", "citation": "Drang-nges-legs-bshad-snying-po" }
+    {
+      "target_master": "huineng",
+      "position": "对禅宗顿悟：无次第直指乃极利根所行；中根以下若不依应成正理分别自相，离名言假施设即立自性见，反成执碍。",
+      "citation": "Lam-rim-chen-mo"
+    },
+    {
+      "target_master": "ouyi",
+      "position": "对天台净土合修：教观判摄虽善，然空性正见须用应成因明遮遣自相；若未破自性见，所行虽多终为有漏。",
+      "citation": "Drang-nges-legs-bshad-snying-po"
+    }
   ]
 }

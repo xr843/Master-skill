@@ -41,9 +41,14 @@ master-skill recommend "<用户原话>" --json
 2. 命中「辩论 / 谁更对 / 高下 / 之争 / 之辩 / 分判」          → /master-debate
 3. 命中「对比 / 比较 / 不同 / 异同 / 各派怎么看」              → /compare-masters
 4. 都不命中 → 单位祖师：按 meta.json search_scope.keywords 打分
-5. 仍无命中 → routing.json.topic_pairings 主题配对
-6. 再无命中 → routing.json.default_pairing
+5. 仍无命中 → routing.json.situations 白话状况层
+6. 仍无命中 → routing.json.topic_pairings 主题配对
+7. 再无命中 → routing.json.default_pairing
 ```
+
+第 5 步是给**说不出术语的人**用的。`search_scope.keywords` 是教理检索词，
+新手不会打"四念处"，他会打"坐不住"。用户描述的是**感受**（妄念 / 看不懂 /
+无力感 / 想学最朴素的）而非**主题**时，走这一层。
 
 第 4 步打分规则：关键词**长度 ≥ 2** 才计分（单字 `空` `戒` `定` `慧` `苦` `禅` `业`
 会在日常汉语里误命中，已被 `min_keyword_length` 排除）；命中数高者优先；
