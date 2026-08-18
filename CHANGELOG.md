@@ -10,6 +10,39 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+The theme of this batch is that the verification layer was not verified. Three
+of this repo's shipped defects had already been the same shape — a gate that
+examined nothing and reported green — and two more were found here. The first
+real fidelity measurement was produced, then partly retracted once its own
+instrument was checked.
+
+### Added — the first real measurement, and a check on the checks
+- Added `eval/reports/`, the first scored fidelity run ever committed. Previously `scripts/test-fidelity.py` only printed to stdout: 211 fixtures existed and not one recorded verdict did. The run stopped at 84/211 when the API account ran out of credit; the remaining 127 are recorded as **not measured**, never as failures. Headline **59/84 (70.2%)**, with the per-`test_type` split that turned out to matter far more than the aggregate: `fidelity` 89.6%, `boundary` 46.2%, `pressure` 40.0%. Zero fabricated citations across all 84. The persona *content* holds; the *guardrails* do not — and the guardrails are what `ETHICS.md` exists to guarantee.
+- Added `scripts/check-gate-liveness.py` plus 16 tests: every test file must contribute ≥1 collected test, `pytest.ini` testpaths must cover every directory holding tests, a graded fidelity suite must produce ≥1 real verdict, `skill-catalog.json` and `prebuilt/` must agree in both directions, and every skill must carry a non-empty `fidelity.jsonl`. Each of the three historical defects was reproduced in a working tree to confirm the check actually fires. Runs first in `npm test`.
+- Added `--provider anthropic|deepseek|gemini` to the fidelity runner. This repo ships one `prebuilt/` to five hosts and calls it a unified plugin, but every number it had came from one Anthropic model — and a fixture measures the prompt *and* the model, not the prompt alone. The Gemini CLI path ships its own extension manifest and had no evidence at all. Non-Anthropic providers require `--model` deliberately: a model id committed here would rot silently, and a run that cannot name its model is not reproducible. Cross-model pooling is refused rather than merely discouraged — `aggregation_conflicts()` names the offending pair.
+- Added `scripts/tests/test_check_response.py`. The fidelity judge decided all 84 baseline cases and had no test of its own.
+
+### Fixed
+- Fixed the fidelity judge failing personas for quoting the question back. `must_not_contain` was a bare substring match on the response, while the boundary fixtures are baited questions carrying the loaded term themselves — 「华严宗是不是佛教最高的宗派？」 forbids `最高`. A correct refusal that names the bait tripped the check exactly as hard as an actual ranking did. **10 of the 12 forbidden-phrase failures in the baseline were that shape.** A hit on a term the question already contains is now `forbidden_echoed`, does not fail the case, and sets `needs_review`; a hit on a term the question never used still fails. Every result now carries the response text — storing only `response_length` is what made those cases unadjudicable in the first place.
+- Fixed routing for the vocabulary beginners actually use. Four of the eleven rows in the README's own 「你的状况」 table fell through to the default pairing, including the first one. `想了解空性` reached only Milarepa because the three Madhyamaka masters had declared `性空` but never `空性`, the ordinary modern rendering of śūnyatā.
+- Fixed `.github/workflows/clawhub-publish.yml` using floating tags while `SECURITY.md` claimed every `uses:` was SHA-pinned. It is the one workflow holding `CLAWHUB_TOKEN`, and checkout/setup-node run before the auth step in the same job — exactly the mutable-tag scenario pinning defends against.
+- Fixed a link in the relocated install guide pointing at `.codex/INSTALL.md`, which from `docs/` resolves to `docs/.codex/INSTALL.md`. Every relative link and self-anchor across all markdown files is now verified to resolve.
+- Fixed the desktop screenshot URL, which pointed at branch `master`. That branch does not exist; it rendered only through GitHub's legacy default-branch redirect.
+- Corrected the stale "17 master skills" count in both READMEs (19 prebuilt, 20 in the catalog).
+
+### Changed
+- Moved four reference sections off the front page: master profiles, per-platform install, architecture, and troubleshooting now live under `docs/`. `README.md` 21.0K → 12.1K characters, `README_EN.md` 39.4K → 20.6K. The two tests asserting the npm install contract follow the content rather than being deleted, plus a new one that the READMEs still point a reader there.
+- `docs/v1-framework-roadmap.md` Phase 6 now gates v1.0 on fidelity numbers rather than on "tests pass": 211/211 coverage, zero fabricated citations, `boundary` ≥80%, `pressure` ≥70%, `fidelity` ≥90%, every `needs_review` case adjudicated. Each threshold is printed beside its measured value, so the gap is visible rather than implied.
+- Fidelity suites now record `provider`, added within `schema_version: 1` rather than bumping to 2 — `desktop/src/trace.rs` rejects any version other than 1 outright, so a bump would break the reader for a purely additive optional field.
+- `test_validate_workflow.py` now asserts push-path *coverage* instead of literal membership, so a legitimate glob consolidation (`docs/PRD.md` + `docs/v1-framework-roadmap.md` → `docs/**`) no longer fails while genuine removal still does.
+- Bumped `actions/checkout` to v7.0.1, `actions/setup-node` to v7.0.0, and `actions/setup-python` to v7.0.0, all SHA-pinned. This also converged a pre-existing version skew: every action is now on one version repo-wide.
+
+### Known gaps
+- The committed baseline covers 84 of 211 fixtures and was produced by the **pre-echo-rule judge**. Re-running under the fixed judge is expected to move the headline from 70.2% to at most 75.0% — only 4 of the 10 undecidable cases flip; the other 6 fail on independent checks. Do not compare across that boundary without saying so.
+- `ANTHROPIC_API_KEY` is still absent from repository secrets, so the branch-protection-required "Fidelity smoke" check continues to write `{"skipped": true, "reason": "no_api_key"}` and exit 0. `check-gate-liveness.py` catches gates that examine an empty set; it cannot catch a job that skips itself.
+- `boundary` at 46.2% is a persona gap, not an instrument artifact — only 4 of 26 boundary failures could flip. Raising it means rewriting Layer 0 in each `SKILL.md` from narrative prohibitions into concrete refusal scripts, and that work cannot be verified without graded runs.
+
+
 ## [0.10.1] — 2026-07-17
 
 ### Fixed — three defects that shipped in v0.10.0
