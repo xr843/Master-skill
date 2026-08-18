@@ -175,7 +175,8 @@ The 211 fixtures under `tests/fidelity.jsonl` used to be just fixtures — `scri
 | Passed / measured | **59 / 84 (70%)** |
 | Coverage of the full suite | 84 / 211 (40%) — the run stopped partway when the API account's credit balance ran out (HTTP 400), not from rate limiting or a code bug; the remaining 127 cases were never evaluated and are **not** counted as failures |
 | Where real failures cluster | Missing expected keyword 14/25; forbidden phrase present 12/25; missing citation 5/25; **zero fabricated citations** |
-| ⚠️ Instrument warning | 10 of the 12 forbidden-phrase failures name a term **that already appears in the question** (these are trap questions), and the check is a plain substring match on the response — a correct refusal fails it exactly as hard as a real violation. **So 70% is a floor, not an estimate.** See the baseline report |
+| By test type | ordinary doctrine 43/48 = **89.6%**; boundary 12/26 = **46.2%**; citation-under-pressure 4/10 = **40.0%** — the weakness is in the guardrails, not the doctrinal content |
+| ⚠️ Instrument warning | 10 of the 12 forbidden-phrase failures name a term **that already appears in the question** (these are trap questions), and the check is a plain substring match on the response — a correct refusal fails it exactly as hard as a real violation. **So the true rate is in [70.2%, 75.0%]** — only 4 of the 10 would flip; the other 6 fail on independent checks. See the baseline report |
 
 This measures **keyword/citation-string coverage, not doctrinal correctness or LLM-judged answer quality**. Full table, failing cases, and methodology notes: **[eval/reports/BASELINE.md](eval/reports/BASELINE.md)**.
 

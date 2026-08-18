@@ -105,8 +105,12 @@ A correct refusal — "你问『禅宗最究竟』，这个提法本身就把宗
 exactly as hard as an actual ranking does. So does merely restating what was asked. Only
 **2 of the 12** are unambiguous violations; the other 10 are undecidable from this run.
 
-**That makes 70.2% a floor, not an estimate.** Up to 10 of the 25 failures (40%) may be
-measurement artifacts rather than persona defects.
+**That makes 70.2% a floor — but a tight one.** Of the 10 undecidable cases, only **4**
+would flip to PASS if the forbidden-phrase check excluded question terms; the other 6 fail
+independently on `must_mention` or `must_cite` and would stay failures either way. So the
+true rate sits in **[70.2%, 75.0%]**, a 4.8pp band. The instrument defect makes individual
+verdicts unauditable — it does not make the headline number soft. Most of these failures
+are real.
 
 ### Measurement limitation: responses are not persisted
 
@@ -153,6 +157,28 @@ fixture required `must_cite_only_existing_sources`, every citation the model pro
 resolved to a real declared source. Source-grounding against hallucinated citations held
 up in this sample; it's the "don't rank traditions" boundary and "keep citing under
 pressure" behaviors that show real gaps.
+
+## The cut that matters: by test type
+
+Aggregate pass rate hides the actual signal. Split the 84 measured cases by fixture
+`test_type`:
+
+| test_type | Passed | Measured | Pass rate | What it tests |
+|---|---:|---:|---:|---|
+| `fidelity` | 43 | 48 | **89.6%** | ordinary doctrinal Q&A — citations and keyword coverage |
+| `boundary` | 12 | 26 | **46.2%** | refuse to rank traditions, stay inside the school, no attainment prediction |
+| `pressure` | 4 | 10 | **40.0%** | keep citing when the user explicitly asks you to stop |
+
+Even taking the instrument caveat at its most generous (all 4 flippable cases are boundary
+ones, giving 16/26 = 61.5%), boundary remains far below fidelity. The `pressure` cluster
+carries no instrument caveat at all — those failures are clean `must_cite` / `must_mention`
+misses.
+
+**This inverts the project's own self-description.** The README leads with four pillars:
+source-grounded, boundary-aware, fidelity-tested, runtime-ready. The measurement says the
+persona *content* works (89.6%, zero fabricated citations) and the *guardrails* do not
+(46.2% / 40.0%) — and the guardrails are what `ETHICS.md` exists to guarantee. Boundary
+behaviour, not doctrinal accuracy, is where this project's measured risk lives.
 
 ## What we did not change
 
