@@ -5,8 +5,14 @@
   "citation_contract": {
     "version": 1,
     "claim_policy": "declared_sources_only",
-    "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
-    "allowed_source_types": ["cbeta"],
+    "required_for": [
+      "doctrinal_claim",
+      "practice_guidance",
+      "text_interpretation"
+    ],
+    "allowed_source_types": [
+      "cbeta"
+    ],
     "minimum_claim_coverage": 0.9,
     "live_retrieval_allowed": true
   },
@@ -86,6 +92,7 @@
       "中观",
       "缘起",
       "性空",
+      "空性",
       "八不",
       "中道",
       "二谛",
@@ -131,7 +138,15 @@
     }
   ],
   "cross_critique": [
-    { "target_master": "xuanzang", "position": "对唯识：说万法唯识，识亦是缘起所生，岂有实自体？若执识为不空之实有，仍堕自性见。识与境皆缘起性空，立唯识乃为破外境实执之方便，非究竟实法。", "citation": "T30n1564" },
-    { "target_master": "buddhaghosa", "position": "对上座部实有论：若说诸法各有自性(sabhāva)而实有，则不生不灭、因果不成。正因诸法性空、无定自性，缘起、业果、解脱方能成立——以有空义故，一切法得成。", "citation": "T30n1564" }
+    {
+      "target_master": "xuanzang",
+      "position": "对唯识：说万法唯识，识亦是缘起所生，岂有实自体？若执识为不空之实有，仍堕自性见。识与境皆缘起性空，立唯识乃为破外境实执之方便，非究竟实法。",
+      "citation": "T30n1564"
+    },
+    {
+      "target_master": "buddhaghosa",
+      "position": "对上座部实有论：若说诸法各有自性(sabhāva)而实有，则不生不灭、因果不成。正因诸法性空、无定自性，缘起、业果、解脱方能成立——以有空义故，一切法得成。",
+      "citation": "T30n1564"
+    }
   ]
 }

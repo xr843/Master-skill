@@ -57,6 +57,33 @@
       ]
     }
   ],
+  "_situations_comment": "Vernacular felt-state routing, consulted after persona keyword scoring and before topic_pairings. search_scope.keywords are doctrinal retrieval terms; a beginner does not type 四念处, they type 坐不住. Empirically, 4 of the 11 rows in the README 「你的状况」 table resolved to default_pairing because no doctrinal keyword matched — those 4 are the rows below. The other 7 already route correctly off persona keywords and are deliberately NOT duplicated here: this layer holds only what the keyword layer cannot reach.",
+  "situations": [
+    {
+      "id": "scattered-mind",
+      "keywords": ["妄念", "杂念", "坐不住", "静不下来", "定不下来", "心乱"],
+      "masters": ["master-xuyun", "master-zhiyi", "master-ajahn-chah"],
+      "note": "参话头 / 止观 / 正念观察"
+    },
+    {
+      "id": "texts-opaque",
+      "keywords": ["看不懂", "读不懂", "理不清", "没有逻辑"],
+      "masters": ["master-xuanzang"],
+      "note": "唯识严密分析"
+    },
+    {
+      "id": "no-traction",
+      "keywords": ["无力感", "使不上力", "没有进步", "学佛很久", "提不起劲"],
+      "masters": ["master-yinguang"],
+      "note": "老实念佛"
+    },
+    {
+      "id": "plainest-practice",
+      "keywords": ["最朴素", "朴素", "最简单的修法"],
+      "masters": ["master-ajahn-chah"],
+      "note": "南传森林禅 · 出入息念"
+    }
+  ],
   "topic_pairings": [
     {
       "id": "pureland",
