@@ -140,11 +140,28 @@ def test_python39_job_compiles_and_runs_the_four_generator_cli_steps():
     _assert_hard(smoke)
 
 
+def _covered(target: str, patterns: set[str]) -> bool:
+    """Whether a push-paths pattern set actually triggers on `target`.
+
+    The contract is "editing this file runs CI", not "this literal string
+    appears in the list" — so a broader glob that consolidates several entries
+    (docs/PRD.md + docs/v1-framework-roadmap.md -> docs/**) still satisfies it,
+    while dropping the coverage entirely still fails.
+    """
+    if target in patterns:
+        return True
+    return any(
+        target.startswith(pattern[: -len("**")])
+        for pattern in patterns
+        if pattern.endswith("**")
+    )
+
+
 def test_push_paths_include_distribution_and_generator_runtime():
     triggers = WORKFLOW.get("on", WORKFLOW.get(True))
     assert isinstance(triggers, dict)
     paths = set(triggers["push"]["paths"])
-    assert {
+    required = {
         "skill-catalog.json",
         "SKILL.md",
         "references/**",
@@ -162,7 +179,9 @@ def test_push_paths_include_distribution_and_generator_runtime():
         "gemini-extension.json",
         ".github/PULL_REQUEST_TEMPLATE.md",
         ".github/ISSUE_TEMPLATE/**",
-    } <= paths
+    }
+    uncovered = sorted(t for t in required if not _covered(t, paths))
+    assert not uncovered, f"push trigger does not cover: {uncovered}"
 
 
 def test_pick_step_uses_checked_selector_without_fixed_roster():

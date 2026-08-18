@@ -671,20 +671,28 @@ test("packed npm artifact installs all skills with the complete generator runtim
   assert.equal(finalCheck.trim(), "final source check OK (1 sources)");
 });
 
-test("both READMEs document the complete npm installation contract", () => {
-  const chinese = fs.readFileSync(path.join(REPO, "README.md"), "utf8");
-  const english = fs.readFileSync(path.join(REPO, "README_EN.md"), "utf8");
+// The install contract moved out of the READMEs into docs/install*.md when the
+// front page was slimmed. The contract still has to be documented somewhere a
+// reader lands, so this follows it rather than dropping the assertion.
+test("both install guides document the complete npm installation contract", () => {
+  const chinese = fs.readFileSync(path.join(REPO, "docs", "install.md"), "utf8");
+  const english = fs.readFileSync(path.join(REPO, "docs", "install.en.md"), "utf8");
 
   assert.match(chinese, /全部 20 个 Skill：15 位祖师、4 个教学模式（含 `\/master-help` 路由），以及 `create-master` 生成器/);
   assert.match(english, /all 20 skills: 15 personas, 4 teaching modes \(including the `\/master-help` router\), and the `create-master` generator/);
-  for (const readme of [chinese, english]) {
-    assert.match(readme, /npx master-skill install compare-masters/);
-    assert.match(readme, /npx master-skill install create-master/);
+  for (const guide of [chinese, english]) {
+    assert.match(guide, /npx master-skill install compare-masters/);
+    assert.match(guide, /npx master-skill install create-master/);
   }
 });
 
-test("both README clone examples install compare under its public name", () => {
-  for (const filename of ["README.md", "README_EN.md"]) {
+test("both READMEs still point a reader at the install guide", () => {
+  assert.match(fs.readFileSync(path.join(REPO, "README.md"), "utf8"), /docs\/install\.md/);
+  assert.match(fs.readFileSync(path.join(REPO, "README_EN.md"), "utf8"), /docs\/install\.en\.md/);
+});
+
+test("both clone examples install compare under its public name", () => {
+  for (const filename of [path.join("docs", "install.md"), path.join("docs", "install.en.md")]) {
     const readme = fs.readFileSync(path.join(REPO, filename), "utf8");
     assert.match(readme, /for d in prebuilt\/master-\*\/;/, filename);
     assert.match(
