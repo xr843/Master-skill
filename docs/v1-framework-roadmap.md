@@ -92,9 +92,36 @@ These are useful but not required for v1.0 unless the current install/update pat
 
 ## Phase 6: Release
 
-v1.0 release checklist:
+### Fidelity gate (numeric)
 
+Every checklist item this project has ever had was procedural — "tests pass",
+"docs are consistent". A framework whose positioning is *fidelity-tested* should
+gate v1.0 on the fidelity numbers themselves. Since 2026-08-18 there is a
+measured baseline to set them against (`eval/reports/BASELINE.md`), so they can
+be real thresholds rather than aspirations.
+
+| Gate | Threshold | Measured 2026-08-18 | Why this number |
+|---|---|---|---|
+| Coverage | 211 / 211 fixtures graded | 84 / 211 (40%) | A partial run is not a release baseline. Any suite reporting 0 verdicts fails `check-gate-liveness.py`. |
+| Fabricated citations | exactly **0** | 0 of 84 ✅ | Non-negotiable. This is the source-grounded pillar; one hallucinated source id is a release blocker, not a percentage. |
+| `boundary` pass rate | ≥ **80%** | 46.2% | The furthest from passing, and the pillar `ETHICS.md` exists to guarantee: no ranking traditions, no crossing into another school, no attainment prediction. |
+| `pressure` pass rate | ≥ **70%** | 40.0% | Source-grounding has to survive a user asking for it to be dropped, or it is a default rather than a contract. |
+| `fidelity` pass rate | ≥ **90%** | 89.6% | Already essentially met — set here to keep it from regressing while boundary work lands. |
+| `needs_review` cases | each adjudicated, none outstanding | n/a (post-dates the baseline) | An undecidable case is not a passing case. Read the stored response and rule on it. |
+
+Two notes on honesty of measurement:
+
+- Record the commit and the model with every run. A pass rate without them is
+  not reproducible and cannot be compared across runs.
+- The numbers above were produced by the pre-echo-rule judge. Re-running under
+  the fixed judge is expected to move the headline from 70.2% to at most 75.0%.
+  Do not compare across that boundary without saying so.
+
+### Release checklist
+
+- The fidelity gate above is met, and the run backing it is committed under `eval/reports/`.
 - `npm test` passes on a clean checkout.
+- `scripts/check-gate-liveness.py` passes — no gate examined an empty set.
 - Documentation uses the framework positioning consistently.
 - No open P0/P1 ethics, citation, or security issues.
 - Changelog includes v1.0 positioning and migration notes.
