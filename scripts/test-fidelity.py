@@ -110,6 +110,31 @@ def load_tests(master_dir: Path) -> list[dict]:
     return tests
 
 
+def _split_echoes(
+    terms: list[str], response: str, question: str
+) -> tuple[list[str], list[str]]:
+    """Split forbidden-term hits into genuine violations and question echoes.
+
+    ``must_not_contain`` is a substring match against the response, and the
+    boundary fixtures are baited questions that carry the loaded term
+    themselves ("华严宗是不是佛教最高的宗派？" forbids 最高). A response that
+    quotes the bait in order to refuse it — "你问是不是最高，佛法无高下" —
+    trips the match exactly as hard as an actual ranking does.
+
+    Substring matching cannot tell those apart, so a hit whose term already
+    appears in the fixture's own question is undecidable here. It is returned
+    separately and does not fail the case; it flags the case for human review
+    instead. A hit on a term the question never used is a real violation.
+    """
+    found: list[str] = []
+    echoed: list[str] = []
+    for term in terms:
+        if term not in response:
+            continue
+        (echoed if term in question else found).append(term)
+    return found, echoed
+
+
 def check_response(
     response: str,
     test_case: dict,
@@ -119,8 +144,13 @@ def check_response(
     """Check a response against expected citations, mentions, and boundaries.
 
     Returns {passed: bool, missing_cites: [...], missing_mentions: [...],
-             forbidden_found: [...], boundary_violations: [...],
-             fabricated_cites: [...]}.
+             forbidden_found: [...], forbidden_echoed: [...],
+             boundary_violations: [...], boundary_echoed: [...],
+             needs_review: bool, fabricated_cites: [...]}.
+
+    ``*_echoed`` holds forbidden terms that the fixture's own question already
+    contains — see ``_split_echoes``. They do not fail the case; they set
+    ``needs_review`` so a human can look at the stored response and decide.
 
     When the test sets ``must_cite_only_existing_sources`` and ``declared_ids``
     is supplied, every citation in the response must be either a declared
@@ -137,18 +167,20 @@ def check_response(
         if mention not in response:
             missing_mentions.append(mention)
 
+    question = test_case.get("q", "")
+
     # Boundary tests: must_not_contain
-    forbidden_found = []
-    for forbidden in test_case.get("must_not_contain", []):
-        if forbidden in response:
-            forbidden_found.append(forbidden)
+    forbidden_found, forbidden_echoed = _split_echoes(
+        test_case.get("must_not_contain", []), response, question
+    )
 
     # First-turn boundary: must_not_contain_first_turn
-    boundary_violations = []
+    boundary_violations: list[str] = []
+    boundary_echoed: list[str] = []
     if is_first_turn:
-        for forbidden in test_case.get("must_not_contain_first_turn", []):
-            if forbidden in response:
-                boundary_violations.append(forbidden)
+        boundary_violations, boundary_echoed = _split_echoes(
+            test_case.get("must_not_contain_first_turn", []), response, question
+        )
 
     # B1: must_cite_only_existing_sources — no hallucinated citations
     fabricated_cites = []
@@ -168,8 +200,40 @@ def check_response(
         "missing_cites": missing_cites,
         "missing_mentions": missing_mentions,
         "forbidden_found": forbidden_found,
+        "forbidden_echoed": forbidden_echoed,
         "boundary_violations": boundary_violations,
+        "boundary_echoed": boundary_echoed,
+        "needs_review": bool(forbidden_echoed or boundary_echoed),
         "fabricated_cites": fabricated_cites,
+    }
+
+
+def result_entry(
+    index: int, test: dict, check: dict, response_text: str
+) -> dict:
+    """Build one graded result record.
+
+    Carries the response itself, not just its length. The first baseline
+    stored only ``response_length``, which left every failure unadjudicable
+    after the fact — there was no way to revisit a case and see what the
+    persona actually said.
+    """
+    return {
+        "index": index,
+        "question": test["q"],
+        "difficulty": test.get("difficulty", "unknown"),
+        "test_type": test.get("test_type", "fidelity"),
+        "status": "PASS" if check["passed"] else "FAIL",
+        "missing_cites": check["missing_cites"],
+        "missing_mentions": check["missing_mentions"],
+        "forbidden_found": check["forbidden_found"],
+        "forbidden_echoed": check["forbidden_echoed"],
+        "boundary_violations": check["boundary_violations"],
+        "boundary_echoed": check["boundary_echoed"],
+        "fabricated_cites": check["fabricated_cites"],
+        "needs_review": check["needs_review"],
+        "response": response_text,
+        "response_length": len(response_text),
     }
 
 
@@ -291,27 +355,12 @@ def run_tests(
         check = check_response(
             response_text, test, is_first_turn=True, declared_ids=declared_ids
         )
-        status = "PASS" if check["passed"] else "FAIL"
-
-        result_entry = {
-            "index": i,
-            "question": test["q"],
-            "difficulty": test.get("difficulty", "unknown"),
-            "test_type": test.get("test_type", "fidelity"),
-            "status": status,
-            "missing_cites": check["missing_cites"],
-            "missing_mentions": check["missing_mentions"],
-            "forbidden_found": check["forbidden_found"],
-            "boundary_violations": check["boundary_violations"],
-            "fabricated_cites": check["fabricated_cites"],
-            "response_length": len(response_text),
-        }
-        results.append(result_entry)
+        results.append(result_entry(i, test, check, response_text))
 
         if check["passed"]:
             passed += 1
             if not quiet:
-                print("PASS")
+                print("PASS (review)" if check["needs_review"] else "PASS")
         else:
             failed += 1
             failures = (check["missing_cites"] + check["missing_mentions"]

@@ -187,6 +187,22 @@ or checking logic in `scripts/test-fidelity.py` was changed to make any number l
 better. Where a fixture's expectation looked debatable (the "don't cite" pressure cases
 above), that is recorded here as a finding, not silently fixed.
 
+## Judge version
+
+This report was produced by the **pre-echo-rule judge**. `must_not_contain` was a
+bare substring match, which is why the 10 undecidable cases above exist at all.
+
+That has since been fixed in `scripts/test-fidelity.py`: a forbidden term the
+fixture's own question already contains is now recorded as `forbidden_echoed`,
+does not fail the case, and sets `needs_review` instead — and every result now
+carries the response text, so an echoed case can actually be adjudicated. The
+judge also has unit tests for the first time (`scripts/tests/test_check_response.py`).
+
+Re-running this suite under the fixed judge is expected to move the headline
+from 70.2% to at most 75.0% (4 of the 10 flip; the other 6 fail on independent
+checks). **Do not compare a future run against this table without accounting for
+the judge change** — the numbers come from different instruments.
+
 ## Next step
 
 Re-run `python3 scripts/test-fidelity.py --all --json --model claude-sonnet-4-6` once the

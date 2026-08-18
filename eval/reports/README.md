@@ -55,3 +55,10 @@ run for real either.
 Full run cost is roughly $5-8 USD for 211 sequential `claude-sonnet-4-6` calls (see
 BASELINE.md for what was actually spent on the first, partial run: ~84 completed calls
 before the account ran out of API credit, on the order of $2-4).
+
+## Report size
+
+Since the judge fix, every result carries the full `response` text, not just
+`response_length` — that is what makes a failure reviewable after the fact.
+Expect roughly 300–500 KB for a full 211-case run. `eval/` is deliberately not
+in `package.json`'s `files[]`, so reports never ship in the npm tarball.
