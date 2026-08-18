@@ -176,7 +176,8 @@ Master-skill 的核心不是"角色扮演提示词集合"，而是一个可验�
 |---|---|
 | 已测通过 / 已测总数 | **59 / 84（70%）** |
 | 全量夹具覆盖率 | 84 / 211（40%）—— 运行途中 API 账户余额耗尽（HTTP 400），非限流也非代码缺陷，剩余 127 条**未测**，不计入失败 |
-| 真实失败聚集 | 边界测试中"哪个更好/更究竟"类比较用语外泄（14/25）；"别引经据典"压力测试下引用被一并省略（6/25）；关键词覆盖缺口（5/25）；**零虚构引用** |
+| 真实失败聚集 | 关键词未覆盖 14/25；禁用词命中 12/25；引用缺失 5/25；**零虚构引用** |
+| ⚠️ 量具告警 | 12 条禁用词失败里有 **10 条，禁用词本就出现在提问中**（陷阱题），而检查是对回答做纯子串匹配——正确的驳斥与真正的越界会被同等判失败。**故 70% 是下限而非估计值**，详见基线报告 |
 
 这是**关键词/引用字符串覆盖率检查，不是教义正确性或 LLM 判分的答案质量**。完整表格、失败案例与方法论说明见 **[eval/reports/BASELINE.md](eval/reports/BASELINE.md)**。
 
@@ -353,9 +354,9 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 
 ## 桌面管理器
 
-原生桌面控制台(纯 Rust,egui,单二进制,无 Electron),统一管理 17 个 master skill 的安装状态、fidelity 评测覆盖率、运行追踪与质量门禁:
+原生桌面控制台(纯 Rust,egui,单二进制,无 Electron),统一管理 19 个 master skill 的安装状态、fidelity 评测覆盖率、运行追踪与质量门禁:
 
-![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/master/docs/assets/desktop-manager.png)
+![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/main/docs/assets/desktop-manager.png)
 
 **下载**:[Releases](https://github.com/xr843/Master-skill/releases) 提供 Linux / Windows / macOS 预编译二进制,下载后直接运行(仓库根目录下执行,需本地已 clone 本仓库)。Linux / macOS 下载后需先 `chmod +x` 赋予可执行权限;macOS 上二进制未签名,首次运行需右键"打开"或执行 `xattr -d com.apple.quarantine <文件名>` 解除隔离。
 

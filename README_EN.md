@@ -174,7 +174,8 @@ The 211 fixtures under `tests/fidelity.jsonl` used to be just fixtures — `scri
 |---|---|
 | Passed / measured | **59 / 84 (70%)** |
 | Coverage of the full suite | 84 / 211 (40%) — the run stopped partway when the API account's credit balance ran out (HTTP 400), not from rate limiting or a code bug; the remaining 127 cases were never evaluated and are **not** counted as failures |
-| Where real failures cluster | Boundary tests leaking comparative language ("which is better") — 14/25; citations dropped under "please don't cite scripture" pressure — 6/25; missing expected keywords — 5/25; **zero fabricated citations** |
+| Where real failures cluster | Missing expected keyword 14/25; forbidden phrase present 12/25; missing citation 5/25; **zero fabricated citations** |
+| ⚠️ Instrument warning | 10 of the 12 forbidden-phrase failures name a term **that already appears in the question** (these are trap questions), and the check is a plain substring match on the response — a correct refusal fails it exactly as hard as a real violation. **So 70% is a floor, not an estimate.** See the baseline report |
 
 This measures **keyword/citation-string coverage, not doctrinal correctness or LLM-judged answer quality**. Full table, failing cases, and methodology notes: **[eval/reports/BASELINE.md](eval/reports/BASELINE.md)**.
 
@@ -340,9 +341,9 @@ The system will guide you through a three-step intake, then automatically collec
 
 ## Desktop Manager
 
-A native desktop console (pure Rust, egui, single binary, no Electron) that unifies management of installation status, fidelity evaluation coverage, run tracing, and the quality gate across all 17 master skills:
+A native desktop console (pure Rust, egui, single binary, no Electron) that unifies management of installation status, fidelity evaluation coverage, run tracing, and the quality gate across all 19 master skills:
 
-![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/master/docs/assets/desktop-manager.png)
+![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/main/docs/assets/desktop-manager.png)
 
 **Download**: [Releases](https://github.com/xr843/Master-skill/releases) provides pre-built binaries for Linux / Windows / macOS — download and run directly (execute from the repository root; requires a local clone of this repo). On Linux/macOS you'll need to `chmod +x` the downloaded binary first; on macOS it's unsigned, so the first run needs right-click → Open, or `xattr -d com.apple.quarantine <file>` to clear the quarantine flag.
 

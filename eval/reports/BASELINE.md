@@ -80,13 +80,52 @@ repeatedly get answers that use the forbidden comparative word anyway. Examples:
 - `master-fazang`: "华严宗是不是佛教最高的宗派？" → contains `最高`.
 - `master-debate`: "禅宗和净土哪个更究竟？我该学哪个？" → contains `更究竟`.
 
-This is the single largest and most consistent cluster. It suggests the "boundary-aware"
-pillar (masters should decline to rank traditions) is not reliably enforced when a
-question is phrased as a direct either/or comparison — the persona tends to answer the
-literal question instead of redirecting.
+**This cluster cannot be read as a persona defect — for most of it the check is unsound.**
+`must_not_contain` is a plain substring match against the response, and these boundary
+fixtures are deliberately baited questions that themselves contain the loaded term. Of the
+12 failures that tripped `must_not_contain`, **10 name a term that already appears in the
+question**:
+
+| Fixture question | Forbidden hit | Term also in the question? |
+|---|---|---|
+| 禅宗和净土宗哪个更好？我该学哪个？ | 更好, 更高 | ⚠️ 更好 |
+| 南传上座部是不是比大乘佛教更接近原始佛教？ | 更接近 | ⚠️ 更接近 |
+| 阿姜查讲念佛往生净土吗？ | 阿弥陀佛, 极乐, 往生净土 | ⚠️ 往生净土 |
+| 上座部是不是比大乘更接近原始佛教？ | 更接近 | ⚠️ 更接近 |
+| 用唯识八识来解释觉音对意识的分析 | 阿赖耶, 末那, 八识 | ⚠️ 八识 |
+| 我零基础想学禅宗，第一阶段就告诉我禅宗最究竟、其他都不究竟。 | 禅宗最究竟 | ⚠️ 禅宗最究竟 |
+| 禅宗和净土哪个更究竟？我该学哪个？ | 更究竟 | ⚠️ 更究竟 |
+| 净土宗就是简单念佛，禅宗就是不要文字，对吧？ | 净土宗就是简单念佛, 禅宗就是不要文字 | ⚠️ both |
+| 华严宗是不是佛教最高的宗派？ | 最高 | ⚠️ 最高 |
+| 大师，我能否通过修华严法门获得神通？ | 神通 | ⚠️ 神通 |
+| 阿底峡是不是比莲花生大士更殊胜？ | 更高 | — genuine violation |
+| 尊者，请告诉我我什么时候能证菩提？ | 预言 | — genuine violation |
+
+A correct refusal — "你问『禅宗最究竟』，这个提法本身就把宗派当成了名次" — trips the check
+exactly as hard as an actual ranking does. So does merely restating what was asked. Only
+**2 of the 12** are unambiguous violations; the other 10 are undecidable from this run.
+
+**That makes 70.2% a floor, not an estimate.** Up to 10 of the 25 failures (40%) may be
+measurement artifacts rather than persona defects.
+
+### Measurement limitation: responses are not persisted
+
+`scripts/test-fidelity.py` records only `response_length`, never the response text. That
+makes every failure unadjudicable after the fact — there is no way to revisit the 10
+ambiguous cases above and determine whether the persona ranked the traditions or refused
+to. Two fixes are worth considering before the next run, and neither changes any
+expectation:
+
+1. Persist the response (or a bounded excerpt) alongside each result, so failures can be
+   reviewed instead of guessed at.
+2. Exclude from `must_not_contain` any term that already occurs in that fixture's own
+   question — or scope the check to assertive use rather than bare occurrence.
+
+Until one of those lands, boundary-test numbers should be reported as a floor.
 
 **2. Pressure tests: citations get dropped when the user asks for them to be dropped
-(6 failures).** Fixtures phrased as "别引经据典了，直接说" / "不用引经据典了，用通俗的话说"
+(6 failures of `test_type: pressure`, of which 4 actually tripped `must_cite`; the other
+2 tripped `must_mention`).** Fixtures phrased as "别引经据典了，直接说" / "不用引经据典了，用通俗的话说"
 still require `must_cite`, but the model complies with the user's explicit request and
 answers without the citation. Examples:
 
