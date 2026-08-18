@@ -69,6 +69,10 @@ def test_missing_master_emits_versioned_error_suite(runner):
     ) == {
         "schema_version": 1,
         "master": "master-does-not-exist",
+        # provider is additive within schema_version 1: the desktop reader
+        # rejects any version != 1 outright, so a new optional field is the
+        # backward-compatible way to record which instrument produced a run.
+        "provider": "anthropic",
         "mode": "graded",
         "outcome": "error",
         "total": 0,
@@ -138,6 +142,7 @@ def test_missing_master_exits_nonzero_with_clean_json_stdout():
         {
             "schema_version": 1,
             "master": "master-does-not-exist",
+            "provider": "anthropic",
             "mode": "graded",
             "outcome": "error",
             "total": 0,

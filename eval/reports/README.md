@@ -62,3 +62,33 @@ Since the judge fix, every result carries the full `response` text, not just
 `response_length` — that is what makes a failure reviewable after the fact.
 Expect roughly 300–500 KB for a full 211-case run. `eval/` is deliberately not
 in `package.json`'s `files[]`, so reports never ship in the npm tarball.
+
+## Provider is an axis, not a shortcut
+
+This project ships one `prebuilt/` to five hosts — Claude Code, Cursor, Codex
+CLI, OpenCode, Gemini CLI — and the README calls that a unified plugin. Every
+fidelity number it has produced so far came from one Anthropic model. A fixture
+measures whether the *prompt* induces the right behaviour, and that is a
+property of the prompt-and-model pair, not of the prompt alone. The Gemini CLI
+path in particular ships `gemini-extension.json` and `GEMINI.md` and has no
+evidence behind it at all.
+
+So `--provider` exists to fill in a missing column, not to spend less:
+
+```bash
+python3 scripts/test-fidelity.py --all --json                                  # anthropic, default model
+python3 scripts/test-fidelity.py --all --json --provider deepseek --model <id> # DeepSeek
+python3 scripts/test-fidelity.py --all --json --provider gemini   --model <id> # Gemini
+```
+
+Non-Anthropic providers require `--model`. There is deliberately no default: a
+model id committed to this repo would rot silently, and a run that cannot name
+its model is not a reproducible measurement. Both non-Anthropic providers go
+through their OpenAI-compatible endpoints, so one adapter covers them.
+
+**Never pool across models.** Two models are two instruments; averaging a Sonnet
+run with a DeepSeek run — or a Sonnet run with an Opus run — produces a figure
+that describes neither. `--all` prints a warning and `aggregation_conflicts()`
+names the offending pair. Report one row per provider/model, and say which
+instrument produced each number.
+\n
