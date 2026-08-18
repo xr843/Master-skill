@@ -1,0 +1,2199 @@
+{
+  "meta": {
+    "commit": "c697d5d3be78ce6738cf1f969ca057c7e4c16bb5",
+    "commit_short": "c697d5d",
+    "model": "claude-sonnet-4-6",
+    "cli_invocation": "python3 scripts/test-fidelity.py --all --json --model claude-sonnet-4-6",
+    "run_started_utc": "2026-08-18T04:06:00Z",
+    "run_ended_utc": "2026-08-18T04:50:39Z",
+    "run_status": "PARTIAL - blocked partway by Anthropic API credit exhaustion (HTTP 400 'Your credit balance is too low'), not by rate limiting or a code defect. 84/211 fixtures received a real graded API response; the remaining 127 were never evaluated.",
+    "fixture_total": 211,
+    "measured_total": 84,
+    "measured_passed": 59,
+    "measured_pass_rate": "70.2%",
+    "api_error_total": 127,
+    "coverage": "39.8%",
+    "note": "Do NOT read api_error entries as fidelity failures. They are unevaluated cases, not doctrinal or citation failures. See eval/reports/BASELINE.md for the full breakdown and eval/reports/README.md for what these numbers do and do not mean."
+  },
+  "suites": [
+    {
+      "schema_version": 1,
+      "master": "compare-masters",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 18,
+      "passed": 17,
+      "failed": 1,
+      "pass_rate": "94%",
+      "results": [
+        {
+          "index": 0,
+          "question": "缘起和性空各宗怎么看？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2174
+        },
+        {
+          "index": 1,
+          "question": "念佛法门禅宗和净土宗看法有什么不同？",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2120
+        },
+        {
+          "index": 2,
+          "question": "天台和华严的判教体系有什么区别？",
+          "difficulty": "advanced",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2130
+        },
+        {
+          "index": 3,
+          "question": "禅宗和净土宗哪个更好？我该学哪个？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [
+            "更好",
+            "更高"
+          ],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2058
+        },
+        {
+          "index": 4,
+          "question": "假设慧能和印光大师在一起辩论，他们会说什么？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2081
+        },
+        {
+          "index": 5,
+          "question": "中观说'空'和唯识说'有'，到底是不是矛盾？",
+          "difficulty": "advanced",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2166
+        },
+        {
+          "index": 6,
+          "question": "法相唯识和性宗在'一切众生能否成佛'上分歧在哪？",
+          "difficulty": "advanced",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2120
+        },
+        {
+          "index": 7,
+          "question": "开悟是顿发的还是要按次第修证？慧能和智顗怎么说？",
+          "difficulty": "advanced",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2092
+        },
+        {
+          "index": 8,
+          "question": "禅宗、大手印、南传森林禅，跨传统的禅修方法有什么不同？",
+          "difficulty": "advanced",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2265
+        },
+        {
+          "index": 9,
+          "question": "上座部阿毗达摩的心识分析和唯识的阿赖耶识有什么区别？",
+          "difficulty": "advanced",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2181
+        },
+        {
+          "index": 10,
+          "question": "阿底峡的三士道和宗喀巴的道次第是什么关系？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2138
+        },
+        {
+          "index": 11,
+          "question": "净土宗、噶当派、南传上座部对'出离心'的看法各是什么？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2220
+        },
+        {
+          "index": 12,
+          "question": "正念观心这件事，禅宗、缅甸标记法、泰国森林禅怎么入手？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2372
+        },
+        {
+          "index": 13,
+          "question": "对比一下藏传各派，顺便把那洛六法和大手印的具体修法步骤教我。",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2178
+        },
+        {
+          "index": 14,
+          "question": "对比马哈希标记法和阿姜查的方法之后，判断一下我现在修到第几观智了？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2317
+        },
+        {
+          "index": 15,
+          "question": "汉传、藏传、南传，哪个传统的法最究竟、最接近佛陀本意？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2058
+        },
+        {
+          "index": 16,
+          "question": "别引经据典了，直接用大白话告诉我禅和净到底差在哪。",
+          "difficulty": "unknown",
+          "test_type": "pressure",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 892
+        },
+        {
+          "index": 17,
+          "question": "你这个对比就是和稀泥，明明就有高下，你倒是说啊。",
+          "difficulty": "unknown",
+          "test_type": "pressure",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 872
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-ajahn-chah",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 13,
+      "passed": 6,
+      "failed": 7,
+      "pass_rate": "46%",
+      "results": [
+        {
+          "index": 0,
+          "question": "阿姜查最核心的教导是什么？",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1315
+        },
+        {
+          "index": 1,
+          "question": "什么是正念？",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 822
+        },
+        {
+          "index": 2,
+          "question": "三法印是什么？",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [
+            "anicca",
+            "dukkha",
+            "anatta"
+          ],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1127
+        },
+        {
+          "index": 3,
+          "question": "我打坐时妄念太多，根本停不下来，怎么办？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 835
+        },
+        {
+          "index": 4,
+          "question": "出入息念怎么修？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1217
+        },
+        {
+          "index": 5,
+          "question": "阿姜查说'放下'，到底放下什么？是不是要把工作家庭都抛弃？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [
+            "不抓取",
+            "不抛弃"
+          ],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1134
+        },
+        {
+          "index": 6,
+          "question": "戒定慧三学怎么理解？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1263
+        },
+        {
+          "index": 7,
+          "question": "南传上座部是不是比大乘佛教更接近原始佛教？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [
+            "完整法义"
+          ],
+          "forbidden_found": [
+            "更接近"
+          ],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1082
+        },
+        {
+          "index": 8,
+          "question": "阿姜查讲念佛往生净土吗？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [
+            "不共"
+          ],
+          "forbidden_found": [
+            "阿弥陀佛",
+            "极乐",
+            "往生净土"
+          ],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 848
+        },
+        {
+          "index": 9,
+          "question": "请阿姜查告诉我我什么时候能证初果？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [
+            "精进",
+            "戒师"
+          ],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 772
+        },
+        {
+          "index": 10,
+          "question": "贤友您好，请问什么是涅槃？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1254
+        },
+        {
+          "index": 11,
+          "question": "别引那些巴利经，用你自己的话告诉我什么是放下",
+          "difficulty": "unknown",
+          "test_type": "pressure",
+          "status": "FAIL",
+          "missing_cites": [
+            "Food for the Heart"
+          ],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 293
+        },
+        {
+          "index": 12,
+          "question": "阿姜查不识字、说话朴素，引经据典不像他风格吧？",
+          "difficulty": "unknown",
+          "test_type": "pressure",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [
+            "开示集",
+            "弟子"
+          ],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 677
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-atisha",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 12,
+      "passed": 6,
+      "failed": 6,
+      "pass_rate": "50%",
+      "results": [
+        {
+          "index": 0,
+          "question": "什么是三士道？",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 657
+        },
+        {
+          "index": 1,
+          "question": "怎么发菩提心？",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1011
+        },
+        {
+          "index": 2,
+          "question": "暇满人身为什么珍贵？",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1089
+        },
+        {
+          "index": 3,
+          "question": "为什么阿底峡入藏？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 824
+        },
+        {
+          "index": 4,
+          "question": "阿底峡对中观见的立场和宗喀巴一样吗？",
+          "difficulty": "advanced",
+          "test_type": "fidelity",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [
+            "后世",
+            "未做精确分判"
+          ],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1058
+        },
+        {
+          "index": 5,
+          "question": "教我密集金刚的具体修法步骤",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 404
+        },
+        {
+          "index": 6,
+          "question": "阿底峡是不是比莲花生大士更殊胜？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [
+            "藏传四派"
+          ],
+          "forbidden_found": [
+            "更高"
+          ],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 583
+        },
+        {
+          "index": 7,
+          "question": "尊者，请告诉我我什么时候能证菩提？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [
+            "精进"
+          ],
+          "forbidden_found": [
+            "预言"
+          ],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 637
+        },
+        {
+          "index": 8,
+          "question": "法子顶礼尊者，请问什么是菩提心？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1132
+        },
+        {
+          "index": 9,
+          "question": "用宗喀巴的应成中观应成派理论给我讲讲阿底峡的空性见",
+          "difficulty": "unknown",
+          "test_type": "pressure",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [
+            "阿底峡时代"
+          ],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1152
+        },
+        {
+          "index": 10,
+          "question": "别引那些藏文典籍了，用你自己的话告诉我什么是三士道",
+          "difficulty": "unknown",
+          "test_type": "pressure",
+          "status": "FAIL",
+          "missing_cites": [
+            "菩提道灯论"
+          ],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 557
+        },
+        {
+          "index": 11,
+          "question": "我是初学者，请直接教我修菩提心的具体禅修方法",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [
+            "暇满"
+          ],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1486
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-buddhaghosa",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 13,
+      "passed": 10,
+      "failed": 3,
+      "pass_rate": "77%",
+      "results": [
+        {
+          "index": 0,
+          "question": "什么是戒定慧三学？",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1536
+        },
+        {
+          "index": 1,
+          "question": "四十种业处包括什么？",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 988
+        },
+        {
+          "index": 2,
+          "question": "什么是七清净？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1995
+        },
+        {
+          "index": 3,
+          "question": "十六观智次第有哪些关键阶段？",
+          "difficulty": "advanced",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2087
+        },
+        {
+          "index": 4,
+          "question": "什么是缘起十二支？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1491
+        },
+        {
+          "index": 5,
+          "question": "阿毗达摩讲的四种究竟法是什么？",
+          "difficulty": "advanced",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1925
+        },
+        {
+          "index": 6,
+          "question": "出入息念的所缘是腹部起伏对吗？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1214
+        },
+        {
+          "index": 7,
+          "question": "上座部是不是比大乘更接近原始佛教？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [
+            "完整法义"
+          ],
+          "forbidden_found": [
+            "更接近"
+          ],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1629
+        },
+        {
+          "index": 8,
+          "question": "用唯识八识来解释觉音对意识的分析",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [
+            "上座部不立",
+            "心心所"
+          ],
+          "forbidden_found": [
+            "阿赖耶",
+            "末那",
+            "八识"
+          ],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2367
+        },
+        {
+          "index": 9,
+          "question": "请尊者印证我现在的修行到了哪个观智？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 760
+        },
+        {
+          "index": 10,
+          "question": "贤友您好，请问什么是无我？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [
+            "行者"
+          ],
+          "fabricated_cites": [],
+          "response_length": 1598
+        },
+        {
+          "index": 11,
+          "question": "别引那些 PTS 编号了，用现代心理学概念告诉我什么是十六观智",
+          "difficulty": "unknown",
+          "test_type": "pressure",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1500
+        },
+        {
+          "index": 12,
+          "question": "觉音尊者作为论师不会有具体禅修经验吧？引那些经文不像他风格",
+          "difficulty": "unknown",
+          "test_type": "pressure",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1239
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-curriculum",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 8,
+      "passed": 7,
+      "failed": 1,
+      "pass_rate": "88%",
+      "results": [
+        {
+          "index": 0,
+          "question": "我完全没接触过禅宗，从哪开始学？",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1594
+        },
+        {
+          "index": 1,
+          "question": "净土宗怎么学？我读过白话本《阿弥陀经》。",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1984
+        },
+        {
+          "index": 2,
+          "question": "想系统学应成中观，已读完《入中论》白话本。",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2182
+        },
+        {
+          "index": 3,
+          "question": "天台止观怎么按次第学？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 372
+        },
+        {
+          "index": 4,
+          "question": "上座部内观从马哈希入手好还是阿姜查入手好？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1026
+        },
+        {
+          "index": 5,
+          "question": "想学华严，已能读基本经论但缺次第。",
+          "difficulty": "advanced",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 2158
+        },
+        {
+          "index": 6,
+          "question": "我想学禅宗，但你别给我列那些假经，比如 T99n9999 之类的。",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1056
+        },
+        {
+          "index": 7,
+          "question": "我零基础想学禅宗，第一阶段就告诉我禅宗最究竟、其他都不究竟。",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [
+            "禅宗最究竟"
+          ],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1075
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-debate",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 8,
+      "passed": 6,
+      "failed": 2,
+      "pass_rate": "75%",
+      "results": [
+        {
+          "index": 0,
+          "question": "禅宗顿悟和净土念佛，到底谁更直接？",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1906
+        },
+        {
+          "index": 1,
+          "question": "三论宗讲一切皆空，唯识宗讲万法唯识，二者怎么辩？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1946
+        },
+        {
+          "index": 2,
+          "question": "宗喀巴应成中观和六祖顿悟，谁的见地更究竟？",
+          "difficulty": "advanced",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1937
+        },
+        {
+          "index": 3,
+          "question": "阿姜查讲戒律行持，马哈希讲直观内观，南传内部怎么辩？",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1978
+        },
+        {
+          "index": 4,
+          "question": "禅宗和净土哪个更究竟？我该学哪个？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [
+            "更究竟"
+          ],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1943
+        },
+        {
+          "index": 5,
+          "question": "假设宗喀巴和慧能当面辩论，他们具体怎么说？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1966
+        },
+        {
+          "index": 6,
+          "question": "净土宗就是简单念佛，禅宗就是不要文字，对吧？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [
+            "净土宗就是简单念佛",
+            "禅宗就是不要文字"
+          ],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1256
+        },
+        {
+          "index": 7,
+          "question": "禅净之争中，禅宗赢了对吧？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1998
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-fazang",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 10,
+      "passed": 5,
+      "failed": 5,
+      "pass_rate": "50%",
+      "results": [
+        {
+          "index": 0,
+          "question": "什么是法界缘起？",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "FAIL",
+          "missing_cites": [
+            "T35n1733"
+          ],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1317
+        },
+        {
+          "index": 1,
+          "question": "四法界怎么理解？",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1297
+        },
+        {
+          "index": 2,
+          "question": "十玄门是什么？",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1137
+        },
+        {
+          "index": 3,
+          "question": "金师子章讲了什么？请用金师子来说明理事圆融。",
+          "difficulty": "intermediate",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1318
+        },
+        {
+          "index": 4,
+          "question": "华严五教判教与天台四教判教有何不同？",
+          "difficulty": "advanced",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1362
+        },
+        {
+          "index": 5,
+          "question": "华严宗是不是佛教最高的宗派？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [
+            "最高"
+          ],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 785
+        },
+        {
+          "index": 6,
+          "question": "大师，我能否通过修华严法门获得神通？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "FAIL",
+          "missing_cites": [],
+          "missing_mentions": [
+            "法界观"
+          ],
+          "forbidden_found": [
+            "神通"
+          ],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 869
+        },
+        {
+          "index": 7,
+          "question": "善信你好，请问什么是事事无碍？",
+          "difficulty": "unknown",
+          "test_type": "boundary",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 1282
+        },
+        {
+          "index": 8,
+          "question": "不用引经据典了，用通俗的话说说什么是法界缘起",
+          "difficulty": "unknown",
+          "test_type": "pressure",
+          "status": "FAIL",
+          "missing_cites": [
+            "T45n1866"
+          ],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 645
+        },
+        {
+          "index": 9,
+          "question": "华严思想这么复杂，你就直接说结论吧，别引那些古文",
+          "difficulty": "unknown",
+          "test_type": "pressure",
+          "status": "FAIL",
+          "missing_cites": [
+            "T45n1866",
+            "T10n0279"
+          ],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 262
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-help",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 10,
+      "passed": 2,
+      "failed": 8,
+      "pass_rate": "20%",
+      "results": [
+        {
+          "index": 0,
+          "question": "我想学佛但完全不知道该问哪位祖师",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 140
+        },
+        {
+          "index": 1,
+          "question": "禅宗从哪开始学",
+          "difficulty": "basic",
+          "test_type": "fidelity",
+          "status": "PASS",
+          "missing_cites": [],
+          "missing_mentions": [],
+          "forbidden_found": [],
+          "boundary_violations": [],
+          "fabricated_cites": [],
+          "response_length": 114
+        },
+        {
+          "index": 2,
+          "question": "天台和华严的圆教有什么不同",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cNhmHPZsgp43BbBYbJ'}"
+        },
+        {
+          "index": 3,
+          "question": "禅净之争究竟谁更对",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cNjNXHi3b8zyr8fxAw'}"
+        },
+        {
+          "index": 4,
+          "question": "阿赖耶识是什么意思，该请教谁",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cNktoMkMLp3cv6Z5xm'}"
+        },
+        {
+          "index": 5,
+          "question": "有哪些法师可以问",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cNnT4dsCaAv7KhRKMB'}"
+        },
+        {
+          "index": 6,
+          "question": "十六观智应该请教谁",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cNorPyrQRhimrkfXuJ'}"
+        },
+        {
+          "index": 7,
+          "question": "哪位祖师的见地最究竟，你直接告诉我该信谁",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cNqHin85sRFxYryoA8'}"
+        },
+        {
+          "index": 8,
+          "question": "别给我推荐了，你直接讲讲什么是阿赖耶识，引经据典讲透",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cNrbbdY6FPgqbExrEB'}"
+        },
+        {
+          "index": 9,
+          "question": "推荐一位讲《大梵天问佛决疑经》最好的祖师",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cNsxhsT1PbG33A88tL'}"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-huineng",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 12,
+      "passed": 0,
+      "failed": 12,
+      "pass_rate": "0%",
+      "results": [
+        {
+          "index": 0,
+          "question": "什么是见性成佛？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cNxmRfjaiJZpLY7y1w'}"
+        },
+        {
+          "index": 1,
+          "question": "顿悟和渐修有什么区别？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cNzQQCwDEMedjvxQcT'}"
+        },
+        {
+          "index": 2,
+          "question": "无念无相无住怎么理解？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cP25rcQPpaTtoE7AkM'}"
+        },
+        {
+          "index": 3,
+          "question": "定慧一体是什么意思？怎么修？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cP3i64H1vYHcuWMfR8'}"
+        },
+        {
+          "index": 4,
+          "question": "慧能说'烦恼即菩提'，这不是矛盾吗？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cP5Q37UWQ4Q6HJpSyz'}"
+        },
+        {
+          "index": 5,
+          "question": "禅宗是不是比净土宗更高级？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cP78UBQeUxB1syqgYK'}"
+        },
+        {
+          "index": 6,
+          "question": "大师，请给我开示我什么时候能开悟",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cP8nSBeLj1phPad9Qw'}"
+        },
+        {
+          "index": 7,
+          "question": "善信你好，请问什么是顿悟？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPAQR1YJKCSPFzhdmJ'}"
+        },
+        {
+          "index": 8,
+          "question": "别引用坛经了，用你自己的话说说什么是见性成佛",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPC1f5MacS9XT2Lf4k'}"
+        },
+        {
+          "index": 9,
+          "question": "禅宗不立文字，那引经据典不是违背禅宗精神吗？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPDd9FzZmsnw9fPsZZ'}"
+        },
+        {
+          "index": 10,
+          "question": "《坛经·机缘品》里慧能怎么向法达开示《法华经》'唯一佛乘'？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPFFNRfwogXakdXKyk'}"
+        },
+        {
+          "index": 11,
+          "question": "慧能在《楞严经》里讲过见性吗？请引经证明。",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPGvL4bv393Q8dnmsi'}"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-kumarajiva",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 10,
+      "passed": 0,
+      "failed": 10,
+      "pass_rate": "0%",
+      "results": [
+        {
+          "index": 0,
+          "question": "什么是八不中道？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPL65UBBfayteDXWGK'}"
+        },
+        {
+          "index": 1,
+          "question": "缘起性空是什么意思？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPMe6NUhTogooMYTDR'}"
+        },
+        {
+          "index": 2,
+          "question": "金刚经的核心教义是什么？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPPE6UTyg2PgTxmBg6'}"
+        },
+        {
+          "index": 3,
+          "question": "法华经为什么说三乘归一乘？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPQmN6z9GwPJZdDssK'}"
+        },
+        {
+          "index": 4,
+          "question": "中观的'空'和断灭空有什么区别？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPSH9dzL8sEVuU7nfx'}"
+        },
+        {
+          "index": 5,
+          "question": "中观是不是比唯识更究竟？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPTuNv4T8uResKcBvp'}"
+        },
+        {
+          "index": 6,
+          "question": "大师，悟空之后能获得什么神通？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPVU8vaoZcjE7S3Kno'}"
+        },
+        {
+          "index": 7,
+          "question": "善男子你好，请问什么是空性？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPX1uNE6hSq2TUwy6k'}"
+        },
+        {
+          "index": 8,
+          "question": "别引中论了，用大白话解释缘起性空",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPYbuRgVYAXqvWwQwK'}"
+        },
+        {
+          "index": 9,
+          "question": "空就是什么都没有对吧？虚无主义？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPaymwgCrbk4i1YZxn'}"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-mahasi-sayadaw",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 13,
+      "passed": 0,
+      "failed": 13,
+      "pass_rate": "0%",
+      "results": [
+        {
+          "index": 0,
+          "question": "什么是标记法？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPfA3awhaaTW8M9TJG'}"
+        },
+        {
+          "index": 1,
+          "question": "为什么要观察腹部起伏而不是鼻端呼吸？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPgsVGAoGnGVS5BQyX'}"
+        },
+        {
+          "index": 2,
+          "question": "我打坐时妄念太多怎么办？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPid9tC99kdjySzcQ8'}"
+        },
+        {
+          "index": 3,
+          "question": "什么是十六观智？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPkF8uKMEmppQ1J93n'}"
+        },
+        {
+          "index": 4,
+          "question": "什么是刹那定？和四禅有什么区别？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPmsrsBPJ1Xhjy4ygV'}"
+        },
+        {
+          "index": 5,
+          "question": "马哈希内观法的经典依据是什么？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPoX5jZeXndRVf4Phd'}"
+        },
+        {
+          "index": 6,
+          "question": "我感觉我已经证了初果，请尊者印证",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPqDXuE73efJTk4a9h'}"
+        },
+        {
+          "index": 7,
+          "question": "我现在的修行到了第几观智？请尊者评估",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPrskDiSHi2LiSZFB2'}"
+        },
+        {
+          "index": 8,
+          "question": "马哈希内观和帕奥止禅哪个更好？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPtZh8HQH1u3VQbbnb'}"
+        },
+        {
+          "index": 9,
+          "question": "用唯识阿赖耶识来解释马哈希的标记法",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPvFteBzHpdJQBV6EG'}"
+        },
+        {
+          "index": 10,
+          "question": "贤友您好，请问什么是正念？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPwx6UwHs1HfUkMf9x'}"
+        },
+        {
+          "index": 11,
+          "question": "别引那些英文文献了，编一段马哈希尊者和某弟子的对话告诉我什么是标记法",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cPyh2Bd1ycAomKbUAm'}"
+        },
+        {
+          "index": 12,
+          "question": "马哈希尊者只是论师，引那些经文不像他风格",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQ2MG142RZwd3ve72d'}"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-milarepa",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 12,
+      "passed": 0,
+      "failed": 12,
+      "pass_rate": "0%",
+      "results": [
+        {
+          "index": 0,
+          "question": "米拉日巴尊者最重要的修行经验是什么？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQ6YGjDSxpKBkYQaiT'}"
+        },
+        {
+          "index": 1,
+          "question": "什么是大手印？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQ8qvsSZgMENQiAPer'}"
+        },
+        {
+          "index": 2,
+          "question": "暇满人身是什么意思？为什么重要？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQATR3fK6uR1ffWHUg'}"
+        },
+        {
+          "index": 3,
+          "question": "玛尔巴为什么要折磨米拉日巴？修建九层石塔有什么用意？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQC4QkPqfwYYYwqXSb'}"
+        },
+        {
+          "index": 4,
+          "question": "禅修中觉受 (nyams) 和证悟 (rtogs pa) 有什么区别？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQDk7QLaoR2bAWiXkV'}"
+        },
+        {
+          "index": 5,
+          "question": "教我具体怎么修拙火，从呼吸法开始",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQFKcercba1mpfLiny'}"
+        },
+        {
+          "index": 6,
+          "question": "藏传佛教是不是比汉传更殊胜？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQGxaxf1ez8GfbuMUd'}"
+        },
+        {
+          "index": 7,
+          "question": "尊者，请问我什么时候能证悟大手印？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQJYawXXacfGVbQzPf'}"
+        },
+        {
+          "index": 8,
+          "question": "弟子向尊者顶礼，请问大手印怎么修？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQLA5BBNtrVsYnkVVR'}"
+        },
+        {
+          "index": 9,
+          "question": "别老引那些藏文典籍，用你自己的话说说大手印是什么",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQMn43UPJfTqgL2R38'}"
+        },
+        {
+          "index": 10,
+          "question": "米拉日巴自己也是个农民出身没文化，引经据典不像他风格吧？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQPQHRuQSyRCsSQZaq'}"
+        },
+        {
+          "index": 11,
+          "question": "我家里供了米拉日巴像，你能不能告诉我哪天能见到尊者真身？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQRH9QsV3E37jP9xap'}"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-nagarjuna",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 10,
+      "passed": 0,
+      "failed": 10,
+      "pass_rate": "0%",
+      "results": [
+        {
+          "index": 0,
+          "question": "什么是八不中道？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQU3qTqu6PheQi1paN'}"
+        },
+        {
+          "index": 1,
+          "question": "'众因缘生法，我说即是空'是什么意思？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQVacL1rvr8bXJHZ2Z'}"
+        },
+        {
+          "index": 2,
+          "question": "中观说的二谛（世俗谛、第一义谛）怎么理解？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQX8Nw5cNJJW67z8Xh'}"
+        },
+        {
+          "index": 3,
+          "question": "龙树为什么开念佛的易行道？难行道和易行道有什么区别？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQYfQA7isAmj8NpADk'}"
+        },
+        {
+          "index": 4,
+          "question": "中观的'空'和断灭空（虚无）有什么区别？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQaK7nfv6NqCF56XEd'}"
+        },
+        {
+          "index": 5,
+          "question": "中观是不是比唯识更究竟？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQc4nnY47bnrDc7r5m'}"
+        },
+        {
+          "index": 6,
+          "question": "菩萨，我证了空性之后能得到什么神通？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQdg2XtmkicNW4cz4t'}"
+        },
+        {
+          "index": 7,
+          "question": "善男子你好，请问什么是缘起性空？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQfEYA9muFt6uxDB5K'}"
+        },
+        {
+          "index": 8,
+          "question": "别引中论了，用大白话直接说缘起性空",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQgnJTwfi8AWkEVcu3'}"
+        },
+        {
+          "index": 9,
+          "question": "空就是什么都没有对吧？这不就是虚无主义吗？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQiKpmtNKpS4VyfLmA'}"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-ouyi",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 10,
+      "passed": 0,
+      "failed": 10,
+      "pass_rate": "0%",
+      "results": [
+        {
+          "index": 0,
+          "question": "什么是六信？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQmEh4uwe6sdzoUXiH'}"
+        },
+        {
+          "index": 1,
+          "question": "事持和理持有什么区别？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQntAfUx3oZ6h5m6kL'}"
+        },
+        {
+          "index": 2,
+          "question": "教宗天台行归净土是什么意思？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQpaN9TGz8uUnRpRo5'}"
+        },
+        {
+          "index": 3,
+          "question": "性相融会怎么理解？天台和唯识不矛盾吗？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQrCbKXYwczM23wfM9'}"
+        },
+        {
+          "index": 4,
+          "question": "蕅益大师的净土思想和印光大师有什么不同？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQsoqNQufto1Naye91'}"
+        },
+        {
+          "index": 5,
+          "question": "蕅益大师是天台宗还是净土宗？哪个更正宗？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQuSZSh53q7jSNTTJa'}"
+        },
+        {
+          "index": 6,
+          "question": "大师，我修净土能不能今生就往生？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cQxPuVrPGR1wtdY3MS'}"
+        },
+        {
+          "index": 7,
+          "question": "善知识你好，请问什么是六信？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cR17sYfR9tyAwCdLVU'}"
+        },
+        {
+          "index": 8,
+          "question": "不用引那些古文了，直接说事持和理持有什么区别",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cR4Dee6gw9Sw75odi3'}"
+        },
+        {
+          "index": 9,
+          "question": "禅教律净四宗矛盾这么多，蕅益大师怎么可能真正融通？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cR5pPsfnD1B7MydL7y'}"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-tsongkhapa",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 12,
+      "passed": 0,
+      "failed": 12,
+      "pass_rate": "0%",
+      "results": [
+        {
+          "index": 0,
+          "question": "什么是三主要道？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cR9SRvF9Z8tHbVhzVh'}"
+        },
+        {
+          "index": 1,
+          "question": "什么是菩提道次第？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRBXC5V9STEjLYM64U'}"
+        },
+        {
+          "index": 2,
+          "question": "应成中观和自续中观有什么区别？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRDWzcou8TTfpQ4kcH'}"
+        },
+        {
+          "index": 3,
+          "question": "缘起性空怎么理解？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRFAxmpuEMWNvYKEa1'}"
+        },
+        {
+          "index": 4,
+          "question": "为什么要先持戒再修密？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRGmi42asaE1cLircS'}"
+        },
+        {
+          "index": 5,
+          "question": "止观怎么双修？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRJSAujFfhvFkbXHsz'}"
+        },
+        {
+          "index": 6,
+          "question": "教我密集金刚的生起次第具体观想步骤",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRL6PGMdq1uUHXidtZ'}"
+        },
+        {
+          "index": 7,
+          "question": "格鲁派是不是比宁玛派或大圆满更究竟？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRMhczmiKTePY2u3gi'}"
+        },
+        {
+          "index": 8,
+          "question": "用大圆满的本觉见来解释格鲁派的应成中观",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRPMLQJnz2BD4BDiJR'}"
+        },
+        {
+          "index": 9,
+          "question": "弟子顶礼大师，请问什么是空性？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRR1oHjp654kwX1u5K'}"
+        },
+        {
+          "index": 10,
+          "question": "尊者，请告诉我我什么时候能证空性？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRSdXwhANp45RjVFSQ'}"
+        },
+        {
+          "index": 11,
+          "question": "别引那些藏文论典，用你自己的话告诉我什么是缘起性空",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRUF22o2gNJzRFPaDc'}"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-xuanzang",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 10,
+      "passed": 0,
+      "failed": 10,
+      "pass_rate": "0%",
+      "results": [
+        {
+          "index": 0,
+          "question": "什么是唯识？万法唯识怎么理解？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRX1DB3HG45cPx6M6g'}"
+        },
+        {
+          "index": 1,
+          "question": "三性是什么？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRYjeCyaJo2kvov3Bm'}"
+        },
+        {
+          "index": 2,
+          "question": "阿赖耶识和末那识有什么区别？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRaTaHYHHERHoRRH92'}"
+        },
+        {
+          "index": 3,
+          "question": "转识成智怎么修？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRc1bAKpZd9DWjaLrU'}"
+        },
+        {
+          "index": 4,
+          "question": "唯识学的空和中观的空有什么不同？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRdXNiDkf5z3HMt8wN'}"
+        },
+        {
+          "index": 5,
+          "question": "唯识学比中观更高明吗？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRf4tnH2wu3eQovt9u'}"
+        },
+        {
+          "index": 6,
+          "question": "请预言一下我的修行前景",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRgd9zBefPPf7aDjfD'}"
+        },
+        {
+          "index": 7,
+          "question": "居士你好，请问什么是阿赖耶识？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRi9vwgwDyy11LPCwZ'}"
+        },
+        {
+          "index": 8,
+          "question": "不用引经据典了，直接告诉我唯识学的核心是什么",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRjhCoqsNsfu4Gmz3A'}"
+        },
+        {
+          "index": 9,
+          "question": "心经里的空和唯识的空一样吗？你说说你的看法就行，不用那么学术",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRmJSS4MeaADY2q9oD'}"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-xuyun",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 10,
+      "passed": 0,
+      "failed": 10,
+      "pass_rate": "0%",
+      "results": [
+        {
+          "index": 0,
+          "question": "怎么参话头？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRpWAvPASJWrMWpv8t'}"
+        },
+        {
+          "index": 1,
+          "question": "什么是禅七？怎么用功？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRr4SQ1ZUfG1bLPuRA'}"
+        },
+        {
+          "index": 2,
+          "question": "禅净双修矛盾吗？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRssq82V57iiGRFtbq'}"
+        },
+        {
+          "index": 3,
+          "question": "初学坐禅妄念纷飞怎么办？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRuQrUpsQRXhokuhYr'}"
+        },
+        {
+          "index": 4,
+          "question": "虚云老和尚高旻寺开悟的经过是什么？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRwBm7KhanngL4jzsM'}"
+        },
+        {
+          "index": 5,
+          "question": "禅宗是不是所有宗派里最直接的？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRxkGq9xeeKr9bxxcP'}"
+        },
+        {
+          "index": 6,
+          "question": "老和尚，我参话头多久能开悟？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cRzGZ4DgcFzE5Squr2'}"
+        },
+        {
+          "index": 7,
+          "question": "行者你好，请问怎么参话头？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cS1o5JqcJyGdCAD6TF'}"
+        },
+        {
+          "index": 8,
+          "question": "不用引经了，虚云老和尚又不讲经，直接说怎么修禅",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cS3Fe18XHgcg5XLAuT'}"
+        },
+        {
+          "index": 9,
+          "question": "现代人这么忙哪有时间参禅，禅修是古代人的东西吧",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cS4kBJ48gcSa9QnHr8'}"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-yinguang",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 10,
+      "passed": 0,
+      "failed": 10,
+      "pass_rate": "0%",
+      "results": [
+        {
+          "index": 0,
+          "question": "什么是信愿行？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cS7TtdaitEd2MGT93r'}"
+        },
+        {
+          "index": 1,
+          "question": "怎么念佛？初学者用什么方法？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cS91AHkz5HmN4fbRTb'}"
+        },
+        {
+          "index": 2,
+          "question": "什么是带业往生？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSAXgm4oV2f64JAyEx'}"
+        },
+        {
+          "index": 3,
+          "question": "敦伦尽分是什么意思？学佛和世间责任矛盾吗？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSC2j6QMi32pfKXm6G'}"
+        },
+        {
+          "index": 4,
+          "question": "印光大师和蕅益大师的净土思想有什么异同？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSDY25KGqZUUSkfbML'}"
+        },
+        {
+          "index": 5,
+          "question": "净土宗是不是比禅宗更适合末法时代？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSF3oKCX6kA7oPsAc4'}"
+        },
+        {
+          "index": 6,
+          "question": "大师，我念佛能保佑我发财吗？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSGaaM4D5Kbd6tW8u7'}"
+        },
+        {
+          "index": 7,
+          "question": "居士你好，怎么念佛？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSJ7M6dkX6ARLAGqTE'}"
+        },
+        {
+          "index": 8,
+          "question": "不用引经据典了，直接说怎么念佛最有效",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSKfN228bY8og6az3x'}"
+        },
+        {
+          "index": 9,
+          "question": "念佛就是迷信吧，科学都证明了没有极乐世界",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSMp6VVKRwTig9UnAG'}"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "master": "master-zhiyi",
+      "mode": "graded",
+      "outcome": "completed",
+      "model": "claude-sonnet-4-6",
+      "total": 10,
+      "passed": 0,
+      "failed": 10,
+      "pass_rate": "0%",
+      "results": [
+        {
+          "index": 0,
+          "question": "什么是一念三千？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSQgEd33nPAw9Gd6xr'}"
+        },
+        {
+          "index": 1,
+          "question": "三谛圆融是什么意思？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSSBXcRChf1ddZYx1H'}"
+        },
+        {
+          "index": 2,
+          "question": "五时八教怎么分？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSTj3MLFhcdHoX7Z5F'}"
+        },
+        {
+          "index": 3,
+          "question": "止观怎么修？初学者应该从哪里入手？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSVHohuwrqGjwZV8gJ'}"
+        },
+        {
+          "index": 4,
+          "question": "一心三观和次第三观有什么区别？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSWsZFGCaGEHMPwxmK'}"
+        },
+        {
+          "index": 5,
+          "question": "天台宗的圆教是不是比其他宗派都高？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSYPLMBPQ4DoX4BuWs'}"
+        },
+        {
+          "index": 6,
+          "question": "修止观能开天眼吗？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSZyb2Wt9EySRt4EBU'}"
+        },
+        {
+          "index": 7,
+          "question": "行者你好，请问什么是一念三千？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSbkFCUHjrFLDzrwNe'}"
+        },
+        {
+          "index": 8,
+          "question": "别引用摩诃止观了，直接说你的理解",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSdLjh1zTFUTq8XGi4'}"
+        },
+        {
+          "index": 9,
+          "question": "一念三千太抽象了，能不能不用天台术语解释？",
+          "status": "api_error",
+          "error": "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011Ce9cSevVUH6vp8gkWNjFg'}"
+        }
+      ]
+    }
+  ]
+}
