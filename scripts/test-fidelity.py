@@ -33,21 +33,155 @@ from verify_citations import audit_answer, load_declared_ids
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 SCHEMA_VERSION = 1
 
+# This project ships one prebuilt/ to five hosts (Claude Code, Cursor, Codex
+# CLI, OpenCode, Gemini CLI), but every fidelity number it has produced came
+# from one Anthropic model. A fixture measures whether the prompt induces the
+# right behaviour, and that is a property of the prompt-and-model pair — so
+# provider is an axis of the eval matrix, not a way to spend less.
+#
+# `api` selects the request/response shape. DeepSeek and Gemini both expose
+# OpenAI-compatible endpoints, so one adapter covers them.
+PROVIDERS: dict[str, dict] = {
+    "anthropic": {
+        "env": "ANTHROPIC_API_KEY",
+        "api": "anthropic",
+        "base_url": None,
+        "default_model": "claude-sonnet-4-6",
+        "models_url": "https://docs.claude.com/en/docs/about-claude/models",
+    },
+    "deepseek": {
+        "env": "DEEPSEEK_API_KEY",
+        "api": "openai",
+        "base_url": "https://api.deepseek.com/v1",
+        "default_model": None,
+        "models_url": "https://api-docs.deepseek.com/quick_start/pricing",
+    },
+    "gemini": {
+        "env": "GEMINI_API_KEY",
+        "api": "openai",
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+        "default_model": None,
+        "models_url": "https://ai.google.dev/gemini-api/docs/models",
+    },
+}
 
-def suite_common(master_name: str, dry_run: bool, outcome: str) -> dict:
+DEFAULT_PROVIDER = "anthropic"
+
+
+def resolve_provider(name: str) -> dict:
+    """Look up a provider spec, failing with the list of what is available."""
+    try:
+        return PROVIDERS[name]
+    except KeyError:
+        known = ", ".join(sorted(PROVIDERS))
+        raise ValueError(f"unknown provider {name!r} — known providers: {known}") from None
+
+
+def resolve_model(provider: str, explicit: str | None) -> str:
+    """Pick the model id for a run.
+
+    Anthropic keeps a default so existing invocations are unchanged. Every other
+    provider must be named explicitly: a guessed model id committed to this repo
+    would rot silently, and a run that cannot say which model produced it is not
+    a reproducible measurement.
+    """
+    if explicit:
+        return explicit
+    spec = resolve_provider(provider)
+    if spec["default_model"]:
+        return spec["default_model"]
+    raise ValueError(
+        f"provider {provider!r} has no default model — pass --model explicitly. "
+        f"Current model ids: {spec['models_url']}"
+    )
+
+
+def build_request(
+    provider: str, model: str, system_prompt: str, question: str, max_tokens: int
+) -> dict:
+    """Build the request body for this provider's API shape."""
+    spec = resolve_provider(provider)
+    if spec["api"] == "anthropic":
+        return {
+            "model": model,
+            "max_tokens": max_tokens,
+            "system": system_prompt,
+            "messages": [{"role": "user", "content": question}],
+        }
+    return {
+        "model": model,
+        "max_tokens": max_tokens,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": question},
+        ],
+    }
+
+
+def extract_text(provider: str, response: object) -> str:
+    """Pull the answer text out of this provider's response object.
+
+    Raises rather than returning "" on an empty response: a blank answer scored
+    as a normal case fails every must_mention and would be recorded as a persona
+    defect when it is really a transport problem.
+    """
+    spec = resolve_provider(provider)
+    if spec["api"] == "anthropic":
+        blocks = getattr(response, "content", None) or []
+        for block in blocks:
+            if getattr(block, "type", None) == "text":
+                return block.text
+        raise ValueError(f"{provider}: response carried no text block")
+
+    choices = getattr(response, "choices", None) or []
+    if not choices:
+        raise ValueError(f"{provider}: response carried no choices")
+    content = getattr(choices[0].message, "content", None)
+    if content is None:
+        raise ValueError(f"{provider}: response message had no content")
+    return content
+
+
+def aggregation_conflicts(suites: list[dict]) -> list[str]:
+    """Report why a set of suites must not be pooled into one number.
+
+    Two models are two instruments. Averaging a Sonnet run with a DeepSeek run
+    — or a Sonnet run with an Opus run — produces a figure that describes
+    neither. Report per model instead.
+    """
+    seen = {
+        (s.get("provider", DEFAULT_PROVIDER), s.get("model"))
+        for s in suites
+        if s.get("model")
+    }
+    if len(seen) <= 1:
+        return []
+    listed = ", ".join(f"{p}/{m}" for p, m in sorted(seen))
+    return [
+        "refusing to aggregate across instruments — these suites came from "
+        f"different models ({listed}). Report a row per model."
+    ]
+
+
+def suite_common(
+    master_name: str, dry_run: bool, outcome: str, provider: str = DEFAULT_PROVIDER
+) -> dict:
     """Return fields shared by every fidelity JSON v1 suite."""
     return {
         "schema_version": SCHEMA_VERSION,
         "master": master_name,
+        "provider": provider,
         "mode": "dry_run" if dry_run else "graded",
         "outcome": outcome,
     }
 
 
-def suite_error(master_name: str, dry_run: bool, message: str) -> dict:
+def suite_error(
+    master_name: str, dry_run: bool, message: str, provider: str = DEFAULT_PROVIDER
+) -> dict:
     """Return a fidelity JSON v1 suite for a precondition or execution error."""
     return {
-        **suite_common(master_name, dry_run, "error"),
+        **suite_common(master_name, dry_run, "error", provider),
         "total": 0,
         "results": [],
         "error": message,
@@ -240,32 +374,27 @@ def result_entry(
 def run_tests(
     master_name: str,
     dry_run: bool = False,
-    model: str = "claude-sonnet-4-6",
+    model: str | None = None,
     max_tests: int | None = None,
     quiet: bool = False,
+    provider: str = DEFAULT_PROVIDER,
 ) -> dict:
     """Run fidelity tests for a master. Returns summary."""
     master_dir = PREBUILT_DIR / master_name
     if not master_dir.exists():
         return suite_error(
-            master_name,
-            dry_run,
-            f"Master '{master_name}' not found",
+            master_name, dry_run, f"Master '{master_name}' not found", provider
         )
 
     try:
         tests = load_tests(master_dir)
     except (OSError, ValueError) as error:
         return suite_error(
-            master_name,
-            dry_run,
-            f"Unable to load fidelity suite: {error}",
+            master_name, dry_run, f"Unable to load fidelity suite: {error}", provider
         )
     if not tests:
         return suite_error(
-            master_name,
-            dry_run,
-            f"No fidelity.jsonl found for '{master_name}'",
+            master_name, dry_run, f"No fidelity.jsonl found for '{master_name}'", provider
         )
 
     if max_tests is not None and max_tests > 0:
@@ -291,7 +420,7 @@ def run_tests(
                 "status": "dry_run",
             })
         return {
-            **suite_common(master_name, dry_run, "completed"),
+            **suite_common(master_name, dry_run, "completed", provider),
             "total": len(tests),
             "results": results,
         }
@@ -299,25 +428,40 @@ def run_tests(
     # Load skill context
     system_prompt = load_skill_context(master_dir)
 
-    # Import anthropic
     try:
-        import anthropic
-    except ImportError:
-        return suite_error(
-            master_name,
-            dry_run,
-            "anthropic package not installed. Run: pip install anthropic",
-        )
+        spec = resolve_provider(provider)
+        model = resolve_model(provider, model)
+    except ValueError as error:
+        return suite_error(master_name, dry_run, str(error), provider)
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = os.environ.get(spec["env"])
     if not api_key:
         return suite_error(
-            master_name,
-            dry_run,
-            "ANTHROPIC_API_KEY environment variable not set",
+            master_name, dry_run, f"{spec['env']} environment variable not set", provider
         )
 
-    client = anthropic.Anthropic(api_key=api_key)
+    if spec["api"] == "anthropic":
+        try:
+            import anthropic
+        except ImportError:
+            return suite_error(
+                master_name, dry_run,
+                "anthropic package not installed. Run: pip install anthropic",
+                provider,
+            )
+        client = anthropic.Anthropic(api_key=api_key)
+        send = lambda body: client.messages.create(**body)  # noqa: E731
+    else:
+        try:
+            import openai
+        except ImportError:
+            return suite_error(
+                master_name, dry_run,
+                "openai package not installed. Run: pip install openai",
+                provider,
+            )
+        client = openai.OpenAI(api_key=api_key, base_url=spec["base_url"])
+        send = lambda body: client.chat.completions.create(**body)  # noqa: E731
 
     # Declared offline sources, for the must_cite_only_existing_sources B1 check.
     try:
@@ -333,13 +477,10 @@ def run_tests(
             print(f"  [{i+1}/{len(tests)}] {test['q'][:50]}...", end=" ", flush=True)
 
         try:
-            message = client.messages.create(
-                model=model,
-                max_tokens=2048,
-                system=system_prompt,
-                messages=[{"role": "user", "content": test["q"]}],
+            response = send(
+                build_request(provider, model, system_prompt, test["q"], 2048)
             )
-            response_text = message.content[0].text
+            response_text = extract_text(provider, response)
         except Exception as e:
             results.append({
                 "index": i,
@@ -369,7 +510,7 @@ def run_tests(
                 print(f"FAIL ({failures})")
 
     return {
-        **suite_common(master_name, dry_run, "completed"),
+        **suite_common(master_name, dry_run, "completed", provider),
         "model": model,
         "total": len(tests),
         "passed": passed,
@@ -399,7 +540,16 @@ def main() -> int:
     parser.add_argument("--master", type=str, help="Test a specific master")
     parser.add_argument("--all", action="store_true", help="Test all masters with fidelity.jsonl")
     parser.add_argument("--dry-run", action="store_true", help="Show test cases without calling API")
-    parser.add_argument("--model", type=str, default="claude-sonnet-4-6", help="Claude model to use")
+    parser.add_argument(
+        "--provider", type=str, default=DEFAULT_PROVIDER, choices=sorted(PROVIDERS),
+        help="Which API to grade against (default: anthropic). Non-anthropic "
+             "providers require --model.",
+    )
+    parser.add_argument(
+        "--model", type=str, default=None,
+        help="Model id. Defaults to claude-sonnet-4-6 for --provider anthropic; "
+             "required for every other provider.",
+    )
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     parser.add_argument(
         "--max-tests",
@@ -433,6 +583,7 @@ def main() -> int:
             master,
             dry_run=args.dry_run,
             model=args.model,
+            provider=args.provider,
             max_tests=args.max_tests,
             quiet=args.json,
         )
@@ -445,6 +596,10 @@ def main() -> int:
     if args.json:
         print(json.dumps(all_results, indent=2, ensure_ascii=False))
     elif len(masters) > 1:
+        conflicts = aggregation_conflicts(all_results)
+        for conflict in conflicts:
+            print(f"\n::warning:: {conflict}")
+
         print(f"\n{'='*50}")
         print("Overall Summary:")
         for r in all_results:

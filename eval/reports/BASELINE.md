@@ -5,7 +5,7 @@ fixtures under `prebuilt/*/tests/fidelity.jsonl` had never actually been scored 
 recorded — CI only ran `--dry-run` (structural check, no API calls).
 
 - **Measured commit:** `c697d5d3be78ce6738cf1f969ca057c7e4c16bb5` (`c697d5d`)
-- **Model:** `claude-sonnet-4-6`
+- **Provider / model:** `anthropic` / `claude-sonnet-4-6` — this is one column of the matrix, not the project score. `--provider deepseek|gemini` grade the other shipped hosts; numbers from different models are never pooled.
 - **Run window:** 2026-08-18 04:06–04:50 UTC
 - **Invocation:** `python3 scripts/test-fidelity.py --all --json --model claude-sonnet-4-6`
 - **Raw data:** [`0.10.1-c697d5d.json`](./0.10.1-c697d5d.json)
