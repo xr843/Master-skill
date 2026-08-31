@@ -65,7 +65,7 @@ down by what tripped them (a single case can trip more than one check):
 | Forbidden phrase present (`must_not_contain*`) | 12 | 48% |
 | Missing expected citation (`must_cite`) | 5 | 20% |
 | Boundary-tone violation (unexpected honorific) | 1 | 4% |
-| Fabricated citation (`must_cite_only_existing_sources`) | 0 | 0% |
+| Fabricated citation (`must_cite_only_existing_sources`) | 0 | 0% — but the audit ran on 6 of the 84; see below |
 
 By fixture `test_type`: **boundary 14/25, pressure 6/25, fidelity 5/25.** Two clear
 clusters stand out:
@@ -152,11 +152,46 @@ Chinese equivalents — plausibly a real terminology-coverage gap rather than a 
 but also plausibly the model answering correctly in Chinese without the Pali gloss the
 fixture insists on.
 
-**Encouraging finding: zero fabricated citations** in the 84 measured cases. Where a
-fixture required `must_cite_only_existing_sources`, every citation the model produced
-resolved to a real declared source. Source-grounding against hallucinated citations held
-up in this sample; it's the "don't rank traditions" boundary and "keep citing under
-pressure" behaviors that show real gaps.
+### Retracted 2026-08-31: "zero fabricated citations across all 84" was a false green
+
+This section originally read *"Encouraging finding: zero fabricated citations in the 84
+measured cases."* That is not what was measured, for two compounding reasons.
+
+**1. The audit is opt-in, and almost nothing opts in.** `check_response()` calls
+`audit_answer()` only when the fixture itself sets `must_cite_only_existing_sources`
+(`scripts/test-fidelity.py`). Exactly **7 of 211 fixtures** repo-wide set it — six in
+`master-curriculum`, one in `master-huineng`. Only `master-curriculum`'s six were reached
+before the run stopped. So the audit ran on **6 of the 84 measured cases, all belonging to
+one meta-skill. Not one of the 15 master personas was ever checked for a fabricated
+citation.** The other 78 results carry `fabricated_cites: []` because the check never ran,
+not because it passed — the same shape as the gates this release set out to fix.
+
+**2. The auditor recognises CBETA ids and nothing else.** `_CBETA_ID` in
+`scripts/verify_citations.py` matches `[A-Z]{1,2}\d+n\d+` / `[TX]\d{3,}`, and
+`audit_answer()` skips any citation block from which no id can be extracted. Six masters
+declare no CBETA source at all:
+
+| Master | Declared source ids | Auditable today |
+|---|---|---|
+| `master-ajahn-chah` | `SuttaCentral`, `AjahnChah:FoodForTheHeart`, … | no |
+| `master-buddhaghosa` | `PTS:Vism`, `PTS:DN-Comm`, … | no |
+| `master-mahasi-sayadaw` | `Mahasi:ManualOfInsight`, `PTS:Vism`, … | no |
+| `master-atisha` | `Toh:4465`, `BDRC:Pha-chos-Bu-chos` | no |
+| `master-milarepa` | `BDRC:W1KG14334`, `BDRC:W22272` | no |
+| `master-tsongkhapa` | `BDRC:gsung-bum`, `Lam-rim-chen-mo`, … | no |
+| the other nine | `T48n2008`, `X62n1182`, … | yes |
+
+For all of 南传 and all of 藏传 — half the traditions this project claims — fabrication
+detection cannot fire even with the flag set. Roadmap Phase 2 commits to treating "CBETA,
+BDRC / Toh, PTS / SuttaCentral, and compiled teachings as equal contract families"; the
+auditor implements one of the four. Turning the flag on for every master *before* fixing
+that would not close the gap, it would hide it — six masters would start reporting
+"audited, clean" on a check that examined nothing.
+
+**What the run does support:** in the six `master-curriculum` cases that were audited,
+every citation resolved to a declared source. That is a real result about one meta-skill
+on one model. The project-wide "source-grounding held up" reading built on it does not
+follow.
 
 ## The cut that matters: by test type
 
@@ -176,7 +211,7 @@ misses.
 
 **This inverts the project's own self-description.** The README leads with four pillars:
 source-grounded, boundary-aware, fidelity-tested, runtime-ready. The measurement says the
-persona *content* works (89.6%, zero fabricated citations) and the *guardrails* do not
+persona *content* works (89.6% on ordinary doctrinal Q&A) and the *guardrails* do not
 (46.2% / 40.0%) — and the guardrails are what `ETHICS.md` exists to guarantee. Boundary
 behaviour, not doctrinal accuracy, is where this project's measured risk lives.
 
@@ -210,3 +245,8 @@ API key backing this measurement has credit again, covering the 127 fixtures acr
 `master-huineng` through `master-zhiyi` (plus the remaining 8 in `master-help`) that this
 run never reached. Until then, treat this as a first partial data point, not a final
 project-wide score.
+
+Coverage is not the only thing that run needs. Before it is worth paying for, the
+fabricated-citation auditor has to learn the other three contract families and stop being
+opt-in — otherwise a full 211-case run still returns a fabrication verdict on the same
+nine CBETA masters and silence on the other six.
