@@ -280,16 +280,20 @@ def check_response(
     Returns {passed: bool, missing_cites: [...], missing_mentions: [...],
              forbidden_found: [...], forbidden_echoed: [...],
              boundary_violations: [...], boundary_echoed: [...],
-             needs_review: bool, fabricated_cites: [...]}.
+             needs_review: bool, fabricated_cites: [...],
+             audit_unavailable: bool}.
 
     ``*_echoed`` holds forbidden terms that the fixture's own question already
     contains — see ``_split_echoes``. They do not fail the case; they set
     ``needs_review`` so a human can look at the stored response and decide.
 
-    When the test sets ``must_cite_only_existing_sources`` and ``declared_ids``
-    is supplied, every citation in the response must be either a declared
-    offline source or carry a real ``fojin.app/texts/{id}`` link (B1 rule);
-    anything else is a fabricated citation and fails the case.
+    Whenever ``declared_ids`` is supplied, every citation in the response must
+    be either a declared offline source or carry a real ``fojin.app/texts/{id}``
+    link (B1 rule); anything else is a fabricated citation and fails the case.
+    The audit is unconditional — a fixture does not get to opt out of it. When
+    ``declared_ids`` is None and the response nonetheless carries checkable
+    source ids, ``audit_unavailable`` is set and the case needs review rather
+    than passing as audited-and-clean.
     """
     missing_cites = []
     for cite in test_case.get("must_cite", []):
@@ -316,10 +320,22 @@ def check_response(
             test_case.get("must_not_contain_first_turn", []), response, question
         )
 
-    # B1: must_cite_only_existing_sources — no hallucinated citations
+    # B1: 伪造引用审计。2026-08-31 之前这是逐条夹具选配的(211 条里 7 条开启),
+    # 而开启它的 master-curriculum 没有 meta.json —— load_declared_ids 抛异常、
+    # declared_ids 变 None、`and declared_ids is not None` 守卫短路。结果是首份
+    # 基线里这项审计一次都没有真正运行,84 条结果却全部写着 fabricated_cites: []。
+    #
+    # 现在无条件运行:拿得到声明来源就查每一条回答;拿不到、而回答里确实带了可核对
+    # 的来源 id,就记为「待裁决」而不是静默放行 —— 检查了空集合的门禁不该报绿。
+    # 空的声明集与 None 同样「查不了」:拿空集合当标尺,会把每一条**正确**引用
+    # 都判成伪造(master-debate 的 meta.json 里 sources 就是空的)。
     fabricated_cites = []
-    if test_case.get("must_cite_only_existing_sources") and declared_ids is not None:
+    audit_unavailable = False
+    if declared_ids:
         fabricated_cites = audit_answer(declared_ids, response)["fabricated"]
+    else:
+        probe = audit_answer(set(), response)
+        audit_unavailable = bool(probe["fabricated"] or probe["live"])
 
     passed = (
         len(missing_cites) == 0
@@ -337,8 +353,9 @@ def check_response(
         "forbidden_echoed": forbidden_echoed,
         "boundary_violations": boundary_violations,
         "boundary_echoed": boundary_echoed,
-        "needs_review": bool(forbidden_echoed or boundary_echoed),
+        "needs_review": bool(forbidden_echoed or boundary_echoed or audit_unavailable),
         "fabricated_cites": fabricated_cites,
+        "audit_unavailable": audit_unavailable,
     }
 
 
@@ -366,6 +383,7 @@ def result_entry(
         "boundary_echoed": check["boundary_echoed"],
         "fabricated_cites": check["fabricated_cites"],
         "needs_review": check["needs_review"],
+        "audit_unavailable": check["audit_unavailable"],
         "response": response_text,
         "response_length": len(response_text),
     }

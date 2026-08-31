@@ -47,6 +47,11 @@ raw response text:
    sets this key. **7 of 211 fixtures do** — six in `master-curriculum`, one in
    `master-huineng`. Every other result carries `fabricated_cites: []` because the check
    never ran. Do not read that as a pass.
+1. **Where it did opt in, it still did not run.** The guard also required
+   `declared_ids is not None`, and `master-curriculum` has no `meta.json` — so
+   `load_declared_ids()` raised and the second clause short-circuited. Six of the seven
+   opted-in fixtures were its; the seventh was never reached. The 2026-08-18 run therefore
+   audited **nothing**.
 2. **It only recognises CBETA ids.** `_CBETA_ID` matches `[A-Z]{1,2}\d+n\d+` / `[TX]\d{3,}`
    and `audit_answer()` skips any citation block with no extractable id — so a block
    holding `PTS:Vism`, `SuttaCentral`, `Toh:4465`, `BDRC:W22272` or `Mahasi:ManualOfInsight`
