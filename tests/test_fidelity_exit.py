@@ -150,3 +150,30 @@ def test_missing_master_exits_nonzero_with_clean_json_stdout():
             "error": "Master 'master-does-not-exist' not found",
         }
     ]
+
+
+def test_documented_short_slug_resolves_to_the_prebuilt_dir(runner):
+    """`--master yinguang` 是 README/package.json 里公开写的调用形式,而 prebuilt
+    目录叫 `master-yinguang`。运行器一直只认字面值,没用 `_masterpaths` 里为此存在
+    的 `resolve_master_dir` —— 于是 `npm run test:smoke` 从来没跑通过。"""
+    suite = runner.run_tests("yinguang", dry_run=True, quiet=True)
+    assert "error" not in suite, suite.get("error")
+    assert suite["total"] > 0
+
+
+def test_full_directory_name_still_resolves(runner):
+    suite = runner.run_tests("master-yinguang", dry_run=True, quiet=True)
+    assert "error" not in suite
+    assert suite["total"] > 0
+
+
+def test_error_suite_says_why_in_human_readable_mode(capsys):
+    """出错时人读模式只印一行标题就没了 —— 操作者看到的是沉默,不是失败原因。"""
+    proc = subprocess.run(
+        [sys.executable, str(RUNNER_PATH), "--master", "no-such-master", "--dry-run"],
+        capture_output=True, text=True,
+    )
+    assert proc.returncode != 0
+    combined = proc.stdout + proc.stderr
+    assert "no-such-master" in combined
+    assert "not found" in combined.lower()

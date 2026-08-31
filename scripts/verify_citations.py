@@ -133,13 +133,20 @@ def load_declared_ids(master: str) -> set[str]:
 
 
 def audit_answer(declared_ids: set[str], answer: str) -> dict:
-    """把答案里每条引文分类为 offline / live / fabricated。
+    """把答案里每条引文分类为 offline / live / fabricated / unparsed。
 
-    返回 {'offline': [...], 'live': [(cbeta_id, text_id), ...], 'fabricated': [...]}。
+    返回 {'offline': [...], 'live': [(cbeta_id, text_id), ...],
+          'fabricated': [...], 'unparsed': [...]}。
+
+    ``unparsed`` 是抽不出任何可核对 id 的引文块。它们以前被整块 silently skip,
+    于是「审计了但一条都没看懂」和「已审计、干净」在报告里长得一模一样 —— 宗喀巴
+    声明的多是裸 Wylie 标题、觉音大量用语料库级的 `【SC: AN 3.88】`,两者的
+    ``fabricated`` 都是空。记下来才能算出「审计器实际看得懂的引用占多少」。
     """
     offline: list[str] = []
     live: list[tuple[str, str]] = []
     fabricated: list[str] = []
+    unparsed: list[str] = []
 
     blocks = list(_CITATION_BLOCK.finditer(answer))
     for idx, m in enumerate(blocks):
@@ -153,6 +160,9 @@ def audit_answer(declared_ids: set[str], answer: str) -> dict:
             answer[m.end():region_end]
         )
         if not ids:
+            block = m.group(1).strip()
+            if block:
+                unparsed.append(block)
             continue
         link = _FOJIN_TEXT_LINK.search(answer, m.end(), region_end)
         for cid in ids:
@@ -165,7 +175,12 @@ def audit_answer(declared_ids: set[str], answer: str) -> dict:
                 live.append((cid, link.group(1)))
             else:
                 fabricated.append(cid)
-    return {"offline": offline, "live": live, "fabricated": fabricated}
+    return {
+        "offline": offline,
+        "live": live,
+        "fabricated": fabricated,
+        "unparsed": unparsed,
+    }
 
 
 def verify_online(text_ids: list[str], base_url: str = "https://fojin.app", timeout: int = 15) -> dict:
