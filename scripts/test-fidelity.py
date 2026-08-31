@@ -28,6 +28,7 @@ from pathlib import Path
 # verify_citations lives in this same scripts/ dir; reused so the
 # `must_cite_only_existing_sources` assertion is actually enforced during graded
 # runs (it was previously schema-validated but never evaluated).
+from _masterpaths import resolve_master_dir
 from verify_citations import audit_answer, load_declared_ids
 
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
@@ -332,10 +333,17 @@ def check_response(
     fabricated_cites = []
     audit_unavailable = False
     if declared_ids:
-        fabricated_cites = audit_answer(declared_ids, response)["fabricated"]
+        audit = audit_answer(declared_ids, response)
+        fabricated_cites = audit["fabricated"]
+        unparsed_citations = audit["unparsed"]
+        citations_checked = (
+            len(audit["offline"]) + len(audit["live"]) + len(audit["fabricated"])
+        )
     else:
         probe = audit_answer(set(), response)
         audit_unavailable = bool(probe["fabricated"] or probe["live"])
+        unparsed_citations = probe["unparsed"]
+        citations_checked = 0
 
     passed = (
         len(missing_cites) == 0
@@ -356,6 +364,10 @@ def check_response(
         "needs_review": bool(forbidden_echoed or boundary_echoed or audit_unavailable),
         "fabricated_cites": fabricated_cites,
         "audit_unavailable": audit_unavailable,
+        # 抽不出可核对 id 的引文块。不判失败 —— 但空的 fabricated 从此不再等于
+        # 「查过、干净」,报告可以算出审计器实际覆盖了多少条引用。
+        "unparsed_citations": unparsed_citations,
+        "citations_checked": citations_checked,
     }
 
 
@@ -384,6 +396,8 @@ def result_entry(
         "fabricated_cites": check["fabricated_cites"],
         "needs_review": check["needs_review"],
         "audit_unavailable": check["audit_unavailable"],
+        "unparsed_citations": check["unparsed_citations"],
+        "citations_checked": check["citations_checked"],
         "response": response_text,
         "response_length": len(response_text),
     }
@@ -398,11 +412,15 @@ def run_tests(
     provider: str = DEFAULT_PROVIDER,
 ) -> dict:
     """Run fidelity tests for a master. Returns summary."""
-    master_dir = PREBUILT_DIR / master_name
-    if not master_dir.exists():
+    # 目录叫 `master-<slug>`,而公开写在 README / package.json 里的调用形式是短名
+    # (`--master yinguang`)。`_masterpaths.resolve_master_dir` 正是为此存在,别的
+    # 脚本都改用了,这个运行器没有 —— `npm run test:smoke` 因此从未跑通。
+    resolved = resolve_master_dir(master_name, base=str(PREBUILT_DIR))
+    if resolved is None:
         return suite_error(
             master_name, dry_run, f"Master '{master_name}' not found", provider
         )
+    master_dir = Path(resolved)
 
     try:
         tests = load_tests(master_dir)
@@ -534,7 +552,30 @@ def run_tests(
         "passed": passed,
         "failed": failed,
         "pass_rate": f"{passed / len(tests) * 100:.0f}%" if tests else "N/A",
+        "audit": summarize_audit(results),
         "results": results,
+    }
+
+
+def summarize_audit(results: list[dict]) -> dict:
+    """Aggregate what the fabrication audit could and could not read.
+
+    A master's "zero fabricated citations" line means nothing on its own: it is
+    equally what you get when every citation was checked and clean, and when
+    none of them could be parsed. ``audit_coverage`` is the share of emitted
+    citations the auditor actually resolved, and it belongs beside any
+    fabrication count that gets reported.
+    """
+    checked = sum(r.get("citations_checked", 0) for r in results)
+    unparsed = sum(len(r.get("unparsed_citations", ())) for r in results)
+    total = checked + unparsed
+    return {
+        "citations_checked": checked,
+        "citations_unparsed": unparsed,
+        "citations_fabricated": sum(
+            len(r.get("fabricated_cites", ())) for r in results
+        ),
+        "audit_coverage": f"{checked / total * 100:.0f}%" if total else "N/A",
     }
 
 
@@ -606,6 +647,11 @@ def main() -> int:
             quiet=args.json,
         )
         all_results.append(result)
+
+        if not args.json and "error" in result:
+            # 出错时以前什么都不印:操作者只看到一行标题然后是沉默,读起来像卡住
+            # 而不是失败。付费跑分时错误必须看得见。
+            print(f"ERROR: {result['error']}", file=sys.stderr)
 
         if not args.json and "error" not in result:
             print(f"\nResult: {result.get('passed', 0)}/{result['total']} passed "

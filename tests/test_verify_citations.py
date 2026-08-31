@@ -261,3 +261,34 @@ def test_short_form_does_not_cross_canon_prefixes():
     """X(卍續藏)的短号不得对上 T(大正藏)的声明。"""
     r = audit_answer(ZHIYI, "见【《某續藏本》，X1911】")
     assert "X1911" in r["fabricated"]
+
+
+# 「审计了但一条都没看懂」必须与「已审计、干净」分得开。抽不出 id 的引文块以前被
+# 整块 silently skip,于是宗喀巴(声明的多是裸 Wylie 标题)每条回答都报
+# `fabricated: []` —— 读起来是干净,实际是没看懂。同一个假绿,更细的粒度。
+TSONGKHAPA = {"Lam-gtso-rnam-gsum", "Lam-rim-chen-mo", "BDRC:gsung-bum"}
+
+
+def test_citation_with_no_extractable_id_is_recorded_as_unparsed():
+    r = audit_answer(TSONGKHAPA, "见【《三主要道》(Lam gtso rnam gsum)】")
+    assert r["fabricated"] == []
+    assert r["unparsed"] == ["《三主要道》(Lam gtso rnam gsum)"]
+
+
+def test_a_parseable_citation_is_not_recorded_as_unparsed():
+    r = audit_answer(ATISHA, "见【《菩提道灯论》，Toh 4465】")
+    assert r["unparsed"] == []
+    assert "Toh:4465" in r["offline"]
+
+
+def test_suttacentral_reference_is_unparsed_not_clean():
+    """`【SC: AN 3.88】` 按契约就不做 id 级核对(语料库级来源),但那是「没查」,
+    不是「查过没问题」。"""
+    r = audit_answer(BUDDHAGHOSA, "见【SC: AN 3.88 / Sikkhā Sutta】")
+    assert r["fabricated"] == []
+    assert r["unparsed"] == ["SC: AN 3.88 / Sikkhā Sutta"]
+
+
+def test_empty_citation_block_is_not_recorded():
+    r = audit_answer(TSONGKHAPA, "格式示例:【】")
+    assert r["unparsed"] == []

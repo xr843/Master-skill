@@ -261,3 +261,51 @@ def test_empty_declared_set_is_undecided_not_all_fabricated(fidelity):
     assert check["fabricated_cites"] == []
     assert check["audit_unavailable"] is True
     assert check["passed"] is True
+
+
+def test_unparsed_citations_are_surfaced_not_silently_clean(fidelity):
+    """不判失败,但不再无声 —— 报告要说得出「这条引文审计器没看懂」。"""
+    check = fidelity.check_response(
+        "三主要道即出离心、菩提心、清净见。【《三主要道》(Lam gtso rnam gsum)】",
+        {"q": "什么是三主要道？"},
+        declared_ids={"Lam-gtso-rnam-gsum"},
+    )
+    assert check["fabricated_cites"] == []
+    assert check["unparsed_citations"] == ["《三主要道》(Lam gtso rnam gsum)"]
+    assert check["passed"] is True
+
+
+def test_result_entry_persists_unparsed_citations(fidelity):
+    test_case = {"q": "什么是三主要道？"}
+    response = "【《三主要道》(Lam gtso rnam gsum)】"
+    entry = fidelity.result_entry(
+        index=1, test=test_case, response_text=response,
+        check=fidelity.check_response(
+            response, test_case, declared_ids={"Lam-gtso-rnam-gsum"}
+        ),
+    )
+    assert entry["unparsed_citations"] == ["《三主要道》(Lam gtso rnam gsum)"]
+
+
+def test_check_response_counts_the_citations_it_actually_checked(fidelity):
+    """要算出「审计器看得懂多少」,得同时知道看懂了几条、没看懂几条。"""
+    check = fidelity.check_response(
+        "【《六祖坛经》，T48n2008】又见【《三主要道》(Lam gtso rnam gsum)】",
+        {"q": "?"},
+        declared_ids={"T48n2008"},
+    )
+    assert check["citations_checked"] == 1
+    assert len(check["unparsed_citations"]) == 1
+
+
+def test_suite_summary_aggregates_audit_coverage(fidelity):
+    """一位祖师的伪造引用结论,只在他的引用大部分看得懂时才有意义。"""
+    results = [
+        {"fabricated_cites": [], "unparsed_citations": ["A", "B"], "citations_checked": 1},
+        {"fabricated_cites": ["T99n9999"], "unparsed_citations": [], "citations_checked": 3},
+    ]
+    s = fidelity.summarize_audit(results)
+    assert s["citations_checked"] == 4
+    assert s["citations_unparsed"] == 2
+    assert s["citations_fabricated"] == 1
+    assert s["audit_coverage"] == "67%"
