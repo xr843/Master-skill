@@ -10,7 +10,9 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
-The theme of this batch is that the verification layer was not verified. Three
+## [0.11.0] — 2026-08-31
+
+The theme of this release is that the verification layer was not verified. Three
 of this repo's shipped defects had already been the same shape — a gate that
 examined nothing and reported green — and three more were found here. The first
 real fidelity measurement was produced, then partly retracted once its own
@@ -24,7 +26,7 @@ own headline.
 - Added `scripts/tests/test_check_response.py`. The fidelity judge decided all 84 baseline cases and had no test of its own.
 
 ### Fixed
-- **Retracted this batch's own "zero fabricated citations across all 84".** It was six, and none of them a master. The audit is opt-in per fixture and only **7 of 211** set `must_cite_only_existing_sources` — six in `master-curriculum`, one in `master-huineng`, of which six were reached before the run stopped. The other 78 results carry `fabricated_cites: []` because the check never ran. Worse, `_CBETA_ID` in `scripts/verify_citations.py` recognises CBETA ids only and `audit_answer()` skips any citation block yielding no id, so the six masters declaring `SuttaCentral` / `PTS:` / `Toh:` / `BDRC:` / `Mahasi:` sources — all of 南传 and all of 藏传 — cannot be audited at all, flag or no flag, while Phase 2 of the roadmap commits to treating all four families as equal. This is the third gate of this shape found in this batch, and the only one found *inside the batch's own reporting*. Corrected in `README.md`, `README_EN.md`, `docs/v1-framework-roadmap.md`, `eval/reports/BASELINE.md` and `eval/reports/README.md`; no code changed, so the gap is now stated rather than closed. Closing it means teaching the auditor the other three families **before** switching the check on everywhere — the other order would make six masters report "audited, clean" on an examination that never happened.
+- **Retracted this release's own "zero fabricated citations across all 84".** It was six, and none of them a master. The audit is opt-in per fixture and only **7 of 211** set `must_cite_only_existing_sources` — six in `master-curriculum`, one in `master-huineng`, of which six were reached before the run stopped. The other 78 results carry `fabricated_cites: []` because the check never ran. Worse, `_CBETA_ID` in `scripts/verify_citations.py` recognises CBETA ids only and `audit_answer()` skips any citation block yielding no id, so the six masters declaring `SuttaCentral` / `PTS:` / `Toh:` / `BDRC:` / `Mahasi:` sources — all of 南传 and all of 藏传 — cannot be audited at all, flag or no flag, while Phase 2 of the roadmap commits to treating all four families as equal. This is the third gate of this shape found in this release, and the only one found *inside its own reporting*. Corrected in `README.md`, `README_EN.md`, `docs/v1-framework-roadmap.md`, `eval/reports/BASELINE.md` and `eval/reports/README.md`; no code changed, so the gap is now stated rather than closed. Closing it means teaching the auditor the other three families **before** switching the check on everywhere — the other order would make six masters report "audited, clean" on an examination that never happened.
 - Fixed the fidelity judge failing personas for quoting the question back. `must_not_contain` was a bare substring match on the response, while the boundary fixtures are baited questions carrying the loaded term themselves — 「华严宗是不是佛教最高的宗派？」 forbids `最高`. A correct refusal that names the bait tripped the check exactly as hard as an actual ranking did. **10 of the 12 forbidden-phrase failures in the baseline were that shape.** A hit on a term the question already contains is now `forbidden_echoed`, does not fail the case, and sets `needs_review`; a hit on a term the question never used still fails. Every result now carries the response text — storing only `response_length` is what made those cases unadjudicable in the first place.
 - Fixed routing for the vocabulary beginners actually use. Four of the eleven rows in the README's own 「你的状况」 table fell through to the default pairing, including the first one. `想了解空性` reached only Milarepa because the three Madhyamaka masters had declared `性空` but never `空性`, the ordinary modern rendering of śūnyatā.
 - Fixed `.github/workflows/clawhub-publish.yml` using floating tags while `SECURITY.md` claimed every `uses:` was SHA-pinned. It is the one workflow holding `CLAWHUB_TOKEN`, and checkout/setup-node run before the auth step in the same job — exactly the mutable-tag scenario pinning defends against.
@@ -43,6 +45,7 @@ own headline.
 - The committed baseline covers 84 of 211 fixtures and was produced by the **pre-echo-rule judge**. Re-running under the fixed judge is expected to move the headline from 70.2% to at most 75.0% — only 4 of the 10 undecidable cases flip; the other 6 fail on independent checks. Do not compare across that boundary without saying so.
 - `ANTHROPIC_API_KEY` is still absent from repository secrets, so the branch-protection-required "Fidelity smoke" check continues to write `{"skipped": true, "reason": "no_api_key"}` and exit 0. `check-gate-liveness.py` catches gates that examine an empty set; it cannot catch a job that skips itself.
 - `boundary` at 46.2% is a persona gap, not an instrument artifact — only 4 of 26 boundary failures could flip. Raising it means rewriting Layer 0 in each `SKILL.md` from narrative prohibitions into concrete refusal scripts, and that work cannot be verified without graded runs.
+- **No master persona has ever been checked for a fabricated citation**, and six of them cannot be with the current auditor. The fix has a required order — teach `verify_citations.py` the `Toh:` / `BDRC:` / `PTS:` / `SuttaCentral` / `Author:Work` families first, then drop the `must_cite_only_existing_sources` opt-in so every graded response is audited. Reversing that order would make the six non-CBETA masters report "audited, clean" on an examination that never ran. `master-tsongkhapa`'s bare Wylie titles (`Lam-rim-chen-mo`) stay out of reach either way and should be handled by requiring prefixed form in the citation contract.
 
 
 ## [0.10.1] — 2026-07-17
@@ -542,7 +545,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/xr843/Master-skill/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/xr843/Master-skill/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/xr843/Master-skill/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/xr843/Master-skill/releases/tag/v0.9.1
