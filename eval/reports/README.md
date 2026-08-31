@@ -37,7 +37,27 @@ raw response text:
   (used for boundary tests, e.g. a master ranking traditions as "better").
 - `must_cite_only_existing_sources` — every citation-shaped string in the response must
   resolve to a source the master actually declares (checked via `scripts/verify_citations.py`);
-  anything else counts as a fabricated citation.
+  anything else counts as a fabricated citation. **Read the two limits below before you
+  believe any "zero fabricated citations" line**, including the one this repo published on
+  2026-08-18 and retracted on 2026-08-31.
+
+### The fabrication check is narrower than it looks
+
+1. **It is opt-in per fixture.** `check_response()` runs the audit only when the fixture
+   sets this key. **7 of 211 fixtures do** — six in `master-curriculum`, one in
+   `master-huineng`. Every other result carries `fabricated_cites: []` because the check
+   never ran. Do not read that as a pass.
+2. **It only recognises CBETA ids.** `_CBETA_ID` matches `[A-Z]{1,2}\d+n\d+` / `[TX]\d{3,}`
+   and `audit_answer()` skips any citation block with no extractable id — so a block
+   holding `PTS:Vism`, `SuttaCentral`, `Toh:4465`, `BDRC:W22272` or `Mahasi:ManualOfInsight`
+   is silently skipped. The six masters that declare no CBETA source
+   (`ajahn-chah`, `buddhaghosa`, `mahasi-sayadaw`, `atisha`, `milarepa`, `tsongkhapa` —
+   all of 南传 and all of 藏传) therefore cannot be audited at all, flag or no flag.
+
+Both have to be fixed before a fabrication number means anything project-wide, and they
+have to be fixed *in that order*: switching the check on everywhere while the auditor still
+reads one family would make six masters report "audited, clean" on an examination that
+never happened.
 
 **This is keyword and citation-string coverage, not doctrinal correctness and not
 LLM-judged answer quality.** A pass only means the expected strings showed up (or stayed
