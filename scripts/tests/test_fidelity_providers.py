@@ -200,3 +200,72 @@ def test_same_provider_different_model_is_still_refused(fidelity):
         {"provider": "anthropic", "model": "claude-opus-4-8", "results": []},
     ]
     assert fidelity.aggregation_conflicts(suites)
+
+
+# --------------------------------------------------------------------------
+# Truncation is an instrument condition, not a fidelity failure.
+#
+# DeepSeek V4 and other reasoning models spend the output budget on reasoning
+# before writing anything. Measured on `deepseek-v4-pro` with the harness's
+# hardcoded max_tokens=2048: finish_reason="length", 1,860 reasoning tokens,
+# 250 characters of answer. Four of six smoke responses came back empty and the
+# judge scored them as "missing citation / missing keyword" — a persona failure
+# that never happened. Grading a cut-off answer measures the budget, not the
+# prompt.
+# --------------------------------------------------------------------------
+
+
+def _openai_finish(finish_reason):
+    return types.SimpleNamespace(
+        choices=[types.SimpleNamespace(finish_reason=finish_reason)]
+    )
+
+
+def test_openai_style_truncation_is_detected(fidelity):
+    assert fidelity.extract_finish_reason(
+        "deepseek", _openai_finish("length")
+    ) == "length"
+
+
+def test_openai_style_normal_stop_is_not_truncation(fidelity):
+    assert fidelity.extract_finish_reason("deepseek", _openai_finish("stop")) == "stop"
+
+
+def test_anthropic_max_tokens_stop_reason_normalises_to_length(fidelity):
+    """Anthropic calls it `stop_reason: max_tokens`; one vocabulary downstream."""
+    resp = types.SimpleNamespace(stop_reason="max_tokens")
+    assert fidelity.extract_finish_reason("anthropic", resp) == "length"
+
+
+def test_truncated_result_is_not_graded_as_a_fidelity_failure(fidelity):
+    entry = fidelity.truncated_result_entry(
+        index=2, test={"q": "什么是禅七？"}, response_text="虚云老和尚答……",
+        max_output_tokens=2048,
+    )
+    assert entry["status"] == "truncated"
+    assert "missing_cites" not in entry
+    assert entry["max_output_tokens"] == 2048
+
+
+def test_truncated_cases_fail_the_run_like_an_api_error(fidelity):
+    suites = [{"failed": 0, "results": [{"status": "truncated"}]}]
+    assert fidelity.results_failed(suites, dry_run=False) is True
+
+
+def test_request_honours_an_explicit_output_budget(fidelity):
+    body = fidelity.build_request("deepseek", "deepseek-v4-pro", "sys", "q", 8192)
+    assert body["max_tokens"] == 8192
+
+
+def test_output_budget_is_a_named_default_not_a_literal(fidelity):
+    assert fidelity.DEFAULT_MAX_OUTPUT_TOKENS == 2048
+
+
+def test_cli_exposes_the_output_budget(fidelity):
+    import subprocess, sys as _sys
+    from pathlib import Path as _P
+    runner = _P(__file__).resolve().parents[1] / "test-fidelity.py"
+    out = subprocess.run(
+        [_sys.executable, str(runner), "--help"], capture_output=True, text=True
+    ).stdout
+    assert "--max-output-tokens" in out

@@ -66,6 +66,11 @@ PROVIDERS: dict[str, dict] = {
     },
 }
 
+# Enough for a non-reasoning model's answer. Reasoning models spend this budget
+# before writing anything — raise it with --max-output-tokens and say so in the
+# report, because a different budget is a different instrument.
+DEFAULT_MAX_OUTPUT_TOKENS = 2048
+
 DEFAULT_PROVIDER = "anthropic"
 
 
@@ -141,6 +146,47 @@ def extract_text(provider: str, response: object) -> str:
     if content is None:
         raise ValueError(f"{provider}: response message had no content")
     return content
+
+
+def extract_finish_reason(provider: str, response: object) -> str | None:
+    """Why the model stopped, in one vocabulary across providers.
+
+    Anthropic says ``stop_reason: max_tokens``; the OpenAI-compatible hosts say
+    ``finish_reason: length``. Both mean the answer was cut off mid-sentence,
+    which is an instrument condition and not something a persona did.
+    """
+    spec = resolve_provider(provider)
+    if spec["api"] == "anthropic":
+        reason = getattr(response, "stop_reason", None)
+        return "length" if reason == "max_tokens" else reason
+    choices = getattr(response, "choices", None) or []
+    if not choices:
+        return None
+    return getattr(choices[0], "finish_reason", None)
+
+
+def truncated_result_entry(
+    index: int, test: dict, response_text: str, max_output_tokens: int
+) -> dict:
+    """Record a cut-off answer as unmeasured, the way an API error is recorded.
+
+    Reasoning models spend the output budget before writing anything: measured
+    on `deepseek-v4-pro` at the harness's old hardcoded 2048, reasoning took
+    1,860 tokens and left 250 characters of answer — and on some questions,
+    none at all. Scoring that produces `missing_cites` / `must_mention`
+    failures that describe the budget, not the prompt. Carries no check fields
+    at all, so nothing downstream can mistake it for a graded verdict.
+    """
+    return {
+        "index": index,
+        "question": test["q"],
+        "difficulty": test.get("difficulty", "unknown"),
+        "test_type": test.get("test_type", "fidelity"),
+        "status": "truncated",
+        "max_output_tokens": max_output_tokens,
+        "response": response_text,
+        "response_length": len(response_text),
+    }
 
 
 def aggregation_conflicts(suites: list[dict]) -> list[str]:
@@ -410,6 +456,7 @@ def run_tests(
     max_tests: int | None = None,
     quiet: bool = False,
     provider: str = DEFAULT_PROVIDER,
+    max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS,
 ) -> dict:
     """Run fidelity tests for a master. Returns summary."""
     # 目录叫 `master-<slug>`,而公开写在 README / package.json 里的调用形式是短名
@@ -514,9 +561,12 @@ def run_tests(
 
         try:
             response = send(
-                build_request(provider, model, system_prompt, test["q"], 2048)
+                build_request(
+                    provider, model, system_prompt, test["q"], max_output_tokens
+                )
             )
             response_text = extract_text(provider, response)
+            finish_reason = extract_finish_reason(provider, response)
         except Exception as e:
             results.append({
                 "index": i,
@@ -527,6 +577,17 @@ def run_tests(
             failed += 1
             if not quiet:
                 print("API ERROR")
+            continue
+
+        if finish_reason == "length":
+            # Cut off mid-answer: unmeasured, not failed. Counted with the
+            # api_errors so a run full of them cannot read as a clean result.
+            results.append(
+                truncated_result_entry(i, test, response_text, max_output_tokens)
+            )
+            failed += 1
+            if not quiet:
+                print("TRUNCATED")
             continue
 
         check = check_response(
@@ -553,6 +614,7 @@ def run_tests(
         "failed": failed,
         "pass_rate": f"{passed / len(tests) * 100:.0f}%" if tests else "N/A",
         "audit": summarize_audit(results),
+        "max_output_tokens": max_output_tokens,
         "results": results,
     }
 
@@ -587,7 +649,7 @@ def results_failed(results: list[dict], dry_run: bool) -> bool:
         "error" in suite
         or suite.get("failed", 0) > 0
         or any(
-            case.get("status") in {"FAIL", "api_error"}
+            case.get("status") in {"FAIL", "api_error", "truncated"}
             for case in suite.get("results", [])
         )
         for suite in results
@@ -615,6 +677,17 @@ def main() -> int:
         type=int,
         default=None,
         help="Cap the number of fixtures per master (smoke runs in CI use 1)",
+    )
+    parser.add_argument(
+        "--max-output-tokens",
+        type=int,
+        default=DEFAULT_MAX_OUTPUT_TOKENS,
+        help=(
+            "Output budget per answer (default %(default)s). Reasoning models "
+            "spend this on reasoning before writing: deepseek-v4-pro needs "
+            "~8192 or it stops mid-answer. A different budget is a different "
+            "instrument — record it with the run."
+        ),
     )
     args = parser.parse_args()
 
@@ -645,6 +718,7 @@ def main() -> int:
             provider=args.provider,
             max_tests=args.max_tests,
             quiet=args.json,
+            max_output_tokens=args.max_output_tokens,
         )
         all_results.append(result)
 
