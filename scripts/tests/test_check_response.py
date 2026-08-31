@@ -188,3 +188,76 @@ def test_result_entry_carries_the_review_flag_and_echoes(fidelity):
     assert entry["status"] == "PASS"
     assert entry["needs_review"] is True
     assert entry["forbidden_echoed"] == ["最高"]
+
+
+# --------------------------------------------------------------------------
+# The fabrication audit: opt-in, and silently disabled where it opted in.
+#
+# `must_cite_only_existing_sources` was set on 7 of 211 fixtures — six in
+# `master-curriculum`, one in `master-huineng`. `master-curriculum` has no
+# `meta.json`, so `load_declared_ids` raises, `declared_ids` becomes None, and
+# the `and declared_ids is not None` guard short-circuits. `master-huineng`'s
+# one case was never reached. The audit therefore decided **nothing** in the
+# first baseline, while every result reported `fabricated_cites: []`.
+# --------------------------------------------------------------------------
+
+HUINENG_IDS = {"T48n2008", "T08n0235", "T14n0475"}
+
+
+def test_fabricated_citation_fails_a_fixture_that_did_not_opt_in(fidelity):
+    """一条普通教义夹具编造经号,也必须判失败 —— 不该由夹具自己决定查不查。"""
+    check = fidelity.check_response(
+        "慧能于此经说见性。【《楞严经》，T19n0945】",
+        {"q": "慧能怎么讲见性？"},
+        declared_ids=HUINENG_IDS,
+    )
+    assert check["fabricated_cites"] == ["T19n0945"]
+    assert check["passed"] is False
+
+
+def test_declared_source_still_passes_without_the_opt_in(fidelity):
+    check = fidelity.check_response(
+        "自性本自清净。【《六祖坛经·般若品》，T48n2008】",
+        {"q": "什么是见性？"},
+        declared_ids=HUINENG_IDS,
+    )
+    assert check["fabricated_cites"] == []
+    assert check["passed"] is True
+
+
+def test_audit_without_declared_ids_is_undecided_not_clean(fidelity):
+    """拿不到声明来源时不得静默放行 —— 记为待裁决,而不是「已查、干净」。"""
+    check = fidelity.check_response(
+        "第一阶段读《菩提道次第广论》。【《广论》，T99n9999】",
+        {"q": "禅宗从哪开始学？", "must_cite_only_existing_sources": True},
+        declared_ids=None,
+    )
+    assert check["audit_unavailable"] is True
+    assert check["needs_review"] is True
+
+
+def test_result_entry_records_why_a_case_could_not_be_audited(fidelity):
+    """待裁决要说得出理由 —— 「审计跑不了」和「禁用词是回声」不是一回事。"""
+    test_case = {"q": "禅宗从哪开始学？"}
+    response = "第一阶段读《广论》。【《广论》，T99n9999】"
+    entry = fidelity.result_entry(
+        index=1,
+        test=test_case,
+        check=fidelity.check_response(response, test_case, declared_ids=None),
+        response_text=response,
+    )
+    assert entry["needs_review"] is True
+    assert entry["audit_unavailable"] is True
+
+
+def test_empty_declared_set_is_undecided_not_all_fabricated(fidelity):
+    """元技能(master-debate)meta.json 里 sources 为空 —— 声明集为空时,拿它当
+    标尺会把每一条**正确**引用都判成伪造。空集合同样是「查不了」,不是「全错」。"""
+    check = fidelity.check_response(
+        "慧能主张顿悟。【《六祖坛经》，T48n2008】",
+        {"q": "禅净怎么辩？"},
+        declared_ids=set(),
+    )
+    assert check["fabricated_cites"] == []
+    assert check["audit_unavailable"] is True
+    assert check["passed"] is True

@@ -65,7 +65,7 @@ down by what tripped them (a single case can trip more than one check):
 | Forbidden phrase present (`must_not_contain*`) | 12 | 48% |
 | Missing expected citation (`must_cite`) | 5 | 20% |
 | Boundary-tone violation (unexpected honorific) | 1 | 4% |
-| Fabricated citation (`must_cite_only_existing_sources`) | 0 | 0% — but the audit ran on 6 of the 84; see below |
+| Fabricated citation (`must_cite_only_existing_sources`) | 0 | 0% — the audit ran on **none** of the 84; see below |
 
 By fixture `test_type`: **boundary 14/25, pressure 6/25, fidelity 5/25.** Two clear
 clusters stand out:
@@ -161,10 +161,15 @@ measured cases."* That is not what was measured, for two compounding reasons.
 `audit_answer()` only when the fixture itself sets `must_cite_only_existing_sources`
 (`scripts/test-fidelity.py`). Exactly **7 of 211 fixtures** repo-wide set it — six in
 `master-curriculum`, one in `master-huineng`. Only `master-curriculum`'s six were reached
-before the run stopped. So the audit ran on **6 of the 84 measured cases, all belonging to
-one meta-skill. Not one of the 15 master personas was ever checked for a fabricated
-citation.** The other 78 results carry `fabricated_cites: []` because the check never ran,
-not because it passed — the same shape as the gates this release set out to fix.
+before the run stopped.
+
+**And those six did not run either.** `master-curriculum` has no `meta.json`, so
+`load_declared_ids()` raises `FileNotFoundError`, `declared_ids` becomes `None`, and the
+guard `if test_case.get("must_cite_only_existing_sources") and declared_ids is not None`
+short-circuits on its second clause. `master-huineng`'s single flagged fixture was never
+reached. **So the fabrication audit decided nothing at all in this run — 0 of 84 — while
+all 84 results reported `fabricated_cites: []`.** An earlier version of this retraction
+said "6 of 84"; that was still too generous, and is corrected here.
 
 **2. The auditor recognises CBETA ids and nothing else.** `_CBETA_ID` in
 `scripts/verify_citations.py` matches `[A-Z]{1,2}\d+n\d+` / `[TX]\d{3,}`, and

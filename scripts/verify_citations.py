@@ -41,6 +41,71 @@ _SAFE_MASTER = re.compile(r"^[A-Za-z0-9_-]+$")
 _CBETA_ID = re.compile(
     r"(?<![0-9A-Za-z])(?:[A-Z]{1,2}\d+n\d+|[TX]\d{3,})(?![0-9A-Za-z])"
 )
+# 非 CBETA 契约家族。roadmap Phase 2 承诺把 CBETA / BDRC·Toh / PTS·SuttaCentral /
+# 编集开示当作平等的 contract family,但审计器长期只实现了第一个 —— 于是全部藏传与
+# 南传祖师的伪造引用一律漏检(见 eval/reports/BASELINE.md 的撤回段)。
+#
+# 关键在归一化,不在正则:meta.json 声明 `Toh:4465`,行文写 `Toh 4465`;声明
+# `BDRC:W22272`,夹具 must_cite 写裸 `W22272`。只加正则不归一,会把**正确**引用
+# 判成伪造 —— 那比漏检更糟。统一收敛到 `Family:Work` 再与声明集比对。
+_FAMILY_ID = re.compile(
+    r"(?<![0-9A-Za-z])(?:"
+    r"(?P<toh>Toh)[:\s]\s*(?P<toh_n>\d+)"
+    r"|(?P<bdrc>BDRC)[:\s]\s*(?P<bdrc_w>W[0-9A-Za-z-]+)"
+    # 真 PTS id 的作品名首字母大写(`PTS:Vism` / `PTS:DN-Comm`)。要求大写,
+    # 「（PTS edition）」这类散文说明才不会被读成 id。
+    r"|(?P<pts>PTS)[:\s]\s*(?P<pts_w>[A-Z][0-9A-Za-z-]*)"
+    # 裸 W 号:BDRC 的 work id 常单独出现(W22272 / W1KG14334)。要求 W 后紧跟数字,
+    # 否则 "Wisdom Publications" 这类普通词会被误读成 id。
+    r"|(?P<bare_w>W\d[0-9A-Z-]{3,})"
+    r")(?![0-9A-Za-z])"
+)
+
+
+def _normalize_family_id(m: "re.Match[str]") -> str:
+    """把一处家族引文归一成 meta.json 里声明的 `Family:Work` 形态。"""
+    if m.group("toh"):
+        return f"Toh:{m.group('toh_n')}"
+    if m.group("bdrc"):
+        return f"BDRC:{m.group('bdrc_w')}"
+    if m.group("pts"):
+        return f"PTS:{m.group('pts_w')}"
+    return f"BDRC:{m.group('bare_w')}"
+
+
+def extract_citation_ids(text: str) -> list[str]:
+    """抽出一段文本里所有可核对的来源 id,四个家族一视同仁。
+
+    CBETA 号按原样返回(声明形态与行文形态本来就一致);其余家族归一到
+    `Family:Work`。SuttaCentral 是**语料库级** id(runtime contract §4 规则 3),
+    `MN 118` 这类经号无法在没有经目索引的情况下判真伪,故不在此抽取 —— 那是
+    已知边界,不是遗漏。
+    """
+    ids = list(_CBETA_ID.findall(text))
+    ids.extend(_normalize_family_id(m) for m in _FAMILY_ID.finditer(text))
+    return ids
+
+
+# 短号 ↔ 完整号。CBETA 通行简写省掉册号(`T1911` = `T46n1911`),而 meta.json 存的
+# 是完整形态。审计无条件运行之后,模型写简写就会被误判伪造 —— 大正藏/卍續藏的经号
+# 在各自藏内唯一,按「藏别字母 + 经号数值」对齐即可,跨藏不对齐。
+_SHORT_FORM = re.compile(r"^([TX])(\d+)$")
+_FULL_FORM = re.compile(r"^([TX])\d+n(\d+)$")
+
+
+def _resolve_short_form(cid: str, declared_ids: set[str]) -> str | None:
+    """把短号对回声明里的完整号;对不上返回 None(仍按伪造处理)。"""
+    m = _SHORT_FORM.match(cid)
+    if not m:
+        return None
+    prefix, number = m.group(1), int(m.group(2))
+    for declared in declared_ids:
+        d = _FULL_FORM.match(declared)
+        if d and d.group(1) == prefix and int(d.group(2)) == number:
+            return declared
+    return None
+
+
 # 引文块 【…】
 _CITATION_BLOCK = re.compile(r"【([^】]*)】")
 # live 链接 fojin.app/texts/<数字>
@@ -78,17 +143,24 @@ def audit_answer(declared_ids: set[str], answer: str) -> dict:
 
     blocks = list(_CITATION_BLOCK.finditer(answer))
     for idx, m in enumerate(blocks):
-        ids = _CBETA_ID.findall(m.group(1))
-        if not ids:
-            continue
-        # 链接归属:本引文块结束 → 下一引文块开始(且不超过 _LINK_WINDOW)。这样一个 link
+        # 归属区:本引文块结束 → 下一引文块开始(且不超过 _LINK_WINDOW)。这样一个 link
         # 只能洗白紧挨它之前的那一个引文块,不会连带洗白更前面的伪造引文(B1 的关键)。
         next_start = blocks[idx + 1].start() if idx + 1 < len(blocks) else len(answer)
         region_end = min(next_start, m.end() + _LINK_WINDOW)
+        # 非 CBETA 祖师的主格式把家族标签放在块**后**的括号里
+        # (`【《Visuddhimagga》§I】（PTS Vism）`),所以 id 与 link 共用这同一个归属区。
+        ids = extract_citation_ids(m.group(1)) + extract_citation_ids(
+            answer[m.end():region_end]
+        )
+        if not ids:
+            continue
         link = _FOJIN_TEXT_LINK.search(answer, m.end(), region_end)
         for cid in ids:
-            if cid in declared_ids:
-                offline.append(cid)
+            resolved = cid if cid in declared_ids else _resolve_short_form(
+                cid, declared_ids
+            )
+            if resolved:
+                offline.append(resolved)
             elif link:
                 live.append((cid, link.group(1)))
             else:
