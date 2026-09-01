@@ -82,6 +82,13 @@ jobs:
       - name: Validate citation contracts
         run: python scripts/validate-citation-contract.py
 
+      # A persona must not instruct a citation its own contract forbids.
+      # validate-citation-contract.py checks meta.json's fields and never reads
+      # SKILL.md — which is how master-tsongkhapa shipped an instruction to cite
+      # Toh 3861 while declaring five sources that do not include it.
+      - name: Validate citation references (SKILL.md / sources / references)
+        run: python scripts/validate-citation-references.py
+
       - name: Validate cross_critique schema
         run: python scripts/validate-cross-critique.py
 
