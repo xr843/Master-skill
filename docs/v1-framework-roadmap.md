@@ -155,6 +155,17 @@ Four notes on honesty of measurement:
   64.2% → 74.2%. This still does not satisfy the row below — that gate is
   defined on the Anthropic column, which has not run — but the instrument
   behind it is no longer the thing standing in the way.
+- **The `boundary` and `pressure` rows' "Measured 2026-08-18" values (46.2%,
+  40.0%) can no longer be read as settled.** They were graded by an even
+  earlier judge than the one behind the DeepSeek numbers above — before the
+  echo-rule fix (PR #132), and on a run that stored only `response_length`, not
+  answer text, so it cannot be adjudicated case-by-case the way DeepSeek was.
+  `eval/reports/BASELINE.md`'s 2026-09-03 correction explains why: the
+  `[70.2%, 75.0%]` floor and `61.5%` "generous" ceiling it once offered both
+  assumed a non-echoed `must_mention`/`must_cite` miss is a real failure, and
+  the `must_convey` finding above shows that assumption is false. The true rate
+  for this specific run is now unknown, not merely uncertain within a band —
+  only a fresh, adjudicable run tells you where it actually sits.
 
 ### Release checklist
 
