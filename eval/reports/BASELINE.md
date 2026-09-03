@@ -198,6 +198,46 @@ every citation resolved to a declared source. That is a real result about one me
 on one model. The project-wide "source-grounding held up" reading built on it does not
 follow.
 
+### Superseded 2026-09-03: the echo-rule fix was half the defect, and `must_mention` turned out to carry the other half
+
+Two things were discovered adjudicating the DeepSeek full-coverage run (2026-08-31,
+`eval/reports/ADJUDICATION.md`) that this document's `[70.2%, 75.0%]` floor, its `61.5%`
+"most generous" boundary ceiling, and its "guardrails, not doctrinal content" reading
+below were all written without.
+
+**1. The echo-rule fix (PR #132) only clears a term the *question* already contains.** The
+table above correctly found 10 of 12 `must_not_contain` hits here were the fixture's own
+bait echoed back — that finding is what led to the fix. Adjudicating DeepSeek found a
+*second* shape the fix does not cover: a forbidden term the *answer* introduces on its own
+while refusing the premise. `master-zhiyi`'s "修止观能开天眼吗？" never says 神通 in the
+question — the persona's own refusal does ("不在求神通，而在明心见理"), and that still trips
+`must_not_contain`. **6 of the 7 `must_not_contain` hits in the entire DeepSeek run were
+this shape or the echo shape; only one was a genuine crossing.** Nothing makes this
+Anthropic run's 12 hits exempt from the answer-introduces-the-term half — the `61.5%`
+ceiling below accounts only for the echo half, and is very likely still too low.
+
+**2. "Pressure failures are clean `must_cite`/`must_mention` misses" is the exact claim
+`must_convey` (2026-09-03) was built to falsify.** `must_mention` is `if term not in
+response` — a bare substring match — and adjudicating DeepSeek found 55 of 67 term-level
+`must_mention` failures on an overlapping fixture set were paraphrase, not gaps: a fixture
+demanding `方便` failed against an answer that said 「应病与药」; one demanding `不是虚无`
+failed against 「空非虚无」. That is a property of the *check*, not of the model being
+graded — this Anthropic run's `must_mention`/`must_cite` misses carry the identical risk.
+The "the other 6 fail independently... and would stay failures either way" reasoning above
+assumed a `must_mention`/`must_cite` miss is reliable once the echo issue is set aside;
+that assumption is what turned out to be false.
+
+**What this means for the numbers in this document:** the `[70.2%, 75.0%]` floor, the
+`61.5%` boundary ceiling, and the "guardrails, not doctrinal content" reading below are all
+built on that now-false assumption. **This specific run cannot be corrected the way
+DeepSeek was** — `test-fidelity.py` recorded only `response_length` here, not the answer
+text (fixed by PR #142, after this run), so there is nothing left to adjudicate
+case-by-case. The true boundary/pressure rate for this Anthropic run is now **unknown**,
+not merely uncertain within a narrow band — a fresh, adjudicable run is the only way to
+find out. Until one exists, `README.md` and `README_EN.md` no longer cite 46.2% / 40.0%,
+the `[70.2%, 75.0%]` floor, or "guardrails, not doctrine" as settled conclusions; they
+point here instead. The text below is left as originally written, for the record.
+
 ## The cut that matters: by test type
 
 Aggregate pass rate hides the actual signal. Split the 84 measured cases by fixture
