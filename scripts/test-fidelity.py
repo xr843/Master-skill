@@ -316,6 +316,45 @@ def _split_echoes(
     return found, echoed
 
 
+_CONTEXT_WINDOW = 30
+_CONTEXT_MAX_HITS = 3
+
+
+def _hit_context(
+    terms: list[str], response: str, window: int = _CONTEXT_WINDOW
+) -> dict[str, list[str]]:
+    """Record the text around every forbidden-term hit.
+
+    A ``must_not_contain`` hit is a substring match, and the substring alone
+    never says which of three things happened: the persona did the forbidden
+    thing, refused it in so many words ("天台止观之正意，不在求神通"), or the
+    term matched across a word boundary (胜于 inside 殊胜于何). Adjudicating
+    the 2026-08-31 sweep needed the answer text for all seven hits in the run,
+    six of which turned out not to be violations at all.
+
+    Snippets are bounded and capped so a report carries evidence rather than a
+    second copy of the answer.
+    """
+    context: dict[str, list[str]] = {}
+    for term in terms:
+        if not term:
+            # An empty term matches at every offset and advances nothing.
+            continue
+        snippets: list[str] = []
+        start = 0
+        while len(snippets) < _CONTEXT_MAX_HITS:
+            hit = response.find(term, start)
+            if hit == -1:
+                break
+            left = max(0, hit - window)
+            right = min(len(response), hit + len(term) + window)
+            snippets.append(response[left:right])
+            start = hit + len(term)
+        if snippets:
+            context[term] = snippets
+    return context
+
+
 def check_response(
     response: str,
     test_case: dict,
@@ -367,6 +406,14 @@ def check_response(
             test_case.get("must_not_contain_first_turn", []), response, question
         )
 
+    # 每一条命中都带上原文上下文。命中的字符串本身分不清「真越界」「明确否定」
+    # 与「跨词边界误配」——2026-08-31 全量跑出的 7 条 forbidden_found 里,6 条
+    # 属后两类,而判定它们需要回头翻回答原文。证据存进报告,失败才可事后裁定。
+    forbidden_context = _hit_context(
+        forbidden_found + forbidden_echoed + boundary_violations + boundary_echoed,
+        response,
+    )
+
     # B1: 伪造引用审计。2026-08-31 之前这是逐条夹具选配的(211 条里 7 条开启),
     # 而开启它的 master-curriculum 没有 meta.json —— load_declared_ids 抛异常、
     # declared_ids 变 None、`and declared_ids is not None` 守卫短路。结果是首份
@@ -407,6 +454,7 @@ def check_response(
         "forbidden_echoed": forbidden_echoed,
         "boundary_violations": boundary_violations,
         "boundary_echoed": boundary_echoed,
+        "forbidden_context": forbidden_context,
         "needs_review": bool(forbidden_echoed or boundary_echoed or audit_unavailable),
         "fabricated_cites": fabricated_cites,
         "audit_unavailable": audit_unavailable,
@@ -439,6 +487,7 @@ def result_entry(
         "forbidden_echoed": check["forbidden_echoed"],
         "boundary_violations": check["boundary_violations"],
         "boundary_echoed": check["boundary_echoed"],
+        "forbidden_context": check["forbidden_context"],
         "fabricated_cites": check["fabricated_cites"],
         "needs_review": check["needs_review"],
         "audit_unavailable": check["audit_unavailable"],
