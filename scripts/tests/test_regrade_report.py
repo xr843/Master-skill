@@ -98,14 +98,15 @@ def test_the_committed_run_regrades_against_the_repository_as_it_stands(mod):
         (ROOT / "eval/reports/0.11.0-06b8142-deepseek.json").read_text()
     )
     out = mod.regrade(report, mod.load_fixtures())
-    # 迁移只放宽,不收紧。唯一一条 PASS→FAIL 不是夹具改动造成的:PR #146 给审计器
-    # 补上编集开示家族之后,马哈希 #12 引用的《A Discourse on Dhammacakka Sutta》
-    # 第一次变得可读 —— 那次跑自己的审计器根本看不见它。钉住这一条,新出现的任何
-    # 回归都会立刻现形。
+    # 迁移只放宽,不收紧。PR #146 给审计器补上编集开示家族之后,马哈希 #12 引用的
+    # 《A Discourse on Dhammacakka Sutta》曾第一次变得可读、但判成伪造(那次跑自己
+    # 的审计器根本看不见它,所以是真发现)。2026-09-03 的维护者决定是「合集覆盖
+    # 成员」——`Mahasi:DiscoursesOnSuttas` 的 note 早就点了这篇的名 —— 实现之后
+    # 这条不再是回归。钉住「零回归」,任何新出现的都会立刻现形。
     regressions = [
         (c["master"], c["index"])
         for c in out["cases"]
         if c["was"] == "PASS" and c["now"] == "FAIL"
     ]
-    assert regressions == [("master-mahasi-sayadaw", 12)], regressions
+    assert regressions == [], regressions
     assert out["mentions"]["mention_coverage"].endswith("%")

@@ -168,11 +168,50 @@ def _compiled_works(declared_ids: set[str]) -> dict[str, tuple[str, ...]]:
     return works
 
 
-def _compiled_teaching_id(block: str, declared_ids: set[str]) -> str | None:
+# 合集覆盖成员。声明的编集开示有时是一部合集,note 里点了具体成员篇目的名
+# ("Mālukyaputta Sutta / Dhammacakka Sutta / Sallekha Sutta 等开示集") ——
+# 人格引某一篇具体开示时用的是篇目名,不是合集自己的 CamelCase 名。2026-09-03
+# 裁定:合集自己 note 点过名的成员,应可解析回它所属的合集。
+#
+# 形状而非内容驱动:note 里没有 `/` 就不是成员列表(多数 note 只是单条书目
+# 说明,如「1944 缅文巨著…」),不必解析。单字词片段(裸的 "Sutta")几乎
+# 每条引用都会命中,要求至少两个词才够格当别名。
+_MEMBER_MIN_WORDS = 2
+
+
+def extract_member_aliases(collection_id: str, note: str) -> dict[str, str]:
+    """把合集来源的 note 解析成「成员篇目名 → 合集 id」的别名表。"""
+    if "/" not in note:
+        return {}
+    aliases: dict[str, str] = {}
+    for segment in note.split("/"):
+        cjk = _CJK.search(segment)
+        latin = segment[: cjk.start()] if cjk else segment
+        title = latin.strip()
+        if len(re.findall(r"[A-Za-z]+", title)) < _MEMBER_MIN_WORDS:
+            continue
+        aliases[title] = collection_id
+    return aliases
+
+
+def _contains_token_run(haystack: tuple[str, ...], needle: tuple[str, ...]) -> bool:
+    """`needle` 是否作为连续片段出现在 `haystack` 里的某处。"""
+    n = len(needle)
+    if not n or n > len(haystack):
+        return False
+    return any(haystack[i : i + n] == needle for i in range(len(haystack) - n + 1))
+
+
+def _compiled_teaching_id(
+    block: str,
+    declared_ids: set[str],
+    member_aliases: dict[str, str] | None = None,
+) -> str | None:
     """把一个书名块判给编集开示家族。
 
-    命中声明 → 返回那条声明 id(记 offline);本 master 确实有编集开示来源、
-    而这个拉丁书名不在其中 → 返回书名本身(交给 audit_answer 按伪造处理);
+    命中声明的整部作品 → 返回那条声明 id(记 offline);命中某合集 note 里
+    点名的成员篇目 → 返回该合集的 id;本 master 确实有编集开示来源、而这个
+    拉丁书名两者都不命中 → 返回书名本身(交给 audit_answer 按伪造处理);
     家族不适用(汉文书名,或本 master 根本没有编集开示来源)→ None,维持原样。
     """
     works = _compiled_works(declared_ids)
@@ -192,6 +231,10 @@ def _compiled_teaching_id(block: str, declared_ids: set[str]) -> str | None:
     for declared, tokens in sorted(works.items()):
         if tuple(cited[: len(tokens)]) == tokens:
             return declared
+    for member, collection in sorted((member_aliases or {}).items()):
+        needle = tuple(_title_tokens(member))
+        if needle and _contains_token_run(tuple(cited), needle):
+            return collection
     return f"《{title}》"
 
 
@@ -221,7 +264,30 @@ def load_declared_ids(master: str) -> set[str]:
     return ids
 
 
-def audit_answer(declared_ids: set[str], answer: str) -> dict:
+def load_member_aliases(master: str) -> dict[str, str]:
+    """读 prebuilt/<master>/meta.json,把每条编集开示来源的 note 解析成
+    「成员篇目 → 合集 id」别名表(合并全部来源)。找不到 note 或没有
+    `/` 分隔的来源不贡献别名 —— 参见 extract_member_aliases。"""
+    if not _SAFE_MASTER.match(master):
+        raise ValueError(f"无效的 master ID：{master!r}（仅允许字母、数字、'-'、'_'）")
+    master_dir = resolve_master_dir(master)
+    if master_dir is None:
+        raise FileNotFoundError(f"找不到 master：{master!r}（试过 {master!r} 和 master-{master}）")
+    with open(os.path.join(master_dir, "meta.json"), encoding="utf-8") as f:
+        meta = json.load(f)
+    aliases: dict[str, str] = {}
+    for src in meta.get("sources", []):
+        if src.get("type") != "compiled_teaching":
+            continue
+        sid, note = src.get("id"), src.get("note")
+        if sid and note:
+            aliases.update(extract_member_aliases(sid, note))
+    return aliases
+
+
+def audit_answer(
+    declared_ids: set[str], answer: str, member_aliases: dict[str, str] | None = None
+) -> dict:
     """把答案里每条引文分类为 offline / live / fabricated / unparsed。
 
     返回 {'offline': [...], 'live': [(cbeta_id, text_id), ...],
@@ -249,7 +315,7 @@ def audit_answer(declared_ids: set[str], answer: str) -> dict:
             answer[m.end():region_end]
         )
         if not ids:
-            compiled = _compiled_teaching_id(m.group(1), declared_ids)
+            compiled = _compiled_teaching_id(m.group(1), declared_ids, member_aliases)
             if compiled:
                 ids = [compiled]
         if not ids:

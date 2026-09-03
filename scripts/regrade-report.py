@@ -34,7 +34,7 @@ _fidelity = importlib.util.module_from_spec(_spec)
 sys.modules["_fidelity"] = _fidelity
 _spec.loader.exec_module(_fidelity)
 
-from verify_citations import load_declared_ids  # noqa: E402
+from verify_citations import load_declared_ids, load_member_aliases  # noqa: E402
 
 
 def load_fixtures() -> dict[str, list[dict]]:
@@ -64,8 +64,10 @@ def regrade(report: dict, fixtures: dict[str, list[dict]]) -> dict:
         cases_for_master = fixtures.get(master, [])
         try:
             declared = load_declared_ids(master) or None
+            aliases = load_member_aliases(master) or None
         except (FileNotFoundError, ValueError):
             declared = None
+            aliases = None
 
         for result in suite["results"]:
             if result.get("status") == "truncated":
@@ -79,7 +81,10 @@ def regrade(report: dict, fixtures: dict[str, list[dict]]) -> dict:
                     f"position would compare an answer with someone else's question."
                 )
             check = _fidelity.check_response(
-                result.get("response") or "", fixture, declared_ids=declared
+                result.get("response") or "",
+                fixture,
+                declared_ids=declared,
+                member_aliases=aliases,
             )
             entry = _fidelity.result_entry(index, fixture, check, result.get("response") or "")
             graded_results.append(entry)

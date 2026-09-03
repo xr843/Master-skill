@@ -543,3 +543,30 @@ def test_result_entry_records_how_many_mention_requirements_there_were(fidelity)
         "应病与药。",
     )
     assert entry["mention_requirements"] == 2
+
+
+# --------------------------------------------------------------------------
+# Collection-covers-member: `check_response` has to thread `member_aliases`
+# through to `audit_answer`, the same way it already threads `declared_ids`.
+# --------------------------------------------------------------------------
+
+
+def test_check_response_resolves_a_member_via_member_aliases(fidelity):
+    declared = {"Mahasi:DiscoursesOnSuttas"}
+    aliases = {"Dhammacakka Sutta": "Mahasi:DiscoursesOnSuttas"}
+    check = fidelity.check_response(
+        "【《A Discourse on Dhammacakka Sutta》】",
+        {"q": "问"},
+        declared_ids=declared,
+        member_aliases=aliases,
+    )
+    assert check["fabricated_cites"] == []
+
+
+def test_check_response_without_member_aliases_still_flags_it(fidelity):
+    """向后兼容:不传 member_aliases 时行为不变。"""
+    declared = {"Mahasi:DiscoursesOnSuttas"}
+    check = fidelity.check_response(
+        "【《A Discourse on Dhammacakka Sutta》】", {"q": "问"}, declared_ids=declared
+    )
+    assert check["fabricated_cites"] != []

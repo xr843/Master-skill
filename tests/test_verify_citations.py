@@ -5,6 +5,8 @@ import importlib
 verify_citations = importlib.import_module("verify_citations")
 audit_answer = verify_citations.audit_answer
 load_declared_ids = verify_citations.load_declared_ids
+extract_member_aliases = verify_citations.extract_member_aliases
+load_member_aliases = verify_citations.load_member_aliases
 
 # 慧能声明的离线源(与 prebuilt/master-huineng/meta.json 一致)
 HUINENG = {"T48n2008", "T08n0235", "T14n0475"}
@@ -318,6 +320,7 @@ MAHASI = {
     "Mahasi:ManualOfInsight",
     "Mahasi:ProgressOfInsight",
     "Mahasi:PracticalVipassana",
+    "Mahasi:DiscoursesOnSuttas",
     "SuttaCentral",
     "PTS:Vism",
 }
@@ -428,3 +431,80 @@ def test_a_sutta_shaped_title_does_not_shadow_a_real_compiled_teaching():
     ans = "【《Food for the Heart》§Right Practice】"
     r = audit_answer(AJAHN_CHAH, ans)
     assert "AjahnChah:FoodForTheHeart" in r["offline"]
+
+
+# ---------------------------------------------------------------------------
+# 合集覆盖成员。Mahasi:DiscoursesOnSuttas 的 note 自己点了名
+# ("Mālukyaputta Sutta / Dhammacakka Sutta / Sallekha Sutta 等开示集"),但人格
+# 引某一篇具体开示时用的是篇目名 (《A Discourse on Dhammacakka Sutta》),不是合集
+# CamelCase 名。2026-09-03 用户裁定:成员应可解析到它所属的合集。
+#
+# 设计成可选参数(member_aliases),不碰 declared_ids 的既有语义 —— 不给这个参数时
+# 行为与之前完全一致,这条新能力不会悄悄改变别的祖师的判定。
+# ---------------------------------------------------------------------------
+
+
+def test_note_with_slash_delimited_members_yields_aliases():
+    aliases = extract_member_aliases(
+        "Mahasi:DiscoursesOnSuttas",
+        "Mālukyaputta Sutta / Dhammacakka Sutta / Sallekha Sutta 等开示集，BPS Sri Lanka",
+    )
+    assert aliases == {
+        "Mālukyaputta Sutta": "Mahasi:DiscoursesOnSuttas",
+        "Dhammacakka Sutta": "Mahasi:DiscoursesOnSuttas",
+        "Sallekha Sutta": "Mahasi:DiscoursesOnSuttas",
+    }
+
+
+def test_a_plain_bibliographic_note_yields_no_aliases():
+    """没有 `/` 分隔就不是成员列表,不该被误读。"""
+    aliases = extract_member_aliases(
+        "Mahasi:ManualOfInsight",
+        "1944 缅文巨著，2016 Wisdom Publications 英译（Vipassana Metta Foundation Translation Committee）",
+    )
+    assert aliases == {}
+
+
+def test_a_single_word_segment_is_not_promiscuous_enough_to_alias():
+    """单字词(如裸的 'Sutta')几乎每条引用都会命中,不能当别名。"""
+    aliases = extract_member_aliases("X:Y", "Sutta / Vinaya 汇编")
+    assert aliases == {}
+
+
+def test_a_member_cited_with_extra_words_resolves_to_its_collection():
+    aliases = {"Dhammacakka Sutta": "Mahasi:DiscoursesOnSuttas"}
+    ans = "【《A Discourse on Dhammacakka Sutta》】"
+    r = audit_answer(MAHASI, ans, member_aliases=aliases)
+    assert r["fabricated"] == []
+    assert "Mahasi:DiscoursesOnSuttas" in r["offline"]
+
+
+def test_without_the_alias_the_same_citation_is_still_fabricated():
+    """不传 member_aliases 时行为与之前完全一致 —— 向后兼容,默认不变。"""
+    ans = "【《A Discourse on Dhammacakka Sutta》】"
+    r = audit_answer(MAHASI, ans)
+    assert any("Dhammacakka" in f for f in r["fabricated"])
+
+
+def test_an_alias_for_a_different_master_does_not_leak_in():
+    aliases = {"Dhammacakka Sutta": "Mahasi:DiscoursesOnSuttas"}
+    ans = "【《Some Dhammacakka Sutta Commentary》】"
+    r = audit_answer(HUINENG, ans, member_aliases=aliases)
+    # 慧能没有 compiled_teaching 声明,不该因为传入了别人的别名表就多出一条判定。
+    assert r["fabricated"] == []
+    assert len(r["unparsed"]) == 1
+
+
+def test_load_member_aliases_reads_the_real_mahasi_meta_json():
+    aliases = load_member_aliases("mahasi-sayadaw")
+    assert aliases.get("Dhammacakka Sutta") == "Mahasi:DiscoursesOnSuttas"
+
+
+def test_the_real_mahasi_fixture_now_resolves_via_the_declared_collection():
+    """回归 2026-08-31 那次跑的真实案例:马哈希 #12 引《A Discourse on
+    Dhammacakka Sutta》曾被判 fabricated,而合集 note 里早就点了这篇的名。"""
+    aliases = load_member_aliases("mahasi-sayadaw")
+    ans = "【《A Discourse on Dhammacakka Sutta》】"
+    r = audit_answer(MAHASI, ans, member_aliases=aliases)
+    assert r["fabricated"] == []
+    assert "Mahasi:DiscoursesOnSuttas" in r["offline"]

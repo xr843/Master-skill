@@ -40,6 +40,12 @@
       "type": "compiled_teaching",
       "id": "AjahnChah:LivingDhamma",
       "title": "Living Dhamma（《活生生的法》）"
+    },
+    {
+      "type": "compiled_teaching",
+      "id": "AjahnChah:StillnessFlowing",
+      "title": "Stillness Flowing: The Life and Teachings of Ajahn Chah（阿姜查传）",
+      "note": "Ajahn Jayasaro 著，2018"
     }
   ],
   "version": "1.0.0",

@@ -29,7 +29,7 @@ from pathlib import Path
 # `must_cite_only_existing_sources` assertion is actually enforced during graded
 # runs (it was previously schema-validated but never evaluated).
 from _masterpaths import resolve_master_dir
-from verify_citations import audit_answer, load_declared_ids
+from verify_citations import audit_answer, load_declared_ids, load_member_aliases
 
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 SCHEMA_VERSION = 1
@@ -389,6 +389,7 @@ def check_response(
     test_case: dict,
     is_first_turn: bool = True,
     declared_ids: set[str] | None = None,
+    member_aliases: dict[str, str] | None = None,
 ) -> dict:
     """Check a response against expected citations, mentions, and boundaries.
 
@@ -467,7 +468,7 @@ def check_response(
     fabricated_cites = []
     audit_unavailable = False
     if declared_ids:
-        audit = audit_answer(declared_ids, response)
+        audit = audit_answer(declared_ids, response, member_aliases)
         fabricated_cites = audit["fabricated"]
         unparsed_citations = audit["unparsed"]
         citations_checked = (
@@ -650,8 +651,10 @@ def run_tests(
     # Declared offline sources, for the must_cite_only_existing_sources B1 check.
     try:
         declared_ids = load_declared_ids(master_name)
+        member_aliases = load_member_aliases(master_name)
     except (ValueError, FileNotFoundError):
         declared_ids = None
+        member_aliases = None
 
     passed = 0
     failed = 0
@@ -692,7 +695,11 @@ def run_tests(
             continue
 
         check = check_response(
-            response_text, test, is_first_turn=True, declared_ids=declared_ids
+            response_text,
+            test,
+            is_first_turn=True,
+            declared_ids=declared_ids,
+            member_aliases=member_aliases,
         )
         results.append(result_entry(i, test, check, response_text))
 

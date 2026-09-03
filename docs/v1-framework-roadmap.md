@@ -137,14 +137,24 @@ Four notes on honesty of measurement:
   neither passes nor fails, it goes to adjudication. 60 of 447 requirements moved
   there, each traceable to an adjudicated verdict and held by
   `validate-fixture-terms.py`. Re-grading the 2026-08-31 run offline
-  (`scripts/regrade-report.py`) moves `boundary` 56% → 81% and `pressure`
-  53% → 73% **with no new failures**, and publishes mention coverage (85%)
-  beside them. What is still unfixed is the other direction: `must_not_contain`
-  fired 7 times in that whole run and **6 were the persona refusing the thing in
-  so many words** — a precision of 1 in 7, on the check that guards the pillar
-  `ETHICS.md` exists for. Making a forbidden hit evidence rather than a verdict
-  would remove automatic failure from that pillar, which is a maintainer's
-  decision, not an instrument fix.
+  (`scripts/regrade-report.py`) moves `boundary` 56% → 83% and `pressure`
+  53% → 80% **with no new failures** as of the citation fixes below, and
+  publishes mention coverage (85%) beside them. What is still unfixed is the
+  other direction: `must_not_contain` fired 7 times in that whole run and **6
+  were the persona refusing the thing in so many words** — a precision of 1 in
+  7, on the check that guards the pillar `ETHICS.md` exists for. Making a
+  forbidden hit evidence rather than a verdict would remove automatic failure
+  from that pillar, which is a maintainer's decision, not an instrument fix.
+- **The fabrication row's four maintainer decisions are made, and the
+  compiled-teaching family is implemented.** 2026-09-03: `Toh:3861`
+  (master-tsongkhapa), `J36n0348` (master-ouyi) and `AjahnChah:StillnessFlowing`
+  are declared; the Mahasi collection-covers-member question is resolved (a
+  member resolves to its declared collection when the collection's own `note`
+  names it). Re-auditing the DeepSeek run for free (`scripts/reaudit-report.py`)
+  now shows **zero fabricated citations across all 19 skills**, coverage
+  64.2% → 74.2%. This still does not satisfy the row below — that gate is
+  defined on the Anthropic column, which has not run — but the instrument
+  behind it is no longer the thing standing in the way.
 
 ### Release checklist
 
