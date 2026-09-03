@@ -83,6 +83,15 @@ PASS into a FAIL.
 
 ## The three contract violations, and why "fabricated" is the wrong word for them
 
+> **Resolved 2026-09-03.** The maintainer declared `Toh:3861` in
+> `master-tsongkhapa/meta.json.sources[]` — option 1 below. Re-auditing this
+> run's stored answers (`scripts/reaudit-report.py`) now shows **zero**
+> fabricated citations across all 19 skills, not just this one. Coverage for
+> `master-tsongkhapa` is unchanged at 6% (declaring one Toh id does not make his
+> bare Wylie titles readable — see the next section); what changed is that the
+> three citations his answers *did* make now resolve as `offline` instead of
+> `fabricated`. The analysis below is left as it was written, for the record.
+
 `master-tsongkhapa` is the only skill that produced any, and all three are the
 same identifier — `Toh:3861` — cited in three separate answers.
 
@@ -128,7 +137,7 @@ That is a doctrinal and bibliographic call, not a code change.
 | Skill | Coverage | Why |
 |---|---|---|
 | `master-ajahn-chah` | 0% (0 / 48) → **62% re-audited** | Declares `SuttaCentral` (corpus-level, unauditable by contract) and `AjahnChah:FoodForTheHeart` (compiled teachings, `Author:Work`). The compiled-teaching family was **not implemented** in `verify_citations.py`; it is now. The 18 still unreadable are all `SC: MN 10 / …` corpus-level references. |
-| `master-tsongkhapa` | 6% (3 / 53) | Declares bare Wylie titles (`Lam-rim-chen-mo`) that free text cannot be distinguished from an invented title. Documented as out of reach. |
+| `master-tsongkhapa` | 6% (3 / 53), **0 fabricated** (was 3) | Declares bare Wylie titles (`Lam-rim-chen-mo`) that free text cannot be distinguished from an invented title — still out of reach, coverage unchanged. The three citations that *were* readable are `Toh:3861`, now declared. |
 | `master-mahasi-sayadaw` | 23% (12 / 52) → **81% re-audited** | Same compiled-teaching family (`Mahasi:ManualOfInsight`). The 10 still unreadable are corpus-level `SC:` references and one website citation. |
 | `compare-masters`, `master-curriculum` | 0% | No `meta.json`, so no declared set to audit against; recorded as `audit_unavailable`. |
 | `master-help`, `master-debate` | n/a | Emit no citations at all. |
@@ -140,19 +149,23 @@ not**. That was a number (0% and 23%) rather than a sentence in a known-gaps lis
 and the number is what made it fixable. **All four families now resolve.**
 
 Re-auditing surfaced the first two citation findings these two masters have ever
-produced, and they are not the same kind of thing:
+produced, and they were not the same kind of thing. **Both resolved 2026-09-03:**
 
 - `master-ajahn-chah` #12 cites **《Stillness Flowing》** — a real book (Ajahn
-  Jayasaro's biography of Ajahn Chah) that `meta.json` does not declare. A
+  Jayasaro's biography of Ajahn Chah, 2018) that `meta.json` did not declare. A
   genuine undeclared source, and the first one ever caught for a 南传 persona.
+  **Declared** in `meta.json.sources[]` as `AjahnChah:StillnessFlowing`.
 - `master-mahasi-sayadaw` #12 cites **《A Discourse on Dhammacakka Sutta》**, and
   `Mahasi:DiscoursesOnSuttas` is declared with the note *"Mālukyaputta Sutta /
   Dhammacakka Sutta / Sallekha Sutta 等开示集"* — **the declared collection names
-  this very discourse among its members.** So the citation is covered in
+  this very discourse among its members.** So the citation was covered in
   substance while the id names the collection and the answer names a member.
-  Whether a collection id covers its members is a contract decision, not a
-  matching bug: either the collection is split into per-work ids, or the rule
-  says a member resolves to its collection. Left for a maintainer.
+  **The maintainer's decision: a member resolves to its declared collection.**
+  Implemented as `extract_member_aliases()` / `load_member_aliases()` in
+  `verify_citations.py`, parsed from the collection's own `note` field — no
+  fixture, meta.json schema, or contract field changed beyond adding the one
+  declaration above. Generalizes to any future collection whose `note` lists
+  members in `A / B / C` form.
 
 ## Truncation
 
@@ -174,8 +187,14 @@ failures that never happened.
 
 0. Done, 2026-09-03: every failure and every `needs_review` in this run is
    adjudicated in [`ADJUDICATION.md`](./ADJUDICATION.md).
-1. Resolve the `Toh:3861` contract inconsistency (a maintainer decision, above).
-2. Implement the compiled-teaching family in `verify_citations.py` — it is the
-   last of the four, and it is what holds Ajahn Chah at 0% and Mahasi at 23%.
-3. Only then is an Anthropic run worth its $5–8: it would land on an instrument
-   that can read three quarters of what it is shown rather than two thirds.
+1. Done, 2026-09-03: `Toh:3861` declared, `J36n0348` (master-ouyi) declared,
+   `AjahnChah:StillnessFlowing` declared, and the Mahasi collection-covers-member
+   question resolved — all four maintainer decisions this report and
+   `KNOWN_UNDECLARED` were carrying. Zero fabricated citations on re-audit.
+2. Done, 2026-09-03: compiled-teaching family implemented in
+   `verify_citations.py` — the last of the four contract families. Ajahn Chah
+   0% → 62%, Mahasi 23% → 81%, re-audited for free against this run's stored
+   answers.
+3. **Now** is when an Anthropic run is worth its $5–8: the instrument reads 74%
+   of what it is shown instead of 64%, and has zero known fabrication findings
+   left unresolved. Report the budget and get a nod before spending it.

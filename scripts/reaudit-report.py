@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from verify_citations import audit_answer, load_declared_ids  # noqa: E402
+from verify_citations import audit_answer, load_declared_ids, load_member_aliases  # noqa: E402
 
 
 def reaudit(report: dict) -> dict:
@@ -55,6 +55,7 @@ def reaudit(report: dict) -> dict:
 
         try:
             declared = load_declared_ids(suite["master"])
+            aliases = load_member_aliases(suite["master"])
         except (FileNotFoundError, ValueError):
             # No meta.json, so no declared set to audit against. Recorded as
             # unavailable rather than as a clean zero — the distinction this
@@ -77,7 +78,7 @@ def reaudit(report: dict) -> dict:
         for result in suite["results"]:
             if result.get("status") == "truncated":
                 continue
-            audit = audit_answer(declared, result.get("response") or "")
+            audit = audit_answer(declared, result.get("response") or "", aliases)
             checked += (
                 len(audit["offline"]) + len(audit["live"]) + len(audit["fabricated"])
             )

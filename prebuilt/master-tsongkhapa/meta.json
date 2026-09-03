@@ -39,6 +39,12 @@
       "note": "BDRC.io 检索 'tsong kha pa' 获取实际 W-number 与卷次"
     },
     {
+      "type": "tibetan_canon",
+      "id": "Toh:3861",
+      "title": "入中论 (Madhyamakāvatāra)",
+      "note": "月称造，应成中观根本论典；宗喀巴 SKILL.md §传承引用格式 (Toh 3861)"
+    },
+    {
       "type": "tibetan_treatise",
       "id": "Lam-rim-chen-mo",
       "title": "菩提道次第广论 (Lam rim chen mo)",

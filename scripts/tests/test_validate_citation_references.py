@@ -56,11 +56,34 @@ def test_a_real_citation_is_not_a_template(validator):
 
 # --- the sweep itself -------------------------------------------------------
 
-def test_finds_the_tsongkhapa_instruction_that_violates_its_own_contract(validator):
-    """SKILL.md:125 tells the persona to cite Toh 3861; meta.json declares five
-    sources and none is it. Every use of that instruction violates B1."""
-    found = {(f.master, f.citation) for f in validator.find_undeclared(ROOT / "prebuilt")}
-    assert ("master-tsongkhapa", "Toh:3861") in found
+def test_finds_a_persona_instructing_an_undeclared_citation(validator, tmp_path):
+    """SKILL.md:125 used to tell master-tsongkhapa to cite Toh 3861 while its
+    meta.json declared five sources and none was it (resolved 2026-09-03 by
+    declaring it — see KNOWN_UNDECLARED's history in CHANGELOG.md). The class of
+    defect is still real, so this pins it against a synthetic persona rather than
+    depending on a live-repo finding that this gate exists to make disappear.
+    """
+    persona = tmp_path / "master-example"
+    (persona / "sources").mkdir(parents=True)
+    (persona / "meta.json").write_text(
+        '{"name":"x","slug":"example","sources":[{"type":"cbeta","id":"T48n2008",'
+        '"title":"t"}]}',
+        encoding="utf-8",
+    )
+    (persona / "SKILL.md").write_text(
+        "印度大乘论典所引：【月称《入中论》§第六章】（Toh 3861）", encoding="utf-8"
+    )
+    found = {(f.master, f.citation) for f in validator.find_undeclared(tmp_path)}
+    assert ("master-example", "Toh:3861") in found
+
+
+def test_the_real_repo_has_no_undeclared_citations_left(validator):
+    """Both KNOWN_UNDECLARED findings this gate ever recorded are now declared
+    (Toh:3861 in master-tsongkhapa, J36n0348 in master-ouyi). A live repo with
+    zero real findings should produce zero — this is the gate's own green,
+    not a fixture's."""
+    found = validator.find_undeclared(ROOT / "prebuilt")
+    assert found == []
 
 
 def test_does_not_flag_format_templates(validator):
@@ -98,3 +121,27 @@ def test_an_unknown_finding_fails_the_gate(validator, tmp_path):
     (persona / "SKILL.md").write_text("引用格式：【《伪经》，T99n9999】", encoding="utf-8")
     found = validator.find_undeclared(tmp_path)
     assert ("master-fake", "T99n9999") in {(f.master, f.citation) for f in found}
+
+
+# --------------------------------------------------------------------------
+# The static sweep shares the same collection-covers-member resolution the
+# live judge got in verify_citations.py — a persona's own docs citing a
+# collection's declared member by title should not be flagged either.
+# --------------------------------------------------------------------------
+
+
+def test_static_sweep_resolves_a_collection_member_via_its_note(validator, tmp_path):
+    persona = tmp_path / "master-example"
+    (persona / "sources").mkdir(parents=True)
+    (persona / "meta.json").write_text(
+        '{"name":"x","slug":"example","sources":['
+        '{"type":"compiled_teaching","id":"Ex:Discourses",'
+        '"title":"t","note":"Foo Sutta / Bar Sutta 等开示集"}]}',
+        encoding="utf-8",
+    )
+    (persona / "SKILL.md").write_text(
+        "开示所引：【《A Discourse on Bar Sutta》】", encoding="utf-8"
+    )
+    found = {(f.master, f.citation) for f in validator.find_undeclared(tmp_path)}
+    assert ("master-example", "Ex:Discourses") not in found
+    assert not any(f[0] == "master-example" for f in found)

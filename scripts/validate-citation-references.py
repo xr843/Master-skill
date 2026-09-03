@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from verify_citations import audit_answer  # noqa: E402
+from verify_citations import audit_answer, extract_member_aliases  # noqa: E402
 
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 
@@ -46,21 +46,14 @@ _TEMPLATE_MARKERS = (
 # allowlist: an entry here is a defect that has been *seen*, not one that has
 # been permitted. Do not add to it to turn a red build green — that is exactly
 # the failure this gate exists to prevent.
-KNOWN_UNDECLARED = {
-    ("master-tsongkhapa", "Toh:3861"): (
-        "SKILL.md:125 and sources/INDEX.md:15 prescribe 【月称《入中论》§第六章】"
-        "（Toh 3861）. Toh 3861 is Candrakirti's Madhyamakavatara — a real id, not a "
-        "hallucination — but meta.json declares five sources and none is it. Resolve by "
-        "declaring it (this persona may cite Candrakirti's root text) or by deleting the "
-        "example (it may cite only what Tsongkhapa wrote). Those assert different things."
-    ),
-    ("master-ouyi", "J36n0348"): (
-        "references/teaching.md cites 【《灵峰宗论》】 — Ouyi's own collected works — with a "
-        "cbetaonline.dila.edu.tw link to J36n0348, which meta.json does not declare. Two "
-        "fixes: declare J36n0348, or extend the B1 live-citation rule to accept CBETA "
-        "Online links the way it accepts fojin.app ones. The contract currently names only FoJin."
-    ),
-}
+#
+# Empty as of 2026-09-03. Both findings this gate ever recorded were resolved
+# by declaring the source: `Toh:3861` in master-tsongkhapa/meta.json (月称《入
+# 中论》is a real Tengyur text Tsongkhapa's tradition treats as its own
+# foundation) and `J36n0348` in master-ouyi/meta.json (《灵峰宗论》is Ouyi's own
+# collected works). Neither needed a B1 contract change — both simply belonged
+# in the declared set. See CHANGELOG.md for the maintainer decision.
+KNOWN_UNDECLARED: dict[tuple[str, str], str] = {}
 
 
 def is_template_block(text: str) -> bool:
@@ -98,6 +91,20 @@ def _declared_ids(meta_path: Path) -> set[str]:
     return ids
 
 
+def _member_aliases(meta_path: Path) -> dict[str, str]:
+    """同 verify_citations.load_member_aliases,但直接接收已打开的 meta_path ——
+    这里已经读过一次 meta.json,不必再靠 master 名重新定位目录。"""
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    aliases: dict[str, str] = {}
+    for src in meta.get("sources", []):
+        if src.get("type") != "compiled_teaching":
+            continue
+        sid, note = src.get("id"), src.get("note")
+        if sid and note:
+            aliases.update(extract_member_aliases(sid, note))
+    return aliases
+
+
 def find_undeclared(prebuilt_dir: Path) -> list[Finding]:
     """Every citation the personas' own material makes that meta.json omits."""
     findings: list[Finding] = []
@@ -108,6 +115,7 @@ def find_undeclared(prebuilt_dir: Path) -> list[Finding]:
         declared = _declared_ids(meta_path)
         if not declared:
             continue  # nothing to audit against; see master-debate
+        aliases = _member_aliases(meta_path)
         docs = [persona / "SKILL.md"]
         docs += sorted(persona.glob("sources/*.md"))
         docs += sorted(persona.glob("references/*.md"))
@@ -115,7 +123,7 @@ def find_undeclared(prebuilt_dir: Path) -> list[Finding]:
             if not doc.is_file():
                 continue
             text = _strip_template_citations(doc.read_text(encoding="utf-8"))
-            for citation in dict.fromkeys(audit_answer(declared, text)["fabricated"]):
+            for citation in dict.fromkeys(audit_answer(declared, text, aliases)["fabricated"]):
                 findings.append(
                     Finding(persona.name, citation, str(doc.relative_to(prebuilt_dir.parent)))
                 )

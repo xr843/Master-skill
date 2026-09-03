@@ -108,10 +108,18 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
     ajahn = by_master["master-ajahn-chah"]
     assert ajahn["recorded"] == {"checked": 0, "unparsed": 48}
     assert ajahn["recomputed"] == {"checked": 30, "unparsed": 18}
+    # 《Stillness Flowing》 was a genuine undeclared source (ajahn-chah #12) until
+    # the maintainer declared it 2026-09-03. Coverage doesn't move — a
+    # fabricated citation was already counted as "checked" — but it stops
+    # being fabricated.
+    assert ajahn["fabricated"] == []
 
     mahasi = by_master["master-mahasi-sayadaw"]
     assert mahasi["recorded"] == {"checked": 12, "unparsed": 40}
     assert mahasi["recomputed"] == {"checked": 42, "unparsed": 10}
+    # 《A Discourse on Dhammacakka Sutta》 (mahasi #12) resolves via
+    # collection-covers-member: Mahasi:DiscoursesOnSuttas' own note names it.
+    assert mahasi["fabricated"] == []
 
     # Everything else must be untouched — a citation-family change that moves a
     # master it does not concern is a bug, not an improvement.
