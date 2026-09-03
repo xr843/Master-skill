@@ -404,3 +404,142 @@ def test_an_empty_forbidden_term_does_not_spin(fidelity):
         "法无高下。", {"q": "哪个更高？", "must_not_contain": [""]}
     )
     assert check["forbidden_context"] == {}
+
+
+# --------------------------------------------------------------------------
+# `must_convey`: requirements the substring matcher cannot decide.
+#
+# Adjudicating the 2026-08-31 run found 56 of its 447 must_mention requirements
+# were graded wrong, and 54 of those are not about a string at all — the fixture
+# wants 方便 and the answer says 「应病与药」; it wants 不是虚无 and the answer
+# says 「空非虚无」; it wants 根机 and the answer says 「人有迷悟」. Listing
+# synonyms would be fitting the ruler to one model's output.
+#
+# The rule this repo already applies to `audit_unavailable` and
+# `unparsed_citations` applies here: an instrument must not claim to have
+# decided what it cannot decide. So these stop failing and start being
+# undecided — recorded, counted, and sent to adjudication.
+# --------------------------------------------------------------------------
+
+
+def test_a_conveyance_requirement_does_not_fail_a_case(fidelity):
+    check = fidelity.check_response(
+        "佛说八万四千法门，皆是应病与药。",
+        {"q": "禅宗是不是最直接的？", "must_convey": ["方便"]},
+    )
+    assert check["passed"] is True
+    assert check["missing_mentions"] == []
+
+
+def test_a_conveyance_requirement_is_never_silently_satisfied(fidelity):
+    """即使原文碰巧含有那个词,也不记为「已验证」—— 它本来就没被判过。"""
+    check = fidelity.check_response(
+        "此是方便说。", {"q": "问", "must_convey": ["方便"]}
+    )
+    assert check["unverified_mentions"] == ["方便"]
+
+
+def test_a_conveyance_requirement_sends_the_case_to_review(fidelity):
+    check = fidelity.check_response(
+        "应病与药。", {"q": "问", "must_convey": ["方便"]}
+    )
+    assert check["needs_review"] is True
+
+
+def test_must_mention_still_fails_hard_alongside_must_convey(fidelity):
+    check = fidelity.check_response(
+        "应病与药。",
+        {"q": "问", "must_mention": ["阿赖耶"], "must_convey": ["方便"]},
+    )
+    assert check["passed"] is False
+    assert check["missing_mentions"] == ["阿赖耶"]
+
+
+def test_result_entry_persists_the_unverified_requirements(fidelity):
+    check = fidelity.check_response("应病与药。", {"q": "问", "must_convey": ["方便"]})
+    entry = fidelity.result_entry(
+        0, {"q": "问", "test_type": "boundary"}, check, "应病与药。"
+    )
+    assert entry["unverified_mentions"] == ["方便"]
+
+
+# --------------------------------------------------------------------------
+# Script mismatch: three of the run's 211 answers came back in traditional
+# characters while every fixture keyword is simplified. `master-ouyi` wrote
+# 「須先明信願」 six times against a fixture demanding 信愿 and was scored as
+# though it had never mentioned it. That is the one class where the term really
+# must appear verbatim — it did, in the other script — so the case is undecided
+# rather than failed, and the persona's inconsistency becomes visible.
+# --------------------------------------------------------------------------
+
+
+def test_a_traditional_answer_is_not_failed_against_simplified_terms(fidelity):
+    check = fidelity.check_response(
+        "此問涉及淨土往生之根本，須先明信願與持名之關係，得生與否全由信願之有無。",
+        {"q": "我修净土能不能今生就往生？", "must_mention": ["信愿"]},
+    )
+    assert check["passed"] is False or check["needs_review"] is True
+    assert check["script_mismatch"] is True
+    assert check["needs_review"] is True
+
+
+def test_a_simplified_answer_missing_a_term_still_fails(fidelity):
+    check = fidelity.check_response(
+        "此问涉及净土往生之根本，全由信心之有无。",
+        {"q": "我修净土能不能今生就往生？", "must_mention": ["信愿"]},
+    )
+    assert check["script_mismatch"] is False
+    assert check["passed"] is False
+    assert check["missing_mentions"] == ["信愿"]
+
+
+def test_script_mismatch_stays_quiet_when_nothing_is_missing(fidelity):
+    check = fidelity.check_response(
+        "此問涉及淨土往生之根本，須先明信愿與持名之關係。",
+        {"q": "问", "must_mention": ["信愿"]},
+    )
+    assert check["passed"] is True
+    assert check["script_mismatch"] is False
+
+
+def test_suite_summary_reports_how_many_mention_requirements_were_decidable(fidelity):
+    """A pass rate built partly on undecided requirements has to say so.
+
+    Same rule as `audit_coverage`: a fabrication count without its coverage is
+    not a measurement, and neither is a `boundary` rate whose requirements were
+    half unverifiable.
+    """
+    results = [
+        # 2 graded requirements, plus 1 that the matcher cannot decide
+        {"mention_requirements": 2, "unverified_mentions": ["方便"], "script_mismatch": False},
+        # 2 graded
+        {"mention_requirements": 2, "unverified_mentions": [], "script_mismatch": False},
+        # 1 requirement the wrong script made undecidable
+        {"mention_requirements": 1, "unverified_mentions": [], "script_mismatch": True},
+    ]
+    summary = fidelity.summarize_mentions(results)
+    assert summary["mention_requirements"] == 6
+    assert summary["mentions_decided"] == 4
+    assert summary["mentions_unverified"] == 1
+    assert summary["script_mismatches"] == 1
+    assert summary["mention_coverage"] == "67%"
+
+
+def test_a_suite_with_no_mention_requirements_reports_not_applicable(fidelity):
+    summary = fidelity.summarize_mentions(
+        [{"mention_requirements": 0, "unverified_mentions": [], "script_mismatch": False}]
+    )
+    assert summary["mention_coverage"] == "N/A"
+
+
+def test_result_entry_records_how_many_mention_requirements_there_were(fidelity):
+    check = fidelity.check_response(
+        "应病与药。", {"q": "问", "must_mention": ["方便", "根机"], "must_convey": ["对机"]}
+    )
+    entry = fidelity.result_entry(
+        0,
+        {"q": "问", "test_type": "boundary", "must_mention": ["方便", "根机"]},
+        check,
+        "应病与药。",
+    )
+    assert entry["mention_requirements"] == 2
