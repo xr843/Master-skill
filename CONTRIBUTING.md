@@ -65,7 +65,15 @@ python scripts/test-fidelity.py --all --dry-run
 
 # Fidelity 实跑（需要 ANTHROPIC_API_KEY，一次 ≈ $0.05-0.10）
 ANTHROPIC_API_KEY=sk-... python scripts/test-fidelity.py --master master-zhiyi --max-tests 1
+
+# Python 单测（判分器、引用审计器、各项门禁 —— 只跑 `npm test` 也会覆盖，
+# 但改 scripts/ 时单独跑这条更快）
+python -m pytest tests/ scripts/tests/ -q
 ```
+
+`npm test` 会把上面这些（除需要 API key 的实跑）串起来跑一遍，**包括 Python 单测**——
+CI 一直单独跑 `pytest`，直到 2026-09-03 本地 `npm test` 才补上这一步；改
+`scripts/**` 前先跑一次，避免在 CI 才发现单测崩了。
 
 ---
 

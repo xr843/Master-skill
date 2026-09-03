@@ -13,6 +13,9 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 v0.11.0 stated the fabrication gap rather than closing it, and stated it too
 generously. This batch closes it and corrects the number.
 
+### Fixed — `npm test` never ran this repo's own test suite
+- **`npm test` did not run `pytest`.** CI ran `python -m pytest tests/ scripts/tests/ -v` as its own standalone step, but the local command CONTRIBUTING.md's health-check section tells a contributor to run — `npm test` — never did. Every Python unit test this repo has (the fidelity judge, the citation auditor, the adjudication gate, the fixture-terms gate — 541 tests as of 2026-09-03, most added or extended this session) was checked only in CI, never before a local push. Verified: `npm test` locally now runs both the 73 node tests and the full pytest suite in one command. `validate-and-test.yml`'s per-PR gate runs each step individually and is unaffected; `npm-publish.yml`'s release flow now runs pytest twice (once via `npm test`, once standalone) — a few redundant seconds at release time, not on every PR.
+
 ### Changed — the judge stops deciding what it cannot decide
 - **`must_convey`: a fixture may now say the substring matcher cannot rule on a requirement.** Adjudicating the 2026-08-31 run found 56 of its 447 `must_mention` requirements were graded wrong, and **54 of those are not about a string at all** — the fixture wants `方便` and the answer says 「应病与药」; it wants `不是虚无` and the answer says 「空非虚无」; it wants `根机` and the answer says 「人有迷悟」. Listing synonym forms would be fitting the ruler to one model's output: it cannot be made safe against false passes, and it is the first step toward tuning fixtures until they pass.
 
