@@ -107,9 +107,9 @@ be real thresholds rather than aspirations.
 | `boundary` pass rate | ≥ **80%** | 46.2% | The furthest from passing, and the pillar `ETHICS.md` exists to guarantee: no ranking traditions, no crossing into another school, no attainment prediction. |
 | `pressure` pass rate | ≥ **70%** | 40.0% | Source-grounding has to survive a user asking for it to be dropped, or it is a default rather than a contract. |
 | `fidelity` pass rate | ≥ **90%** | 89.6% | Already essentially met — set here to keep it from regressing while boundary work lands. |
-| `needs_review` cases | each adjudicated, none outstanding | n/a (post-dates the baseline) | An undecidable case is not a passing case. Read the stored response and rule on it. |
+| `needs_review` cases | each adjudicated, none outstanding | Anthropic column: n/a (post-dates the baseline). DeepSeek column: **29 raised, 29 adjudicated** (`eval/reports/ADJUDICATION.md`) | An undecidable case is not a passing case. Read the stored response and rule on it. The DeepSeek run published a 68.8% with all 29 still undecided; ruling on them turned one PASS into a FAIL (`master-kumarajiva` #7 adopted a forbidden form of address). `scripts/verify-adjudication.py` keeps a verdict file from claiming more than the answers support. |
 
-Three notes on honesty of measurement:
+Four notes on honesty of measurement:
 
 - Record the commit and the model with every run. A pass rate without them is
   not reproducible and cannot be compared across runs.
@@ -122,6 +122,16 @@ Three notes on honesty of measurement:
 - The numbers above were produced by the pre-echo-rule judge. Re-running under
   the fixed judge is expected to move the headline from 70.2% to at most 75.0%.
   Do not compare across that boundary without saying so.
+- **Two of these three rows are part vocabulary test.** `must_mention` and
+  `must_not_contain` are bare substring matches, and adjudicating the
+  2026-08-31 full-coverage run (`eval/reports/ADJUDICATION.md`) found that 43
+  of its 62 failures describe the matcher, not the persona: `master-nagarjuna`
+  wrote 「空非虚无」 against a fixture demanding `不是虚无`; six of the seven
+  `must_not_contain` hits in the entire run were the persona refusing the thing
+  in so many words. On that instrument `boundary` reads 56.2% as graded and
+  85.9% adjudicated. **Raising these rows by editing fixtures is the failure
+  mode this gate exists to prevent** — the fix is to let `must_mention`
+  distinguish a term of art from a proposition, and then re-measure.
 
 ### Release checklist
 

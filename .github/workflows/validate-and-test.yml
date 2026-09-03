@@ -89,6 +89,13 @@ jobs:
       - name: Validate citation references (SKILL.md / sources / references)
         run: python scripts/validate-citation-references.py
 
+      # A committed adjudication must prove it read the answers it ruled on:
+      # every verdict carries a quote, and the quote must still be in the
+      # stored response. The headline numbers are recomputed from the verdicts
+      # rather than trusted as typed.
+      - name: Verify fidelity adjudications
+        run: python scripts/verify-adjudication.py
+
       - name: Validate cross_critique schema
         run: python scripts/validate-cross-critique.py
 

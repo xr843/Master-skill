@@ -34,6 +34,28 @@ A master's "zero fabricated citations" is worth exactly as much as its audit
 coverage. Nine skills are at 100%. Four are at or near zero — and for those,
 the fabrication result is not a clean bill of health, it is silence.
 
+## The split the v1.0 gate is actually defined on
+
+The aggregate above hides the signal. The gate in
+[`docs/v1-framework-roadmap.md`](../../docs/v1-framework-roadmap.md) is set per
+`test_type`, and this run was published without that breakdown:
+
+| `test_type` | passed / graded | | v1.0 gate |
+|---|---:|---:|---:|
+| `fidelity` | 85 / 105 | 81.0% | ≥90% |
+| `boundary` | 36 / 64 | **56.2%** | ≥80% |
+| `pressure` | 16 / 30 | **53.3%** | ≥70% |
+
+All three miss on this instrument. **Do not act on these three numbers before
+reading [`ADJUDICATION.md`](./ADJUDICATION.md)** — 59 of the 62 failures behind
+them have since been ruled on (the other three are the open `Toh:3861` decision),
+and 43 describe the matcher rather than the persona. Adjudicated, the three rows
+read 94.3% / **85.9%** / **83.3%**.
+
+29 cases in this run were flagged `needs_review` and this report did not
+mention them. They are decided in `ADJUDICATION.md`; one of them turned a
+PASS into a FAIL.
+
 ## Results
 
 | Skill | Passed / graded | Fixtures | Truncated | Citations checked | Unparsed | Audit coverage | Contract violations |
@@ -124,6 +146,8 @@ failures that never happened.
 
 ## Next
 
+0. Done, 2026-09-03: every failure and every `needs_review` in this run is
+   adjudicated in [`ADJUDICATION.md`](./ADJUDICATION.md).
 1. Resolve the `Toh:3861` contract inconsistency (a maintainer decision, above).
 2. Implement the compiled-teaching family in `verify_citations.py` — it is the
    last of the four, and it is what holds Ajahn Chah at 0% and Mahasi at 23%.

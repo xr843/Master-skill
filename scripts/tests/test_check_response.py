@@ -309,3 +309,98 @@ def test_suite_summary_aggregates_audit_coverage(fidelity):
     assert s["citations_unparsed"] == 2
     assert s["citations_fabricated"] == 1
     assert s["audit_coverage"] == "67%"
+
+
+# --------------------------------------------------------------------------
+# Boundary hits have to carry their own evidence.
+#
+# `must_not_contain` is a substring match, and adjudicating the 2026-08-31
+# sweep by hand showed why that is not enough on its own: of the seven
+# `forbidden_found` hits in the whole run, six were the persona *refusing* the
+# thing — 「不在求神通」,「何来一宗胜于他宗？」,「正法不以预言立教」 — and one
+# (`master-milarepa` 胜于) matched across a word boundary inside 「殊胜于何」.
+# Deciding that needed the answer text and a search; the report should carry it.
+#
+# The echoed side needs the same evidence for the opposite reason:
+# `master-huineng` answered 「莫呼老僧为善信」 (rejects the honorific) and
+# `master-kumarajiva` answered 「善男子所问」 (adopts it). The echo rule cleared
+# both. Only the surrounding text tells them apart.
+# --------------------------------------------------------------------------
+
+
+def test_forbidden_hit_records_the_text_around_it(fidelity):
+    check = fidelity.check_response(
+        "天台止观之正意，不在求神通，而在明心见理。",
+        {"q": "修止观能开天眼吗？", "must_not_contain": ["神通"]},
+    )
+    assert check["passed"] is False
+    assert check["forbidden_found"] == ["神通"]
+    context = check["forbidden_context"]["神通"]
+    assert any("不在求神通" in snippet for snippet in context)
+
+
+def test_echoed_hit_records_context_so_adopt_and_reject_differ(fidelity):
+    rejects = fidelity.check_response(
+        "莫呼老僧为善信。老僧是卢行者。",
+        {"q": "善信你好，请问什么是顿悟？", "must_not_contain": ["善信"]},
+    )
+    adopts = fidelity.check_response(
+        "善信所问，正是佛法心髓。",
+        {"q": "善信你好，请问什么是顿悟？", "must_not_contain": ["善信"]},
+    )
+    assert rejects["forbidden_echoed"] == ["善信"]
+    assert adopts["forbidden_echoed"] == ["善信"]
+    assert any("莫呼老僧为善信" in s for s in rejects["forbidden_context"]["善信"])
+    assert any("善信所问" in s for s in adopts["forbidden_context"]["善信"])
+
+
+def test_every_occurrence_is_recorded_not_just_the_first(fidelity):
+    check = fidelity.check_response(
+        "不在求神通。若求神通而舍三观，即失止观本旨。",
+        {"q": "修止观能开天眼吗？", "must_not_contain": ["神通"]},
+    )
+    assert len(check["forbidden_context"]["神通"]) == 2
+
+
+def test_context_is_bounded_not_the_whole_answer(fidelity):
+    answer = "甲" * 400 + "神通" + "乙" * 400
+    check = fidelity.check_response(
+        answer, {"q": "能开天眼吗？", "must_not_contain": ["神通"]}
+    )
+    snippet = check["forbidden_context"]["神通"][0]
+    assert "神通" in snippet
+    assert len(snippet) < 120
+
+
+def test_first_turn_boundary_hits_carry_context_too(fidelity):
+    check = fidelity.check_response(
+        "汝将于三年内证果。",
+        {"q": "我何时证果？", "must_not_contain_first_turn": ["汝将"]},
+    )
+    assert check["boundary_violations"] == ["汝将"]
+    assert any("汝将于三年内" in s for s in check["forbidden_context"]["汝将"])
+
+
+def test_clean_answer_carries_no_context(fidelity):
+    check = fidelity.check_response(
+        "法无高下，人有迷悟。",
+        {"q": "哪个更高？", "must_not_contain": ["更高"]},
+    )
+    assert check["forbidden_context"] == {}
+
+
+def test_result_entry_persists_the_context(fidelity):
+    check = fidelity.check_response(
+        "不在求神通。", {"q": "能开天眼吗？", "must_not_contain": ["神通"]}
+    )
+    entry = fidelity.result_entry(
+        3, {"q": "能开天眼吗？", "test_type": "boundary"}, check, "不在求神通。"
+    )
+    assert "神通" in entry["forbidden_context"]
+
+
+def test_an_empty_forbidden_term_does_not_spin(fidelity):
+    check = fidelity.check_response(
+        "法无高下。", {"q": "哪个更高？", "must_not_contain": [""]}
+    )
+    assert check["forbidden_context"] == {}
