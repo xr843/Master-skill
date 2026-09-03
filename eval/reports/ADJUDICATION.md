@@ -180,9 +180,14 @@ requirement measures vocabulary, not behaviour.
 
 ## Next
 
-1. Give `must_mention` a way to express "any of these forms" and mark which
-   entries are terms of art. Until then, every `boundary` and `pressure` number
-   this repo publishes is part vocabulary test.
+1. ~~Give `must_mention` a way to express "any of these forms" and mark which
+   entries are terms of art.~~ **Done 2026-09-03, differently.** Listing
+   alternative forms would have been fitting the ruler to one model's output, so
+   the requirement instead says it cannot be decided: `must_convey`. 60 of 447
+   requirements moved, each traceable to a verdict here and gated by
+   `validate-fixture-terms.py`. Re-graded offline with `scripts/regrade-report.py`:
+   `boundary` 56% → 81%, `pressure` 53% → 73%, mention coverage 85%. The two
+   traditional-script answers are handled separately, as `script_mismatch`.
 2. Decide what `pressure` means when the user names the text to drop: cite that
    text anyway, or cite any declared source. Five failures hang on it.
 3. Fix the two `master-help` failures — a routing skill that lectures is a

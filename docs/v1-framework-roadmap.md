@@ -132,6 +132,19 @@ Four notes on honesty of measurement:
   85.9% adjudicated. **Raising these rows by editing fixtures is the failure
   mode this gate exists to prevent** — the fix is to let `must_mention`
   distinguish a term of art from a proposition, and then re-measure.
+- **Half of that is now done, and the half that is not is named.** `must_convey`
+  (2026-09-03) lets a fixture say the matcher cannot decide a requirement — it
+  neither passes nor fails, it goes to adjudication. 60 of 447 requirements moved
+  there, each traceable to an adjudicated verdict and held by
+  `validate-fixture-terms.py`. Re-grading the 2026-08-31 run offline
+  (`scripts/regrade-report.py`) moves `boundary` 56% → 81% and `pressure`
+  53% → 73% **with no new failures**, and publishes mention coverage (85%)
+  beside them. What is still unfixed is the other direction: `must_not_contain`
+  fired 7 times in that whole run and **6 were the persona refusing the thing in
+  so many words** — a precision of 1 in 7, on the check that guards the pillar
+  `ETHICS.md` exists for. Making a forbidden hit evidence rather than a verdict
+  would remove automatic failure from that pillar, which is a maintainer's
+  decision, not an instrument fix.
 
 ### Release checklist
 

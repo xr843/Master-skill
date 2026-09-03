@@ -214,10 +214,32 @@ verified_at: <YYYY-MM-DD>
   "q": "用户会问的典型问题",
   "must_cite": ["T48n2008", "MN 10", "Toh 4465"],
   "must_mention": ["核心术语1", "核心术语2"],
+  "must_convey": ["判不了的要求"],
   "must_not_contain_first_turn": ["学生啊", "师兄"],
   "difficulty": "basic|intermediate|advanced"
 }
 ```
+
+**`must_mention` 与 `must_convey` 的分界（重要）：**
+
+`must_mention` 是**纯子串匹配**。只放**必须原样出现的术语**——`阿赖耶`、
+`khaṇika-samādhi`、`十念法`、`/compare-masters`。
+
+放**命题或概念**进去会量错。2026-08-31 全量跑的逐条裁定
+（`eval/reports/ADJUDICATION.md`）实测：447 条 `must_mention` 里 56 条判错，
+其中 54 条根本不是字串问题——夹具要 `方便`、回答写「应病与药」；要 `不是虚无`、
+回答写「空非虚无」；要 `根机`、回答写「人有迷悟」。**列同义词表是拿模型输出反向
+拟合夹具**，既挡不住假阳性，也会一路滑向凑分。
+
+这类要求写进 `must_convey`：**既不判通过、也不判失败，记为待裁决**。这是本仓库
+对 `audit_unavailable` / `unparsed_citations` 用的同一条原则——量具不得宣称它判过
+它判不了的东西。
+
+⚠️ **`must_convey` 不能自己往里加。** `scripts/validate-fixture-terms.py` 会要求
+每一条都能追溯到 `eval/reports/adjudication-*.json` 里一条 `instrument` / `fixture`
+裁定，而那条裁定必须带一句已被核对过确实存在于回答原文里的引语。裁定为 `upheld`
+（真失败）的词，永远不能改判为「判不了」。把碍事的检查挪进 `must_convey` 让构建
+变绿，正是这道门禁存在的理由。
 
 **5 条分布建议：**
 

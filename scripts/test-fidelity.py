@@ -355,6 +355,35 @@ def _hit_context(
     return context
 
 
+# 繁简失明。211 条回答里有 3 条整篇用繁体,而所有夹具关键词都是简体 ——
+# master-ouyi 写了六次「信願」,却被判成「从未提到信愿」。这是唯一一类
+# 「那个词确实必须原样出现」的要求:它出现了,只是换了字形。
+#
+# 不做转换,只做识别。转换需要一张简繁映射表,而简→繁是一对多(干→干/乾/幹),
+# 用它去放宽匹配会把「乾闼婆」读成命中「干」。识别只需数字形:引文块与书名号
+# 里的经名本来就是繁体(简体回答里也照样写《六祖大師法寶壇經》),必须先剔除,
+# 否则虚云那些简体回答会被误判。
+_TRAD_PAIRS = (
+    ("與", "与"), ("為", "为"), ("觀", "观"), ("證", "证"), ("實", "实"),
+    ("學", "学"), ("說", "说"), ("識", "识"), ("體", "体"), ("這", "这"),
+    ("個", "个"), ("們", "们"), ("問", "问"), ("義", "义"), ("華", "华"),
+    ("嚴", "严"), ("論", "论"), ("聽", "听"), ("願", "愿"), ("剛", "刚"),
+    ("經", "经"), ("淨", "净"), ("須", "须"), ("關", "关"), ("係", "系"),
+    ("無", "无"), ("會", "会"), ("處", "处"), ("諸", "诸"), ("種", "种"),
+    ("現", "现"), ("復", "复"), ("時", "时"), ("開", "开"), ("眾", "众"),
+)
+_TRAD_MIN_HITS = 3
+_STRIP_FOR_SCRIPT = re.compile(r"【[^】]*】|《[^》]*》")
+
+
+def _is_traditional(response: str) -> bool:
+    """回答正文是否整体用繁体书写(不含引文块与经名)。"""
+    body = _STRIP_FOR_SCRIPT.sub("", response)
+    trad = sum(body.count(t) for t, _ in _TRAD_PAIRS)
+    simp = sum(body.count(s) for _, s in _TRAD_PAIRS)
+    return trad >= _TRAD_MIN_HITS and trad > simp
+
+
 def check_response(
     response: str,
     test_case: dict,
@@ -390,6 +419,18 @@ def check_response(
     for mention in test_case.get("must_mention", []):
         if mention not in response:
             missing_mentions.append(mention)
+
+    # must_convey:量具判不了的要求。逐条裁定 2026-08-31 全量跑发现,447 条
+    # must_mention 里有 56 条判错,其中 54 条根本不是字串问题 —— 夹具要「方便」
+    # 而回答写「应病与药」,要「不是虚无」而回答写「空非虚无」。列同义词表等于
+    # 拿一个模型的输出去反向拟合夹具。这里改用本仓库已有的那条原则:量具不得
+    # 宣称它判过它判不了的东西(见 audit_unavailable / unparsed_citations)。
+    # 故这些既不判过也不判失败,只记为待裁决。
+    unverified_mentions = list(test_case.get("must_convey", []))
+
+    # 繁简失明:回答整篇繁体而夹具是简体时,「缺词」判定不成立 —— 记录下来,
+    # 交人裁决,不算失败。同时把人格的字形不一致暴露出来(蕅益 #6 繁、#7 简)。
+    script_mismatch = bool(missing_mentions) and _is_traditional(response)
 
     question = test_case.get("q", "")
 
@@ -440,7 +481,7 @@ def check_response(
 
     passed = (
         len(missing_cites) == 0
-        and len(missing_mentions) == 0
+        and (script_mismatch or len(missing_mentions) == 0)
         and len(forbidden_found) == 0
         and len(boundary_violations) == 0
         and len(fabricated_cites) == 0
@@ -455,7 +496,15 @@ def check_response(
         "boundary_violations": boundary_violations,
         "boundary_echoed": boundary_echoed,
         "forbidden_context": forbidden_context,
-        "needs_review": bool(forbidden_echoed or boundary_echoed or audit_unavailable),
+        "unverified_mentions": unverified_mentions,
+        "script_mismatch": script_mismatch,
+        "needs_review": bool(
+            forbidden_echoed
+            or boundary_echoed
+            or audit_unavailable
+            or unverified_mentions
+            or script_mismatch
+        ),
         "fabricated_cites": fabricated_cites,
         "audit_unavailable": audit_unavailable,
         # 抽不出可核对 id 的引文块。不判失败 —— 但空的 fabricated 从此不再等于
@@ -488,6 +537,9 @@ def result_entry(
         "boundary_violations": check["boundary_violations"],
         "boundary_echoed": check["boundary_echoed"],
         "forbidden_context": check["forbidden_context"],
+        "unverified_mentions": check["unverified_mentions"],
+        "mention_requirements": len(test.get("must_mention", [])),
+        "script_mismatch": check["script_mismatch"],
         "fabricated_cites": check["fabricated_cites"],
         "needs_review": check["needs_review"],
         "audit_unavailable": check["audit_unavailable"],
@@ -663,8 +715,38 @@ def run_tests(
         "failed": failed,
         "pass_rate": f"{passed / len(tests) * 100:.0f}%" if tests else "N/A",
         "audit": summarize_audit(results),
+        "mentions": summarize_mentions(results),
         "max_output_tokens": max_output_tokens,
         "results": results,
+    }
+
+
+def summarize_mentions(results: list[dict]) -> dict:
+    """Aggregate how many mention requirements the matcher could actually decide.
+
+    `must_mention` is a substring match, and 56 of the 447 requirements in the
+    2026-08-31 run were graded wrong by it. The ones that cannot be decided are
+    now declared rather than guessed — `must_convey` entries, and every
+    requirement in an answer written in the wrong script. A pass rate resting
+    partly on undecided requirements has to say so, the same way a fabrication
+    count has to carry `audit_coverage`.
+    """
+    total = decided = unverified = mismatches = 0
+    for result in results:
+        required = result.get("mention_requirements", 0)
+        undecidable = result.get("unverified_mentions") or []
+        total += required + len(undecidable)
+        unverified += len(undecidable)
+        if result.get("script_mismatch"):
+            mismatches += 1
+        else:
+            decided += required
+    return {
+        "mention_requirements": total,
+        "mentions_decided": decided,
+        "mentions_unverified": unverified,
+        "script_mismatches": mismatches,
+        "mention_coverage": f"{decided / total * 100:.0f}%" if total else "N/A",
     }
 
 

@@ -89,6 +89,12 @@ jobs:
       - name: Validate citation references (SKILL.md / sources / references)
         run: python scripts/validate-citation-references.py
 
+      # A requirement may only be declared undecidable (`must_convey`) if a
+      # committed adjudication ruled it an instrument artifact on real evidence.
+      # Otherwise moving an inconvenient check there turns a red build green.
+      - name: Validate fixture terms
+        run: python scripts/validate-fixture-terms.py
+
       # A committed adjudication must prove it read the answers it ruled on:
       # every verdict carries a quote, and the quote must still be in the
       # stored response. The headline numbers are recomputed from the verdicts
