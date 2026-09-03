@@ -23,6 +23,7 @@ import json
 import os
 import re
 import sys
+import unicodedata
 
 from _masterpaths import resolve_master_dir
 
@@ -106,6 +107,94 @@ def _resolve_short_form(cid: str, declared_ids: set[str]) -> str | None:
     return None
 
 
+# 第四个契约家族:编集开示(compiled_teaching)。声明形态是 `Author:Work`
+# (`AjahnChah:StillForestPool`),而行文里它只以书名出现(《A Still Forest Pool》)——
+# 没有编号可抓,所以这一家必须拿声明集当钥匙来读,不能像前三家那样先抽 id 再比对。
+#
+# 难点仍是归一化。三处真实差异,每一处只要漏掉就会把**正确**引用判成伪造:
+#   声明 StillForestPool      ← 行文《A Still Forest Pool》        冠词
+#   声明 ProgressOfInsight    ← 行文《The Progress of Insight (Visuddhiñāṇa-kathā)》 冠词 + 括注
+#   声明 PracticalVipassana   ← 行文《Practical Vipassanā Meditation Exercises》 变音符 + 副标题
+# 故:去括注 → 去变音符 → 切词 → 去首冠词 → 声明词序为行文词序的**前缀**才算命中。
+# 前缀是有向的:声明比行文长不算命中,否则《Practical》就能冒充整本书。
+_WORK_TITLE = re.compile(r"《([^》]+)》")
+_PARENTHETICAL = re.compile(r"[（(][^）)]*[）)]")
+_CJK = re.compile(r"[\u3400-\u9fff\uf900-\ufaff]")
+# 前三家的家族名不是作者名,排除掉;`Toh:4465` 这类纯数字 Work 也不是书名。
+_ID_FAMILIES = {"Toh", "BDRC", "PTS"}
+_ARTICLES = {"a", "an", "the"}
+# 语料库级的 SuttaCentral 经号也常写进书名号里(《MN 10 / Satipaṭṭhāna Sutta》)。
+# 它是拉丁字面、又不会匹配任何编集开示,若不先挡掉就会被这一家判成伪造 ——
+# 阿姜查自己的 references/teaching.md 里就有四条。经号真伪需要经目索引才能判,
+# 那是 runtime contract §4 规则 3 划出的已知边界,此处维持「读不懂」而非「伪造」。
+_SUTTA_REF = re.compile(
+    r"^(?:SC[:：]\s*)?(?:MN|SN|AN|DN|KN|Dhp|Ud|Iti|Snp|Thag|Thig|Vin)\s*\d",
+    re.IGNORECASE,
+)
+
+
+def _fold(text: str) -> str:
+    """去掉变音符号:Vipassanā → Vipassana、Visuddhiñāṇa → Visuddhinana。"""
+    decomposed = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
+
+
+def _title_tokens(title: str) -> list[str]:
+    """行文书名 → 归一词序。"""
+    words = re.findall(r"[A-Za-z]+", _fold(_PARENTHETICAL.sub(" ", title)).lower())
+    if words and words[0] in _ARTICLES:
+        words = words[1:]
+    return words
+
+
+def _work_tokens(work: str) -> list[str]:
+    """声明里的 CamelCase Work → 归一词序。FoodForTheHeart → food for the heart。"""
+    words = [w.lower() for w in re.findall(r"[A-Z][a-z]*|[a-z]+", _fold(work))]
+    if words and words[0] in _ARTICLES:
+        words = words[1:]
+    return words
+
+
+def _compiled_works(declared_ids: set[str]) -> dict[str, tuple[str, ...]]:
+    """声明集里属编集开示家族的 id → 其归一词序。"""
+    works: dict[str, tuple[str, ...]] = {}
+    for declared in declared_ids:
+        family, _, work = declared.partition(":")
+        if not work or family in _ID_FAMILIES or work.isdigit():
+            continue
+        tokens = _work_tokens(work)
+        if tokens:
+            works[declared] = tuple(tokens)
+    return works
+
+
+def _compiled_teaching_id(block: str, declared_ids: set[str]) -> str | None:
+    """把一个书名块判给编集开示家族。
+
+    命中声明 → 返回那条声明 id(记 offline);本 master 确实有编集开示来源、
+    而这个拉丁书名不在其中 → 返回书名本身(交给 audit_answer 按伪造处理);
+    家族不适用(汉文书名,或本 master 根本没有编集开示来源)→ None,维持原样。
+    """
+    works = _compiled_works(declared_ids)
+    if not works:
+        return None
+    m = _WORK_TITLE.search(block)
+    if not m:
+        return None
+    title = m.group(1)
+    if _CJK.search(title) or not re.search(r"[A-Za-z]", title):
+        return None
+    if _SUTTA_REF.match(title.strip()):
+        return None
+    cited = _title_tokens(title)
+    if not cited:
+        return None
+    for declared, tokens in sorted(works.items()):
+        if tuple(cited[: len(tokens)]) == tokens:
+            return declared
+    return f"《{title}》"
+
+
 # 引文块 【…】
 _CITATION_BLOCK = re.compile(r"【([^】]*)】")
 # live 链接 fojin.app/texts/<数字>
@@ -159,6 +248,10 @@ def audit_answer(declared_ids: set[str], answer: str) -> dict:
         ids = extract_citation_ids(m.group(1)) + extract_citation_ids(
             answer[m.end():region_end]
         )
+        if not ids:
+            compiled = _compiled_teaching_id(m.group(1), declared_ids)
+            if compiled:
+                ids = [compiled]
         if not ids:
             block = m.group(1).strip()
             if block:
