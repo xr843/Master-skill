@@ -70,7 +70,7 @@ def regrade(report: dict, fixtures: dict[str, list[dict]]) -> dict:
             aliases = None
 
         for result in suite["results"]:
-            if result.get("status") == "truncated":
+            if result.get("status") in ("truncated", "api_error"):
                 continue
             index = result["index"]
             fixture = cases_for_master[index] if index < len(cases_for_master) else None

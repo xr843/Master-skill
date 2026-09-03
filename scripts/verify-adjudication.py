@@ -43,6 +43,28 @@ FAIL_KEYS = (
     "boundary_violations",
     "fabricated_cites",
 )
+# recount()'s `overturns` set only ever gains "missing_mentions" / "forbidden_found"
+# / "missing_cites" — there is no case-verdict category for `boundary_violations`
+# or `fabricated_cites`, so a case failing solely on one of those can never be
+# overturned by this gate. That is deliberate, not a gap: `fabricated_cites` is
+# resolved through validate-citation-references.py's KNOWN_UNDECLARED ratchet
+# (declare the source in meta.json, then re-grade — see master-tsongkhapa #2/#3/#9,
+# permanently listed in `failures_not_ruled_on` below until that happens) rather
+# than through a per-term verdict here. `boundary_violations` (first-turn honorific
+# checks) has no live case to adjudicate yet; if one ever needs a verdict, it needs
+# its own case-verdict field and evidence rule, the same way mention/forbidden/cite
+# each got one — not a silent addition to this permitting list.
+
+
+def _derive_case_verdict(verdicts: list[dict], permitting: set[str]) -> str | None:
+    """Recompute what a case-level `*_case_verdict` should be from its own
+    per-term verdicts — the same rule `build_verdicts.py` used to write it.
+    None if there were no verdicts to summarize (the field should be absent).
+    """
+    if not verdicts:
+        return None
+    rulings = {v["verdict"] for v in verdicts}
+    return "overturned" if rulings and rulings <= permitting else "upheld"
 
 
 def _index_report(report: dict) -> dict:
@@ -116,6 +138,24 @@ def verify(adjudication: dict, report: dict) -> list[str]:
             problems.append(f"{where}: no such case in the run being adjudicated")
             continue
         response = result.get("response") or ""
+
+        # A case-level `*_case_verdict` is a summary of its own per-term
+        # verdicts, not an independent claim. recount() trusts it wholesale to
+        # decide whether a FAIL becomes a PASS, so it has to be re-derivable
+        # from the terms it summarizes — otherwise editing one field, with no
+        # evidence and no per-term change, silently overturns a real failure.
+        for field, verdicts_key, permitting in (
+            ("mention_case_verdict", "mention_verdicts", {"instrument", "fixture"}),
+            ("forbidden_case_verdict", "forbidden_verdicts", {"false_failure"}),
+            ("cite_case_verdict", "cite_verdicts", {"instrument"}),
+        ):
+            stored = case.get(field)
+            expected = _derive_case_verdict(case.get(verdicts_key) or [], permitting)
+            if stored != expected:
+                problems.append(
+                    f"{where}: {field} is {stored!r} but its {verdicts_key} imply "
+                    f"{expected!r} — a case verdict must follow from its own terms"
+                )
 
         for verdict in case.get("mention_verdicts", []):
             term, ruling = verdict["term"], verdict["verdict"]

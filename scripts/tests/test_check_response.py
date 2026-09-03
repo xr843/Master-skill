@@ -478,9 +478,27 @@ def test_a_traditional_answer_is_not_failed_against_simplified_terms(fidelity):
         "此問涉及淨土往生之根本，須先明信願與持名之關係，得生與否全由信願之有無。",
         {"q": "我修净土能不能今生就往生？", "must_mention": ["信愿"]},
     )
-    assert check["passed"] is False or check["needs_review"] is True
+    assert check["passed"] is True
+    assert check["missing_mentions"] == []
     assert check["script_mismatch"] is True
     assert check["needs_review"] is True
+
+
+def test_script_mismatch_resolves_per_term_not_the_whole_case(fidelity):
+    """Reproduces the real master-ouyi #6 shape from the 2026-08-31 sweep: the
+    answer is traditional and conveys one required term in traditional form
+    (信愿 -> 信願) but genuinely never conveys a second one (因缘, in either
+    script). The whole-case waiver this replaced would have passed both just
+    because the response happened to be traditional-script; 因缘 has to keep
+    failing the case.
+    """
+    check = fidelity.check_response(
+        "此問涉及淨土往生之根本，須先明信願與持名之關係，得生與否全由信願之有無。",
+        {"q": "我修净土能不能今生就往生？", "must_mention": ["信愿", "因缘"]},
+    )
+    assert check["passed"] is False
+    assert check["missing_mentions"] == ["因缘"]
+    assert check["script_mismatch"] is True
 
 
 def test_a_simplified_answer_missing_a_term_still_fails(fidelity):

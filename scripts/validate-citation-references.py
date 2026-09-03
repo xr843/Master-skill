@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from verify_citations import audit_answer, extract_member_aliases  # noqa: E402
+from verify_citations import audit_answer, load_declared_ids, load_member_aliases  # noqa: E402
 
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 
@@ -84,27 +84,6 @@ class Finding:
     path: str
 
 
-def _declared_ids(meta_path: Path) -> set[str]:
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
-    ids = {s["id"] for s in meta.get("sources", []) if s.get("id")}
-    ids.update(meta.get("search_scope", {}).get("primary_cbeta_ids", []))
-    return ids
-
-
-def _member_aliases(meta_path: Path) -> dict[str, str]:
-    """同 verify_citations.load_member_aliases,但直接接收已打开的 meta_path ——
-    这里已经读过一次 meta.json,不必再靠 master 名重新定位目录。"""
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
-    aliases: dict[str, str] = {}
-    for src in meta.get("sources", []):
-        if src.get("type") != "compiled_teaching":
-            continue
-        sid, note = src.get("id"), src.get("note")
-        if sid and note:
-            aliases.update(extract_member_aliases(sid, note))
-    return aliases
-
-
 def find_undeclared(prebuilt_dir: Path) -> list[Finding]:
     """Every citation the personas' own material makes that meta.json omits."""
     findings: list[Finding] = []
@@ -112,10 +91,19 @@ def find_undeclared(prebuilt_dir: Path) -> list[Finding]:
         meta_path = persona / "meta.json"
         if not persona.is_dir() or not meta_path.is_file():
             continue
-        declared = _declared_ids(meta_path)
+        # Found by an independent code-review pass (2026-09-03): this used to
+        # reimplement its own meta.json parsing instead of calling
+        # verify_citations.py's own loader — a real drift risk, since a future
+        # change to how sources/notes are parsed there would silently stop
+        # applying here. `persona.name` round-trips through resolve_master_dir
+        # (it already accepts the full `master-<slug>` form).
+        try:
+            declared = load_declared_ids(persona.name, base=str(prebuilt_dir))
+            aliases = load_member_aliases(persona.name, base=str(prebuilt_dir))
+        except (FileNotFoundError, ValueError):
+            continue  # meta.json exists (meta_path.is_file() above) but is unreadable
         if not declared:
             continue  # nothing to audit against; see master-debate
-        aliases = _member_aliases(meta_path)
         docs = [persona / "SKILL.md"]
         docs += sorted(persona.glob("sources/*.md"))
         docs += sorted(persona.glob("references/*.md"))

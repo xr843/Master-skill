@@ -76,7 +76,7 @@ def reaudit(report: dict) -> dict:
         checked = unparsed = 0
         fabricated: list[str] = []
         for result in suite["results"]:
-            if result.get("status") == "truncated":
+            if result.get("status") in ("truncated", "api_error"):
                 continue
             audit = audit_answer(declared, result.get("response") or "", aliases)
             checked += (

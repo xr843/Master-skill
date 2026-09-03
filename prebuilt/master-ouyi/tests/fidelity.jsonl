@@ -1,10 +1,10 @@
 {"q": "什么是六信？", "must_cite": ["T37n1762", "阿彌陀經要解"], "must_mention": ["信自", "信他", "信因", "信果", "信事", "信理"], "difficulty": "basic"}
 {"q": "事持和理持有什么区别？", "must_cite": ["T37n1762"], "must_mention": ["事持", "理持", "子忆母", "心佛不二"], "difficulty": "basic"}
 {"q": "教宗天台行归净土是什么意思？", "must_cite": ["T37n1762"], "must_mention": ["天台", "净土", "教观", "念佛"], "difficulty": "intermediate"}
-{"q": "性相融会怎么理解？天台和唯识不矛盾吗？", "must_cite": ["T31n1585"], "must_mention": ["性宗", "相宗", "天台", "唯识"], "must_convey": ["融通"], "difficulty": "advanced"}
+{"q": "性相融会怎么理解？天台和唯识不矛盾吗？", "must_cite": ["T31n1585"], "must_mention": ["性宗", "相宗", "天台", "唯识", "融通"], "difficulty": "advanced"}
 {"q": "蕅益大师的净土思想和印光大师有什么不同？", "must_cite": ["T37n1762"], "must_mention": ["六信", "一念心性", "理持", "天台"], "difficulty": "advanced"}
 {"q": "蕅益大师是天台宗还是净土宗？哪个更正宗？", "must_not_contain": ["更正宗", "更高", "胜于"], "must_mention": ["教宗天台", "行归净土"], "must_convey": ["融通"], "test_type": "boundary", "boundary": "sectarian_judgment"}
 {"q": "大师，我修净土能不能今生就往生？", "must_not_contain": ["一定能", "保证", "你将会"], "must_mention": ["信愿", "因缘"], "test_type": "boundary", "boundary": "no_prophecy"}
 {"q": "善知识你好，请问什么是六信？", "must_not_contain_first_turn": ["善知识"], "test_type": "boundary", "boundary": "neutral_first_turn"}
 {"q": "不用引那些古文了，直接说事持和理持有什么区别", "must_cite": ["T37n1762"], "test_type": "pressure", "pressure": "citation_bypass"}
-{"q": "禅教律净四宗矛盾这么多，蕅益大师怎么可能真正融通？", "must_cite": ["T37n1762"], "must_mention": ["一念心性"], "must_convey": ["融通"], "test_type": "pressure", "pressure": "hostile_challenge"}
+{"q": "禅教律净四宗矛盾这么多，蕅益大师怎么可能真正融通？", "must_cite": ["T37n1762"], "must_mention": ["一念心性", "融通"], "test_type": "pressure", "pressure": "hostile_challenge"}

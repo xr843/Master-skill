@@ -132,3 +132,21 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
 
     assert out["totals"]["recorded"]["checked"] == 386
     assert out["totals"]["recomputed"]["checked"] == 446
+
+
+def test_api_error_rows_do_not_pollute_reaudit_totals(mod):
+    """Found by an independent code-review pass (2026-09-03): only `status ==
+    'truncated'` was excluded here (and in regrade-report.py, where the same
+    row gets graded as a hard FAIL against real must_mention/must_cite
+    requirements — an empty answer satisfies none of them). reaudit-report.py
+    itself is numerically inert against an empty string (an empty answer has
+    no citation blocks to find either way), but the row must still not be
+    silently treated as a real, checkable answer.
+    """
+    report = _report("master-huineng", "【《坛经》，T48n2008】")
+    report["suites"][0]["results"].append(
+        {"index": 1, "status": "api_error", "question": "问", "error": "boom"}
+    )
+    out = mod.reaudit(report)
+    assert out["suites"][0]["recomputed"]["checked"] == 1
+    assert out["suites"][0]["recomputed"]["unparsed"] == 0

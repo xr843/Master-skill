@@ -169,3 +169,58 @@ def test_the_committed_adjudication_leaves_only_the_maintainer_decision(mod, pai
         "master-tsongkhapa #3",
         "master-tsongkhapa #9",
     ]
+
+
+# --------------------------------------------------------------------------
+# The gate's own trust boundary: a case-level `*_case_verdict` field must be
+# re-derivable from its own per-term verdicts, not merely trusted as stored.
+#
+# Found by an independent code-review pass (2026-09-03): recount() read
+# `mention_case_verdict` straight off the JSON with nothing cross-checking it
+# against the individual `mention_verdicts` it is supposed to summarize.
+# Reproduced: flipping `master-ajahn-chah` #1's `mention_case_verdict` to
+# "overturned" while leaving its one real `upheld` term verdict (`sati`)
+# untouched made verify() report zero problems and would have turned a FAIL
+# into a PASS with no evidence — the exact failure this whole gate exists to
+# catch, now inside the gate itself.
+# --------------------------------------------------------------------------
+
+
+def test_a_case_verdict_inconsistent_with_its_term_verdicts_is_rejected(mod, pair):
+    adj, report = pair
+    bad = copy.deepcopy(adj)
+    target = next(c for c in bad["cases"] if c.get("mention_case_verdict") == "upheld")
+    assert any(m["verdict"] == "upheld" for m in target["mention_verdicts"])
+    target["mention_case_verdict"] = "overturned"
+    problems = mod.verify(bad, report)
+    assert any("mention_case_verdict" in p for p in problems)
+
+
+def test_flipping_forbidden_case_verdict_against_its_terms_is_rejected(mod, pair):
+    adj, report = pair
+    bad = copy.deepcopy(adj)
+    target = next(
+        c for c in bad["cases"]
+        if c.get("forbidden_case_verdict") == "upheld"
+    )
+    target["forbidden_case_verdict"] = "overturned"
+    problems = mod.verify(bad, report)
+    assert any("forbidden_case_verdict" in p for p in problems)
+
+
+def test_flipping_cite_case_verdict_against_its_terms_is_rejected(mod, pair):
+    adj, report = pair
+    bad = copy.deepcopy(adj)
+    target = next(
+        c for c in bad["cases"] if c.get("cite_case_verdict") is not None
+    )
+    original = target["cite_case_verdict"]
+    target["cite_case_verdict"] = "upheld" if original == "overturned" else "overturned"
+    problems = mod.verify(bad, report)
+    assert any("cite_case_verdict" in p for p in problems)
+
+
+def test_the_committed_adjudication_has_internally_consistent_case_verdicts(mod, pair):
+    """Sanity check the fix isn't just rejecting everything."""
+    adj, report = pair
+    assert mod.verify(adj, report) == []

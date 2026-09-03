@@ -374,6 +374,7 @@ _TRAD_PAIRS = (
 )
 _TRAD_MIN_HITS = 3
 _STRIP_FOR_SCRIPT = re.compile(r"【[^】]*】|《[^》]*》")
+_SIMP_TO_TRAD = {simp: trad for trad, simp in _TRAD_PAIRS}
 
 
 def _is_traditional(response: str) -> bool:
@@ -382,6 +383,13 @@ def _is_traditional(response: str) -> bool:
     trad = sum(body.count(t) for t, _ in _TRAD_PAIRS)
     simp = sum(body.count(s) for _, s in _TRAD_PAIRS)
     return trad >= _TRAD_MIN_HITS and trad > simp
+
+
+def _traditional_form(term: str) -> str | None:
+    """把 must_mention 词按已知简→繁字对逐字换成繁体形。换不出来
+    (没有一个字在映射表里)就返回 None —— 不冒充「已核对过」。"""
+    converted = "".join(_SIMP_TO_TRAD.get(ch, ch) for ch in term)
+    return converted if converted != term else None
 
 
 def check_response(
@@ -429,9 +437,22 @@ def check_response(
     # 故这些既不判过也不判失败,只记为待裁决。
     unverified_mentions = list(test_case.get("must_convey", []))
 
-    # 繁简失明:回答整篇繁体而夹具是简体时,「缺词」判定不成立 —— 记录下来,
-    # 交人裁决,不算失败。同时把人格的字形不一致暴露出来(蕅益 #6 繁、#7 简)。
-    script_mismatch = bool(missing_mentions) and _is_traditional(response)
+    # 繁简失明,逐词判定 —— 不是整案判定。回答整篇繁体时,missing_mentions 里
+    # 每一个词单独换算成繁体形、逐个在原文里找:找到了,从缺词表里摘掉(这个词
+    # 确实说了,只是字形不同);换不出繁体形、或换出来仍找不到,原样留在
+    # missing_mentions 里继续判失败。早期版本按「回答是否整篇繁体」一刀切豁免
+    # 整个缺词列表,结果 mahasi-#6 式的场景(一词因字形被冤枉、另一词哪种字形
+    # 都真的没提)会被那一词的豁免连带放行——2026-09-03 改为逐词。
+    script_mismatch = False
+    if missing_mentions and _is_traditional(response):
+        still_missing = []
+        for term in missing_mentions:
+            trad_form = _traditional_form(term)
+            if trad_form and trad_form in response:
+                script_mismatch = True
+            else:
+                still_missing.append(term)
+        missing_mentions = still_missing
 
     question = test_case.get("q", "")
 
@@ -480,9 +501,11 @@ def check_response(
         unparsed_citations = probe["unparsed"]
         citations_checked = 0
 
+    # missing_mentions 已经在上面逐词过滤掉繁体命中的部分,不需要再靠
+    # script_mismatch 整案豁免 —— 这里是普通的"缺词表是否为空"。
     passed = (
         len(missing_cites) == 0
-        and (script_mismatch or len(missing_mentions) == 0)
+        and len(missing_mentions) == 0
         and len(forbidden_found) == 0
         and len(boundary_violations) == 0
         and len(fabricated_cites) == 0
