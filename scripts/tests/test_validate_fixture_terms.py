@@ -103,3 +103,61 @@ def test_fixtures_without_must_convey_need_no_adjudication(mod):
 
 def test_the_repository_as_committed_passes(mod):
     assert mod.verify(mod.load_fixtures(), mod.load_adjudications()) == []
+
+
+# --------------------------------------------------------------------------
+# Found by an independent code-review pass (2026-09-03): `_permitted()` keyed
+# its allowlist by (master, term) only, dropping the fixture index. One
+# adjudicated verdict for a term in one case licensed `must_convey` for that
+# same term string in EVERY other case for that master — unadjudicated ones
+# included. Live in the shipped repo before this fix: `master-nagarjuna`'s
+# 缘起 was ruled an instrument artifact only at fixtures #5 and #6, but
+# declared `must_convey` at #0, #1, #4, #9 too, with no verdict covering
+# those specific fixtures at all.
+# --------------------------------------------------------------------------
+
+
+def test_a_verdict_for_one_fixture_does_not_permit_the_same_term_at_another(mod):
+    """(master, term) alone is not enough — the verdict has to name the fixture."""
+    problems = mod.verify(
+        {
+            "master-fazang": [
+                {"q": "问 A", "must_convey": ["方便"]},
+                {"q": "问 B", "must_convey": ["方便"]},
+            ]
+        },
+        [
+            {
+                "cases": [
+                    {
+                        "master": "master-fazang",
+                        "index": 0,
+                        "mention_verdicts": [
+                            {"term": "方便", "verdict": "instrument", "evidence": "…"}
+                        ],
+                    }
+                ]
+            }
+        ],
+    )
+    assert any("#1" in p and "方便" in p for p in problems)
+
+
+def test_a_verdict_naming_the_right_fixture_still_permits_it(mod):
+    problems = mod.verify(
+        {"master-fazang": [{"q": "问", "must_convey": ["方便"]}]},
+        [
+            {
+                "cases": [
+                    {
+                        "master": "master-fazang",
+                        "index": 0,
+                        "mention_verdicts": [
+                            {"term": "方便", "verdict": "instrument", "evidence": "…"}
+                        ],
+                    }
+                ]
+            }
+        ],
+    )
+    assert problems == []

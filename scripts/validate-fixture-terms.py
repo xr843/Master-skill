@@ -43,14 +43,21 @@ def load_adjudications() -> list[dict]:
     return [json.loads(p.read_text()) for p in sorted(REPORTS.glob("adjudication-*.json"))]
 
 
-def _permitted(adjudications: list[dict]) -> set[tuple[str, str]]:
-    """(master, term) pairs an adjudication ruled an instrument artifact."""
-    allowed: set[tuple[str, str]] = set()
+def _permitted(adjudications: list[dict]) -> set[tuple[str, int, str]]:
+    """(master, index, term) triples an adjudication ruled an instrument artifact.
+
+    Keyed by fixture index, not just (master, term) — a verdict on one fixture
+    must not license the same term string at a different, unadjudicated
+    fixture for the same master. `缘起` being paraphrased in one answer says
+    nothing about whether it is genuinely omitted in another; only the
+    specific case a verdict names has evidence behind it.
+    """
+    allowed: set[tuple[str, int, str]] = set()
     for adjudication in adjudications:
         for case in adjudication.get("cases", []):
             for verdict in case.get("mention_verdicts", []):
                 if verdict.get("verdict") in PERMITTING:
-                    allowed.add((case["master"], verdict["term"]))
+                    allowed.add((case["master"], case["index"], verdict["term"]))
     return allowed
 
 
@@ -80,11 +87,12 @@ def verify(fixtures: dict[str, list[dict]], adjudications: list[dict]) -> list[s
                         f"{where}: {term!r} is in both must_mention and must_convey — "
                         "a requirement is either graded or undecidable, not both"
                     )
-                if (master, term) not in allowed:
+                if (master, index, term) not in allowed:
                     problems.append(
                         f"{where}: {term!r} is declared undecidable but no adjudication "
-                        f"ruled it an instrument artifact for {master}. Grade it, or "
-                        "adjudicate a real run and show the evidence."
+                        f"ruled it an instrument artifact for this specific fixture. A "
+                        "verdict on a different case does not transfer. Grade it, or "
+                        "adjudicate this exact case and show the evidence."
                     )
     return problems
 

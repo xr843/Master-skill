@@ -1,6 +1,7 @@
 """Tests for scripts/verify_citations.py — B1 引证核验,纯逻辑无网络。"""
 
 import importlib
+from pathlib import Path
 
 verify_citations = importlib.import_module("verify_citations")
 audit_answer = verify_citations.audit_answer
@@ -508,3 +509,125 @@ def test_the_real_mahasi_fixture_now_resolves_via_the_declared_collection():
     r = audit_answer(MAHASI, ans, member_aliases=aliases)
     assert r["fabricated"] == []
     assert "Mahasi:DiscoursesOnSuttas" in r["offline"]
+
+
+# ---------------------------------------------------------------------------
+# The CLI entrypoint. Found by an independent code-review pass (2026-09-03):
+# main() called audit_answer(declared, answer) without ever loading or
+# passing member_aliases, so the CLI/CI-lint tool disagreed with the live
+# grader (test-fidelity.py) on identical input — a citation that resolves
+# cleanly through check_response() still reported as fabricated here, exit 1.
+# ---------------------------------------------------------------------------
+
+
+def test_cli_resolves_a_collection_member_the_same_way_the_live_judge_does():
+    import subprocess
+
+    result = subprocess.run(
+        [
+            "python3",
+            "scripts/verify_citations.py",
+            "--master",
+            "mahasi-sayadaw",
+        ],
+        input="【《A Discourse on Dhammacakka Sutta》】",
+        capture_output=True,
+        text=True,
+        cwd=Path(__file__).resolve().parents[1],
+    )
+    assert result.returncode == 0, result.stderr
+    assert "fabricated: 1" not in result.stdout
+
+
+# ---------------------------------------------------------------------------
+# Found by an independent code-review pass (2026-09-03):
+#
+# 1. Member-alias matching accepted a real alias anywhere as a contiguous
+#    token run inside the cited title, with no bound on surrounding text — so
+#    a wholly invented title that happens to CONTAIN a real member name is
+#    fully whitewashed. The real citation shape this feature exists for
+#    ("A Discourse on Dhammacakka Sutta") always puts the alias as the
+#    trailing part of the phrase, never buried with trailing padding after
+#    it — matching on trailing position (bounded prefix, no suffix padding)
+#    covers the real shape and closes the laundering path.
+#
+# 2. The primary declared-work prefix match picked the alphabetically-first
+#    declared id whose tokens prefix the cited title, not the longest/most
+#    specific one — so a shorter declared work whose tokens happen to prefix
+#    a longer declared work's tokens can steal the citation.
+# ---------------------------------------------------------------------------
+
+
+def test_an_invented_title_padded_after_a_real_alias_is_not_whitewashed():
+    aliases = {"Dhammacakka Sutta": "Mahasi:DiscoursesOnSuttas"}
+    ans = "【《A Totally Invented Commentary on the Dhammacakka Sutta That Does Not Exist》】"
+    r = audit_answer(MAHASI, ans, member_aliases=aliases)
+    assert "Mahasi:DiscoursesOnSuttas" not in r["offline"]
+    assert any("Dhammacakka" in f for f in r["fabricated"])
+
+
+def test_a_real_member_alias_with_only_a_descriptive_prefix_still_resolves():
+    """The actual shape this feature exists for keeps working."""
+    aliases = {"Dhammacakka Sutta": "Mahasi:DiscoursesOnSuttas"}
+    ans = "【《A Discourse on Dhammacakka Sutta》】"
+    r = audit_answer(MAHASI, ans, member_aliases=aliases)
+    assert r["fabricated"] == []
+    assert "Mahasi:DiscoursesOnSuttas" in r["offline"]
+
+
+def test_the_longest_matching_declared_work_wins_not_the_alphabetically_first():
+    declared = {"AjahnChah:Food", "AjahnChah:FoodForTheHeart"}
+    r = audit_answer(declared, "【《Food For The Heart》】")
+    assert r["offline"] == ["AjahnChah:FoodForTheHeart"]
+    assert "AjahnChah:Food" not in r["offline"]
+
+
+# ---------------------------------------------------------------------------
+# `base` lets load_declared_ids/load_member_aliases target a directory other
+# than the real prebuilt/ — needed so validate-citation-references.py can
+# import them instead of reimplementing the same meta.json parsing (found by
+# an independent code-review pass, 2026-09-03) while still being testable
+# against a tmp_path fixture rather than the real repo.
+# ---------------------------------------------------------------------------
+
+
+def test_load_declared_ids_accepts_a_base_directory(tmp_path):
+    persona = tmp_path / "master-example"
+    persona.mkdir()
+    (persona / "meta.json").write_text(
+        '{"sources": [{"type": "cbeta", "id": "T99n9999"}]}', encoding="utf-8"
+    )
+    ids = load_declared_ids("master-example", base=tmp_path)
+    assert ids == {"T99n9999"}
+
+
+def test_load_member_aliases_accepts_a_base_directory(tmp_path):
+    persona = tmp_path / "master-example"
+    persona.mkdir()
+    (persona / "meta.json").write_text(
+        '{"sources": [{"type": "compiled_teaching", "id": "X:Y", '
+        '"note": "Foo Sutta / Bar Sutta 等开示集"}]}',
+        encoding="utf-8",
+    )
+    aliases = load_member_aliases("master-example", base=tmp_path)
+    assert aliases == {"Foo Sutta": "X:Y", "Bar Sutta": "X:Y"}
+
+
+def test_load_declared_ids_without_base_still_reads_the_real_repo():
+    assert load_declared_ids("huineng") == load_declared_ids("huineng", base=None)
+
+
+def test_cjk_preceding_the_title_within_a_segment_does_not_drop_it():
+    """Found by an independent code-review pass (2026-09-03): the original
+    implementation took everything before the FIRST CJK character as the
+    candidate title, assuming English always precedes CJK within a segment.
+    If CJK comes first, the title was silently dropped — a safe failure
+    (the term just stays unauditable rather than being wrongly cleared), but
+    still a real gap: it fails on any note phrased "开示集包括 X" rather than
+    "X 等开示集".
+    """
+    aliases = extract_member_aliases("X:Y", "开示集包括 Mālukyaputta Sutta / Dhammacakka Sutta")
+    assert aliases == {
+        "Mālukyaputta Sutta": "X:Y",
+        "Dhammacakka Sutta": "X:Y",
+    }

@@ -110,3 +110,50 @@ def test_the_committed_run_regrades_against_the_repository_as_it_stands(mod):
     ]
     assert regressions == [], regressions
     assert out["mentions"]["mention_coverage"].endswith("%")
+
+
+def test_api_error_rows_are_not_graded_as_a_hard_fail(mod):
+    """Found by an independent code-review pass (2026-09-03): only
+    `status == 'truncated'` was excluded, so an api_error row (which by
+    design carries no `response` key) fell through to `response or ''` and
+    was silently regraded against real must_mention/must_cite requirements —
+    an empty answer satisfies none of them, so the row landed in `now: FAIL`
+    and corrupted the pass-rate tally with a case that was never actually
+    answered.
+    """
+    fixtures = {
+        "master-nagarjuna": [
+            {"q": "已答的问题", "must_mention": ["缘起"]},
+            {"q": "问", "must_mention": ["缘起"]},
+        ]
+    }
+    report = {
+        "meta": {"commit_short": "abc1234", "model": "test-model"},
+        "suites": [
+            {
+                "master": "master-nagarjuna",
+                "results": [
+                    {
+                        "index": 0,
+                        "question": "已答的问题",
+                        "test_type": "fidelity",
+                        "status": "PASS",
+                        "response": "因缘所生法。",
+                    },
+                    {
+                        "index": 1,
+                        "question": "问",
+                        "test_type": "fidelity",
+                        "status": "api_error",
+                        "error": "boom",
+                    },
+                ],
+            }
+        ],
+    }
+    out = mod.regrade(report, fixtures)
+    # index 0(真答案)照常判;index 1(api_error,没答)完全不计入 cases。
+    assert [(c["master"], c["index"]) for c in out["cases"]] == [
+        ("master-nagarjuna", 0)
+    ]
+    assert out["by_test_type"]["fidelity"]["graded"] == 1

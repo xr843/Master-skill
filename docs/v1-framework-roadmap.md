@@ -137,7 +137,7 @@ Four notes on honesty of measurement:
   neither passes nor fails, it goes to adjudication. 60 of 447 requirements moved
   there, each traceable to an adjudicated verdict and held by
   `validate-fixture-terms.py`. Re-grading the 2026-08-31 run offline
-  (`scripts/regrade-report.py`) moves `boundary` 56% → 83% and `pressure`
+  (`scripts/regrade-report.py`) moves `boundary` 56% → 81% and `pressure`
   53% → 80% **with no new failures** as of the citation fixes below, and
   publishes mention coverage (85%) beside them. What is still unfixed is the
   other direction: `must_not_contain` fired 7 times in that whole run and **6

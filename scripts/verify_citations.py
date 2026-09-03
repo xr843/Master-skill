@@ -179,27 +179,37 @@ def _compiled_works(declared_ids: set[str]) -> dict[str, tuple[str, ...]]:
 _MEMBER_MIN_WORDS = 2
 
 
+# CJK ideographs (_CJK's own range) plus CJK punctuation/fullwidth blocks
+# (U+3000-303F, U+FF00-FFEF) -- both split a note segment into non-CJK
+# candidate pieces. Ideographs alone are not enough: a real note ends one
+# member's title with a full-width comma before trailing publisher info
+# ("Sallekha Sutta <CJK note>, BPS Sri Lanka") -- not splitting on that comma
+# lets the Latin tail glue onto the punctuation and out-length the real title.
+# Built with \u escapes, not typed CJK literals: hand-typing ideograph range
+# endpoints is easy to mistype silently (happened once here -- meant U+F900,
+# typed a character that turned out to be U+8C48, widening the range to
+# swallow everything in between).
+_CJK_OR_PUNCT = re.compile("[" + _CJK.pattern[1:-1] + "\u3000-\u303f\uff00-\uffef]")
+
+
 def extract_member_aliases(collection_id: str, note: str) -> dict[str, str]:
-    """把合集来源的 note 解析成「成员篇目名 → 合集 id」的别名表。"""
+    """把合集来源的 note 解析成「成员篇目名 → 合集 id」的别名表。
+
+    每段取**被 CJK(表意字+标点)切开后最长的那一块**,而非「第一个 CJK 字符
+    之前」——后者假设英文标题总在 CJK 说明之前,「开示集包括 X」这类中文在前
+    的写法会被整段吞掉、标题静默丢失。丢失是安全的方向(该词仍按未声明处理,
+    不会被错误洗白),但没必要留着这个假设。
+    """
     if "/" not in note:
         return {}
     aliases: dict[str, str] = {}
     for segment in note.split("/"):
-        cjk = _CJK.search(segment)
-        latin = segment[: cjk.start()] if cjk else segment
-        title = latin.strip()
+        pieces = _CJK_OR_PUNCT.split(segment)
+        title = max((p.strip() for p in pieces), key=len, default="")
         if len(re.findall(r"[A-Za-z]+", title)) < _MEMBER_MIN_WORDS:
             continue
         aliases[title] = collection_id
     return aliases
-
-
-def _contains_token_run(haystack: tuple[str, ...], needle: tuple[str, ...]) -> bool:
-    """`needle` 是否作为连续片段出现在 `haystack` 里的某处。"""
-    n = len(needle)
-    if not n or n > len(haystack):
-        return False
-    return any(haystack[i : i + n] == needle for i in range(len(haystack) - n + 1))
 
 
 def _compiled_teaching_id(
@@ -228,12 +238,23 @@ def _compiled_teaching_id(
     cited = _title_tokens(title)
     if not cited:
         return None
-    for declared, tokens in sorted(works.items()):
-        if tuple(cited[: len(tokens)]) == tokens:
-            return declared
+    # 最长匹配优先,不按字典序:一个声明作品的词序若恰是另一个声明作品词序的
+    # 前缀(如 Food / FoodForTheHeart),字典序会把引用错记到更短、字典序更靠
+    # 前的那一个。按前缀长度降序取第一个命中,才是「最贴合」的那条声明。
+    prefix_matches = [
+        (declared, tokens)
+        for declared, tokens in works.items()
+        if tuple(cited[: len(tokens)]) == tokens
+    ]
+    if prefix_matches:
+        return max(prefix_matches, key=lambda pair: len(pair[1]))[0]
+    # 成员别名只按「结尾」匹配,不接受别名之后还有多余文字。真实形态是
+    # 「描述性前缀 + 成员全名」("A Discourse on Dhammacakka Sutta"),全名
+    # 在尾部;若接受别名出现在任意位置,一个编造标题只要恰好包含真成员名的
+    # 子串就会被洗白("...Dhammacakka Sutta That Does Not Exist")。
     for member, collection in sorted((member_aliases or {}).items()):
         needle = tuple(_title_tokens(member))
-        if needle and _contains_token_run(tuple(cited), needle):
+        if needle and len(needle) <= len(cited) and tuple(cited[-len(needle):]) == needle:
             return collection
     return f"《{title}》"
 
@@ -246,11 +267,18 @@ _FOJIN_TEXT_LINK = re.compile(r"fojin\.app/texts/(\d+)")
 _LINK_WINDOW = 120
 
 
-def load_declared_ids(master: str) -> set[str]:
-    """读 prebuilt/<master>/meta.json,返回声明的离线 cbeta_id 集合。"""
+def load_declared_ids(master: str, base: str | None = None) -> set[str]:
+    """读 <base or prebuilt>/<master>/meta.json,返回声明的离线 cbeta_id 集合。
+
+    `base` 默认 None,交给 resolve_master_dir 用它自己的真实 prebuilt/ 常量 ——
+    传别的目录是为了让调用方(如 validate-citation-references.py 的
+    find_undeclared)既能用真实仓库,也能在测试里指向 tmp_path,不必为了可测试性
+    自己重新实现一遍 meta.json 解析。
+    """
     if not _SAFE_MASTER.match(master):
         raise ValueError(f"无效的 master ID：{master!r}（仅允许字母、数字、'-'、'_'）")
-    master_dir = resolve_master_dir(master)  # 兼容 "huineng" / "master-huineng"
+    kwargs = {"base": base} if base is not None else {}
+    master_dir = resolve_master_dir(master, **kwargs)  # 兼容 "huineng" / "master-huineng"
     if master_dir is None:
         raise FileNotFoundError(f"找不到 master：{master!r}（试过 {master!r} 和 master-{master}）")
     with open(os.path.join(master_dir, "meta.json"), encoding="utf-8") as f:
@@ -264,13 +292,15 @@ def load_declared_ids(master: str) -> set[str]:
     return ids
 
 
-def load_member_aliases(master: str) -> dict[str, str]:
-    """读 prebuilt/<master>/meta.json,把每条编集开示来源的 note 解析成
+def load_member_aliases(master: str, base: str | None = None) -> dict[str, str]:
+    """读 <base or prebuilt>/<master>/meta.json,把每条编集开示来源的 note 解析成
     「成员篇目 → 合集 id」别名表(合并全部来源)。找不到 note 或没有
-    `/` 分隔的来源不贡献别名 —— 参见 extract_member_aliases。"""
+    `/` 分隔的来源不贡献别名 —— 参见 extract_member_aliases。`base` 见
+    load_declared_ids。"""
     if not _SAFE_MASTER.match(master):
         raise ValueError(f"无效的 master ID：{master!r}（仅允许字母、数字、'-'、'_'）")
-    master_dir = resolve_master_dir(master)
+    kwargs = {"base": base} if base is not None else {}
+    master_dir = resolve_master_dir(master, **kwargs)
     if master_dir is None:
         raise FileNotFoundError(f"找不到 master：{master!r}（试过 {master!r} 和 master-{master}）")
     with open(os.path.join(master_dir, "meta.json"), encoding="utf-8") as f:
@@ -371,12 +401,13 @@ def main() -> int:
 
     try:
         declared = load_declared_ids(args.master)
+        member_aliases = load_member_aliases(args.master)
     except (ValueError, FileNotFoundError) as e:
         print(f"✗ {e}", file=sys.stderr)
         return 2
 
     answer = open(args.answer_file, encoding="utf-8").read() if args.answer_file else sys.stdin.read()
-    report = audit_answer(declared, answer)
+    report = audit_answer(declared, answer, member_aliases)
 
     print(f"offline 引文: {len(report['offline'])}  live 引文: {len(report['live'])}  "
           f"fabricated: {len(report['fabricated'])}")
