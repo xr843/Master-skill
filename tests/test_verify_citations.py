@@ -292,3 +292,139 @@ def test_suttacentral_reference_is_unparsed_not_clean():
 def test_empty_citation_block_is_not_recorded():
     r = audit_answer(TSONGKHAPA, "格式示例:【】")
     assert r["unparsed"] == []
+
+
+# ---------------------------------------------------------------------------
+# 第四个契约家族:编集开示(compiled_teaching)。
+#
+# roadmap Phase 2 承诺 CBETA / Toh·BDRC / PTS·SuttaCentral / 编集开示四家平等,
+# 前三家已实现,这一家一直是空的 —— 2026-08-31 全量跑里阿姜查的审计覆盖率因此是
+# 0%(0/48),马哈希 23%(12/52)。「零伪造引用」在那两位身上不是清白,是沉默。
+#
+# 难点同样在归一化而非正则。声明写 `AjahnChah:StillForestPool`,行文写
+# 《A Still Forest Pool》;声明 `Mahasi:ProgressOfInsight`,行文《The Progress of
+# Insight (Visuddhiñāṇa-kathā)》;声明 `Mahasi:PracticalVipassana`,行文
+# 《Practical Vipassanā Meditation Exercises》。只加正则不归一,会把这三条**正确**
+# 引用全判成伪造 —— 比继续瞎着更糟。
+# ---------------------------------------------------------------------------
+
+AJAHN_CHAH = {
+    "SuttaCentral",
+    "AjahnChah:FoodForTheHeart",
+    "AjahnChah:StillForestPool",
+    "AjahnChah:LivingDhamma",
+}
+MAHASI = {
+    "Mahasi:ManualOfInsight",
+    "Mahasi:ProgressOfInsight",
+    "Mahasi:PracticalVipassana",
+    "SuttaCentral",
+    "PTS:Vism",
+}
+
+
+def test_declared_compiled_teaching_cited_by_title_is_offline():
+    ans = "放下不是抛弃。【《Food for the Heart》§Letting Go】（开示要旨）"
+    r = audit_answer(AJAHN_CHAH, ans)
+    assert r["fabricated"] == []
+    assert "AjahnChah:FoodForTheHeart" in r["offline"]
+
+
+def test_a_leading_article_does_not_make_a_correct_citation_fabricated():
+    ans = "停止搅动，水自澄清。【《A Still Forest Pool》§The Forest Path】"
+    r = audit_answer(AJAHN_CHAH, ans)
+    assert r["fabricated"] == []
+    assert "AjahnChah:StillForestPool" in r["offline"]
+
+
+def test_a_leading_the_does_not_make_a_correct_citation_fabricated():
+    ans = "至行舍智。【《The Progress of Insight》§行舍智】"
+    r = audit_answer(MAHASI, ans)
+    assert r["fabricated"] == []
+    assert "Mahasi:ProgressOfInsight" in r["offline"]
+
+
+def test_a_parenthetical_gloss_after_the_title_is_ignored():
+    ans = "见观智次第。【《The Progress of Insight (Visuddhiñāṇa-kathā)》】"
+    r = audit_answer(MAHASI, ans)
+    assert r["fabricated"] == []
+    assert "Mahasi:ProgressOfInsight" in r["offline"]
+
+
+def test_diacritics_and_a_longer_subtitle_still_resolve_to_the_declared_work():
+    ans = "以腹部起伏为主所缘。【《Practical Vipassanā Meditation Exercises》§标记法导引】"
+    r = audit_answer(MAHASI, ans)
+    assert r["fabricated"] == []
+    assert "Mahasi:PracticalVipassana" in r["offline"]
+
+
+def test_an_undeclared_compiled_teaching_is_flagged():
+    """《Stillness Flowing》真有其书,但阿姜查的 meta.json 没声明它。"""
+    ans = "巴蓬寺僧众每天诵念巴利。【《Stillness Flowing》——寺院日课】"
+    r = audit_answer(AJAHN_CHAH, ans)
+    assert any("Stillness Flowing" in f for f in r["fabricated"])
+
+
+def test_a_shorter_title_does_not_satisfy_a_longer_declared_work():
+    """前缀规则是有向的:声明比行文长,不算命中。"""
+    ans = "【《Practical》§随便】"
+    r = audit_answer(MAHASI, ans)
+    assert r["offline"] == []
+    assert any("Practical" in f for f in r["fabricated"])
+
+
+def test_a_cjk_title_beside_a_declared_cbeta_id_adds_no_fabrication():
+    """汉文书名不属编集开示家族;绝不能让正确的 CBETA 引用凭空多出一条伪造。"""
+    ans = "自性本自清净。【《六祖坛经·般若品》，T48n2008】"
+    r = audit_answer(HUINENG, ans)
+    assert r["fabricated"] == []
+    assert r["offline"] == ["T48n2008"]
+
+
+def test_a_cjk_only_block_stays_unparsed_rather_than_fabricated():
+    ans = "依《清净道论》所说。【《清净道论》§VII】"
+    r = audit_answer(AJAHN_CHAH, ans)
+    assert r["fabricated"] == []
+    assert r["unparsed"] == ["《清净道论》§VII"]
+
+
+def test_a_master_declaring_no_compiled_teaching_is_unaffected():
+    """慧能没有编集开示来源,英文书名对他仍是「读不懂」,不是「伪造」。"""
+    ans = "【《Food for the Heart》§Letting Go】"
+    r = audit_answer(HUINENG, ans)
+    assert r["fabricated"] == []
+    assert r["unparsed"] == ["《Food for the Heart》§Letting Go"]
+
+
+def test_a_live_link_still_whitewashes_an_unmatched_title():
+    ans = "【《Stillness Flowing》】→ https://fojin.app/texts/58"
+    r = audit_answer(AJAHN_CHAH, ans)
+    assert r["fabricated"] == []
+    assert len(r["live"]) == 1
+
+
+def test_a_sutta_reference_in_book_brackets_is_not_a_compiled_teaching():
+    """《MN 10 / Satipaṭṭhāna Sutta》是语料库级的 SuttaCentral 引用。
+
+    它是拉丁书名、不匹配任何编集开示,一不小心就会被新家族判成伪造 —— 而
+    prebuilt/master-ajahn-chah/references/teaching.md 里就有四条这种写法。
+    把正确引用判成伪造比继续瞎着更糟,所以经号形态必须先被挡掉。
+    """
+    for title in (
+        "《MN 10 / Satipaṭṭhāna Sutta》",
+        "《SN 56.11 / Dhammacakkappavattana Sutta》",
+        "《AN 3.65 / Kesamutti Sutta》",
+        "《DN 16 / Mahāparinibbāna Sutta》",
+        "《Dhp 276》",
+        "《SC: MN 118 / Ānāpānasati Sutta》",
+    ):
+        r = audit_answer(AJAHN_CHAH, f"如经所说。【{title}】")
+        assert r["fabricated"] == [], f"{title} 被误判为伪造"
+        assert len(r["unparsed"]) == 1, f"{title} 应记为不可解析,而非放行"
+
+
+def test_a_sutta_shaped_title_does_not_shadow_a_real_compiled_teaching():
+    """挡经号不能顺手挡掉真书名 —— 书名里出现数字仍要能匹配。"""
+    ans = "【《Food for the Heart》§Right Practice】"
+    r = audit_answer(AJAHN_CHAH, ans)
+    assert "AjahnChah:FoodForTheHeart" in r["offline"]

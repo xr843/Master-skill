@@ -115,18 +115,44 @@ That is a doctrinal and bibliographic call, not a code change.
 
 ## Where the audit is blind, stated as numbers instead of caveats
 
+> **Re-audited 2026-09-03.** The compiled-teaching family has since been
+> implemented, and the audit re-run over this run's stored answers
+> (`python3 scripts/reaudit-report.py eval/reports/0.11.0-06b8142-deepseek.json`)
+> — no API calls, nothing paid twice. `master-ajahn-chah` goes **0% → 62%**,
+> `master-mahasi-sayadaw` **23% → 81%**, total **64.2% → 74.2%**, and every other
+> master is unchanged to the citation. The JSON below is left exactly as the run
+> produced it: it records what that instrument saw on 2026-08-31, and editing it
+> would be rewriting the experiment. The table that follows is likewise the
+> original reading.
+
 | Skill | Coverage | Why |
 |---|---|---|
-| `master-ajahn-chah` | 0% (0 / 48) | Declares `SuttaCentral` (corpus-level, unauditable by contract) and `AjahnChah:FoodForTheHeart` (compiled teachings, `Author:Work`). The compiled-teaching family is **not implemented** in `verify_citations.py`. |
+| `master-ajahn-chah` | 0% (0 / 48) → **62% re-audited** | Declares `SuttaCentral` (corpus-level, unauditable by contract) and `AjahnChah:FoodForTheHeart` (compiled teachings, `Author:Work`). The compiled-teaching family was **not implemented** in `verify_citations.py`; it is now. The 18 still unreadable are all `SC: MN 10 / …` corpus-level references. |
 | `master-tsongkhapa` | 6% (3 / 53) | Declares bare Wylie titles (`Lam-rim-chen-mo`) that free text cannot be distinguished from an invented title. Documented as out of reach. |
-| `master-mahasi-sayadaw` | 23% (12 / 52) | Same compiled-teaching family (`Mahasi:ManualOfInsight`). |
+| `master-mahasi-sayadaw` | 23% (12 / 52) → **81% re-audited** | Same compiled-teaching family (`Mahasi:ManualOfInsight`). The 10 still unreadable are corpus-level `SC:` references and one website citation. |
 | `compare-masters`, `master-curriculum` | 0% | No `meta.json`, so no declared set to audit against; recorded as `audit_unavailable`. |
 | `master-help`, `master-debate` | n/a | Emit no citations at all. |
 | the other 9 masters | 97–100% | CBETA, `Toh:`, `BDRC:` and `PTS:` all resolve. |
 
-The four families the roadmap's Phase 2 promises to treat as equal are still not
-equal: CBETA, Toh and BDRC and PTS work; **compiled teachings do not**. That is now
-a number (0% and 23%) rather than a sentence in a known-gaps list.
+The four families the roadmap's Phase 2 promises to treat as equal were not
+equal when this ran: CBETA, Toh, BDRC and PTS worked; **compiled teachings did
+not**. That was a number (0% and 23%) rather than a sentence in a known-gaps list,
+and the number is what made it fixable. **All four families now resolve.**
+
+Re-auditing surfaced the first two citation findings these two masters have ever
+produced, and they are not the same kind of thing:
+
+- `master-ajahn-chah` #12 cites **《Stillness Flowing》** — a real book (Ajahn
+  Jayasaro's biography of Ajahn Chah) that `meta.json` does not declare. A
+  genuine undeclared source, and the first one ever caught for a 南传 persona.
+- `master-mahasi-sayadaw` #12 cites **《A Discourse on Dhammacakka Sutta》**, and
+  `Mahasi:DiscoursesOnSuttas` is declared with the note *"Mālukyaputta Sutta /
+  Dhammacakka Sutta / Sallekha Sutta 等开示集"* — **the declared collection names
+  this very discourse among its members.** So the citation is covered in
+  substance while the id names the collection and the answer names a member.
+  Whether a collection id covers its members is a contract decision, not a
+  matching bug: either the collection is split into per-work ids, or the rule
+  says a member resolves to its collection. Left for a maintainer.
 
 ## Truncation
 

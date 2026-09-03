@@ -28,7 +28,7 @@ Status: in progress.
 
 Status: implemented in v0.10.1; fidelity coverage continues in Phase 3.
 
-- Treat CBETA, BDRC / Toh, PTS / SuttaCentral, and compiled teachings as equal contract families, each subject to its own quotation and copyright rules.
+- Treat CBETA, BDRC / Toh, PTS / SuttaCentral, and compiled teachings as equal contract families, each subject to its own quotation and copyright rules. **All four resolve in `verify_citations.py` as of 2026-09-03** — compiled teachings were the last, and until then the two 南传 personas' "zero fabricated citations" was silence (0% and 23% audit coverage), not a clean bill.
 - Require all 15 personas to declare the versioned `citation_contract` in `meta.json`.
 - Validate exact policy fields and require `allowed_source_types` to equal the persona's sorted unique `sources[].type` values.
 - Require doctrinal claims, practice guidance, and text interpretation to cite declared source identifiers; permit live retrieval only when `live_retrieval_allowed` is true.
