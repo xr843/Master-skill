@@ -67,27 +67,27 @@ git commit -m "fix(fidelity): connect result liveness to the gate"
 - Consumes: `python scripts/check-gate-liveness.py --fidelity-results PATH`
 - Produces: `IS_FORK` environment flag derived from GitHub pull-request metadata
 
-- [ ] **Step 1: Write failing workflow tests**
+- [x] **Step 1: Write failing workflow tests**
 
 Assert `push.branches == ["main"]`; execute the no-key smoke branch with `IS_FORK=false` and require a non-zero exit; execute it with `IS_FORK=true` and require the existing explicit skip artifact; assert both keyed smoke/full scripts call `check-gate-liveness.py --fidelity-results`.
 
-- [ ] **Step 2: Run the focused tests and verify RED**
+- [x] **Step 2: Run the focused tests and verify RED**
 
 Run: `PATH="$PWD/.venv/bin:$PATH" python -m pytest scripts/tests/test_validate_workflow.py -q`
 
 Expected: FAIL because push targets every branch, missing keys always exit 0, and result liveness is not called.
 
-- [ ] **Step 3: Implement the workflow policy**
+- [x] **Step 3: Implement the workflow policy**
 
 Limit `push` to `main`. Export `IS_FORK` from `github.event.pull_request.head.repo.fork`. In the missing-key branch, write a skip artifact and exit 0 only when `IS_FORK=true`; otherwise write an error artifact, append a failure summary, and exit 1. Run the result-liveness CLI after both keyed smoke and full-suite executions.
 
-- [ ] **Step 4: Run the focused tests and verify GREEN**
+- [x] **Step 4: Run the focused tests and verify GREEN**
 
 Run: `PATH="$PWD/.venv/bin:$PATH" python -m pytest scripts/tests/test_validate_workflow.py scripts/tests/test_check_gate_liveness.py -q`
 
 Expected: all tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows/validate-and-test.yml scripts/tests/test_validate_workflow.py

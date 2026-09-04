@@ -2,6 +2,8 @@ name: Validate & Test
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'prebuilt/**'
       - 'scripts/**'
@@ -293,33 +295,34 @@ jobs:
         # data the shell never re-evaluates.
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
           SMOKE_MASTER: ${{ steps.pick.outputs.master }}
         run: |
           if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-            echo "::warning::ANTHROPIC_API_KEY not configured — smoke is advisory on this run (expected on forks)."
-            echo '{"skipped": true, "reason": "no_api_key"}' > fidelity-smoke.json
+            if [ "${IS_FORK:-false}" = "true" ]; then
+              echo "::warning::ANTHROPIC_API_KEY is unavailable to fork PRs — smoke is advisory for this untrusted event."
+              echo '{"skipped": true, "reason": "no_api_key", "fork": true}' > fidelity-smoke.json
+              {
+                echo "### Fidelity grading skipped for fork PR"
+                echo
+                echo "GitHub withholds repository secrets from fork PRs; deterministic validation still ran."
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "::error::ANTHROPIC_API_KEY is not configured for this trusted repository event."
+            echo '{"error": "no_api_key", "skipped": false}' > fidelity-smoke.json
             {
-              echo "### Fidelity grading skipped"
+              echo "### Fidelity grading failed"
               echo
-              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but model grading did not run."
+              echo "ANTHROPIC_API_KEY is not configured for this trusted repository event; no model response was graded."
             } >> "$GITHUB_STEP_SUMMARY"
-            exit 0
+            exit 1
           fi
           python scripts/test-fidelity.py \
             --master "$SMOKE_MASTER" \
             --max-tests 1 \
             --json > fidelity-smoke.json
-          python - <<'PY'
-          import json, sys
-          with open("fidelity-smoke.json") as f:
-              data = json.load(f)
-          # --master returns a single-element list
-          r = data[0] if isinstance(data, list) else data
-          failed = r.get("failed", 0)
-          total = r.get("total", 0)
-          print(f"Fidelity smoke: {total - failed}/{total} passed for {r.get('master', '?')}")
-          sys.exit(1 if failed else 0)
-          PY
+          python scripts/check-gate-liveness.py --fidelity-results fidelity-smoke.json
 
       - name: Upload smoke results
         if: always()
@@ -350,16 +353,17 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-            echo "::warning::ANTHROPIC_API_KEY not configured — full fidelity sweep is advisory (structural validation in the validate job still gates)."
-            echo '{"skipped": true, "reason": "no_api_key"}' > fidelity-results.json
+            echo "::error::ANTHROPIC_API_KEY is not configured; the scheduled/manual fidelity run cannot grade anything."
+            echo '{"error": "no_api_key", "skipped": false}' > fidelity-results.json
             {
-              echo "### Fidelity grading skipped"
+              echo "### Fidelity grading failed"
               echo
-              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but model grading did not run."
+              echo "ANTHROPIC_API_KEY is not configured; no model response was graded."
             } >> "$GITHUB_STEP_SUMMARY"
-            exit 0
+            exit 1
           fi
           python scripts/test-fidelity.py --all --json > fidelity-results.json
+          python scripts/check-gate-liveness.py --fidelity-results fidelity-results.json
 
       - name: Upload results
         if: always()

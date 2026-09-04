@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -184,6 +185,11 @@ def test_push_paths_include_distribution_and_generator_runtime():
     assert not uncovered, f"push trigger does not cover: {uncovered}"
 
 
+def test_push_validation_runs_only_on_main_to_avoid_duplicate_pr_runs():
+    triggers = WORKFLOW.get("on", WORKFLOW.get(True))
+    assert triggers["push"].get("branches") == ["main"]
+
+
 def test_pick_step_uses_checked_selector_without_fixed_roster():
     checkout = next(
         step
@@ -266,19 +272,75 @@ def test_smoke_git_diff_failure_is_not_masked(tmp_path: Path):
     assert not output_path.exists()
 
 
+def _run_fidelity_step_without_key(
+    tmp_path: Path, job_name: str, step_name: str, *, is_fork: bool
+) -> subprocess.CompletedProcess[str]:
+    step = _step(WORKFLOW, job_name, step_name)
+    env = os.environ.copy()
+    env["ANTHROPIC_API_KEY"] = ""
+    env["IS_FORK"] = "true" if is_fork else "false"
+    env["GITHUB_STEP_SUMMARY"] = str(tmp_path / "summary.md")
+    return subprocess.run(
+        ["bash", "-e", "-o", "pipefail", "-c", step["run"]],
+        cwd=tmp_path,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+
+def test_missing_key_is_an_explicit_advisory_skip_for_fork_prs(tmp_path: Path):
+    result = _run_fidelity_step_without_key(
+        tmp_path, "fidelity-smoke", "Run fidelity smoke", is_fork=True
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads((tmp_path / "fidelity-smoke.json").read_text(encoding="utf-8"))
+    assert payload == {"skipped": True, "reason": "no_api_key", "fork": True}
+    assert "Fidelity grading skipped for fork PR" in (
+        tmp_path / "summary.md"
+    ).read_text(encoding="utf-8")
+
+
 @pytest.mark.parametrize(
-    ("job_name", "step_name"),
+    ("job_name", "step_name", "artifact"),
     [
-        ("fidelity-smoke", "Run fidelity smoke"),
-        ("fidelity-full", "Run fidelity tests"),
+        ("fidelity-smoke", "Run fidelity smoke", "fidelity-smoke.json"),
+        ("fidelity-full", "Run fidelity tests", "fidelity-results.json"),
     ],
 )
-def test_each_fidelity_no_key_branch_records_step_summary(job_name: str, step_name: str):
+def test_missing_key_fails_trusted_repository_events(
+    tmp_path: Path, job_name: str, step_name: str, artifact: str
+):
+    result = _run_fidelity_step_without_key(
+        tmp_path, job_name, step_name, is_fork=False
+    )
+
+    assert result.returncode == 1
+    payload = json.loads((tmp_path / artifact).read_text(encoding="utf-8"))
+    assert payload == {"error": "no_api_key", "skipped": False}
+    assert "Fidelity grading failed" in (tmp_path / "summary.md").read_text(
+        encoding="utf-8"
+    )
+
+
+@pytest.mark.parametrize(
+    ("job_name", "step_name", "artifact"),
+    [
+        ("fidelity-smoke", "Run fidelity smoke", "fidelity-smoke.json"),
+        ("fidelity-full", "Run fidelity tests", "fidelity-results.json"),
+    ],
+)
+def test_each_graded_job_checks_result_liveness(
+    job_name: str, step_name: str, artifact: str
+):
     job = _job(WORKFLOW, job_name)
     assert job.get("needs") == "validate"
     step = _step(WORKFLOW, job_name, step_name)
     script = step["run"]
-    assert 'if [ -z "${ANTHROPIC_API_KEY:-}" ]; then' in script
-    assert script.count('echo "### Fidelity grading skipped"') == 1
-    assert '} >> "$GITHUB_STEP_SUMMARY"' in script
+    assert (
+        f"python scripts/check-gate-liveness.py --fidelity-results {artifact}"
+        in script
+    )
     _assert_hard(step)
