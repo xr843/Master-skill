@@ -60,6 +60,20 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
+      - name: Lint GitHub Actions workflows
+        env:
+          ACTIONLINT_VERSION: '1.7.12'
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          ACTIONLINT_DIR="$(mktemp -d)"
+          ACTIONLINT_ARCHIVE="$ACTIONLINT_DIR/actionlint.tar.gz"
+          curl --fail --silent --show-error --location \
+            --output "$ACTIONLINT_ARCHIVE" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          printf '%s  %s\n' "$ACTIONLINT_SHA256" "$ACTIONLINT_ARCHIVE" | sha256sum --check -
+          tar -xzf "$ACTIONLINT_ARCHIVE" -C "$ACTIONLINT_DIR" actionlint
+          "$ACTIONLINT_DIR/actionlint" -color
+
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:

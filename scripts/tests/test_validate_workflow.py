@@ -87,6 +87,21 @@ def test_validate_job_contains_hard_gate_commands(step_name: str, command: str):
     _assert_hard(step)
 
 
+def test_validate_job_lints_workflows_with_verified_pinned_actionlint():
+    step = _step(WORKFLOW, "validate", "Lint GitHub Actions workflows")
+    assert step.get("env") == {
+        "ACTIONLINT_VERSION": "1.7.12",
+        "ACTIONLINT_SHA256": (
+            "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+        ),
+    }
+    script = step.get("run", "")
+    assert "rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/" in script
+    assert "sha256sum --check -" in script
+    assert '"$ACTIONLINT_DIR/actionlint" -color' in script
+    _assert_hard(step)
+
+
 @pytest.mark.parametrize(
     ("step_name", "command"),
     [
