@@ -37,12 +37,12 @@ PREBUILT_DIR = os.path.join(PROJECT_ROOT, "prebuilt")
 # Matches fojin.app/texts/<ID> in URLs — ID can be CBETA-style or numeric
 FOJIN_URL_RE = re.compile(r"(https?://fojin\.app/texts/)([A-Za-z0-9n]+)")
 
-# Full CBETA catalog IDs used by this repository. Taishō / Xuzangjing work
+# Full CBETA catalog IDs used by this repository. Existing non-Jiaxing work
 # numbers are numeric; Jiaxing numbers retain their catalogue B prefix
 # (`J36nB348`, short form `JB348`). Treating it as `J36n0348` points at a
 # different, non-existent identifier rather than an equivalent spelling.
 FULL_CBETA_RE = re.compile(
-    r"^(?:(?P<standard_prefix>[TX])(?P<standard_volume>\d+)n"
+    r"^(?:(?P<standard_prefix>[A-IK-Z])(?P<standard_volume>\d+)n"
     r"(?P<standard_text>\d+[a-z]?)|"
     r"(?P<jiaxing_prefix>J)(?P<jiaxing_volume>\d+)n"
     r"(?P<jiaxing_text>B\d+))$"

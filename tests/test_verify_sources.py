@@ -48,6 +48,10 @@ def test_full_to_short_cbeta_x_series():
     assert full_to_short_cbeta("X62n1182") == "X1182"
 
 
+def test_full_to_short_cbeta_preserves_other_numeric_collections():
+    assert full_to_short_cbeta("A01n0001") == "A0001"
+
+
 def test_full_to_short_cbeta_j_series():
     assert full_to_short_cbeta("J36nB348") == "JB348"
 
