@@ -11,6 +11,7 @@ load_member_aliases = verify_citations.load_member_aliases
 
 # 慧能声明的离线源(与 prebuilt/master-huineng/meta.json 一致)
 HUINENG = {"T48n2008", "T08n0235", "T14n0475"}
+OUYI_JIAXING = {"J36nB348"}
 
 
 def test_offline_citation_passes():
@@ -113,6 +114,24 @@ def test_id_inside_latin_token_not_parsed_as_cbeta():
     ans = "构建产物见【FakeSutraT99n9999】。"
     r = audit_answer(HUINENG, ans)
     assert r["fabricated"] == [] and r["offline"] == [] and r["live"] == []
+
+
+def test_canonical_jiaxing_full_id_is_offline():
+    result = audit_answer(OUYI_JIAXING, "【《靈峰蕅益大師宗論》，J36nB348】")
+    assert result["offline"] == ["J36nB348"]
+    assert result["fabricated"] == []
+
+
+def test_canonical_jiaxing_short_id_resolves_to_declared_full_id():
+    result = audit_answer(OUYI_JIAXING, "【《靈峰蕅益大師宗論》，JB348】")
+    assert result["offline"] == ["J36nB348"]
+    assert result["fabricated"] == []
+
+
+def test_numeric_jiaxing_typo_does_not_resolve_to_canonical_id():
+    result = audit_answer(OUYI_JIAXING, "【《靈峰蕅益大師宗論》，J36n0348】")
+    assert result["offline"] == []
+    assert result["fabricated"] == ["J36n0348"]
 
 
 def test_load_declared_ids_real_master():
