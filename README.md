@@ -209,7 +209,7 @@ npx master-skill recommend "念佛怎么念才算老实"   # 不知道该问谁�
 
 ![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/main/docs/assets/desktop-manager.png)
 
-**下载**:[Releases](https://github.com/xr843/Master-skill/releases) 提供 Linux / Windows / macOS 预编译二进制,下载后直接运行(仓库根目录下执行,需本地已 clone 本仓库)。Linux / macOS 下载后需先 `chmod +x` 赋予可执行权限;macOS 上二进制未签名,首次运行需右键"打开"或执行 `xattr -d com.apple.quarantine <文件名>` 解除隔离。
+**下载**:[Releases](https://github.com/xr843/Master-skill/releases) 提供 Linux / Windows / macOS 预编译二进制,下载后在本仓库根目录运行。Linux / macOS 建议下载对应 `.tar.gz`，解包后会保留可执行位；原裸二进制名继续提供以兼容旧链接，使用裸文件时需先 `chmod +x`。每个新版 release 同时附带 `SHA256SUMS`，可按其中对应行核对下载文件。macOS 二进制未签名，首次运行需右键“打开”或执行 `xattr -d com.apple.quarantine <文件名>` 解除隔离。
 
 **从源码构建**:
 

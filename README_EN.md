@@ -207,7 +207,7 @@ A native desktop console (pure Rust, egui, single binary, no Electron) that unif
 
 ![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/main/docs/assets/desktop-manager.png)
 
-**Download**: [Releases](https://github.com/xr843/Master-skill/releases) provides pre-built binaries for Linux / Windows / macOS — download and run directly (execute from the repository root; requires a local clone of this repo). On Linux/macOS you'll need to `chmod +x` the downloaded binary first; on macOS it's unsigned, so the first run needs right-click → Open, or `xattr -d com.apple.quarantine <file>` to clear the quarantine flag.
+**Download**: [Releases](https://github.com/xr843/Master-skill/releases) provides pre-built binaries for Linux / Windows / macOS; run them from the root of a local clone. On Linux/macOS, prefer the matching `.tar.gz`, which preserves the executable bit when extracted. The raw binary names remain available for compatibility and require `chmod +x`. Each new release also includes `SHA256SUMS`; verify the downloaded asset against its matching line. The macOS binary is unsigned, so first launch still requires right-click → Open or `xattr -d com.apple.quarantine <file>`.
 
 **Build from source**:
 
