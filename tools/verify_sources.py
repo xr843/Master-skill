@@ -37,8 +37,16 @@ PREBUILT_DIR = os.path.join(PROJECT_ROOT, "prebuilt")
 # Matches fojin.app/texts/<ID> in URLs — ID can be CBETA-style or numeric
 FOJIN_URL_RE = re.compile(r"(https?://fojin\.app/texts/)([A-Za-z0-9n]+)")
 
-# Full CBETA catalog ID pattern: T08n0235, X62n1182, J36n0348
-FULL_CBETA_RE = re.compile(r"^([A-Z])(\d+)n(\d+[a-z]?)$")
+# Full CBETA catalog IDs used by this repository. Taishō / Xuzangjing work
+# numbers are numeric; Jiaxing numbers retain their catalogue B prefix
+# (`J36nB348`, short form `JB348`). Treating it as `J36n0348` points at a
+# different, non-existent identifier rather than an equivalent spelling.
+FULL_CBETA_RE = re.compile(
+    r"^(?:(?P<standard_prefix>[TX])(?P<standard_volume>\d+)n"
+    r"(?P<standard_text>\d+[a-z]?)|"
+    r"(?P<jiaxing_prefix>J)(?P<jiaxing_volume>\d+)n"
+    r"(?P<jiaxing_text>B\d+))$"
+)
 
 SOURCE_ID_PATTERNS = {
     "cbeta": FULL_CBETA_RE,
@@ -163,20 +171,20 @@ def _run_declared_source_check(target: str, *, final: bool) -> int:
 
 
 def full_to_short_cbeta(full_id: str) -> str | None:
-    """Convert full CBETA ID (T08n0235) to FoJin short format (T0235).
+    """Convert a full CBETA ID to its volume-free lookup form.
 
     FoJin stores cbeta_id as the collection prefix + text number,
     dropping the volume number. E.g.:
         T08n0235  -> T0235
         X62n1182  -> X1182
-        J36n0348  -> J0348
+        J36nB348  -> JB348
         T34n1718  -> T1718
     """
     m = FULL_CBETA_RE.match(full_id)
     if not m:
         return None
-    prefix = m.group(1)    # T, X, J, etc.
-    text_num = m.group(3)  # 0235, 1182, etc.
+    prefix = m.group("standard_prefix") or m.group("jiaxing_prefix")
+    text_num = m.group("standard_text") or m.group("jiaxing_text")
     return f"{prefix}{text_num}"
 
 
