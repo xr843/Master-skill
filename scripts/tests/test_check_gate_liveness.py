@@ -137,12 +137,13 @@ def test_graded_suite_with_real_verdicts_is_clean(liveness):
     assert problems == []
 
 
-def test_dry_run_suite_is_exempt(liveness):
-    """A dry run grades nothing by design — that is not the failure mode."""
+def test_dry_run_suite_is_not_evidence_for_a_graded_gate(liveness):
+    """A dry run is valid elsewhere, but cannot satisfy a graded gate."""
     problems = liveness.check_graded_suites_graded_something(
         [{"master": "master-ouyi", "mode": "dry_run", "results": []}]
     )
-    assert problems == []
+    assert len(problems) == 1
+    assert "graded nothing" in problems[0]
 
 
 def _minimal_live_repo(tmp_path: Path) -> Path:

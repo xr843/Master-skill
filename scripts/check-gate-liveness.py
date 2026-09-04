@@ -69,15 +69,15 @@ def check_testpaths_cover_suites(
 def check_graded_suites_graded_something(suites: list[dict]) -> list[str]:
     """A graded fidelity suite that produced no verdict must not read as a pass.
 
-    Dry runs are exempt: grading nothing is what a dry run is for.
+    Callers use this only when a real graded result is required. A dry-run suite
+    is therefore evidence that the requested grading did not happen, not an
+    exemption from the check.
     """
     if not suites:
         return ["fidelity result set contains 0 suites — it graded nothing"]
 
     problems = []
     for suite in suites:
-        if suite.get("mode") == "dry_run":
-            continue
         verdicts = [
             r for r in suite.get("results", [])
             if str(r.get("status", "")).upper() in GRADED_STATUSES
