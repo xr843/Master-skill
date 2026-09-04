@@ -29,13 +29,13 @@ jobs:
       - name: Run verify_sources.py (dry run)
         id: verify
         run: |
-          cd ${{ github.workspace }}
+          cd "${{ github.workspace }}"
           python3 tools/verify_sources.py 2>&1 | tee verify_output.txt
           # Extract key stats for the issue body
           FAILED=$(grep -oP "Not found in FoJin:\s*\K\d+" verify_output.txt || echo "0")
           UPDATES=$(grep -oP "URL replacements:\s*\K\d+" verify_output.txt || echo "0")
-          echo "failed=$FAILED" >> $GITHUB_OUTPUT
-          echo "updates=$UPDATES" >> $GITHUB_OUTPUT
+          echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
+          echo "updates=$UPDATES" >> "$GITHUB_OUTPUT"
 
       - name: Create issue if links need updating
         if: steps.verify.outputs.updates != '0' || steps.verify.outputs.failed != '0'

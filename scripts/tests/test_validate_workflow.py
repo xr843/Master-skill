@@ -13,6 +13,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "validate-and-test.yml"
 WORKFLOW_TEXT = WORKFLOW_PATH.read_text(encoding="utf-8")
+VERIFY_LINKS_PATH = ROOT / ".github" / "workflows" / "verify-links.yml"
 
 
 def _load_workflow_text(text: str) -> dict:
@@ -44,6 +45,9 @@ def _assert_hard(step: dict) -> None:
 
 
 WORKFLOW = _load_workflow_text(WORKFLOW_TEXT)
+VERIFY_LINKS_WORKFLOW = _load_workflow_text(
+    VERIFY_LINKS_PATH.read_text(encoding="utf-8")
+)
 
 
 def test_free_text_tokens_cannot_substitute_for_workflow_structure():
@@ -100,6 +104,14 @@ def test_validate_job_lints_workflows_with_verified_pinned_actionlint():
     assert "sha256sum --check -" in script
     assert '"$ACTIONLINT_DIR/actionlint" -color' in script
     _assert_hard(step)
+
+
+def test_verify_links_quotes_github_output_path():
+    step = _step(VERIFY_LINKS_WORKFLOW, "verify", "Run verify_sources.py (dry run)")
+    script = step.get("run", "")
+    assert 'cd "${{ github.workspace }}"' in script
+    assert script.count('>> "$GITHUB_OUTPUT"') == 2
+    assert ">> $GITHUB_OUTPUT" not in script
 
 
 @pytest.mark.parametrize(
