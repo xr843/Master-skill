@@ -99,22 +99,24 @@ git commit -m "fix(ci): stop passing an unrun fidelity gate"
 **Files:**
 - Modify: `CONTRIBUTING.md`
 - Modify: `CHANGELOG.md`
+- Modify: `README.md`
+- Modify: `README_EN.md`
 
 **Interfaces:**
 - Consumes: workflow behavior from Task 2
 - Produces: contributor-facing secret/skip policy
 
-- [ ] **Step 1: Update current documentation**
+- [x] **Step 1: Update current documentation**
 
 State that a missing key is advisory only for fork PRs and a hard failure for trusted repository events. Record both the previously dead liveness function and duplicate `push`/`pull_request` execution in `[Unreleased]`.
 
-- [ ] **Step 2: Verify documentation consistency**
+- [x] **Step 2: Verify documentation consistency**
 
 Run: `rg -n "advisory pass|main repo|主仓|fork" CONTRIBUTING.md .github/workflows/validate-and-test.yml CHANGELOG.md`
 
 Expected: no claim says the main repository can pass a required smoke check without grading.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add CONTRIBUTING.md CHANGELOG.md

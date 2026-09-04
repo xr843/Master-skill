@@ -89,7 +89,10 @@ CI 一直单独跑 `pytest`，直到 2026-09-03 本地 `npm test` 才补上这�
 
 提交 PR 前自检：
 
-- [ ] CI 绿色（validate 必过；fidelity-smoke 在未配置 `ANTHROPIC_API_KEY` 时为 advisory pass——目前主仓与 forks 均未配置，绿勾代表结构校验通过，实跑评分是本地/发版前手动步骤）
+- [ ] CI 绿色（validate 必过；同仓 PR 必须配置 `ANTHROPIC_API_KEY` 并至少产出
+  1 条真实 PASS/FAIL，缺密钥或零 verdict 都是 hard failure。只有 fork PR 因
+  GitHub 不下发仓库 secret 而明确 advisory skip；该绿勾只表示确定性校验通过，
+  不冒充模型评分）
 - [ ] CHANGELOG.md 的 `[Unreleased]` 章节已更新（除非是纯 typo）
 - [ ] 涉及 `prebuilt/**` 的改动 → 已 review ETHICS.md §2（版权 Tier）、§3（教界边界）
 - [ ] PR description 说明**做了什么 + 为什么**，而非只列改动文件
@@ -260,7 +263,8 @@ verified_at: <YYYY-MM-DD>
 
 PR 提交后：
 
-1. CI 自动跑 validate + fidelity-smoke（抽本 PR 修改的法师做 smoke）
+1. CI 自动跑 validate + fidelity-smoke（抽本 PR 修改的法师做 smoke；fork PR
+   因拿不到仓库 secret 会明确标记为 advisory skip）
 2. 维护者 review 教义准确性 + 风格一致性 + 版权 Tier 判断
 3. 如有佛学学者 / 教内法师愿意 review，欢迎在 PR 评论 tag 维护者协调
 4. Review 周期：7-14 天（含教内邀请意见）
