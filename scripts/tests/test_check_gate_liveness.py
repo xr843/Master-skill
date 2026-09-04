@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -136,12 +137,101 @@ def test_graded_suite_with_real_verdicts_is_clean(liveness):
     assert problems == []
 
 
-def test_dry_run_suite_is_exempt(liveness):
-    """A dry run grades nothing by design — that is not the failure mode."""
+def test_dry_run_suite_is_not_evidence_for_a_graded_gate(liveness):
+    """A dry run is valid elsewhere, but cannot satisfy a graded gate."""
     problems = liveness.check_graded_suites_graded_something(
         [{"master": "master-ouyi", "mode": "dry_run", "results": []}]
     )
-    assert problems == []
+    assert len(problems) == 1
+    assert "graded nothing" in problems[0]
+
+
+def _minimal_live_repo(tmp_path: Path) -> Path:
+    root = tmp_path / "repo"
+    tests = root / "tests"
+    tests.mkdir(parents=True)
+    (tests / "test_live.py").write_text(
+        "def test_live():\n    assert True\n", encoding="utf-8"
+    )
+    (root / "pytest.ini").write_text("[pytest]\ntestpaths = tests\n", encoding="utf-8")
+    fixtures = root / "prebuilt" / "master-live" / "tests"
+    fixtures.mkdir(parents=True)
+    (fixtures / "fidelity.jsonl").write_text(
+        json.dumps({"q": "live"}) + "\n", encoding="utf-8"
+    )
+    return root
+
+
+def _run_liveness_cli(root: Path, result_path: Path) -> subprocess.CompletedProcess[str]:
+    script = Path(__file__).resolve().parents[1] / "check-gate-liveness.py"
+    return subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--root",
+            str(root),
+            "--fidelity-results",
+            str(result_path),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+
+def test_cli_rejects_fidelity_result_that_graded_nothing(tmp_path: Path):
+    root = _minimal_live_repo(tmp_path)
+    result_path = tmp_path / "fidelity.json"
+    result_path.write_text(
+        json.dumps([{"master": "master-live", "mode": "graded", "results": []}]),
+        encoding="utf-8",
+    )
+
+    result = _run_liveness_cli(root, result_path)
+
+    assert result.returncode == 1
+    assert "graded suite produced 0 verdicts" in result.stdout
+
+
+def test_cli_rejects_empty_fidelity_result_set(tmp_path: Path):
+    root = _minimal_live_repo(tmp_path)
+    result_path = tmp_path / "fidelity.json"
+    result_path.write_text("[]", encoding="utf-8")
+
+    result = _run_liveness_cli(root, result_path)
+
+    assert result.returncode == 1
+    assert "contains 0 suites" in result.stdout
+
+
+def test_cli_accepts_fidelity_result_with_a_real_verdict(tmp_path: Path):
+    root = _minimal_live_repo(tmp_path)
+    result_path = tmp_path / "fidelity.json"
+    result_path.write_text(
+        json.dumps(
+            [
+                {
+                    "master": "master-live",
+                    "mode": "graded",
+                    "results": [{"status": "PASS"}],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = _run_liveness_cli(root, result_path)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "fidelity result set produced a real verdict" in result.stdout
+
+
+def test_load_fidelity_suites_accepts_committed_report_wrapper(liveness, tmp_path: Path):
+    suites = [{"master": "master-live", "results": [{"status": "PASS"}]}]
+    result_path = tmp_path / "report.json"
+    result_path.write_text(json.dumps({"meta": {}, "suites": suites}), encoding="utf-8")
+
+    assert liveness.load_fidelity_suites(result_path) == suites
 
 
 # --------------------------------------------------------------------------
