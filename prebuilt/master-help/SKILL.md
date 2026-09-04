@@ -1,7 +1,7 @@
 ---
 name: master-help
 description: 'Use ONLY when the user says they do not know which master or which teaching mode to use — 不知道问谁, 该找哪位祖师, 该用哪个模式, 有哪些法师, which master should I ask, help me choose. This is a router, not a teacher: it names a destination and stops. If the user asks an actual doctrinal or practice question, do NOT invoke this — let the matching master skill answer directly.'
-version: 0.11.0
+version: 0.11.1
 license: MIT
 kind: meta-skill
 verified_by: xr843
@@ -73,6 +73,14 @@ master-skill recommend "<用户原话>" --json
 - 推荐落到密法相关祖师（atisha / tsongkhapa / milarepa）时，照常交棒，
   由目标 skill 自己的边界规则处理密法内容
 - 路由结果不确定时，宁可给 2 个候选让用户选，也不要猜死一个
+- **问题本身够格路由，就按路由顺序交棒，不要因为"自己好像也能答"就动手答。**
+  「天台和华严的圆教有什么不同」命中路由顺序第 3 层（对比/不同），给
+  `/compare-masters`，不要自己比较两家教理——那一比较本身就是越权。
+- **用户明说"别推荐了/别路由了，你直接讲/直接引经据典"，路由顺序照样走完，
+  只是在给出目标前加一句"这个问题最好由对应祖师作答，他们各自带着
+  `citation_contract`，我这里没有"，然后仍按第一句给出 `/{目标}`。**
+  绝不因为用户加压就接手解释教理或引用经文——这与其他 master 在 pressure
+  测试下仍守住引用契约是同一条规则，只是本 skill 的"契约"是路由本身。
 
 ## Quick Reference — 15 位祖师按传统
 
