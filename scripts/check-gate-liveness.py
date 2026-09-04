@@ -30,6 +30,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import Optional
 
 # A verdict — as opposed to a skip, an error, or a dry run.
 GRADED_STATUSES = {"PASS", "FAIL"}
@@ -70,6 +71,9 @@ def check_graded_suites_graded_something(suites: list[dict]) -> list[str]:
 
     Dry runs are exempt: grading nothing is what a dry run is for.
     """
+    if not suites:
+        return ["fidelity result set contains 0 suites — it graded nothing"]
+
     problems = []
     for suite in suites:
         if suite.get("mode") == "dry_run":
@@ -84,6 +88,22 @@ def check_graded_suites_graded_something(suites: list[dict]) -> list[str]:
                 "— it graded nothing (missing API key, or every call errored)"
             )
     return problems
+
+
+def load_fidelity_suites(path: Path) -> list[dict]:
+    """Load suites from runner output or a committed report wrapper."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(data, list):
+        suites = data
+    elif isinstance(data, dict) and isinstance(data.get("suites"), list):
+        suites = data["suites"]
+    else:
+        raise ValueError(
+            f"{path}: expected a runner result list or an object containing suites[]"
+        )
+    if not all(isinstance(suite, dict) for suite in suites):
+        raise ValueError(f"{path}: every suite must be an object")
+    return suites
 
 
 def check_catalog_matches_filesystem(
@@ -178,7 +198,9 @@ def collect_counts(root: Path) -> dict[str, int]:
     return counts
 
 
-def run_all(root: Path) -> list[str]:
+def run_all(
+    root: Path, fidelity_suites: Optional[list[dict]] = None
+) -> list[str]:
     problems: list[str] = []
 
     test_files = discover_test_files(root)
@@ -194,6 +216,8 @@ def run_all(root: Path) -> list[str]:
         problems += check_catalog_matches_filesystem(catalog, root / "prebuilt", root)
 
     problems += check_every_skill_has_fixtures(root / "prebuilt")
+    if fidelity_suites is not None:
+        problems += check_graded_suites_graded_something(fidelity_suites)
     return problems
 
 
@@ -201,9 +225,23 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent)
     parser.add_argument("--json", action="store_true", help="machine-readable output")
+    parser.add_argument(
+        "--fidelity-results",
+        type=Path,
+        help="runner JSON or committed report whose graded-suite liveness must be checked",
+    )
     args = parser.parse_args()
 
-    problems = run_all(args.root)
+    try:
+        fidelity_suites = (
+            load_fidelity_suites(args.fidelity_results)
+            if args.fidelity_results is not None
+            else None
+        )
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        problems = [f"cannot read fidelity results: {exc}"]
+    else:
+        problems = run_all(args.root, fidelity_suites)
 
     if args.json:
         print(json.dumps({"problems": problems, "ok": not problems}, ensure_ascii=False, indent=2))
@@ -213,7 +251,12 @@ def main() -> int:
             print(f"  - {p}")
         print("\nA gate that examines nothing reports the same green as one that passes.")
     else:
-        print("✓ gate liveness ok — every gate examined a non-empty set")
+        suffix = (
+            "; fidelity result set produced a real verdict"
+            if args.fidelity_results is not None
+            else ""
+        )
+        print(f"✓ gate liveness ok — every configured local gate examined a non-empty set{suffix}")
 
     return 1 if problems else 0
 

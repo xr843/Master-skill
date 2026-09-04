@@ -27,30 +27,30 @@
 
 **Interfaces:**
 - Produces: `load_fidelity_suites(path: Path) -> list[dict]`
-- Produces: `run_all(root: Path, fidelity_suites: list[dict] | None = None) -> list[str]`
+- Produces: `run_all(root: Path, fidelity_suites: Optional[list[dict]] = None) -> list[str]`
 - Produces: CLI option `--fidelity-results PATH`
 
-- [ ] **Step 1: Write failing CLI tests**
+- [x] **Step 1: Write failing CLI tests**
 
 Add subprocess tests that write a result file containing no verdicts and assert exit 1 plus `graded suite produced 0 verdicts`; write a second file containing one `PASS` and assert exit 0.
 
-- [ ] **Step 2: Run the focused tests and verify RED**
+- [x] **Step 2: Run the focused tests and verify RED**
 
 Run: `PATH="$PWD/.venv/bin:$PATH" python -m pytest scripts/tests/test_check_gate_liveness.py -q`
 
 Expected: FAIL because `--fidelity-results` is not accepted and the result is never loaded.
 
-- [ ] **Step 3: Implement result loading and CLI wiring**
+- [x] **Step 3: Implement result loading and CLI wiring**
 
 Accept either the runner's top-level list or a committed report's `{ "suites": [...] }` wrapper. Reject every other shape with a clear `ValueError`. Pass loaded suites to `check_graded_suites_graded_something()` from `run_all()`.
 
-- [ ] **Step 4: Run the focused tests and verify GREEN**
+- [x] **Step 4: Run the focused tests and verify GREEN**
 
 Run: `PATH="$PWD/.venv/bin:$PATH" python -m pytest scripts/tests/test_check_gate_liveness.py -q`
 
 Expected: all tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add scripts/check-gate-liveness.py scripts/tests/test_check_gate_liveness.py
@@ -141,4 +141,3 @@ Expected: all structural validators, Node tests, and Python tests pass.
 Run: `git diff --check && git status --short && git diff HEAD~3..HEAD --stat`
 
 Expected: no whitespace errors and only the planned files changed.
-
