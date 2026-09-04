@@ -148,7 +148,7 @@ Notes on honesty of measurement:
   from that pillar, which is a maintainer's decision, not an instrument fix.
 - **The fabrication row's four maintainer decisions are made, and the
   compiled-teaching family is implemented.** 2026-09-03: `Toh:3861`
-  (master-tsongkhapa), `J36n0348` (master-ouyi) and `AjahnChah:StillnessFlowing`
+  (master-tsongkhapa), `J36nB348` (master-ouyi) and `AjahnChah:StillnessFlowing`
   are declared; the Mahasi collection-covers-member question is resolved (a
   member resolves to its declared collection when the collection's own `note`
   names it). Re-auditing the DeepSeek run for free (`scripts/reaudit-report.py`)

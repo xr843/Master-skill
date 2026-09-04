@@ -191,7 +191,7 @@ failures that never happened.
 
 0. Done, 2026-09-03: every failure and every `needs_review` in this run is
    adjudicated in [`ADJUDICATION.md`](./ADJUDICATION.md).
-1. Done, 2026-09-03: `Toh:3861` declared, `J36n0348` (master-ouyi) declared,
+1. Done, 2026-09-03: `Toh:3861` declared, `J36nB348` (master-ouyi) declared,
    `AjahnChah:StillnessFlowing` declared, and the Mahasi collection-covers-member
    question resolved — all four maintainer decisions this report and
    `KNOWN_UNDECLARED` were carrying. Zero fabricated citations on re-audit.

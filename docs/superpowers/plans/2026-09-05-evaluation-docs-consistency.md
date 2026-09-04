@@ -159,9 +159,10 @@ Run the same read-only source check configured in
 python3 tools/verify_sources.py
 ```
 
-Expected at the 2026-09-05 branch point: exit 0, 34/35 identifiers resolve,
-`J36n0348` is the one external miss tracked by issue #158, and no URL
-replacements are needed.
+Observed at the 2026-09-05 branch point: exit 0, 34/35 identifiers resolved,
+and no URL replacements were needed. The apparent `J36n0348` → `J0348` miss
+was subsequently corrected to the canonical `J36nB348` → `JB348`; FoJin still
+does not resolve it, so issue #158 remains open.
 
 - [x] **Step 4: Review the complete diff and mark this plan complete**
 

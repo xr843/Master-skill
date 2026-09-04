@@ -79,7 +79,7 @@ def test_finds_a_persona_instructing_an_undeclared_citation(validator, tmp_path)
 
 def test_the_real_repo_has_no_undeclared_citations_left(validator):
     """Both KNOWN_UNDECLARED findings this gate ever recorded are now declared
-    (Toh:3861 in master-tsongkhapa, J36n0348 in master-ouyi). A live repo with
+    (Toh:3861 in master-tsongkhapa, J36nB348 in master-ouyi). A live repo with
     zero real findings should produce zero — this is the gate's own green,
     not a fixture's."""
     found = validator.find_undeclared(ROOT / "prebuilt")
