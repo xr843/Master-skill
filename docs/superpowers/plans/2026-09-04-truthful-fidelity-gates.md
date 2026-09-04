@@ -132,13 +132,13 @@ git commit -m "docs: state the enforced fidelity gate policy"
 - Consumes: all preceding tasks
 - Produces: release-quality verification evidence
 
-- [ ] **Step 1: Run the full deterministic suite**
+- [x] **Step 1: Run the full deterministic suite**
 
 Run: `PATH="$PWD/.venv/bin:$PATH" npm test`
 
 Expected: all structural validators, Node tests, and Python tests pass.
 
-- [ ] **Step 2: Review the final diff**
+- [x] **Step 2: Review the final diff**
 
 Run: `git diff --check && git status --short && git diff HEAD~3..HEAD --stat`
 
