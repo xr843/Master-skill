@@ -32,15 +32,19 @@ from _masterpaths import resolve_master_dir
 # guard in bin/cli.mjs and scripts/query.py.
 _SAFE_MASTER = re.compile(r"^[A-Za-z0-9_-]+$")
 
-# CBETA id 形态:T48n2008 / T08n0235(藏经卷+n+编号),及 API 返回的 X1218 / X0303
-# (无卷号)。无 `n` 的形态只认 T/X 两个集合,避免误吞 Wikidata 的 Q1234 / P5008。
+# CBETA id 形态:T48n2008 / T08n0235(藏经卷+n+编号)、嘉兴藏
+# J36nB348(字母 B 是目录号的一部分),及 API 返回的 X1218 / X0303 / JB348
+# (无卷号)。无 `n` 的形态只认 T/X 纯数字与 J+B编号,避免误吞 Wikidata 的
+# Q1234 / P5008。
 #
 # 边界不能用 \b:Python 的 \w 覆盖 CJK,故「卷一T99n9999」的「一」与「T」之间
 # 没有 \b,整块引文会被 audit_answer 当作无 id 跳过 —— 而格式跑偏正是模型最可能
 # 编造经号的时候。改判「前后不是拉丁字母或数字」:汉字紧邻属真实引文形态,须命中;
 # 拉丁字母紧邻(FakeSutraT99n9999)通常意味着它只是更长 token 的一部分,不算引文。
 _CBETA_ID = re.compile(
-    r"(?<![0-9A-Za-z])(?:[A-Z]{1,2}\d+n\d+|[TX]\d{3,})(?![0-9A-Za-z])"
+    r"(?<![0-9A-Za-z])(?:"
+    r"[A-Z]{1,2}\d+n[A-Z]?\d+[a-z]?|[TX]\d{3,}|JB\d{3,}"
+    r")(?![0-9A-Za-z])"
 )
 # 非 CBETA 契约家族。roadmap Phase 2 承诺把 CBETA / BDRC·Toh / PTS·SuttaCentral /
 # 编集开示当作平等的 contract family,但审计器长期只实现了第一个 —— 于是全部藏传与
@@ -87,11 +91,19 @@ def extract_citation_ids(text: str) -> list[str]:
     return ids
 
 
-# 短号 ↔ 完整号。CBETA 通行简写省掉册号(`T1911` = `T46n1911`),而 meta.json 存的
-# 是完整形态。审计无条件运行之后,模型写简写就会被误判伪造 —— 大正藏/卍續藏的经号
-# 在各自藏内唯一,按「藏别字母 + 经号数值」对齐即可,跨藏不对齐。
-_SHORT_FORM = re.compile(r"^([TX])(\d+)$")
-_FULL_FORM = re.compile(r"^([TX])\d+n(\d+)$")
+# 短号 ↔ 完整号。CBETA 通行简写省掉册号(`T1911` = `T46n1911`,
+# `JB348` = `J36nB348`),而 meta.json 存完整形态。审计无条件运行之后,
+# 模型写简写就会被误判伪造。按「藏别字母 + 经号」对齐,跨藏不对齐；
+# Jiaxing 的 B 前缀必须保留。
+_SHORT_FORM = re.compile(r"^([TXJ])(B?\d+)$")
+_FULL_FORM = re.compile(r"^([TXJ])\d+n(B?\d+)[a-z]?$")
+
+
+def _normalize_cbeta_work_number(number: str) -> str:
+    """Strip numeric zero padding while retaining a Jiaxing `B` prefix."""
+    prefix = "B" if number.startswith("B") else ""
+    digits = number[1:] if prefix else number
+    return f"{prefix}{int(digits)}"
 
 
 def _resolve_short_form(cid: str, declared_ids: set[str]) -> str | None:
@@ -99,10 +111,15 @@ def _resolve_short_form(cid: str, declared_ids: set[str]) -> str | None:
     m = _SHORT_FORM.match(cid)
     if not m:
         return None
-    prefix, number = m.group(1), int(m.group(2))
+    prefix = m.group(1)
+    number = _normalize_cbeta_work_number(m.group(2))
     for declared in declared_ids:
         d = _FULL_FORM.match(declared)
-        if d and d.group(1) == prefix and int(d.group(2)) == number:
+        if (
+            d
+            and d.group(1) == prefix
+            and _normalize_cbeta_work_number(d.group(2)) == number
+        ):
             return declared
     return None
 

@@ -83,7 +83,9 @@ claims, run `npm test`, and run the repository's FoJin source-link verifier. The
 measurement and test steps are offline; source-link verification is read-only
 network access. None of the steps incurs model API cost.
 
-The 2026-09-05 source-link run found one pre-existing external lookup gap:
-FoJin resolves 34 of 35 declared CBETA-family identifiers but not `J36n0348`
-(`J0348`, master-ouyi). No URL replacements are needed. This is tracked in
-GitHub issue #158 and does not invalidate the documentation-only branch.
+The 2026-09-05 source-link run initially reported one pre-existing external
+lookup gap as `J36n0348` → `J0348`. A subsequent canonical-id investigation
+found that the local declaration itself had dropped the Jiaxing catalogue's
+`B`; the repository now uses `J36nB348` → `JB348`. FoJin still does not resolve
+that canonical lookup. No URL replacements are needed, and the external gap
+remains tracked in GitHub issue #158.

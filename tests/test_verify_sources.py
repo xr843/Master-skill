@@ -48,8 +48,12 @@ def test_full_to_short_cbeta_x_series():
     assert full_to_short_cbeta("X62n1182") == "X1182"
 
 
+def test_full_to_short_cbeta_preserves_other_numeric_collections():
+    assert full_to_short_cbeta("A01n0001") == "A0001"
+
+
 def test_full_to_short_cbeta_j_series():
-    assert full_to_short_cbeta("J36n0348") == "J0348"
+    assert full_to_short_cbeta("J36nB348") == "JB348"
 
 
 def test_full_to_short_cbeta_strips_volume_number():
@@ -65,14 +69,20 @@ def test_full_to_short_cbeta_invalid_returns_none():
 
 
 def test_cbeta_id_format_recognition():
-    """CBETA IDs follow format like T48n2008, X62n1182, J36n0348."""
-    valid_ids = ["T48n2008", "X62n1182", "J36n0348", "T01n0001"]
+    """CBETA IDs include numeric T/X works and B-prefixed Jiaxing works."""
+    valid_ids = ["T48n2008", "X62n1182", "J36nB348", "T01n0001"]
     for cbeta_id in valid_ids:
         assert FULL_CBETA_RE.match(cbeta_id), f"{cbeta_id} should match FULL_CBETA_RE"
 
 
 def test_cbeta_id_rejects_invalid():
-    invalid_ids = ["T48", "n2008", "abc123", "t48n2008"]  # lowercase prefix is invalid
+    invalid_ids = [
+        "T48",
+        "n2008",
+        "abc123",
+        "t48n2008",  # lowercase prefix is invalid
+        "J36n0348",  # Jiaxing work numbers retain their catalog B prefix
+    ]
     for cbeta_id in invalid_ids:
         assert not FULL_CBETA_RE.match(cbeta_id), f"{cbeta_id} should not match FULL_CBETA_RE"
 
