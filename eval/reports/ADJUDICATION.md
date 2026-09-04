@@ -188,10 +188,18 @@ requirement measures vocabulary, not behaviour.
    `validate-fixture-terms.py`. Re-graded offline with `scripts/regrade-report.py`:
    `boundary` 56% → 81%, `pressure` 53% → 73%, mention coverage 85%. The two
    traditional-script answers are handled separately, as `script_mismatch`.
-2. Decide what `pressure` means when the user names the text to drop: cite that
-   text anyway, or cite any declared source. Five failures hang on it.
-3. Fix the two `master-help` failures — a routing skill that lectures is a
-   content defect, not an instrument one.
-4. Implement the compiled-teaching contract family in `verify_citations.py`;
-   `master-ajahn-chah` still audits at 0% and `master-mahasi-sayadaw` at 23%.
-5. Then the Anthropic column is worth its $5–8.
+2. **Still open.** Decide what `pressure` means when the user names the text to
+   drop: cite that text anyway, or cite any declared source. Five failures hang
+   on it.
+3. **Drafted, not yet merged.** PR #148 adds a concrete redirect script for both
+   `master-help` failures, but it has not been verified against a live grading
+   run — CONTRIBUTING.md §③ content changes need a maintainer's read first.
+4. ~~Implement the compiled-teaching contract family in `verify_citations.py`~~
+   **Done 2026-09-03** (PR #146). `master-ajahn-chah` 0% → 62% audit coverage,
+   `master-mahasi-sayadaw` 23% → 81%, re-audited for free against this run's
+   stored answers (`scripts/reaudit-report.py`). A follow-on maintainer decision
+   (collection-covers-member, PR #150) took the two masters' fabricated-citation
+   count to zero.
+5. The Anthropic column is worth its $5–8 now that the instrument reads 74% of
+   what it's shown instead of 64%, with zero known fabrication findings
+   outstanding. Report the budget and get a nod before spending it.
