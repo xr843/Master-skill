@@ -13,6 +13,7 @@
 //! drift apart.
 
 use std::fs;
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
@@ -42,6 +43,25 @@ pub(crate) fn skill_dry_run_label_and_command(slug: &str) -> (String, String) {
 /// the same two callers as [`skill_dry_run_label_and_command`].
 pub(crate) fn skill_dry_run_success_message(slug: &str, output: &str) -> String {
     summarize_command_output(&format!("master-{slug} fidelity dry-run finished"), output)
+}
+
+/// Reports the completed run before persisting its traces, so an operator
+/// still sees a terminal summary when trace-store persistence fails.
+fn finish_baseline<Report, Save>(
+    ok_count: usize,
+    total: usize,
+    report: Report,
+    save: Save,
+) -> Result<i32>
+where
+    Report: FnOnce(&str) -> Result<()>,
+    Save: FnOnce() -> Result<()>,
+{
+    let summary = format!("baseline: {ok_count}/{total} ok");
+    report(&summary)?;
+    save()?;
+
+    Ok(if ok_count == total { 0 } else { 1 })
 }
 
 /// Runs `python3 scripts/test-fidelity.py --master <slug> --dry-run --json`
@@ -111,10 +131,16 @@ pub fn run_headless_baseline() -> Result<i32> {
         }
     }
 
-    lease.save(&traces)?;
-    println!("baseline: {ok_count}/{total} ok");
-
-    Ok(if ok_count == total { 0 } else { 1 })
+    finish_baseline(
+        ok_count,
+        total,
+        |summary| {
+            println!("{summary}");
+            io::stdout().flush()?;
+            Ok(())
+        },
+        || lease.save(&traces),
+    )
 }
 
 /// Finds every `master-*` directory under `<repo_root>/prebuilt` that has a
@@ -150,4 +176,39 @@ fn discover_master_skill_slugs(repo_root: &Path) -> Vec<String> {
 
     slugs.sort();
     slugs
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::{Cell, RefCell};
+
+    use anyhow::anyhow;
+
+    use super::finish_baseline;
+
+    #[test]
+    fn reports_summary_before_returning_a_store_save_failure() {
+        let reported = Cell::new(false);
+        let summary = RefCell::new(String::new());
+
+        let result = finish_baseline(
+            3,
+            4,
+            |line| {
+                reported.set(true);
+                summary.replace(line.to_string());
+                Ok(())
+            },
+            || {
+                assert!(reported.get(), "summary must be reported before saving");
+                Err(anyhow!("forced store-save failure"))
+            },
+        );
+
+        assert_eq!(summary.borrow().as_str(), "baseline: 3/4 ok");
+        assert_eq!(
+            format!("{:#}", result.unwrap_err()),
+            "forced store-save failure"
+        );
+    }
 }
