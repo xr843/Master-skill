@@ -52,6 +52,10 @@ them have since been ruled on (the other three are the open `Toh:3861` decision)
 and 43 describe the matcher rather than the persona. Adjudicated, the three rows
 read 94.3% / **85.9%** / **83.3%**.
 
+That parenthetical records the state when adjudication was published. PR #150
+later declared `Toh:3861`; the dated correction and completed items under
+[Next](#next) record the resolution without rewriting the original run.
+
 29 cases in this run were flagged `needs_review` and this report did not
 mention them. They are decided in `ADJUDICATION.md`; one of them turned a
 PASS into a FAIL.

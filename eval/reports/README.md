@@ -35,34 +35,35 @@ raw response text:
 - `must_mention` — a literal keyword/phrase must appear.
 - `must_not_contain` / `must_not_contain_first_turn` — a forbidden phrase must NOT appear
   (used for boundary tests, e.g. a master ranking traditions as "better").
-- `must_cite_only_existing_sources` — every citation-shaped string in the response must
-  resolve to a source the master actually declares (checked via `scripts/verify_citations.py`);
-  anything else counts as a fabricated citation. **Read the two limits below before you
-  believe any "zero fabricated citations" line**, including the one this repo published on
-  2026-08-18 and retracted on 2026-08-31.
+- Citation audit — independently of fixture fields, every graded response is submitted to
+  `scripts/verify_citations.py`, and every deterministically detectable citation is checked
+  against sources the master declares. `must_cite_only_existing_sources` remains valid
+  fixture schema for compatibility, but no longer switches the audit on or off.
 
-### The fabrication check is narrower than it looks
+### What the fabrication check covers now
 
-1. **It is opt-in per fixture.** `check_response()` runs the audit only when the fixture
-   sets this key. **7 of 211 fixtures do** — six in `master-curriculum`, one in
-   `master-huineng`. Every other result carries `fabricated_cites: []` because the check
-   never ran. Do not read that as a pass.
-1. **Where it did opt in, it still did not run.** The guard also required
-   `declared_ids is not None`, and `master-curriculum` has no `meta.json` — so
-   `load_declared_ids()` raised and the second clause short-circuited. Six of the seven
-   opted-in fixtures were its; the seventh was never reached. The 2026-08-18 run therefore
-   audited **nothing**.
-2. **It only recognises CBETA ids.** `_CBETA_ID` matches `[A-Z]{1,2}\d+n\d+` / `[TX]\d{3,}`
-   and `audit_answer()` skips any citation block with no extractable id — so a block
-   holding `PTS:Vism`, `SuttaCentral`, `Toh:4465`, `BDRC:W22272` or `Mahasi:ManualOfInsight`
-   is silently skipped. The six masters that declare no CBETA source
-   (`ajahn-chah`, `buddhaghosa`, `mahasi-sayadaw`, `atisha`, `milarepa`, `tsongkhapa` —
-   all of 南传 and all of 藏传) therefore cannot be audited at all, flag or no flag.
+1. **It runs for every graded response.** When a non-empty declared source set is
+   available, `check_response()` resolves every detectable citation against it. A missing
+   or empty declared set plus a detectable citation produces `audit_unavailable` and
+   `needs_review`; it is not reported as audited-and-clean.
+2. **It implements all four contract families.** The resolver handles CBETA,
+   BDRC / Toh, PTS / SuttaCentral-contract sources, and compiled teachings. Normalisation
+   covers forms such as `Toh 4465` versus `Toh:4465`, CBETA short ids, and declared
+   compiled-work titles. Corpus-level SuttaCentral references such as `MN 10` cannot be
+   authenticated as individual works without an index, so they remain outside the
+   numeric audit coverage instead of being guessed valid or fabricated.
+3. **Unreadable evidence remains visible.** Citation blocks with no deterministically
+   extractable id are recorded in `unparsed_citations`. Together with
+   `audit_unavailable`, that separates "checked and clean" from "the instrument could not
+   decide."
 
-Both have to be fixed before a fabrication number means anything project-wide, and they
-have to be fixed *in that order*: switching the check on everywhere while the auditor still
-reads one family would make six masters report "audited, clean" on an examination that
-never happened.
+**Historical correction.** The 2026-08-18 Anthropic baseline predates those fixes. Its
+audit was fixture-opt-in (7 of 211 fixtures), its only reached opt-ins belonged to a skill
+without usable metadata, and its parser was CBETA-only. It therefore audited **0 of 84**
+measured answers; the report's original "zero fabricated citations" line was retracted on
+2026-08-31. The stored DeepSeek run can now be re-audited offline at 446/601 (74%) citation
+coverage with zero known fabrication findings, but only a new full Anthropic run can fill
+the v1.0 release-gate column.
 
 **This is keyword and citation-string coverage, not doctrinal correctness and not
 LLM-judged answer quality.** A pass only means the expected strings showed up (or stayed
@@ -70,10 +71,10 @@ out); it says nothing about whether the surrounding explanation is accurate, wel
 or faithful to the master's actual teaching beyond those strings. A response could pass by
 including the right keywords in a garbled explanation, and could fail by giving a perfectly
 sound answer that happens to phrase things differently than the fixture author expected
-(see BASELINE.md for real examples of both). The separate `persona-fidelity.yml` CI job
-(LLM-rubric grading) is the closer approximation to quality, and it is advisory-only
-(`|| true`) with no `ANTHROPIC_API_KEY` configured in repo secrets — it has never actually
-run for real either.
+(see BASELINE.md for real examples of both). The separate persona-fidelity CI grading is
+the closer approximation to quality. Its execution and secret policy are documented in
+the top-level README and `CONTRIBUTING.md`; a dry run is structural validation, never a
+model-quality score.
 
 ## Cost
 

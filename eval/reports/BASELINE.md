@@ -285,6 +285,12 @@ the judge change** — the numbers come from different instruments.
 
 ## Next step
 
+> **Status update, 2026-09-05.** The two auditor prerequisites named below were
+> completed on 2026-09-03: citation checks are now unconditional and all four
+> contract families are implemented. The remaining step is still a fresh,
+> complete Anthropic run. The original recommendation is retained below to show
+> what was outstanding when this baseline was written.
+
 Re-run `python3 scripts/test-fidelity.py --all --json --model claude-sonnet-4-6` once the
 API key backing this measurement has credit again, covering the 127 fixtures across
 `master-huineng` through `master-zhiyi` (plus the remaining 8 in `master-help`) that this
