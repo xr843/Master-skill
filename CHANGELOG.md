@@ -21,6 +21,10 @@ generously. This batch closes it and corrects the number.
 ### Fixed — desktop baseline failures retain their final summary
 - **A trace-store save failure no longer suppresses `baseline: n/total ok`.** The headless desktop baseline now reports and flushes its completed-run summary before attempting persistence, then still propagates any save error and exits non-zero. Operators therefore see both how many skill dry-runs completed and why the trace store was not saved, instead of a stream of per-skill lines that ends abruptly.
 
+### Added — workflow syntax is now a hard CI gate
+- **The validation job now runs actionlint over every GitHub Actions workflow.** CI downloads the official v1.7.12 Linux release, verifies its published SHA-256 before extraction, and runs the linter as a hard step. Workflow syntax, expression, job dependency, and embedded-shell mistakes can no longer wait for GitHub to discover them only after a push.
+- **The gate's first real GitHub run found two ShellCheck SC2086 findings in `verify-links.yml`.** Both writes to `$GITHUB_OUTPUT` now quote the runner-provided path (and the workspace `cd` is quoted too), with a regression test pinning the corrected shell shape.
+
 ### Fixed — the anti-fraud gate had its own trust-boundary bug, found by an independent review
 - **A full `code-review` pass over this session's six PRs (commits `90949a5..main`) found that `verify-adjudication.py` — the gate built specifically to stop a hand-made verdict file from claiming more than the evidence supports — trusted its own case-level summary fields (`mention_case_verdict`, `forbidden_case_verdict`, `cite_case_verdict`) without ever checking they were actually derived from the per-term verdicts they summarize.** Reproduced: flipping `master-ajahn-chah` #1's `mention_case_verdict` from `upheld` to `overturned`, with its one genuine `upheld` term verdict (`sati`) left completely untouched, made `verify()` report zero problems — a real FAIL could be turned into a PASS with no evidence at all, silently, which is exactly the failure this gate exists to catch, now found inside the gate itself.
 
