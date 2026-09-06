@@ -161,13 +161,6 @@ ADVISORY_GATES = {
     "Fidelity tests — full suite (weekly + manual)": (
         "same skip as the smoke, on the weekly cron"
     ),
-    "Dependency review (PR only)": (
-        "skips entirely while the repository's dependency graph is disabled, "
-        "which it currently is — and the same switch gates Dependabot security "
-        "alerts, so no CVE against a held dependency is being reported at all. "
-        "Enable at Settings -> Code security -> Dependency graph; this entry "
-        "comes out the day it is on."
-    ),
     "Persona-fidelity schema + advisory eval": (
         "llm-rubric eval is `|| true` and is skipped entirely without a key; "
         "only the promptfoo schema + repo-convention validation is real"

@@ -54,10 +54,9 @@ gates Dependabot *security alerts*. So `dependabot.yml` covering four
 ecosystems has been opening version-currency PRs every Monday while GitHub
 reported no CVE against a held dependency, ever — which is a large part of why
 the pytest and webbrowser advisories above went unnoticed. The
-`dependency-review` job now detects the condition, says so in the job summary,
-and is declared in `ADVISORY_GATES` rather than failing red forever over a
-repo setting. One toggle at Settings → Code security removes both the skip and
-the declaration.
+Both were turned on the same day, and the `dependency-review` job carries no
+skip-if-disabled branch: if that setting is ever switched off again the job
+should go red, because the alerting it gates goes silent at the same moment.
 
 Two `quick-xml` advisories (RUSTSEC-2026-0194/0195, both DoS) are suppressed
 with the reasoning written where a red build would land: both copies are held

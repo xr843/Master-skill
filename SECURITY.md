@@ -128,13 +128,13 @@ Master-skill 作为 AgentSkill 插件 + NPX CLI，主要关注以下安全面：
   - **pip-audit** 比对 PyPI 告警库，两个 requirements 文件都查。
   - **dependency-review** 在 PR 上拦截**新引入**的高危依赖与 GPL/AGPL 许可。
 
-  > ⚠️ **本仓的 Dependency graph 当前是关闭的**（2026-09-06 实测：
-  > `GET /repos/.../dependency-graph/sbom` 与 `GET /repos/.../vulnerability-alerts` 均 404）。
-  > 后果不只是 `dependency-review` 跑不了 —— **同一个开关也管着 Dependabot 安全告警**：
-  > 关着的时候，某个已持有依赖爆出 CVE，GitHub 一声不吭，`dependabot.yml` 覆盖几个生态都没用。
-  > 而版本更新 PR 照常每周一到，所以这个缺口极难察觉。
-  > 开关在 Settings → Code security → Dependency graph。开了之后
-  > `scripts/check-gate-liveness.py` 里那条 `Dependency review (PR only)` 声明就该删掉。
+  > 📌 2026-09-06 记录：在此之前本仓的 **Dependency graph 一直是关闭的**
+  > （`dependency-graph/sbom` 与 `vulnerability-alerts` 双 404）。后果不只是
+  > `dependency-review` 跑不了 —— **同一个开关也管着 Dependabot 安全告警**：
+  > 关着的时候，某个已持有依赖爆出 CVE，GitHub 一声不吭，`dependabot.yml` 覆盖
+  > 几个生态都没用；而版本更新 PR 照常每周一到，所以这个缺口极难察觉。
+  > 两者已于当日开启。`security-scan.yml` 里**故意没有**"检测到关闭就跳过"的分支：
+  > 若日后再被关掉，这个 job 就该亮红 —— 它所依赖的告警在同一刻也哑了。
 
   Dependabot 回答的是"依赖旧了吗"，回答不了"我们钉的这个版本有没有已知 CVE"，
   也完全不看本仓自己写的代码。这四项补的是后者。它们暂未进分支保护 —— 但**会亮红叉**，
