@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Tests for hooks/session-start `sanitize_lineage`.
+# Tests for the session-start lineage sanitizer.
 #
-# Sources the hook script in test mode (TEST_ONLY=1 short-circuits the
-# main "build masters list" loop and the JSON emission), then drives the
-# sanitize_lineage function directly with crafted inputs covering:
+# The sanitizer moved from a bash function in hooks/session-start into
+# hooks/session_start.py when the hook stopped starting one python3 per
+# master (17 interpreter starts, 0.37s, on a blocking SessionStart hook).
+# `--sanitize-lineage <value>` is the seam it exposes for exactly this test.
+# Every case below is the one it had before the move, driving one input:
 #
 #   1. normal lineage passes through unchanged
 #   2. prompt-injection attempt with newlines/control chars is stripped
@@ -17,17 +19,18 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="$SCRIPT_DIR/../session-start"
+SANITIZER="$SCRIPT_DIR/../session_start.py"
 
-if [ ! -f "$HOOK" ]; then
-    echo "FAIL: cannot find $HOOK" >&2
-    exit 1
-fi
+for required in "$HOOK" "$SANITIZER"; do
+    if [ ! -f "$required" ]; then
+        echo "FAIL: cannot find $required" >&2
+        exit 1
+    fi
+done
 
-# Pull sanitize_lineage out of the hook without executing the rest. The
-# function is self-contained (only `printf`, `tr`, `head`, `python3`).
-eval "$(awk '
-    /^sanitize_lineage\(\) \{/,/^\}/
-' "$HOOK")"
+sanitize_lineage() {
+    python3 "$SANITIZER" --sanitize-lineage "$1"
+}
 
 # Track failures
 PASS=0
@@ -143,6 +146,57 @@ case "$out" in
         PASS=$((PASS + 1))
         ;;
 esac
+
+# Case 10: the hook emits parseable JSON — the whole point of the wrapper.
+if out=$(CLAUDE_PLUGIN_ROOT="$SCRIPT_DIR/../.." bash "$HOOK" 2>/dev/null) \
+   && printf '%s' "$out" | python3 -c 'import json,sys; json.load(sys.stdin)' 2>/dev/null; then
+    echo "  PASS  hook emits parseable JSON"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL  hook did not emit parseable JSON"
+    FAIL=$((FAIL + 1))
+fi
+
+# Case 11: masters are on their own lines. The bash version built the list
+# with "...\n" inside a plain assignment and printed it with a bare `echo`,
+# so every master landed on ONE line with a literal backslash-n between them
+# — two characters, spliced straight into a system prompt.
+out=$(CLAUDE_PLUGIN_ROOT="$SCRIPT_DIR/../.." bash "$HOOK" 2>/dev/null)
+if printf '%s' "$out" | python3 -c '
+import json, sys
+ctx = json.load(sys.stdin)
+body = (ctx.get("hookSpecificOutput", {}).get("additionalContext")
+        or ctx.get("additionalContext") or ctx.get("additional_context") or "")
+sys.exit(0 if "\\n" not in body and body.count("\n  /master-") > 1 else 1)
+'; then
+    echo "  PASS  masters are on separate real lines"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL  masters not split onto real lines"
+    FAIL=$((FAIL + 1))
+fi
+
+# Case 12: a directory name is sanitized too, not just its lineage. The old
+# loop spliced `basename` straight in, beside a carefully scrubbed lineage.
+tmp_root=$(mktemp -d)
+mkdir -p "$tmp_root/prebuilt/evil\",\"x/"
+printf 'lineage: 禅宗\n' > "$tmp_root/prebuilt/evil\",\"x/SKILL.md"
+mkdir -p "$tmp_root/prebuilt/master-ok"
+printf 'lineage: 净土宗\n' > "$tmp_root/prebuilt/master-ok/SKILL.md"
+if python3 "$SANITIZER" "$tmp_root" | python3 -c '
+import json, sys
+ctx = json.load(sys.stdin)
+body = (ctx.get("hookSpecificOutput", {}).get("additionalContext")
+        or ctx.get("additionalContext") or ctx.get("additional_context") or "")
+sys.exit(0 if "evil" not in body and "master-ok" in body else 1)
+'; then
+    echo "  PASS  unsafe directory name is skipped, safe one kept"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL  unsafe directory name reached the context"
+    FAIL=$((FAIL + 1))
+fi
+rm -rf "$tmp_root"
 
 echo
 printf "Summary: %d passed, %d failed\n" "$PASS" "$FAIL"
