@@ -650,3 +650,24 @@ def test_cjk_preceding_the_title_within_a_segment_does_not_drop_it():
         "Mālukyaputta Sutta": "X:Y",
         "Dhammacakka Sutta": "X:Y",
     }
+
+
+def test_fullwidth_digit_link_does_not_whitelist():
+    r"""`\d` 默认吃 Unicode 数字,全角链接曾能洗白伪造引文 → 必须仍判 fabricated。
+
+    `fojin.app/texts/１２３` 不是任何真实资源:fojin.app 的路由只认 ASCII 数字。
+    放行它等于让模型用一个打不开的链接买通审计器 —— 而 `--online`(唯一会去解析
+    那个 id 的路径)是可选的,CI 硬门只跑离线判定,永远不会发现。
+    """
+    ans = "【《伪造经》，T99n9999】→ https://fojin.app/texts/１２３"
+    r = audit_answer(HUINENG, ans)
+    assert r["live"] == []
+    assert "T99n9999" in r["fabricated"]
+
+
+def test_ascii_digit_link_still_whitelists():
+    """上一条的对照:真实的 ASCII 数字链接必须照旧放行,别修过头。"""
+    ans = "【《伪造经》，T99n9999】→ https://fojin.app/texts/13013"
+    r = audit_answer(HUINENG, ans)
+    assert ("T99n9999", "13013") in r["live"]
+    assert r["fabricated"] == []
