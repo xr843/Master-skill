@@ -1,6 +1,9 @@
 """Tests for scripts/verify_citations.py — B1 引证核验,纯逻辑无网络。"""
 
 import importlib
+import time
+
+import pytest
 from pathlib import Path
 
 verify_citations = importlib.import_module("verify_citations")
@@ -652,3 +655,137 @@ def test_ascii_digit_link_still_whitelists():
     r = audit_answer(HUINENG, ans)
     assert ("T99n9999", "13013") in r["live"]
     assert r["fabricated"] == []
+
+
+# --------------------------------------------------------------------------
+# --online: 部分失败不能吃掉部分成功。
+#
+# 旧版顺序 GET,每个 timeout=15s,任何一次异常就 `return {"_unreachable": True}`
+# —— 一次抖动丢掉全部已验结果,整轮降级成一条警告,「没查成」与「查过没问题」
+# 长得完全一样。核验结果因此改成三态:404 才算伪造,传输层失败只算不知道。
+# --------------------------------------------------------------------------
+
+import threading as _threading
+import types as _types
+
+
+class _FakeResponse:
+    def __init__(self, status_code, payload=None, raises=False):
+        self.status_code = status_code
+        self._payload = payload
+        self._raises = raises
+
+    def json(self):
+        if self._raises:
+            raise ValueError("not json")
+        return self._payload
+
+
+def _fake_requests(monkeypatch, handler):
+    """把 verify_online 内部 `import requests` 换成受控替身。"""
+    class _Session:
+        def get(self, url, timeout=None):
+            return handler(url)
+
+    monkeypatch.setitem(
+        __import__("sys").modules, "requests", _types.SimpleNamespace(Session=_Session)
+    )
+
+
+def test_one_transport_failure_no_longer_discards_the_successes(monkeypatch):
+    def handler(url):
+        if url.endswith("/222"):
+            raise OSError("connection reset")
+        return _FakeResponse(200, {"id": 1})
+
+    _fake_requests(monkeypatch, handler)
+    res = verify_citations.verify_online(["111", "222", "333"])
+    assert not res.get("_unreachable"), "一个 id 挂掉不该让整轮作废"
+    assert res["111"] is True
+    assert res["333"] is True
+    assert res["222"] is None, "传输层失败是『不知道』,不是『不存在』"
+
+
+@pytest.mark.parametrize(
+    ("response", "expected", "why"),
+    [
+        (_FakeResponse(200, {"id": 1}), True, "200 + JSON 正文 → 确实解析得到"),
+        (_FakeResponse(404), False, "404 是平台明确说没有 —— 唯一该硬失败的信号"),
+        (_FakeResponse(200, {}), False, "200 但正文为空 → 没有这个资源"),
+        (_FakeResponse(503), None, "5xx 说明的是网络状况,不是引文真伪"),
+        (_FakeResponse(500), None, "同上"),
+        (_FakeResponse(200, raises=True), None, "网关错误页会回 200 + HTML"),
+    ],
+)
+def test_each_http_outcome_maps_to_the_right_state(response, expected, why):
+    """三态映射逐条钉死:抖动期把正确引用打成伪造,比漏检更糟。"""
+    verdict, _reason = verify_citations._check_one_text_id(
+        lambda: _types.SimpleNamespace(get=lambda url, timeout=None: response),
+        "https://example.invalid",
+        "111",
+        5,
+    )
+    assert verdict is expected, why
+
+
+def test_a_transport_exception_maps_to_unknown():
+    def boom(url, timeout=None):
+        raise OSError("connection reset")
+
+    verdict, reason = verify_citations._check_one_text_id(
+        lambda: _types.SimpleNamespace(get=boom), "https://example.invalid", "111", 5
+    )
+    assert verdict is None
+    assert "OSError" in reason
+
+
+def test_a_404_among_successes_is_reported_as_fabricated(monkeypatch):
+    def handler(url):
+        return _FakeResponse(404) if url.endswith("/999") else _FakeResponse(200, {"id": 1})
+
+    _fake_requests(monkeypatch, handler)
+    res = verify_citations.verify_online(["111", "999"])
+    assert res["111"] is True
+    assert res["999"] is False
+
+
+def test_everything_failing_is_still_reported_as_unreachable(monkeypatch):
+    def handler(url):
+        raise OSError("network is down")
+
+    _fake_requests(monkeypatch, handler)
+    res = verify_citations.verify_online(["111", "222"])
+    assert res["_unreachable"] is True
+
+
+def test_ids_are_deduplicated_before_being_fetched(monkeypatch):
+    seen = []
+    lock = _threading.Lock()
+
+    def handler(url):
+        with lock:
+            seen.append(url)
+        return _FakeResponse(200, {"id": 1})
+
+    _fake_requests(monkeypatch, handler)
+    verify_citations.verify_online(["111", "111", "111", "222"])
+    assert len(seen) == 2, "同一个 id 重复出现不该重复打网络"
+
+
+def test_requests_are_issued_concurrently(monkeypatch):
+    """防止『并发』写成了实际串行。数在飞的峰值,不数墙钟,避免慢机器上抖。"""
+    state = {"in_flight": 0, "peak": 0}
+    lock = _threading.Lock()
+
+    def handler(url):
+        with lock:
+            state["in_flight"] += 1
+            state["peak"] = max(state["peak"], state["in_flight"])
+        time.sleep(0.05)
+        with lock:
+            state["in_flight"] -= 1
+        return _FakeResponse(200, {"id": 1})
+
+    _fake_requests(monkeypatch, handler)
+    verify_citations.verify_online([str(n) for n in range(6)], workers=4)
+    assert state["peak"] > 1

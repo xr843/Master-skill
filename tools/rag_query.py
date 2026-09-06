@@ -317,7 +317,16 @@ def main():
     try:
         args.func(args)
     except FojinUnavailableError:
+        # exit 0 是**故意**的,不是本仓一直在修的那个「假绿」形状 ——
+        # 这里的调用方是读 stdout 的 agent,不是读退出码的脚本:
+        # prompts/rag_instructions.md §50 规定它按 "[FoJin API 当前不可用]"
+        # 这行字判断降级。非零退出会让 agent 顺手写的 `set -e` 管道整条炸掉,
+        # 换来的是它本来就不看的一个信号。
+        # 同一行同时写到 stderr,好让确实在看退出状态的脚本至少能在日志里
+        # 分辨「检索不到」与「检索成功」。契约由
+        # tests/test_rag_query.py::test_unavailable_* 钉住。
         print("[FoJin API 当前不可用]")
+        print("[FoJin API 当前不可用] 无检索结果,输出仅来自预置内容", file=sys.stderr)
         print("无法检索真实经文。法师将仅基于预置 teaching.md 回答。")
         print("建议：")
         print("- 稍后重试")
