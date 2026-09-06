@@ -1,0 +1,22 @@
+# Dependencies only the paid fidelity eval and CI need — kept out of
+# requirements.txt so `npx master-skill` users never install them.
+#
+# WHY THESE ARE PINNED HARD while requirements.txt uses floors:
+#
+# CI ran `pip install -r requirements.txt anthropic` — completely unpinned —
+# in the same job that carries ANTHROPIC_API_KEY in its environment. Two
+# problems, one supply-chain and one measurement:
+#
+#   1. Any release of any of these lands straight in a process holding a live
+#      API key. A floor is not a defence there; an exact version is.
+#   2. `anthropic` is at 1.4.0 on PyPI while every fidelity number in
+#      eval/reports/ was produced against the 0.x line. A grading harness that
+#      silently changes SDK major versions between runs is not an instrument.
+#
+# 0.122.0 is verified to carry the API surface scripts/test-fidelity.py uses:
+# messages.create(model, max_tokens, system, messages, timeout), and
+# Message.stop_reason / TextBlock.text on the response. Dependabot proposes
+# bumps weekly; a major bump is where that check gets made again, on purpose,
+# by a person.
+anthropic==0.122.0
+pytest>=8.3,<9

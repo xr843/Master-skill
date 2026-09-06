@@ -55,7 +55,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install Python deps (for repo-convention validator)
-        run: pip install -r requirements.txt pytest
+        run: pip install -r requirements.txt -r requirements-eval.txt
 
       - name: Run repo-convention validator (always)
         # This is the gate: filename convention, RAW/SPE/CUS coverage,
