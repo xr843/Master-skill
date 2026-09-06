@@ -11,6 +11,8 @@ use crate::model::{DoctorReport, MasterInspect, SkillInventory};
 pub struct CliClient {
     repo_root: PathBuf,
     node_bin: String,
+    python_bin: String,
+    npm_bin: String,
     home: Option<PathBuf>,
     runner: CommandRunner,
 }
@@ -20,6 +22,8 @@ impl CliClient {
         Self {
             repo_root: repo_root.into(),
             node_bin: std::env::var("NODE").unwrap_or_else(|_| "node".to_string()),
+            python_bin: default_python_bin(),
+            npm_bin: default_npm_bin(),
             home: None,
             runner: CommandRunner::default(),
         }
@@ -69,7 +73,7 @@ impl CliClient {
 
     pub fn run_fidelity_dry_run(&self) -> Result<String> {
         self.run_command(
-            Command::new("python3")
+            Command::new(&self.python_bin)
                 .arg(self.repo_root.join("scripts").join("test-fidelity.py"))
                 .arg("--all")
                 .arg("--dry-run")
@@ -80,7 +84,7 @@ impl CliClient {
 
     pub fn run_fidelity_dry_run_for(&self, slug: &str) -> Result<String> {
         self.run_command(
-            Command::new("python3")
+            Command::new(&self.python_bin)
                 .arg(self.repo_root.join("scripts").join("test-fidelity.py"))
                 .arg("--master")
                 .arg(format!("master-{slug}"))
@@ -92,7 +96,7 @@ impl CliClient {
 
     pub fn run_full_validation(&self) -> Result<String> {
         self.run_command(
-            Command::new("npm").arg("test"),
+            Command::new(&self.npm_bin).arg("test"),
             "failed to run full validation",
         )
     }
@@ -153,6 +157,50 @@ impl CliClient {
             output.stdout,
             output.stderr
         ))
+    }
+}
+
+/// The Python interpreter to shell out to.
+///
+/// `python3` does not exist on a stock Windows install — Python ships as
+/// `python.exe`, and the Store's `python3` alias is a stub that opens the
+/// Store. This repo's own Node suite already encodes that
+/// (`tests/cli.test.mjs`: `platform === "win32" ? "python" : "python3"`);
+/// this file did not, so every Python call in the released Windows binary
+/// failed to spawn. Nothing caught it: `desktop-rust` runs on ubuntu-latest
+/// only, and release-desktop.yml smoke-tests the Linux artifact alone.
+fn default_python_bin() -> String {
+    if let Ok(explicit) = std::env::var("MASTER_SKILL_PYTHON") {
+        if !explicit.is_empty() {
+            return explicit;
+        }
+    }
+    if cfg!(windows) {
+        "python".to_string()
+    } else {
+        "python3".to_string()
+    }
+}
+
+/// The npm executable to shell out to.
+///
+/// npm on Windows is `npm.cmd`. Rust's `Command` resolves a bare name by
+/// appending `.exe` and does not consult PATHEXT, so `Command::new("npm")`
+/// simply never finds it there.
+///
+/// Naming a `.cmd` is safe *here* specifically because the only argument is
+/// the literal `test` — no caller-supplied string reaches the command line,
+/// which is the condition BatBadBut (CVE-2024-24576) turns on.
+fn default_npm_bin() -> String {
+    if let Ok(explicit) = std::env::var("MASTER_SKILL_NPM") {
+        if !explicit.is_empty() {
+            return explicit;
+        }
+    }
+    if cfg!(windows) {
+        "npm.cmd".to_string()
+    } else {
+        "npm".to_string()
     }
 }
 
@@ -357,6 +405,55 @@ mod command_error_tests {
         assert!(message.contains("status"));
         assert!(message.contains("failure stdout marker"));
         assert!(message.contains("failure stderr marker"));
+    }
+}
+
+#[cfg(test)]
+mod interpreter_resolution_tests {
+    use super::{default_npm_bin, default_python_bin};
+
+    /// The released Windows binary spawned `python3` and `npm`, neither of
+    /// which resolves there: Python ships as `python.exe`, npm as `npm.cmd`,
+    /// and Rust's `Command` appends only `.exe` to a bare name. Nothing
+    /// caught it — `desktop-rust` runs on ubuntu-latest and
+    /// release-desktop.yml smoke-tests only the Linux artifact.
+    #[test]
+    fn interpreters_match_the_platform_they_run_on() {
+        if cfg!(windows) {
+            assert_eq!(default_python_bin(), "python");
+            assert_eq!(default_npm_bin(), "npm.cmd");
+        } else {
+            assert_eq!(default_python_bin(), "python3");
+            assert_eq!(default_npm_bin(), "npm");
+        }
+    }
+
+    /// Matches the existing `NODE` override, and gives anyone on a venv,
+    /// pyenv, or a `python3`-less box a way out without editing the source.
+    #[test]
+    fn an_explicit_override_wins() {
+        // Serialised behind one variable each, and restored, so the parallel
+        // test runner cannot observe a half-applied state.
+        let previous = std::env::var_os("MASTER_SKILL_PYTHON");
+        std::env::set_var("MASTER_SKILL_PYTHON", "/opt/py/bin/python3.13");
+        let resolved = default_python_bin();
+        match previous {
+            Some(v) => std::env::set_var("MASTER_SKILL_PYTHON", v),
+            None => std::env::remove_var("MASTER_SKILL_PYTHON"),
+        }
+        assert_eq!(resolved, "/opt/py/bin/python3.13");
+    }
+
+    #[test]
+    fn a_blank_override_falls_back_to_the_platform_default() {
+        let previous = std::env::var_os("MASTER_SKILL_NPM");
+        std::env::set_var("MASTER_SKILL_NPM", "");
+        let resolved = default_npm_bin();
+        match previous {
+            Some(v) => std::env::set_var("MASTER_SKILL_NPM", v),
+            None => std::env::remove_var("MASTER_SKILL_NPM"),
+        }
+        assert_ne!(resolved, "");
     }
 }
 

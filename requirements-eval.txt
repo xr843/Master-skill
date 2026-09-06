@@ -19,4 +19,13 @@
 # bumps weekly; a major bump is where that check gets made again, on purpose,
 # by a person.
 anthropic==0.122.0
-pytest>=8.3,<9
+
+# >=9.0.3, not the 8.x line this file first pinned. PYSEC-2026-1845: pytest
+# through 9.0.2 on UNIX uses the predictable directory name
+# `/tmp/pytest-of-{user}`, which lets a local user cause a denial of service
+# or possibly escalate privileges. `pytest>=8.3,<9` capped *below* the fix.
+#
+# Found by the pip-audit job added alongside this line — on its first run,
+# against a pin written the day before. Which is the argument for the job.
+# Verified: 630 tests pass unchanged under pytest 9.1.1.
+pytest>=9.0.3,<10

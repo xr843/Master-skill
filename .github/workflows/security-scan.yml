@@ -1,0 +1,201 @@
+name: Security Scanning
+
+# What this covers that Dependabot does not.
+#
+# Dependabot answers "is this dependency old?". It does not answer "does the
+# version we pin have a known CVE?", and it says nothing at all about the code
+# in this repo. Until 2026-09-06 there was no SAST here of any kind and no
+# advisory-database check on any of the four ecosystems — including the 408
+# crates behind the desktop binary users download and execute.
+#
+# Three independent things run here, deliberately not merged into one job:
+#
+#   1. CodeQL over the code we wrote (Python validators/tools, the npx CLI,
+#      and the workflows themselves — `actions` catches script injection in
+#      `run:` blocks, which is a mistake this repo has already had to reason
+#      about once; see the SMOKE_MASTER comment in validate-and-test.yml).
+#   2. Advisory-database checks against the pinned dependency sets, one per
+#      ecosystem, so a CVE published against a version we hold is noticed
+#      without waiting for an upgrade to exist.
+#   3. dependency-review on PRs, which blocks a *newly introduced* vulnerable
+#      dependency at review time rather than reporting it after merge.
+#
+# None of these are in branch protection yet — a scanner's first weeks are
+# mostly about learning its false-positive rate. That is NOT the same as the
+# advisory-gate problem this repo keeps finding in itself: these jobs fail
+# loudly and show a red X. They just do not block the merge button. A gate
+# that goes red and is ignored is a decision someone made; a gate that goes
+# green having checked nothing is one nobody made.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly, Tuesdays 06:00 UTC. Offset from the two Monday fidelity crons so
+    # a bad week does not arrive as one indistinguishable pile of red.
+    - cron: '0 6 * * 2'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      # Required to upload results to the code-scanning API.
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript, actions]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4.37.9
+        with:
+          languages: ${{ matrix.language }}
+          # security-extended adds the lower-severity and higher-noise queries.
+          # Worth it here: this repo's threat model is dominated by injection
+          # into text that reaches a system prompt, which the default suite
+          # under-weights.
+          queries: security-extended
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4.37.9
+        with:
+          category: /language:${{ matrix.language }}
+
+  cargo-audit:
+    name: Advisory check — cargo (desktop binary)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Cache cargo-audit binary
+        # It builds from source and takes minutes; only the first run pays.
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
+        with:
+          path: ~/.cargo/bin/cargo-audit
+          key: ${{ runner.os }}-cargo-audit-0.22.2
+
+      - name: Install cargo-audit (pinned)
+        # 0.22.2, NOT the 0.21.x line: 0.21.2 cannot parse the current RustSec
+        # database at all — it aborts with "unsupported CVSS version: 4.0" on
+        # advisories that carry a CVSS 4.0 vector, before looking at a single
+        # crate. Pinning it would have made this job red on every run, in every
+        # repo, for a reason having nothing to do with our dependencies.
+        run: |
+          if [ ! -x "$HOME/.cargo/bin/cargo-audit" ]; then
+            cargo install cargo-audit --version 0.22.2 --locked
+          fi
+          cargo audit --version
+
+      - name: Report every advisory (informational, never fails)
+        # Runs first and with no suppressions at all, so the ignore list below
+        # can silence an exit code but can never silence the finding itself. A
+        # stale `--ignore` is the same defect as a stale ADVISORY_GATES entry;
+        # this is what keeps it visible.
+        run: cargo audit --file desktop/Cargo.lock || true
+
+      - name: Fail on any actionable advisory
+        # 408 crates behind eframe/egui, and the only artifact in this repo
+        # that users download and run as an executable.
+        #
+        # NOT `--deny warnings`: two of the four suppressions below are
+        # "unmaintained" notices with no fixed version in existence, so
+        # --deny warnings would paint this job red permanently, for something
+        # no one can act on. A false red is worse than no check — the same
+        # conclusion clawhub-publish.yml reached the hard way.
+        #
+        # Measured 2026-09-06 with cargo-audit 0.22.2: 4 vulnerabilities and
+        # 2 warnings. Only two distinct advisories are suppressed, and only
+        # because upstream holds both copies below the fix:
+        #
+        #   RUSTSEC-2026-0194  quick-xml  DoS: quadratic duplicate-attribute scan
+        #   RUSTSEC-2026-0195  quick-xml  DoS: unbounded namespace allocation
+        #
+        # Both are fixed in 0.41.0. `quick-xml 0.30.0` is pinned by
+        # `zbus_xml 4.0` (D-Bus introspection XML, from the local accessibility
+        # bus) and `0.39.4` by `wayland-scanner`, which is a **proc-macro** —
+        # it parses protocol XML shipped inside the crate at build time and has
+        # no runtime exposure whatsoever. Neither reads XML a remote party
+        # controls. They come off this list when eframe/egui pulls newer
+        # upstreams; `cargo update -p quick-xml@<ver>` cannot move them today.
+        #
+        # The two unmaintained notices (RUSTSEC-2024-0436 paste,
+        # RUSTSEC-2026-0192 ttf-parser) are deliberately NOT suppressed. Neither
+        # has a fixed version in existence, but cargo-audit already scores them
+        # as warnings rather than errors, so they stay printed and stay
+        # harmless. Suppressing something that is not breaking anything only
+        # trains the eye to skip it.
+        #
+        # Everything that COULD be fixed was, in this same commit:
+        # event-listener 5.4.1 → 5.4.2 (!Send crossing threads) and
+        # webbrowser 1.2.1 → 1.2.4 (Unix BROWSER argument injection).
+        run: |
+          cargo audit --file desktop/Cargo.lock \
+            --ignore RUSTSEC-2026-0194 \
+            --ignore RUSTSEC-2026-0195
+
+  pip-audit:
+    name: Advisory check — pip
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            requirements-eval.txt
+
+      - name: Install pip-audit (pinned)
+        # 2.10.0 is the version this job was actually verified against — it is
+        # what found PYSEC-2026-1845 in requirements-eval.txt. Pinning a
+        # plausible-looking number instead is how the cargo job below nearly
+        # shipped with a cargo-audit that cannot parse the advisory database.
+        run: pip install pip-audit==2.10.0
+
+      - name: Audit both requirement sets
+        # requirements-eval.txt is included because those packages are
+        # installed into the job that carries ANTHROPIC_API_KEY.
+        run: |
+          pip-audit --requirement requirements.txt --strict
+          pip-audit --requirement requirements-eval.txt --strict
+
+  dependency-review:
+    name: Dependency review (PR only)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Review newly introduced dependencies
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294  # v5.0.0
+        with:
+          # Catch a vulnerable dependency at the moment it is introduced,
+          # rather than reporting it after it is already on main.
+          fail-on-severity: high
+          # This project is MIT and redistributes third-party data under
+          # audited terms (see ETHICS.md §2); a copyleft runtime dependency
+          # arriving unnoticed is a licensing problem, not just a legal note.
+          deny-licenses: GPL-3.0, AGPL-3.0
+          comment-summary-in-pr: never

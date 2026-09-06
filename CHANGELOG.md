@@ -19,6 +19,59 @@ defect it existed to prevent, plus nine smaller ones. All ten are fixed, none
 were waved through, and the fixes that touch persona content (`master-help`)
 went through review as content, not as code.
 
+### Added — SAST and advisory-database scanning, which found a CVE in the pin written the day before (2026-09-06)
+
+There was no static analysis in this repo of any kind, and no advisory-database
+check on any of its four ecosystems. Dependabot answers "is this dependency
+old?"; it does not answer "does the version we pin have a known CVE?", and it
+says nothing at all about the code we wrote. New `security-scan.yml` adds
+CodeQL (`python`, `javascript-typescript`, and `actions` — the last catches
+script injection in `run:` blocks, a mistake this repo has already had to reason
+about once), `cargo audit`, `pip-audit`, and `dependency-review` on PRs.
+
+It earned its place on the first local run, three times over:
+
+- **`pytest>=8.3,<9` — the pin added yesterday — capped below a security fix.**
+  PYSEC-2026-1845: pytest through 9.0.2 on UNIX uses the predictable directory
+  `/tmp/pytest-of-{user}`, allowing a local denial of service or possible
+  privilege escalation. Now `>=9.0.3,<10`; all 630 tests verified unchanged
+  under 9.1.1.
+- **Two fixable advisories in the desktop dependency tree**, in the one artifact
+  users download and execute: `webbrowser 1.2.1 → 1.2.4`
+  (RUSTSEC-2026-0257, Unix `BROWSER` argument injection) and `event-listener
+  5.4.1 → 5.4.2` (RUSTSEC-2026-0221, `!Send` values crossing thread
+  boundaries). Both fixed here.
+- **`cargo-audit 0.21.2` cannot read the current RustSec database.** It aborts
+  with "unsupported CVSS version: 4.0" before examining a single crate, so
+  pinning it — as the first draft of this workflow did — would have painted the
+  job red on every run in every repo. Pinned to 0.22.2, the version the local
+  run actually used. `pip-audit` is likewise pinned to the 2.10.0 that found
+  the pytest CVE, not to a plausible-looking number.
+
+Two `quick-xml` advisories (RUSTSEC-2026-0194/0195, both DoS) are suppressed
+with the reasoning written where a red build would land: both copies are held
+below the 0.41.0 fix by upstream — `zbus_xml 4.0` and `wayland-scanner`, the
+latter a proc-macro that parses XML shipped inside the crate at build time and
+has no runtime exposure at all. An unsuppressed informational `cargo audit`
+runs first, so the ignore list can silence an exit code but never a finding.
+The two "unmaintained" notices are deliberately left unsuppressed: cargo-audit
+already scores them as warnings rather than errors, and hiding something that
+breaks nothing only trains the eye to skip it.
+
+### Fixed — the released Windows desktop binary could not spawn Python or npm
+
+`desktop/src/cli.rs` hardcoded `python3` and `npm`. Neither resolves on
+Windows: Python ships as `python.exe` there (the Store's `python3` is a stub),
+and npm is `npm.cmd` while Rust's `Command` appends only `.exe` to a bare name
+and does not consult PATHEXT. This repo's own Node suite already encodes the
+Python half — `tests/cli.test.mjs` has `platform === "win32" ? "python" :
+"python3"` — but the Rust client did not.
+
+Nothing caught it because nothing looks: `desktop-rust` runs on ubuntu-latest
+only, and `release-desktop.yml` builds a Windows binary but smoke-tests the
+Linux one. Both are now platform-resolved, with `MASTER_SKILL_PYTHON` /
+`MASTER_SKILL_NPM` overrides matching the existing `NODE` one.
+
 ### Security & Performance — a security/performance pass over the whole repo (2026-09-06)
 
 Findings and fixes from auditing the repo end to end. The baseline was already

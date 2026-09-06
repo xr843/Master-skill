@@ -119,6 +119,18 @@ Master-skill 作为 AgentSkill 插件 + NPX CLI，主要关注以下安全面：
 - **发布二进制的溯源**：`master-skill-desktop` 的三平台产物随发布附带 `.sha256`，并由
   `actions/attest-build-provenance` 签发 Sigstore 构建证明。校验：
   `gh attestation verify <file> --repo xr843/Master-skill`。
+- **代码扫描（SAST）与漏洞库比对**（`security-scan.yml`，2026-09-06 新增；此前全仓**零** SAST、
+  四个生态**零**告警库比对）：
+  - **CodeQL** `security-extended` 查 `python` / `javascript-typescript` / `actions`
+    三个语言（`actions` 查的是 workflow `run:` 块里的脚本注入 —— 本仓已经为此推理过一次，
+    见 `validate-and-test.yml` 里 `SMOKE_MASTER` 的注释）。
+  - **cargo audit** 比对 RustSec，覆盖桌面版那 408 个 crate。
+  - **pip-audit** 比对 PyPI 告警库，两个 requirements 文件都查。
+  - **dependency-review** 在 PR 上拦截**新引入**的高危依赖与 GPL/AGPL 许可。
+
+  Dependabot 回答的是"依赖旧了吗"，回答不了"我们钉的这个版本有没有已知 CVE"，
+  也完全不看本仓自己写的代码。这四项补的是后者。它们暂未进分支保护 —— 但**会亮红叉**，
+  这和"绿勾但什么都没查"是两回事：前者是有人做了不管的决定，后者是没人做过任何决定。
 - **Dependabot 四生态**：`github-actions` / `npm` / `pip` / `cargo` 每周一统一开 PR；major bump 必须人工 review。
   （`cargo` 是 2026-09-06 才补上的 —— 桌面版那 408 个 crate 是唯一会变成"下载即执行"的产物，
   却恰恰是此前唯一没人盯的生态。）
