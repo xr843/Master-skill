@@ -48,6 +48,17 @@ It earned its place on the first local run, three times over:
   run actually used. `pip-audit` is likewise pinned to the 2.10.0 that found
   the pytest CVE, not to a plausible-looking number.
 
+Running the new workflow on a real PR surfaced one more thing local runs could
+not: **this repository's dependency graph is disabled**, and the same switch
+gates Dependabot *security alerts*. So `dependabot.yml` covering four
+ecosystems has been opening version-currency PRs every Monday while GitHub
+reported no CVE against a held dependency, ever — which is a large part of why
+the pytest and webbrowser advisories above went unnoticed. The
+`dependency-review` job now detects the condition, says so in the job summary,
+and is declared in `ADVISORY_GATES` rather than failing red forever over a
+repo setting. One toggle at Settings → Code security removes both the skip and
+the declaration.
+
 Two `quick-xml` advisories (RUSTSEC-2026-0194/0195, both DoS) are suppressed
 with the reasoning written where a red build would land: both copies are held
 below the 0.41.0 fix by upstream — `zbus_xml 4.0` and `wayland-scanner`, the

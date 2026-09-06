@@ -144,6 +144,13 @@ def check_every_skill_has_fixtures(prebuilt_dir: Path) -> list[str]:
 # So each advisory gate must be declared here, saying what it does not check.
 # An undeclared one fails this script, and the declared roster is printed on
 # every run — `npm test` always answers "what did the green tick examine?".
+#
+# Detection is automatic only for the "missing secret -> exit 0" shape, which
+# is the one this repo shipped. A job that goes quiet for some other reason —
+# `Dependency review` skipping because the dependency graph is off — has to be
+# added by hand. `check_declared_gates_still_exist` then keeps the entry from
+# outliving the job, but nothing can force a new *shape* to be noticed. If you
+# add a gate that can pass without working, put it here yourself.
 ADVISORY_GATES = {
     "Fidelity smoke (1 master × 1 fixture)": (
         "grades nothing when ANTHROPIC_API_KEY is unset (it always has been) — "
@@ -153,6 +160,13 @@ ADVISORY_GATES = {
     ),
     "Fidelity tests — full suite (weekly + manual)": (
         "same skip as the smoke, on the weekly cron"
+    ),
+    "Dependency review (PR only)": (
+        "skips entirely while the repository's dependency graph is disabled, "
+        "which it currently is — and the same switch gates Dependabot security "
+        "alerts, so no CVE against a held dependency is being reported at all. "
+        "Enable at Settings -> Code security -> Dependency graph; this entry "
+        "comes out the day it is on."
     ),
     "Persona-fidelity schema + advisory eval": (
         "llm-rubric eval is `|| true` and is skipped entirely without a key; "

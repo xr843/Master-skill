@@ -188,7 +188,35 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
+      - name: Check whether the dependency graph is available
+        id: graph
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Through env, not inlined in the script — the same rule the
+          # fidelity smoke follows for SMOKE_MASTER.
+          REPO: ${{ github.repository }}
+        run: |
+          if gh api "repos/$REPO/dependency-graph/sbom" --silent 2>/dev/null; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Dependency graph is DISABLED for this repository."
+            {
+              echo "### Dependency review did not run"
+              echo
+              echo "The dependency graph is disabled, so \`dependency-review\` cannot"
+              echo "compare this PR against it. **The same switch also gates Dependabot"
+              echo "security alerts** — with it off, GitHub never reports a CVE"
+              echo "published against a dependency this repo holds, no matter how many"
+              echo "ecosystems \`dependabot.yml\` covers. Version-update PRs keep"
+              echo "arriving on schedule, which is what makes the gap easy to miss."
+              echo
+              echo "Enable at Settings → Code security → Dependency graph."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Review newly introduced dependencies
+        if: steps.graph.outputs.available == 'true'
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294  # v5.0.0
         with:
           # Catch a vulnerable dependency at the moment it is introduced,
