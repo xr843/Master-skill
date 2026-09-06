@@ -50,7 +50,7 @@ _TEMPLATE_MARKERS = (
 # Empty as of 2026-09-03. Both findings this gate ever recorded were resolved
 # by declaring the source: `Toh:3861` in master-tsongkhapa/meta.json (月称《入
 # 中论》is a real Tengyur text Tsongkhapa's tradition treats as its own
-# foundation) and `J36n0348` in master-ouyi/meta.json (《灵峰宗论》is Ouyi's own
+# foundation) and `J36nB348` in master-ouyi/meta.json (《灵峰宗论》is Ouyi's own
 # collected works). Neither needed a B1 contract change — both simply belonged
 # in the declared set. See CHANGELOG.md for the maintainer decision.
 KNOWN_UNDECLARED: dict[tuple[str, str], str] = {}

@@ -116,9 +116,16 @@ in a pool.
 `scripts/test-fidelity.py` and then executed `python3`/`node` out of whatever
 it found, silently. Added `MASTER_SKILL_REPO_ROOT`, a refusal for group- or
 world-writable roots on Unix, and — for the case no permission bit can decide —
-it now announces the resolved root before executing anything from it. The
-binaries also ship a `.sha256` and a Sigstore build attestation; npm has had
-provenance since v0.8 while the one artifact users run directly had nothing.
+it now announces the resolved root before executing anything from it.
+
+The binaries also carry a Sigstore build attestation now. Checksums were not
+part of this — `#157` landed a verified `SHA256SUMS` manifest on main while
+this branch was open, and did it better than the per-file `.sha256` drafted
+here, which was dropped in favour of it. What `#157` did not add is
+provenance: a manifest proves the assets match each other, not that they came
+from this repo's workflow rather than from anyone able to upload under the
+same names. npm publish has had `--provenance` since v0.8; the one artifact
+users run directly as an executable had nothing.
 
 **Supply chain.** Dependabot was missing the `cargo` ecosystem — the only one
 whose output is an opaque executable, 408 crates behind eframe/egui. CI's
@@ -149,10 +156,24 @@ contents, SECURITY.md's claims, and the eval-dependency pins are now covered by
 tests — SECURITY.md had been listing a required check that is not required and
 promising fixes for the 0.8.x line while main is 0.11.
 
+### Fixed — Ouyi's Jiaxing source uses its canonical CBETA identifier
+- **《靈峰蕅益大師宗論》 is `J36nB348`, not `J36n0348`.** The earlier declaration dropped the Jiaxing catalogue's `B`, producing the invalid FoJin lookup `J0348`. Metadata validation now accepts canonical Jiaxing ids, source and answer auditors map `J36nB348` to short form `JB348`, and Ouyi's declaration and CBETA Online links use the canonical id. FoJin still does not resolve `JB348`; that external coverage gap remains tracked in #158.
+
 ### Changed — `master-help` gets a concrete script for the two ways it broke (unverified against a live run — see below)
 - **Adjudicating the 2026-08-31 run found `master-help`'s two boundary failures were real, not instrument artifacts** (`eval/reports/ADJUDICATION.md`): #2 answered a doctrinal comparison question directly instead of routing to `/compare-masters`; #8 was told 「别给我推荐了，你直接讲讲…引经据典讲透」 and complied — writing 「贫僧玄奘」 and a full Yogācāra lecture, evading the fixture's forbidden `《成唯识论》云` only by writing `《成唯识论》说`.
 - The skill's contract already forbids this ("本 skill 只做导航，不讲教义"), but only as a narrative prohibition — nothing addressed a substantive question arriving directly, or a user asking the router to bypass itself. Two concrete rules are added to `边界`, matching the shape of each failure: a comparison-shaped question is itself a routing signal (hits step 3 of its own routing table) and must not be answered; a pressure request to skip routing still ends in a `/{目标}` handoff, never a lecture — the same discipline other personas hold under `pressure` fixtures, applied to the one master whose "citation contract" is the routing table itself.
 - **This has not been verified against a live grading run.** Doing that costs money and this repo's standing rule is to report the budget and get a nod before spending it (`eval-compute-options` precedent). The change is therefore committed as a reviewed content edit, not a proven fix — the next graded run (DeepSeek re-run, or the Anthropic column) is what actually closes fixtures `master-help` #2 and #8.
+
+### Fixed — desktop baseline failures retain their final summary
+- **A trace-store save failure no longer suppresses `baseline: n/total ok`.** The headless desktop baseline now reports and flushes its completed-run summary before attempting persistence, then still propagates any save error and exits non-zero. Operators therefore see both how many skill dry-runs completed and why the trace store was not saved, instead of a stream of per-skill lines that ends abruptly.
+
+### Added — workflow syntax is now a hard CI gate
+- **The validation job now runs actionlint over every GitHub Actions workflow.** CI downloads the official v1.7.12 Linux release, verifies its published SHA-256 before extraction, and runs the linter as a hard step. Workflow syntax, expression, job dependency, and embedded-shell mistakes can no longer wait for GitHub to discover them only after a push.
+- **The gate's first real GitHub run found two ShellCheck SC2086 findings in `verify-links.yml`.** Both writes to `$GITHUB_OUTPUT` now quote the runner-provided path (and the workspace `cd` is quoted too), with a regression test pinning the corrected shell shape.
+
+### Changed — desktop releases are packaged and verifiable
+- **Future desktop releases include Linux/macOS `.tar.gz` archives and a `SHA256SUMS` manifest.** The archives preserve the executable bit; the existing raw Linux, macOS, and Windows asset names remain present for compatibility. Matrix builds now hand their assets to one dependent assembly job, which requires all five files, generates checksums in deterministic filename order, verifies the manifest, and only then uploads the complete set to a release. Repository write permission is likewise removed from the matrix builders and scoped to that assembly job alone.
+- **Manual `release-desktop.yml` runs now exercise the complete release path without touching a release.** The resulting combined workflow artifact contains the raw binaries, Unix archives, and verified checksum manifest rather than three unrelated per-platform downloads.
 
 ### Fixed — the anti-fraud gate had its own trust-boundary bug, found by an independent review
 - **A full `code-review` pass over this session's six PRs (commits `90949a5..main`) found that `verify-adjudication.py` — the gate built specifically to stop a hand-made verdict file from claiming more than the evidence supports — trusted its own case-level summary fields (`mention_case_verdict`, `forbidden_case_verdict`, `cite_case_verdict`) without ever checking they were actually derived from the per-term verdicts they summarize.** Reproduced: flipping `master-ajahn-chah` #1's `mention_case_verdict` from `upheld` to `overturned`, with its one genuine `upheld` term verdict (`sati`) left completely untouched, made `verify()` report zero problems — a real FAIL could be turned into a PASS with no evidence at all, silently, which is exactly the failure this gate exists to catch, now found inside the gate itself.
@@ -185,7 +206,7 @@ promising fixes for the 0.8.x line while main is 0.11.
 - **Correction, not retraction: no number is deleted, no new number is invented.** `eval/reports/BASELINE.md` gets a dated "Superseded 2026-09-03" section, in the same style as its existing "Retracted 2026-08-31" one, explaining precisely why the `[70.2%, 75.0%]` floor and the guardrails-not-doctrine reading no longer hold up — and stating plainly that the true rate for this specific run is now **unknown**, not narrowly bounded, because it cannot be re-adjudicated. `README.md` and `README_EN.md` keep their original 46.2%/40.0% figures (they are what that run measured) but the row is reworded from an assertion to a pointer at the correction, matching how this project has handled every prior instance of this exact failure shape — a claim published as settled that newer evidence no longer supports.
 
 ### Resolved — the four open maintainer decisions, and a fourth engineering fix that followed from them
-- **Two `KNOWN_UNDECLARED` findings closed by declaring the source.** `Toh:3861` added to `master-tsongkhapa/meta.json.sources[]` (Candrakīrti's *Madhyamakāvatāra*, a real Tengyur text — Tsongkhapa's tradition treats it as foundational, and the persona's own `SKILL.md`/`sources/INDEX.md` already prescribed citing it). `J36n0348` added to `master-ouyi/meta.json.sources[]` (《灵峰宗论》, Ouyi's own collected works). Both simply belonged in the declared set — neither needed a B1 contract change. `KNOWN_UNDECLARED` is now empty; the mechanism stays, for whatever finding comes next.
+- **Two `KNOWN_UNDECLARED` findings closed by declaring the source.** `Toh:3861` added to `master-tsongkhapa/meta.json.sources[]` (Candrakīrti's *Madhyamakāvatāra*, a real Tengyur text — Tsongkhapa's tradition treats it as foundational, and the persona's own `SKILL.md`/`sources/INDEX.md` already prescribed citing it). `J36nB348` added to `master-ouyi/meta.json.sources[]` (《灵峰宗论》, Ouyi's own collected works; the missing `B` in the first declaration is corrected above). Both simply belonged in the declared set — neither needed a B1 contract change. `KNOWN_UNDECLARED` is now empty; the mechanism stays, for whatever finding comes next.
 - **`master-ajahn-chah` gets its first declared compiled-teaching finding closed.** `AjahnChah:StillnessFlowing` (Ajahn Jayasaro's 2018 biography of Ajahn Chah) added — a real book his answers cite that `meta.json` did not declare.
 - **Collection-covers-member: a compiled-teaching collection's declared `note` can now vouch for its own members.** `Mahasi:DiscoursesOnSuttas` is declared with the note *"Mālukyaputta Sutta / Dhammacakka Sutta / Sallekha Sutta 等开示集"*, and the persona's answer cited 《A Discourse on Dhammacakka Sutta》 by that member's title, not the collection's id — the collection literally names it, so the maintainer's call was that a member resolves to its collection.
 
@@ -267,7 +288,7 @@ promising fixes for the 0.8.x line while main is 0.11.
 
   Format documentation is not a citation, so `【《典籍名》§章节】（BDRC: Wxxxxx）` and `【《法華玄義》卷N，T1716】` are excluded by shape (`{…}`, an `x`-run, `卷N`, `典籍名`). Two earlier reports of `master-zhiyi`'s `T1716` and `master-milarepa`'s `BDRC:Wxxxxx` as findings were wrong on exactly that point: zhiyi's real occurrences carry FoJin links and audit as `live`.
 
-- `KNOWN_UNDECLARED` holds the two genuine findings as a **ratchet, not an allowlist** — each entry states the defect and the two non-equivalent fixes, and adding to it to turn a red build green is the failure the gate exists to prevent. `master-tsongkhapa` / `Toh:3861` and `master-ouyi` / `J36n0348` (《灵峰宗论》, linked to CBETA Online, which the B1 rule does not recognise as a live host) both await a maintainer decision.
+- `KNOWN_UNDECLARED` holds the two genuine findings as a **ratchet, not an allowlist** — each entry states the defect and the two non-equivalent fixes, and adding to it to turn a red build green is the failure the gate exists to prevent. `master-tsongkhapa` / `Toh:3861` and `master-ouyi` / `J36nB348` (《灵峰宗论》, linked to CBETA Online, which the B1 rule does not recognise as a live host) both await a maintainer decision.
 
 ### Added — the first full-coverage run, and the first fabrication finding
 - **`eval/reports/0.11.0-06b8142-deepseek.json` + `BASELINE-deepseek.md`.** 211 fixtures, all 19 skills, `deepseek-v4-flash` at `--max-output-tokens 8192`, ¥3.89 measured by account-balance delta. **199/211 graded (94.3%)** — the previous best was 40% — at **68.8%** pass. It is a column, not a score: the v1.0 gate is defined on the Anthropic instrument and `aggregation_conflicts()` refuses to pool them.
@@ -286,7 +307,7 @@ promising fixes for the 0.8.x line while main is 0.11.
   The first real data makes the case: on a 3-fixture DeepSeek smoke, `master-tsongkhapa` emitted three citations and the auditor resolved **none** of them (coverage 0%) — his declared ids are bare Wylie titles like `Lam-gtso-rnam-gsum` while the answer writes `《三主要道》(Lam gtso rnam gsum)`. `master-buddhaghosa` scored 88%, the single miss being a corpus-level `【SC: AN 3.88】`, which is unauditable by contract rather than by defect. A fabrication count reported without its coverage is not a measurement.
 
 ### Known gaps
-- Sweeping all 19 skills' own `sources/`, `references/` and `SKILL.md` leaves **four** citations the auditor cannot resolve. Three look like real content findings and are left for a maintainer rather than silently declared: `master-tsongkhapa` cites `Toh 3861` and declares no Toh id, `master-ouyi` cites `J36n0348` (嘉興藏) undeclared, and `master-zhiyi` cites `T1716` against a declared `T33n1718`. The fourth is `master-milarepa`'s `BDRC: {bdrc_id}` format template rendering as `Wxxxxx` in documentation, which no real answer emits.
+- Sweeping all 19 skills' own `sources/`, `references/` and `SKILL.md` leaves **four** citations the auditor cannot resolve. Three look like real content findings and are left for a maintainer rather than silently declared: `master-tsongkhapa` cites `Toh 3861` and declares no Toh id, `master-ouyi` cites `J36nB348` (嘉興藏) undeclared, and `master-zhiyi` cites `T1716` against a declared `T33n1718`. The fourth is `master-milarepa`'s `BDRC: {bdrc_id}` format template rendering as `Wxxxxx` in documentation, which no real answer emits.
 - Meta-skills still have no source model. `master-curriculum` and `compare-masters` legitimately point at other masters' texts, but declare none of their own, so every citation they make is undecidable rather than checked. The natural model — a meta-skill's allowed set is the union of the masters it draws on — is a design decision, not a patch.
 - The blast radius of an unconditional audit on the full 211-fixture suite is unmeasured: `--dry-run` makes no API calls, so `npm test` cannot see it. The next graded run is the first time these checks meet real model output.
 

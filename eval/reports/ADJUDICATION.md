@@ -14,10 +14,11 @@ each quote is still in the stored response, that each term really failed in the
 run, and that the headline numbers below are recomputed from the verdicts rather
 than typed in. It also refuses an adjudication that does not declare what it
 left undecided: **59 of the 62 failures are ruled on here**, and the three that
-are not — `master-tsongkhapa` #2, #3 and #9, all `Toh:3861` — are the open
-contract decision already held in `KNOWN_UNDECLARED`, which is a maintainer's
-call and not a reader's. A verdict file that cannot be re-derived from the run
-it judges would be one more green report that examined nothing.
+are not — `master-tsongkhapa` #2, #3 and #9, all `Toh:3861` — were the then-open
+contract decision already held in `KNOWN_UNDECLARED`, which was a maintainer's
+call and not a reader's. PR #150 later declared that source; this historical
+verdict file remains unchanged. A verdict file that cannot be re-derived from
+the run it judges would be one more green report that examined nothing.
 
 ## The headline
 
@@ -183,17 +184,20 @@ requirement measures vocabulary, not behaviour.
 1. ~~Give `must_mention` a way to express "any of these forms" and mark which
    entries are terms of art.~~ **Done 2026-09-03, differently.** Listing
    alternative forms would have been fitting the ruler to one model's output, so
-   the requirement instead says it cannot be decided: `must_convey`. 60 of 447
-   requirements moved, each traceable to a verdict here and gated by
-   `validate-fixture-terms.py`. Re-graded offline with `scripts/regrade-report.py`:
-   `boundary` 56% → 81%, `pressure` 53% → 73%, mention coverage 85%. The two
-   traditional-script answers are handled separately, as `script_mismatch`.
+   the requirement instead says it cannot be decided: `must_convey`. The first
+   correction moved 60 requirements; independent review restored six genuine
+   terms of art, leaving 54 of 447, each traceable to a verdict here and gated by
+   `validate-fixture-terms.py`. Re-graded offline at `e7cd7ff` with
+   `scripts/regrade-report.py`: `boundary` 56% → 81%, `fidelity` 81% → 96%,
+   `pressure` 53% → 80%, total 69% → 89%, and mention coverage 364/421 = 86%.
+   The two traditional-script answers are handled separately, as
+   `script_mismatch`.
 2. **Still open.** Decide what `pressure` means when the user names the text to
    drop: cite that text anyway, or cite any declared source. Five failures hang
    on it.
-3. **Drafted, not yet merged.** PR #148 adds a concrete redirect script for both
-   `master-help` failures, but it has not been verified against a live grading
-   run — CONTRIBUTING.md §③ content changes need a maintainer's read first.
+3. **Merged 2026-09-03.** PR #148 adds a concrete redirect script for both
+   `master-help` failures and received maintainer review through merge. It has
+   still not been verified against a fresh live grading run.
 4. ~~Implement the compiled-teaching contract family in `verify_citations.py`~~
    **Done 2026-09-03** (PR #146). `master-ajahn-chah` 0% → 62% audit coverage,
    `master-mahasi-sayadaw` 23% → 81%, re-audited for free against this run's

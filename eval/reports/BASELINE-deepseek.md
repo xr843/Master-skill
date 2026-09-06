@@ -52,6 +52,10 @@ them have since been ruled on (the other three are the open `Toh:3861` decision)
 and 43 describe the matcher rather than the persona. Adjudicated, the three rows
 read 94.3% / **85.9%** / **83.3%**.
 
+That parenthetical records the state when adjudication was published. PR #150
+later declared `Toh:3861`; the dated correction and completed items under
+[Next](#next) record the resolution without rewriting the original run.
+
 29 cases in this run were flagged `needs_review` and this report did not
 mention them. They are decided in `ADJUDICATION.md`; one of them turned a
 PASS into a FAIL.
@@ -187,7 +191,7 @@ failures that never happened.
 
 0. Done, 2026-09-03: every failure and every `needs_review` in this run is
    adjudicated in [`ADJUDICATION.md`](./ADJUDICATION.md).
-1. Done, 2026-09-03: `Toh:3861` declared, `J36n0348` (master-ouyi) declared,
+1. Done, 2026-09-03: `Toh:3861` declared, `J36nB348` (master-ouyi) declared,
    `AjahnChah:StillnessFlowing` declared, and the Mahasi collection-covers-member
    question resolved — all four maintainer decisions this report and
    `KNOWN_UNDECLARED` were carrying. Zero fabricated citations on re-audit.
