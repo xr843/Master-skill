@@ -182,11 +182,103 @@ impl Default for CliClient {
 /// falls back to the compile-time `CARGO_MANIFEST_DIR`-based path so
 /// `cargo run` / `cargo test` source builds and other dev workflows keep
 /// behaving exactly as they did before runtime resolution was added.
-fn resolve_repo_root() -> PathBuf {
-    std::env::current_dir()
-        .ok()
-        .and_then(|cwd| find_repo_root_from(&cwd))
+///
+/// # Why this needs a guard
+///
+/// Whatever this returns, the app then executes: `python3 <root>/scripts/
+/// test-fidelity.py` and `node <root>/bin/cli.mjs`. A *discovered* root is
+/// therefore a decision about whose code to run, made from the current
+/// working directory alone. Running the binary in a directory somebody else
+/// can write to — a shared `/tmp`, a world-writable share — lets them choose
+/// that code by dropping `prebuilt/` and `scripts/test-fidelity.py` beside it.
+///
+/// Two mitigations, both deliberately cheap. Running inside a clone you chose
+/// is the documented workflow and stays untouched; this only removes the case
+/// where the directory was chosen *for* you:
+///
+///   1. `MASTER_SKILL_REPO_ROOT` states the root explicitly and skips
+///      discovery entirely.
+///   2. A discovered root that is group- or world-writable is refused (Unix
+///      only — the bits mean nothing on Windows). The fallback then applies,
+///      and the caller reports a resolved root that has no `prebuilt/` rather
+///      than silently running foreign code.
+pub fn resolve_repo_root() -> PathBuf {
+    resolve_repo_root_with(explicit_repo_root(), std::env::current_dir().ok())
+}
+
+/// The env override, normalized: absent and blank both mean "not set".
+///
+/// A blank value must not win — `MASTER_SKILL_REPO_ROOT=` would otherwise
+/// resolve to `""` and make every path in the app relative to the cwd.
+fn explicit_repo_root() -> Option<PathBuf> {
+    std::env::var_os("MASTER_SKILL_REPO_ROOT")
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+}
+
+/// The decision, with both inputs passed in.
+///
+/// Split out so the tests can drive it without `set_var`: mutating process
+/// globals races the parallel test runner, and a flaky test in the gate that
+/// guards code execution is worse than no test.
+fn resolve_repo_root_with(explicit: Option<PathBuf>, cwd: Option<PathBuf>) -> PathBuf {
+    if let Some(explicit) = explicit {
+        return explicit;
+    }
+    cwd.and_then(|cwd| find_repo_root_from(&cwd))
+        .filter(|root| is_safely_owned(root))
         .unwrap_or_else(compile_time_repo_root)
+}
+
+/// Whether a discovered directory is safe to execute code out of.
+///
+/// Unix: refuse group- or other-writable directories. Those are the ones a
+/// second party can plant a `scripts/test-fidelity.py` in — a shared `/tmp`,
+/// a group-writable share, a misconfigured home. Everywhere else there is no
+/// cheap equivalent signal, so this does not pretend to have one.
+///
+/// What it deliberately does NOT cover: a directory you own and wrote
+/// yourself — an extracted archive in `~/Downloads`, a cloned fork. Running
+/// the binary inside a repo you chose is the documented workflow, and no
+/// permission bit can distinguish a repo you trust from one you regret. That
+/// case is addressed by *announcing* the resolved root instead of silently
+/// executing from it; see `describe_repo_root`.
+#[cfg(unix)]
+fn is_safely_owned(root: &Path) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    match std::fs::metadata(root) {
+        Ok(meta) => meta.permissions().mode() & 0o022 == 0,
+        // Unreadable: refuse rather than guess.
+        Err(_) => false,
+    }
+}
+
+#[cfg(not(unix))]
+fn is_safely_owned(_root: &Path) -> bool {
+    true
+}
+
+/// One line naming the directory whose `scripts/` and `bin/` are about to be
+/// executed, and how it was chosen.
+///
+/// The binary runs `python3 <root>/scripts/test-fidelity.py` and
+/// `node <root>/bin/cli.mjs`. Which root that is used to be decided silently
+/// from the working directory. Printing it does not stop a bad root, but it
+/// is the difference between a user being able to notice one and not.
+pub fn describe_repo_root(root: &Path) -> String {
+    describe_repo_root_with(root, explicit_repo_root().is_some())
+}
+
+fn describe_repo_root_with(root: &Path, was_explicit: bool) -> String {
+    let how = if was_explicit {
+        "MASTER_SKILL_REPO_ROOT"
+    } else {
+        "discovered from the working directory"
+    };
+    format!(
+        "repo root: {} ({how}) — its scripts/ and bin/ will be executed",
+        root.display()
+    )
 }
 
 /// The compile-time fallback: the parent of `desktop/` (this crate's
@@ -265,6 +357,89 @@ mod command_error_tests {
         assert!(message.contains("status"));
         assert!(message.contains("failure stdout marker"));
         assert!(message.contains("failure stderr marker"));
+    }
+}
+
+#[cfg(test)]
+mod repo_root_trust_tests {
+    use super::{describe_repo_root_with, is_safely_owned, resolve_repo_root_with};
+    use std::path::{Path, PathBuf};
+
+    fn make_repo(dir: &Path) {
+        std::fs::create_dir_all(dir.join("prebuilt")).unwrap();
+        std::fs::create_dir_all(dir.join("scripts")).unwrap();
+        std::fs::write(dir.join("scripts").join("test-fidelity.py"), "").unwrap();
+    }
+
+    #[test]
+    fn explicit_root_wins_over_discovery() {
+        let temp = tempfile::tempdir().unwrap();
+        let discovered = temp.path().join("discovered");
+        make_repo(&discovered);
+        let chosen = temp.path().join("chosen");
+
+        let resolved = resolve_repo_root_with(Some(chosen.clone()), Some(discovered));
+        assert_eq!(resolved, chosen);
+    }
+
+    #[test]
+    fn a_safe_discovered_root_is_used() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("repo");
+        make_repo(&root);
+
+        assert_eq!(resolve_repo_root_with(None, Some(root.clone())), root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_world_writable_discovered_root_is_not_used() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("planted");
+        make_repo(&root);
+        std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o777)).unwrap();
+
+        // Falls back rather than executing out of a directory a second party
+        // can write `scripts/test-fidelity.py` into.
+        assert_ne!(resolve_repo_root_with(None, Some(root.clone())), root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn permission_bits_decide_which_directories_are_refused() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("repo");
+        make_repo(&root);
+
+        for (mode, expected) in [(0o755, true), (0o775, false), (0o777, false), (0o700, true)] {
+            std::fs::set_permissions(&root, std::fs::Permissions::from_mode(mode)).unwrap();
+            assert_eq!(is_safely_owned(&root), expected, "mode {mode:o}");
+        }
+    }
+
+    #[test]
+    fn an_unreadable_root_is_refused_rather_than_guessed() {
+        assert!(!is_safely_owned(Path::new(
+            "/definitely/not/a/real/path/xyzzy"
+        )));
+    }
+
+    #[test]
+    fn no_cwd_and_no_override_still_yields_a_path() {
+        assert_ne!(resolve_repo_root_with(None, None), PathBuf::from(""));
+    }
+
+    #[test]
+    fn the_disclosure_names_the_path_and_says_it_will_execute() {
+        let text = describe_repo_root_with(Path::new("/tmp/some-repo"), false);
+        assert!(text.contains("/tmp/some-repo"));
+        assert!(text.contains("will be executed"));
+        assert!(text.contains("discovered from the working directory"));
+
+        let explicit = describe_repo_root_with(Path::new("/tmp/some-repo"), true);
+        assert!(explicit.contains("MASTER_SKILL_REPO_ROOT"));
     }
 }
 

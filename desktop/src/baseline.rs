@@ -54,6 +54,9 @@ pub(crate) fn skill_dry_run_success_message(slug: &str, output: &str) -> String 
 /// dry-run succeeded, `Ok(1)` if at least one failed.
 pub fn run_headless_baseline() -> Result<i32> {
     let client = CliClient::default();
+    // Announce whose code is about to run before running any of it — see
+    // `cli::describe_repo_root`.
+    println!("{}", crate::cli::describe_repo_root(client.repo_root()));
     let slugs = discover_master_skill_slugs(client.repo_root());
 
     if slugs.is_empty() {
