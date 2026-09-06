@@ -31,6 +31,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 # A verdict — as opposed to a skip, an error, or a dry run.
 GRADED_STATUSES = {"PASS", "FAIL"}
 
@@ -133,6 +135,99 @@ def check_every_skill_has_fixtures(prebuilt_dir: Path) -> list[str]:
     return problems
 
 
+# A gate is "advisory" when it can exit 0 without doing the work its name
+# promises — the fidelity smoke passing in 10s because no API key is set. That
+# is a legitimate project decision (CONTRIBUTING.md §2: grading is a local /
+# pre-release step, not a CI expense). What is NOT legitimate is it being
+# invisible: a required check's green tick looks identical either way.
+#
+# So each advisory gate must be declared here, saying what it does not check.
+# An undeclared one fails this script, and the declared roster is printed on
+# every run — `npm test` always answers "what did the green tick examine?".
+ADVISORY_GATES = {
+    "Fidelity smoke (1 master × 1 fixture)": (
+        "grades nothing when ANTHROPIC_API_KEY is unset (it always has been) — "
+        "the green tick means structure validation passed, not that a model "
+        "response was graded. Set repo variable FIDELITY_GRADING_REQUIRED=true "
+        "once the secret exists to make the skip a hard failure."
+    ),
+    "Fidelity tests — full suite (weekly + manual)": (
+        "same skip as the smoke, on the weekly cron"
+    ),
+    "Persona-fidelity schema + advisory eval": (
+        "llm-rubric eval is `|| true` and is skipped entirely without a key; "
+        "only the promptfoo schema + repo-convention validation is real"
+    ),
+}
+
+# The shape of a silent skip: a step that exits 0 because a secret is missing.
+_SKIP_ON_MISSING_SECRET = re.compile(r'\[\s+-z\s+"\$\{[A-Z_]+:-\}"\s+\]')
+
+
+def _job_display_name(job_id: str, job: dict) -> str:
+    """The name GitHub shows — and the string branch protection matches on."""
+    name = job.get("name") if isinstance(job, dict) else None
+    return str(name) if name else job_id
+
+
+def _job_skips_on_missing_secret(job: dict) -> bool:
+    steps = job.get("steps") or [] if isinstance(job, dict) else []
+    for step in steps:
+        if not isinstance(step, dict):
+            continue
+        run = step.get("run")
+        if isinstance(run, str) and _SKIP_ON_MISSING_SECRET.search(run):
+            return True
+    return False
+
+
+def _iter_jobs(workflow_docs: dict[str, dict]):
+    """Yield (path, display_name, job) for every job in every workflow.
+
+    Per **job**, not per file: `validate-and-test.yml` holds six jobs, and a
+    file-level check would let a newly-silent seventh hide behind its declared
+    siblings.
+    """
+    for path, doc in sorted(workflow_docs.items()):
+        jobs = (doc or {}).get("jobs") or {}
+        if not isinstance(jobs, dict):
+            continue
+        for job_id, job in jobs.items():
+            if isinstance(job, dict):
+                yield path, _job_display_name(job_id, job), job
+
+
+def check_advisory_gates_declared(workflow_docs: dict[str, dict]) -> list[str]:
+    """Every job that can exit 0 on a missing secret must be declared above.
+
+    Catches the case this repo actually shipped: a *required* branch-protection
+    check that has never once graded a response, with nothing in the repo
+    saying so.
+    """
+    return [
+        f"{path}: job {name!r} exits 0 when a secret is missing but is not in "
+        "ADVISORY_GATES — a gate that can pass without checking anything must "
+        "say so, or stop doing it"
+        for path, name, job in _iter_jobs(workflow_docs)
+        if _job_skips_on_missing_secret(job) and name not in ADVISORY_GATES
+    ]
+
+
+def check_declared_gates_still_exist(workflow_docs: dict[str, dict]) -> list[str]:
+    """The reverse drift: a declaration outliving the job it describes.
+
+    A stale entry is worse than none — it asserts a caveat about a gate that no
+    longer exists, and hides the day a real gate quietly becomes advisory.
+    """
+    live = {name for _, name, _ in _iter_jobs(workflow_docs)}
+    return [
+        f"ADVISORY_GATES declares {name!r}, but no workflow job has that name "
+        "— stale declaration, or the job was renamed"
+        for name in sorted(ADVISORY_GATES)
+        if name not in live
+    ]
+
+
 # ---------------------------------------------------------------------------
 # Repo-level wiring
 # ---------------------------------------------------------------------------
@@ -178,7 +273,32 @@ def collect_counts(root: Path) -> dict[str, int]:
     return counts
 
 
-def run_all(root: Path) -> list[str]:
+def read_workflows(root: Path) -> dict[str, dict]:
+    wf_dir = root / ".github" / "workflows"
+    if not wf_dir.is_dir():
+        return {}
+    return {
+        str(p.relative_to(root)): yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+        for p in sorted(wf_dir.glob("*.yml"))
+    }
+
+
+def load_fidelity_suites(report: Path) -> list[dict]:
+    """Read a `test-fidelity.py --json` report into a suite list.
+
+    A declared skip (`{"skipped": true, "reason": "no_api_key"}`) is not a
+    suite — it is the advisory path, already accounted for by ADVISORY_GATES.
+    Anything else claiming to be a run gets checked for actual verdicts.
+    """
+    data = json.loads(report.read_text(encoding="utf-8"))
+    if isinstance(data, dict):
+        if data.get("skipped"):
+            return []
+        data = [data]
+    return [s for s in data if isinstance(s, dict) and not s.get("skipped")]
+
+
+def run_all(root: Path, fidelity_report: Path | None = None) -> list[str]:
     problems: list[str] = []
 
     test_files = discover_test_files(root)
@@ -194,6 +314,18 @@ def run_all(root: Path) -> list[str]:
         problems += check_catalog_matches_filesystem(catalog, root / "prebuilt", root)
 
     problems += check_every_skill_has_fixtures(root / "prebuilt")
+
+    workflows = read_workflows(root)
+    problems += check_advisory_gates_declared(workflows)
+    problems += check_declared_gates_still_exist(workflows)
+
+    # check_graded_suites_graded_something shipped fully written and unit-tested
+    # but unreferenced by run_all — the anti-fake-green script had a check that
+    # itself never ran. This is where it runs.
+    if fidelity_report is not None and fidelity_report.exists():
+        problems += check_graded_suites_graded_something(
+            load_fidelity_suites(fidelity_report)
+        )
     return problems
 
 
@@ -201,12 +333,21 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent)
     parser.add_argument("--json", action="store_true", help="machine-readable output")
+    parser.add_argument(
+        "--fidelity-report",
+        type=Path,
+        default=None,
+        help="a test-fidelity.py --json report; assert it produced real verdicts",
+    )
     args = parser.parse_args()
 
-    problems = run_all(args.root)
+    problems = run_all(args.root, args.fidelity_report)
 
     if args.json:
-        print(json.dumps({"problems": problems, "ok": not problems}, ensure_ascii=False, indent=2))
+        print(json.dumps(
+            {"problems": problems, "ok": not problems, "advisory_gates": ADVISORY_GATES},
+            ensure_ascii=False, indent=2,
+        ))
     elif problems:
         print(f"✗ {len(problems)} gate-liveness problem(s):\n")
         for p in problems:
@@ -214,6 +355,12 @@ def main() -> int:
         print("\nA gate that examines nothing reports the same green as one that passes.")
     else:
         print("✓ gate liveness ok — every gate examined a non-empty set")
+        # Printed on success, not just failure: the roster is the answer to
+        # "what did that green tick actually examine?", and it is only useful
+        # if you see it without going looking.
+        print(f"\n⚠ {len(ADVISORY_GATES)} advisory gate(s) — green does NOT mean these ran:")
+        for name, caveat in sorted(ADVISORY_GATES.items()):
+            print(f"  - {name}\n      {caveat}")
 
     return 1 if problems else 0
 

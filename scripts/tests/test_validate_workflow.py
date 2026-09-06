@@ -279,6 +279,58 @@ def test_each_fidelity_no_key_branch_records_step_summary(job_name: str, step_na
     step = _step(WORKFLOW, job_name, step_name)
     script = step["run"]
     assert 'if [ -z "${ANTHROPIC_API_KEY:-}" ]; then' in script
-    assert script.count('echo "### Fidelity grading skipped"') == 1
+    assert script.count('echo "### Fidelity grading skipped') == 1
     assert '} >> "$GITHUB_STEP_SUMMARY"' in script
+    # The summary must say the tick graded nothing, not merely that a step was
+    # "skipped" — a required check reading green while having graded zero
+    # responses is the defect this branch exists to disclose.
+    assert "graded nothing" in script
     _assert_hard(step)
+
+
+@pytest.mark.parametrize(
+    ("job_name", "step_name"),
+    [
+        ("fidelity-smoke", "Run fidelity smoke"),
+        ("fidelity-full", "Run fidelity tests"),
+    ],
+)
+def test_each_fidelity_no_key_branch_can_be_promoted_to_a_hard_gate(
+    job_name: str, step_name: str
+):
+    """The advisory skip must be one repo variable away from failing.
+
+    Project policy is that CI does not pay for LLM-judge grading, so the key is
+    deliberately unset. That is a decision — but it has to be a *revocable* one
+    held in a single obvious place, not an emergent property of an `exit 0`.
+    """
+    step = _step(WORKFLOW, job_name, step_name)
+    assert step["env"].get("FIDELITY_GRADING_REQUIRED") == (
+        "${{ vars.FIDELITY_GRADING_REQUIRED }}"
+    )
+    script = step["run"]
+    assert '[ "${FIDELITY_GRADING_REQUIRED:-}" = "true" ]' in script
+    # …and the promoted branch must actually fail, not warn.
+    promoted = script.split('FIDELITY_GRADING_REQUIRED:-}" = "true" ]; then', 1)[1]
+    assert "exit 1" in promoted.split("fi", 1)[0]
+
+
+@pytest.mark.parametrize(
+    ("job_name", "step_name", "report"),
+    [
+        ("fidelity-smoke", "Run fidelity smoke", "fidelity-smoke.json"),
+        ("fidelity-full", "Run fidelity tests", "fidelity-results.json"),
+    ],
+)
+def test_each_graded_fidelity_run_is_checked_for_real_verdicts(
+    job_name: str, step_name: str, report: str
+):
+    """A run that reached the API must prove it produced verdicts.
+
+    `eval/reports/0.10.1-c697d5d.json` is the shape this guards: 127 of 211
+    calls returned HTTP 400 for an exhausted credit balance, so the suite
+    "completed" having graded 84. Without this line a suite where *every* call
+    errored exits 0 and reads as a clean pass.
+    """
+    script = _step(WORKFLOW, job_name, step_name)["run"]
+    assert f"check-gate-liveness.py --fidelity-report {report}" in script

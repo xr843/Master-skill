@@ -294,14 +294,27 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SMOKE_MASTER: ${{ steps.pick.outputs.master }}
+          # The switch that turns this from advisory into a real gate. Project
+          # policy (CONTRIBUTING.md §2) is that CI does not pay for LLM-judge
+          # grading, so the secret is deliberately unset and this check passes
+          # in ~10s having graded nothing. That is a decision, not an accident
+          # — but it is a decision a green *required* tick cannot show you.
+          # Set repo variable FIDELITY_GRADING_REQUIRED=true alongside the
+          # secret and a missing key becomes a hard failure instead.
+          FIDELITY_GRADING_REQUIRED: ${{ vars.FIDELITY_GRADING_REQUIRED }}
         run: |
           if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            if [ "${FIDELITY_GRADING_REQUIRED:-}" = "true" ]; then
+              echo "::error::FIDELITY_GRADING_REQUIRED=true but ANTHROPIC_API_KEY is unset — this gate must not pass without grading."
+              exit 1
+            fi
             echo "::warning::ANTHROPIC_API_KEY not configured — smoke is advisory on this run (expected on forks)."
             echo '{"skipped": true, "reason": "no_api_key"}' > fidelity-smoke.json
             {
-              echo "### Fidelity grading skipped"
+              echo "### Fidelity grading skipped — this green tick graded nothing"
               echo
-              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but model grading did not run."
+              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but **no model response was graded**."
+              echo "See \`ADVISORY_GATES\` in \`scripts/check-gate-liveness.py\` for what this check does and does not cover."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
@@ -309,6 +322,10 @@ jobs:
             --master "$SMOKE_MASTER" \
             --max-tests 1 \
             --json > fidelity-smoke.json
+          # A run that *claims* to have graded must have produced verdicts. The
+          # credit-exhaustion shape (every call a 400) otherwise reads as a
+          # clean pass.
+          python scripts/check-gate-liveness.py --fidelity-report fidelity-smoke.json
           python - <<'PY'
           import json, sys
           with open("fidelity-smoke.json") as f:
@@ -348,18 +365,24 @@ jobs:
       - name: Run fidelity tests
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FIDELITY_GRADING_REQUIRED: ${{ vars.FIDELITY_GRADING_REQUIRED }}
         run: |
           if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            if [ "${FIDELITY_GRADING_REQUIRED:-}" = "true" ]; then
+              echo "::error::FIDELITY_GRADING_REQUIRED=true but ANTHROPIC_API_KEY is unset — the weekly sweep must not pass without grading."
+              exit 1
+            fi
             echo "::warning::ANTHROPIC_API_KEY not configured — full fidelity sweep is advisory (structural validation in the validate job still gates)."
             echo '{"skipped": true, "reason": "no_api_key"}' > fidelity-results.json
             {
-              echo "### Fidelity grading skipped"
+              echo "### Fidelity grading skipped — this green tick graded nothing"
               echo
-              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but model grading did not run."
+              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but **no model response was graded**."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           python scripts/test-fidelity.py --all --json > fidelity-results.json
+          python scripts/check-gate-liveness.py --fidelity-report fidelity-results.json
 
       - name: Upload results
         if: always()
