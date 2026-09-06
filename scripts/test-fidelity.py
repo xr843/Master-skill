@@ -23,6 +23,8 @@ import json
 import os
 import re
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 # verify_citations lives in this same scripts/ dir; reused so the
@@ -72,6 +74,41 @@ PROVIDERS: dict[str, dict] = {
 DEFAULT_MAX_OUTPUT_TOKENS = 2048
 
 DEFAULT_PROVIDER = "anthropic"
+
+# Fixtures are independent, so they can be graded in parallel. 4 is chosen to
+# be useful without being a rate-limit generator: the anthropic and openai
+# SDKs both retry 429s with backoff, but a burst wide enough to exhaust that
+# retry budget turns into api_errors that are indistinguishable from real
+# provider failures in the report. Raise it with --concurrency once you know
+# your account's limits.
+DEFAULT_CONCURRENCY = 4
+
+# Per-request ceiling. Both SDKs default to 600s, which combined with CI jobs
+# that carry no `timeout-minutes` means one wedged call can burn a runner for
+# six hours. 300s is well above a slow reasoning answer and well below that.
+DEFAULT_REQUEST_TIMEOUT = 300.0
+
+# Anything shaped like a provider credential, stripped before an error string
+# is written to a report. `eval/reports/0.10.1-c697d5d.json` carries 127 raw
+# provider error strings, committed to a public repo — none leaked a key, but
+# nothing was stopping one. SECURITY.md §3 names this exact risk.
+_SECRET_SHAPES = re.compile(
+    r"(sk-[A-Za-z0-9_\-]{12,}"
+    r"|AIza[A-Za-z0-9_\-]{20,}"
+    r"|Bearer\s+[A-Za-z0-9._\-]{12,}"
+    r"|(?i:api[_-]?key)[\"'\s:=]+[A-Za-z0-9._\-]{12,})"
+)
+
+
+def redact_secrets(text: str) -> str:
+    """Blank out credential-shaped substrings before they reach a report.
+
+    Provider exceptions are stringified straight into the results JSON, which
+    is uploaded as a CI artifact and committed under eval/reports/. The error
+    text is worth keeping — it is how the credit-exhaustion run was diagnosed
+    — but it should not be the one place a key could ride out.
+    """
+    return _SECRET_SHAPES.sub("[REDACTED]", text)
 
 
 def resolve_provider(name: str) -> dict:
@@ -582,6 +619,8 @@ def run_tests(
     quiet: bool = False,
     provider: str = DEFAULT_PROVIDER,
     max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS,
+    concurrency: int = DEFAULT_CONCURRENCY,
+    request_timeout: float = DEFAULT_REQUEST_TIMEOUT,
 ) -> dict:
     """Run fidelity tests for a master. Returns summary."""
     # 目录叫 `master-<slug>`,而公开写在 README / package.json 里的调用形式是短名
@@ -658,7 +697,9 @@ def run_tests(
                 provider,
             )
         client = anthropic.Anthropic(api_key=api_key)
-        send = lambda body: client.messages.create(**body)  # noqa: E731
+        send = lambda body: client.messages.create(  # noqa: E731
+            **body, timeout=request_timeout
+        )
     else:
         try:
             import openai
@@ -669,7 +710,9 @@ def run_tests(
                 provider,
             )
         client = openai.OpenAI(api_key=api_key, base_url=spec["base_url"])
-        send = lambda body: client.chat.completions.create(**body)  # noqa: E731
+        send = lambda body: client.chat.completions.create(  # noqa: E731
+            **body, timeout=request_timeout
+        )
 
     # Declared offline sources, for the must_cite_only_existing_sources B1 check.
     try:
@@ -679,13 +722,13 @@ def run_tests(
         declared_ids = None
         member_aliases = None
 
-    passed = 0
-    failed = 0
+    def grade_one(i: int, test: dict) -> tuple[dict, bool, str]:
+        """Run and grade one fixture. Pure w.r.t. the enclosing suite state.
 
-    for i, test in enumerate(tests):
-        if not quiet:
-            print(f"  [{i+1}/{len(tests)}] {test['q'][:50]}...", end=" ", flush=True)
-
+        Returns (result entry, counted-as-passed, one-word label for the log).
+        Every failure mode is a returned value, not a raised exception, so one
+        bad fixture cannot take the pool down with it.
+        """
         try:
             response = send(
                 build_request(
@@ -694,28 +737,26 @@ def run_tests(
             )
             response_text = extract_text(provider, response)
             finish_reason = extract_finish_reason(provider, response)
-        except Exception as e:
-            results.append({
-                "index": i,
-                "question": test["q"],
-                "status": "api_error",
-                "error": str(e),
-            })
-            failed += 1
-            if not quiet:
-                print("API ERROR")
-            continue
+        except Exception as e:  # noqa: BLE001 — provider errors are data here
+            return (
+                {
+                    "index": i,
+                    "question": test["q"],
+                    "status": "api_error",
+                    "error": redact_secrets(str(e)),
+                },
+                False,
+                "API ERROR",
+            )
 
         if finish_reason == "length":
             # Cut off mid-answer: unmeasured, not failed. Counted with the
             # api_errors so a run full of them cannot read as a clean result.
-            results.append(
-                truncated_result_entry(i, test, response_text, max_output_tokens)
+            return (
+                truncated_result_entry(i, test, response_text, max_output_tokens),
+                False,
+                "TRUNCATED",
             )
-            failed += 1
-            if not quiet:
-                print("TRUNCATED")
-            continue
 
         check = check_response(
             response_text,
@@ -724,18 +765,52 @@ def run_tests(
             declared_ids=declared_ids,
             member_aliases=member_aliases,
         )
-        results.append(result_entry(i, test, check, response_text))
-
+        entry = result_entry(i, test, check, response_text)
         if check["passed"]:
-            passed += 1
+            return entry, True, "PASS (review)" if check["needs_review"] else "PASS"
+        failures = (check["missing_cites"] + check["missing_mentions"]
+                    + check["forbidden_found"] + check["boundary_violations"])
+        return entry, False, f"FAIL ({failures})"
+
+    # Fixtures are independent — each is one stateless request graded against
+    # its own expectations — so the only reason this ran serially was that
+    # nobody changed it. It cost 44 minutes to grade 84 fixtures on
+    # 2026-08-18 (eval/reports/0.10.1-c697d5d.json), ~31s apiece, and a full
+    # 211-fixture DeepSeek sweep took 1h55m. That is the difference between
+    # a sweep you run after a change and one you run twice a year.
+    #
+    # Ordering is restored by index afterwards: reports are diffed across
+    # runs, so completion order must not leak into the output.
+    workers = max(1, min(concurrency, len(tests)))
+    by_index: dict[int, dict] = {}
+    passed = 0
+    failed = 0
+    log_lock = threading.Lock()
+    done = 0
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {pool.submit(grade_one, i, t): i for i, t in enumerate(tests)}
+        for future in as_completed(futures):
+            i = futures[future]
+            entry, ok, label = future.result()
+            by_index[i] = entry
+            if ok:
+                passed += 1
+            else:
+                failed += 1
             if not quiet:
-                print("PASS (review)" if check["needs_review"] else "PASS")
-        else:
-            failed += 1
-            failures = (check["missing_cites"] + check["missing_mentions"]
-                        + check["forbidden_found"] + check["boundary_violations"])
-            if not quiet:
-                print(f"FAIL ({failures})")
+                with log_lock:
+                    done += 1
+                    # One whole line per fixture. The old "print the prompt,
+                    # then the verdict on the same line" shape interleaves
+                    # into nonsense the moment more than one call is open.
+                    print(
+                        f"  [{done}/{len(tests)}] #{i + 1} "
+                        f"{tests[i]['q'][:50]}... {label}",
+                        flush=True,
+                    )
+
+    results = [by_index[i] for i in sorted(by_index)]
 
     return {
         **suite_common(master_name, dry_run, "completed", provider),
@@ -747,6 +822,10 @@ def run_tests(
         "audit": summarize_audit(results),
         "mentions": summarize_mentions(results),
         "max_output_tokens": max_output_tokens,
+        # Part of the instrument, so it is recorded with the reading: a
+        # concurrent run can meet rate limits a serial one never would, and
+        # those arrive as api_errors that look like nothing else.
+        "concurrency": workers,
         "results": results,
     }
 
@@ -850,7 +929,26 @@ def main() -> int:
             "instrument — record it with the run."
         ),
     )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=DEFAULT_CONCURRENCY,
+        help=(
+            "Fixtures graded in parallel (default %(default)s). Recorded in "
+            "the report: a concurrent run can meet rate limits a serial one "
+            "never would."
+        ),
+    )
+    parser.add_argument(
+        "--request-timeout",
+        type=float,
+        default=DEFAULT_REQUEST_TIMEOUT,
+        help="Seconds before one API call is abandoned (default %(default)s)",
+    )
     args = parser.parse_args()
+
+    if args.concurrency < 1:
+        parser.error("--concurrency must be at least 1")
 
     if not args.master and not args.all:
         parser.error("Specify --master <name> or --all")
@@ -880,6 +978,8 @@ def main() -> int:
             max_tests=args.max_tests,
             quiet=args.json,
             max_output_tokens=args.max_output_tokens,
+            concurrency=args.concurrency,
+            request_timeout=args.request_timeout,
         )
         all_results.append(result)
 
