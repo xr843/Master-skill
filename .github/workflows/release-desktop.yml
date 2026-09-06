@@ -47,6 +47,7 @@ jobs:
   build:
     name: Build (${{ matrix.artifact_name }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -78,6 +79,20 @@ jobs:
             libxcb-render0-dev \
             libxcb-shape0-dev \
             libxcb-xfixes0-dev
+
+      - name: Cache cargo registry and target dir
+        # 408 crates behind eframe/egui, rebuilt from scratch on every run.
+        # Keyed on Cargo.lock so a dependency bump invalidates it and nothing
+        # else does; the OS is in the key because a target dir is not portable.
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            desktop/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('desktop/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
 
       - name: Show Rust toolchain
         run: |
