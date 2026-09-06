@@ -262,7 +262,17 @@ def _compiled_teaching_id(
 # 引文块 【…】
 _CITATION_BLOCK = re.compile(r"【([^】]*)】")
 # live 链接 fojin.app/texts/<数字>
-_FOJIN_TEXT_LINK = re.compile(r"fojin\.app/texts/(\d+)")
+#
+# `[0-9]` 而不是 `\d`:Python 的 `\d` 默认吃全部 Unicode 数字,于是
+# `fojin.app/texts/１２３`(全角)曾被判成 live —— 一条未声明的伪造经号,靠一个
+# fojin.app 路由根本打不开的链接就被洗白。`--online`(唯一会去解析该 id 的路径)
+# 是可选的,CI 硬门只跑离线判定,永远不会发现。
+#
+# 注意这里与上面几个 id 正则的**方向相反**,不要顺手一起改:
+#   识别 id 宽松 → 多抓 → 判 fabricated → 失败,安全;
+#   放行链接宽松 → 多放 → 洗白伪造引文 → 通过,危险。
+# 所以只有这一个「放行凭据」收紧到 ASCII,`_CBETA_ID` / `_FAMILY_ID` 保持宽松。
+_FOJIN_TEXT_LINK = re.compile(r"fojin\.app/texts/([0-9]+)")
 # 引文块「之后」多远内出现 live 链接仍算本块携带(且不跨过下一引文块)。link 须在引文之后。
 _LINK_WINDOW = 120
 
