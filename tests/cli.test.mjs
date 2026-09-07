@@ -939,7 +939,17 @@ test("mode routing outranks situations", () => {
 // something looks.
 // --------------------------------------------------------------------------
 
+let _packedFilesCache = null;
+
 function packedFiles() {
+  // Memoised: three tests ask for the manifest and `npm pack` was running
+  // three times for one answer that cannot change within a run.
+  if (_packedFilesCache) return _packedFilesCache;
+  _packedFilesCache = computePackedFiles();
+  return _packedFilesCache;
+}
+
+function computePackedFiles() {
   // `--json`, not the `npm notice` log lines. npm suppresses every notice when
   // `npm_config_loglevel` is below `notice`, and `npm test --silent` exports
   // exactly that — as does any `.npmrc` with `loglevel=warn`. Parsing the log

@@ -125,11 +125,28 @@ jobs:
           fi
           cargo audit --version
 
+      - name: Cache the RustSec advisory database
+        # cargo-audit clones RustSec/advisory-db on every run otherwise. Keyed
+        # by day so it still refreshes daily — a stale advisory database is the
+        # one thing this job cannot afford.
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
+        with:
+          path: ~/.cargo/advisory-db
+          key: ${{ runner.os }}-rustsec-db-${{ github.run_id }}
+          restore-keys: ${{ runner.os }}-rustsec-db-
+
       - name: Report every advisory (informational, never fails)
-        # Runs first and with no suppressions at all, so the ignore list below
-        # can silence an exit code but can never silence the finding itself. A
-        # stale `--ignore` is the same defect as a stale ADVISORY_GATES entry;
-        # this is what keeps it visible.
+        # No suppressions at all, so the ignore list in the next step can
+        # silence an exit code but never the finding itself — a stale
+        # `--ignore` is the same defect as a stale ADVISORY_GATES entry.
+        #
+        # Yes, this walks the 408 crates a second time. Deliberately left that
+        # way: the scan is a second or two once the advisory database is cached
+        # (the three minutes on a cold run is cargo-audit compiling), and the
+        # alternative — one `--json` pass plus a script re-deriving which
+        # findings are suppressed — would be a second implementation of
+        # cargo-audit's exit logic, free to drift from the real one. Duplicated
+        # work is cheaper than a duplicated definition of "did this pass".
         run: cargo audit --file desktop/Cargo.lock || true
 
       - name: Fail on any actionable advisory

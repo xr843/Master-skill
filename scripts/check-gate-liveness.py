@@ -172,7 +172,17 @@ _SKIP_ON_MISSING_SECRET = re.compile(r'\[\s+-z\s+"\$\{[A-Z_]+:-\}"\s+\]')
 
 
 def _job_display_name(job_id: str, job: dict) -> str:
-    """The name GitHub shows — and the string branch protection matches on."""
+    """The name this file can see for a job.
+
+    NOT, in general, "the string branch protection matches on" — an earlier
+    version of this docstring said that and it is false for any matrix job.
+    GitHub expands `name: CodeQL (${{ matrix.language }})` into one check run
+    per leg (`CodeQL (python)`, …); statically all that is visible here is the
+    unexpanded template. So a matrix job can never be matched by an
+    ADVISORY_GATES key, and this module cannot police one. The roster covers
+    the non-matrix jobs, which are the ones this repo has actually shipped a
+    silent skip in; a matrix job that grows one has to be caught by review.
+    """
     name = job.get("name") if isinstance(job, dict) else None
     return str(name) if name else job_id
 

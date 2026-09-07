@@ -387,3 +387,21 @@ def test_a_report_that_declares_a_skip_is_clean(liveness, tmp_path):
     report.write_text(json.dumps({"skipped": True, "reason": "no_api_key"}), encoding="utf-8")
     root = Path(__file__).resolve().parent.parent.parent
     assert liveness.run_all(root, report) == []
+
+
+def test_a_matrix_job_name_is_known_to_be_unmatchable(liveness):
+    """Documents a real limit rather than pretending it away.
+
+    GitHub expands `name: CodeQL (${{ matrix.language }})` into one check run
+    per leg. Statically only the template is visible, so no ADVISORY_GATES key
+    can match a matrix job. If a future change makes these resolvable, this
+    test fails and the docstring stating the limit should be revisited.
+    """
+    root = Path(__file__).resolve().parent.parent.parent
+    names = {name for _, name, _ in liveness._iter_jobs(liveness.read_workflows(root))}
+    templated = {n for n in names if "${{" in n}
+    assert templated, "no matrix jobs left — the documented limit may be stale"
+    assert not (templated & set(liveness.ADVISORY_GATES)), (
+        "an ADVISORY_GATES key looks like a matrix template; it can never match "
+        "a real check-run name"
+    )
