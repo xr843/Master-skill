@@ -204,8 +204,14 @@ fn resolve_interpreter(
     unix_default: &str,
 ) -> String {
     if let Some(value) = explicit {
-        if !value.is_empty() {
-            return value.to_string_lossy().into_owned();
+        // `to_str`, not `to_string_lossy`. Lossy conversion turns a non-UTF-8
+        // variable into a name full of U+FFFD, which spawns nothing — the same
+        // failure the blank guard exists to remove. `NODE`'s previous
+        // `std::env::var` fell back to the default on NotUnicode; keep that.
+        if let Some(text) = value.to_str() {
+            if !text.is_empty() {
+                return text.to_string();
+            }
         }
     }
     if cfg!(windows) {

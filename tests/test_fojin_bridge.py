@@ -213,10 +213,35 @@ def test_a_slow_drip_is_abandoned_rather_than_held_forever():
     with pytest.raises(FojinUnavailableError, match="longer than"):
         FojinBridge._read_capped(_Dripping(), deadline=_time.monotonic() - 1)
 
-# The "no second full copy" property (a chunk list plus `b"".join` peaked at
-# twice the cap it enforced) is deliberately NOT asserted. The first attempt
-# grepped the function source for `b"".join` and matched the docstring that
-# explains the fix — a test that reads the comment instead of the code. There
-# is no behavioural difference to observe from outside: both versions raise at
-# the same threshold. Left as a code property with its reasoning in the
-# docstring, rather than as a test that only looks like one.
+def test_the_body_is_not_copied_a_second_time():
+    """Peak memory must stay near the body size, not double it.
+
+    Two mistakes are pinned here. The first version accumulated chunks in a
+    list and `b"".join`ed them, peaking at ~32 MB while enforcing a 16 MB cap.
+    The "fix" switched to a bytearray and then returned `bytes(body)` — the
+    same second full copy — and measured *worse*: 33.64 MB. It shipped because
+    the test written for it grepped the function source for `b"".join` and
+    matched the docstring explaining the fix, and was then deleted with the
+    claim that "there is no behavioural difference to observe from outside".
+    There is; it takes three lines of tracemalloc, and it is these.
+    """
+    import tracemalloc
+
+    size = 4 * 1024 * 1024
+    chunk = 64 * 1024
+
+    class _Big:
+        def iter_content(self, _size):
+            for _ in range(size // chunk):
+                yield bytes(chunk)
+
+    tracemalloc.start()
+    body = FojinBridge._read_capped(_Big())
+    peak = tracemalloc.get_traced_memory()[1]
+    tracemalloc.stop()
+
+    assert len(body) == size
+    assert peak < size * 1.5, (
+        f"peak {peak / 1048576:.2f}MB for a {size / 1048576:.0f}MB body — the "
+        "body is being copied a second time"
+    )

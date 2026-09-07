@@ -7,6 +7,8 @@ this docstring advertised for two years was never implemented, and describing
 an unwritten feature as a shipped one is its own kind of unverified claim.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os
@@ -210,7 +212,7 @@ class FojinBridge:
         return json.loads(body)
 
     @staticmethod
-    def _read_capped(resp, deadline: float | None = None) -> bytes:
+    def _read_capped(resp, deadline: float | None = None) -> bytearray:
         """Read a response body, refusing one that is too large or too slow.
 
         The size is checked while reading rather than from Content-Length,
@@ -226,7 +228,8 @@ class FojinBridge:
           indefinitely without ever tripping the size cap. A wall-clock
           deadline closes that.
         """
-        limit = deadline if deadline is not None else time.monotonic() + READ_DEADLINE
+        budget = READ_DEADLINE if deadline is None else None
+        limit = time.monotonic() + READ_DEADLINE if deadline is None else deadline
         body = bytearray()
         for chunk in resp.iter_content(64 * 1024):
             body += chunk
@@ -236,11 +239,23 @@ class FojinBridge:
                     "refusing to buffer it"
                 )
             if time.monotonic() > limit:
-                raise FojinUnavailableError(
-                    f"FoJin API response took longer than {READ_DEADLINE}s to "
-                    "arrive; abandoning it"
+                # Reports the deadline actually in force. The first version
+                # interpolated the module constant regardless of what the
+                # caller passed, so a 0.05s deadline announced itself as 60s —
+                # and the test asserting on that message locked the lie in.
+                howlong = (
+                    f"{budget}s" if budget is not None else "the caller's deadline"
                 )
-        return bytes(body)
+                raise FojinUnavailableError(
+                    f"FoJin API response took longer than {howlong} to arrive; "
+                    "abandoning it"
+                )
+        # The bytearray IS the return value. `bytes(body)` was a second full
+        # copy — precisely the allocation `b"".join` used to make — and
+        # measured *worse* than the code it replaced: 33.64 MB peak against
+        # 32.03 MB, for a 16 MB body. `json.loads` accepts a bytearray, so the
+        # copy bought nothing at all.
+        return body
 
     def test_connection(self) -> bool:
         """Test if FoJin API is reachable."""

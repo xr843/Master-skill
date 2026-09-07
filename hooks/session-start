@@ -8,55 +8,72 @@
 # runs with "async": false at every startup / clear / compact.
 set -euo pipefail
 
-# Backslashes normalised first. run-hook.cmd invokes this as
-# `bash "C:\...\hooks\session-start"`, and under Git Bash `dirname` on a
-# backslash path returns "." — SCRIPT_DIR silently became the current
-# directory, session_start.py was not found, and the hook emitted `{}`.
-SELF="${BASH_SOURCE[0]//\\//}"
-SCRIPT_DIR="$(cd "$(dirname "$SELF")" 2>/dev/null && pwd)" || SCRIPT_DIR=""
-if [ -z "$SCRIPT_DIR" ] || [ ! -f "$SCRIPT_DIR/session_start.py" ]; then
-    # Last resort before giving up on locating ourselves.
-    SCRIPT_DIR="${CLAUDE_PLUGIN_ROOT:-${CURSOR_PLUGIN_ROOT:-}}/hooks"
+# Path resolution, as a function so it can be driven directly by
+# hooks/tests/test_session_start.sh. The Windows case cannot be reproduced by
+# invocation on Linux — `bash "/tmp/x\hooks\session-start"` simply fails to
+# open, because a backslash is an ordinary filename character here, not a
+# separator. Testing it therefore needs a seam, the same way the Rust side
+# split `resolve_interpreter` out rather than mutating the environment. The
+# alternative was a `grep` for the substitution in this file, which passed
+# just as happily when the substitution was deleted and left in a comment.
+#
+# run-hook.cmd invokes this as `bash "C:\...\hooks\session-start"`, and under
+# Git Bash `dirname` on that returns "." — SCRIPT_DIR silently became the
+# working directory, session_start.py was not found, and the hook emitted `{}`.
+resolve_script_dir() {
+    local self="${1//\\//}"
+    local dir
+    dir="$(cd "$(dirname "$self")" 2>/dev/null && pwd)" || dir=""
+    if [ -z "$dir" ] || [ ! -f "$dir/session_start.py" ]; then
+        # Second chance, normalised the same way: the plugin root the host
+        # hands us is a backslash path on exactly the platform that needs it.
+        local root="${CLAUDE_PLUGIN_ROOT:-${CURSOR_PLUGIN_ROOT:-}}"
+        dir="${root//\\//}/hooks"
+    fi
+    printf '%s' "$dir"
+}
+
+# Sourced by the test suite to reach resolve_script_dir without running the
+# hook. Nothing else sets this.
+if [ -n "${MASTER_SKILL_HOOK_TEST_ONLY:-}" ]; then
+    return 0 2>/dev/null || exit 0
 fi
+
+SCRIPT_DIR="$(resolve_script_dir "${BASH_SOURCE[0]}")"
 PLUGIN_ROOT="$(cd "$SCRIPT_DIR/.." 2>/dev/null && pwd)" || PLUGIN_ROOT=""
 
-# Degrading to `{}` drops the five mode commands too, which the bash version
-# this replaced always emitted regardless of what it found. Those are static
-# text — nothing about them can fail — so losing them is pure loss. This is
-# the floor: the plugin still announces its modes even when the roster cannot
-# be built.
-fallback() {
-    echo "master-skill session-start: $1; listing modes only" >&2
-    python3 - <<'PYFALLBACK' 2>/dev/null || printf '%s\n' '{"additionalContext":"Master-skill plugin loaded."}'
-import json, os
-context = (
-    "Master-skill plugin loaded.\n"
-    "  /master-help — not sure which master or mode? start here\n"
-    "  /compare-masters — multi-tradition comparison\n"
-    "  /master-debate — 4-round adversarial dialectic between masters\n"
-    "  /master-curriculum — staged learning path within a tradition\n"
-    "  /create-master — generate new master from FoJin knowledge graph"
-)
-if os.environ.get("CURSOR_PLUGIN_ROOT"):
-    payload = {"additional_context": context}
-elif os.environ.get("CLAUDE_PLUGIN_ROOT") and not os.environ.get("COPILOT_CLI"):
-    payload = {"hookSpecificOutput": {"additionalContext": context}}
-else:
-    payload = {"additionalContext": context}
-print(json.dumps(payload))
-PYFALLBACK
+# The floor: the five mode commands, always. They are static text — nothing
+# about them can fail — so any degraded payload that drops them is losing
+# something for free. The bash version this file replaced printed them
+# unconditionally; the first rewrite made the whole payload contingent on
+# locating a second file, and its "fallback" emitted a bare
+# "Master-skill plugin loaded." with zero modes while a comment right above
+# it claimed otherwise.
+#
+# Written as a pure-ASCII JSON string (\u2014 for the em dash) so it survives
+# any stdout encoding, and wrapped in the shape THIS host reads — the earlier
+# literal hardcoded the top-level `additionalContext` key, which Claude Code
+# does not read at all, making it exactly the `{}` it was meant to replace.
+MODES_JSON='"Master-skill plugin loaded.\n  /master-help \u2014 not sure which master or mode? start here\n  /compare-masters \u2014 multi-tradition comparison\n  /master-debate \u2014 4-round adversarial dialectic between masters\n  /master-curriculum \u2014 staged learning path within a tradition\n  /create-master \u2014 generate new master from FoJin knowledge graph"'
+
+emit_modes_only() {
+    [ -n "${1:-}" ] && echo "master-skill session-start: $1; listing modes only" >&2
+    if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
+        printf '{"additional_context": %s}\n' "$MODES_JSON"
+    elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -z "${COPILOT_CLI:-}" ]; then
+        printf '{"hookSpecificOutput": {"additionalContext": %s}}\n' "$MODES_JSON"
+    else
+        printf '{"additionalContext": %s}\n' "$MODES_JSON"
+    fi
 }
 
 if ! command -v python3 >/dev/null 2>&1; then
-    # No python3 at all: not even the fallback heredoc can run, so emit the
-    # one shape that needs nothing. Never an unescaped string — an earlier
-    # version did that and handed invalid JSON to a system-prompt splicer.
-    printf '%s\n' '{"additionalContext":"Master-skill plugin loaded."}' 
+    emit_modes_only "python3 not found"
     exit 0
 fi
 
 if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$SCRIPT_DIR/session_start.py" ]; then
-    fallback "could not locate session_start.py"
+    emit_modes_only "could not locate session_start.py"
 elif ! python3 "$SCRIPT_DIR/session_start.py" "$PLUGIN_ROOT"; then
-    fallback "session_start.py failed"
+    emit_modes_only "session_start.py failed"
 fi

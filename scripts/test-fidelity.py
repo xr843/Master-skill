@@ -82,13 +82,23 @@ DEFAULT_PROVIDER = "anthropic"
 # your account's limits.
 DEFAULT_CONCURRENCY = 4
 
-# Per-ATTEMPT ceiling, which is not the same as per-fixture. Both SDKs retry
-# twice by default, so `timeout=300` is a ~900s wall for one fixture — and
-# fidelity-full's job cap is 60 minutes, so four wedged fixtures could eat the
-# whole sweep. Retries are capped here too, and the two numbers are multiplied
-# into an explicit budget rather than left for the reader to discover.
-DEFAULT_REQUEST_TIMEOUT = 300.0
-DEFAULT_MAX_RETRIES = 2
+# Per-ATTEMPT ceiling, which is not the same as per-fixture: both SDKs retry,
+# so the wall for one fixture is timeout x (retries + 1).
+#
+# The first version of this set DEFAULT_MAX_RETRIES = 2 — both SDKs' own
+# default — and the commit message claimed "retries are now bounded
+# explicitly". Nothing was bounded. The per-fixture wall stayed at 900s against
+# fidelity-full's 60-minute cap, so four wedged fixtures could still take the
+# sweep; all that changed was that the number became configurable.
+#
+# 180 x (1 + 1) = 360s is a real bound, and it is chosen against the observed
+# distribution rather than picked to look tidy: the 2026-08-18 run averaged
+# ~31s per graded fixture (eval/reports/0.10.1-c697d5d.json), so 180s is nearly
+# six times the mean for a single attempt. One retry still covers the transient
+# 429/529 that retries exist for; a second retry mostly buys latency on calls
+# that were not going to succeed.
+DEFAULT_REQUEST_TIMEOUT = 180.0
+DEFAULT_MAX_RETRIES = 1
 
 
 def per_fixture_ceiling(timeout: float, retries: int) -> float:
@@ -1015,6 +1025,13 @@ def main() -> int:
 
     if args.concurrency < 1:
         parser.error("--concurrency must be at least 1")
+
+    if args.max_retries < 0:
+        # A negative count is accepted by the SDKs and would put a negative
+        # "worst-case seconds" into the report.
+        parser.error("--max-retries cannot be negative")
+    if args.request_timeout <= 0:
+        parser.error("--request-timeout must be positive")
 
     if not args.master and not args.all:
         parser.error("Specify --master <name> or --all")

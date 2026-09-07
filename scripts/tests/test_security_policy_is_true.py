@@ -96,3 +96,24 @@ def test_the_supported_version_line_matches_the_shipped_version():
         f"package.json ships {version}; SECURITY.md's supported-version table "
         f"does not mention the {series}.x line"
     )
+
+
+def test_the_documented_dependabot_ecosystems_match_the_config():
+    """CONTRIBUTING.md listed three while dependabot.yml configured four.
+
+    The missing one was `cargo` — per dependabot.yml's own comment, the only
+    ecosystem whose output is an executable users download and run. It was
+    reported by review, dismissed by the author as refuted on a bad grep
+    (searching for 「三生态」 when the file says 「三类依赖升级 PR」), and
+    shipped in a commit message as a refutation. Hence this test.
+    """
+    configured = {
+        u["package-ecosystem"]
+        for u in yaml.safe_load((ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8"))["updates"]
+    }
+    contributing = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    section = contributing[contributing.index("Dependabot 自动开"):]
+    section = section[: section.index("\n## ") if "\n## " in section else len(section)]
+
+    missing = sorted(e for e in configured if f"`{e}`" not in section)
+    assert missing == [], f"dependabot.yml configures {sorted(missing)} but CONTRIBUTING.md does not list them"

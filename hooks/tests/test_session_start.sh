@@ -269,14 +269,87 @@ else
 fi
 rm -rf "$tmp_hook"
 
-# Case 16: a Windows-style backslash path must not defeat SCRIPT_DIR.
-if grep -q 'BASH_SOURCE\[0\]//' "$HOOK"; then
-    echo "  PASS  backslashes are normalised before dirname"
-    PASS=$((PASS + 1))
-else
-    echo "  FAIL  dirname runs on the raw path; Git Bash returns '.' for C:\\..."
-    FAIL=$((FAIL + 1))
-fi
+# Case 16: a backslash path must not defeat SCRIPT_DIR.
+#
+# Driven through the hook's own `resolve_script_dir` seam, because the failure
+# cannot be produced by invocation here: `bash "/tmp/x\hooks\session-start"`
+# just fails to open on Linux, where a backslash is an ordinary filename
+# character rather than a separator.
+#
+# CLAUDE_PLUGIN_ROOT is deliberately pointed somewhere USELESS. The second
+# chance would otherwise rescue the unnormalised path and the case would pass
+# with the substitution deleted — which is exactly what the first two attempts
+# at this test did. Only normalisation can find the answer here.
+tmp_bs=$(mktemp -d)
+mkdir -p "$tmp_bs/hooks" "$tmp_bs/decoy"
+cp "$SANITIZER" "$tmp_bs/hooks/"
+(
+    MASTER_SKILL_HOOK_TEST_ONLY=1
+    export MASTER_SKILL_HOOK_TEST_ONLY
+    # shellcheck source=/dev/null
+    . "$HOOK"
+    win="${tmp_bs//\//\\}\\hooks\\session-start"
+    got=$(CLAUDE_PLUGIN_ROOT="$tmp_bs/decoy" resolve_script_dir "$win")
+    if [ "$got" = "$tmp_bs/hooks" ]; then
+        echo "  PASS  a backslash invocation still resolves to hooks/"
+        exit 0
+    fi
+    printf "  FAIL  backslash path resolved to %s (wanted %s)\n" "$got" "$tmp_bs/hooks"
+    exit 1
+) && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
+
+# Case 16b: the second chance normalises too — CLAUDE_PLUGIN_ROOT is itself a
+# backslash path on the platform that needs it. Here the first path is made to
+# fail (a source that does not exist), so only the second chance can answer.
+(
+    MASTER_SKILL_HOOK_TEST_ONLY=1
+    export MASTER_SKILL_HOOK_TEST_ONLY
+    # shellcheck source=/dev/null
+    . "$HOOK"
+    got=$(CLAUDE_PLUGIN_ROOT="${tmp_bs//\//\\}" resolve_script_dir "/nowhere/session-start")
+    if [ "$got" = "$tmp_bs/hooks" ]; then
+        echo "  PASS  a backslash CLAUDE_PLUGIN_ROOT is normalised too"
+        exit 0
+    fi
+    printf "  FAIL  second chance kept backslashes: %s\n" "$got"
+    exit 1
+) && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
+rm -rf "$tmp_bs"
+
+# Case 17: with no python3 at all, every host still gets its OWN payload shape
+# carrying the five modes. The first fallback hardcoded the top-level
+# `additionalContext` key, which Claude Code does not read — functionally the
+# `{}` it was written to replace — and carried zero mode lines while the
+# comment above it promised them.
+nopy=$(mktemp -d)
+for b in bash sh cat printf dirname pwd grep; do
+    src=$(command -v "$b" 2>/dev/null) && ln -sf "$src" "$nopy/" 2>/dev/null
+done
+check_host() {
+    local label="$1" expected_key="$2"
+    shift 2
+    local out
+    out=$(env -i PATH="$nopy" "$@" bash "$HOOK" 2>/dev/null)
+    printf '%s' "$out" | python3 -c "
+import json, sys
+ctx = json.load(sys.stdin)
+key = next(iter(ctx))
+body = (ctx.get('hookSpecificOutput', {}).get('additionalContext')
+        or ctx.get('additionalContext') or ctx.get('additional_context') or '')
+sys.exit(0 if key == '$expected_key' and body.count(chr(10) + '  /') == 5 else 1)
+" 2>/dev/null
+}
+for spec in "claude:hookSpecificOutput:CLAUDE_PLUGIN_ROOT=$SCRIPT_DIR/../.."             "cursor:additional_context:CURSOR_PLUGIN_ROOT=$SCRIPT_DIR/../.."             "copilot:additionalContext:COPILOT_CLI=1"; do
+    label=${spec%%:*}; rest=${spec#*:}; key=${rest%%:*}; envvar=${rest#*:}
+    if check_host "$label" "$key" "$envvar"; then
+        printf "  PASS  no python3, %s host: %s with 5 modes\n" "$label" "$key"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL  no python3, %s host: wrong key or missing modes\n" "$label"
+        FAIL=$((FAIL + 1))
+    fi
+done
+rm -rf "$nopy"
 
 echo
 printf "Summary: %d passed, %d failed\n" "$PASS" "$FAIL"

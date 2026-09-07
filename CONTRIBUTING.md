@@ -342,13 +342,14 @@ v0.8 在 `meta.json` 引入 `lore_triggers`，让 runtime 在用户提问命中 
 
 ## § 7 依赖 PR（Dependabot 自动开）
 
-本仓库自 v0.8 起开启 [Dependabot](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates)，每周一自动开三类依赖升级 PR：
+本仓库自 v0.8 起开启 [Dependabot](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates)，每周一自动开四类依赖升级 PR：
 
 | 生态 | 监控目标 |
 |------|---------|
 | `github-actions` | `.github/workflows/*.yml` 中所有 SHA-pin 的 actions |
 | `npm` | `package.json` 依赖 + workflow 中 `npm install -g promptfoo@<ver>` |
-| `pip` | `requirements.txt`（validate / fidelity 工具链） |
+| `pip` | `requirements.txt` + `requirements-eval.txt`（validate / fidelity 工具链） |
+| `cargo` | `desktop/Cargo.lock`（408 个 crate；桌面版是**唯一**下载即执行的产物） |
 
 **maintainer review 流程**（也欢迎贡献者帮忙跑）：
 
