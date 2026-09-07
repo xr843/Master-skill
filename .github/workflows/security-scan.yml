@@ -128,11 +128,14 @@ jobs:
         # 408 crates behind eframe/egui, and the only artifact in this repo
         # that users download and run as an executable.
         #
-        # NOT `--deny warnings`: two of the four suppressions below are
-        # "unmaintained" notices with no fixed version in existence, so
-        # --deny warnings would paint this job red permanently, for something
-        # no one can act on. A false red is worse than no check — the same
-        # conclusion clawhub-publish.yml reached the hard way.
+        # NOT `--deny warnings`. The scan reports two "unmaintained" notices
+        # (paste, ttf-parser) with no fixed version in existence; cargo-audit
+        # already scores those as warnings rather than errors, and
+        # --deny warnings would promote them into a permanent red over
+        # something nobody can act on. A false red is worse than no check —
+        # the same conclusion clawhub-publish.yml reached the hard way. They
+        # are therefore left visible and unsuppressed; the only --ignore flags
+        # are the two below.
         #
         # Measured 2026-09-06 with cargo-audit 0.22.2: 4 vulnerabilities and
         # 2 warnings. Only two distinct advisories are suppressed, and only

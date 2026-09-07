@@ -17,6 +17,9 @@ on:
       - 'references/**'
       - 'ETHICS.md'
       - 'requirements.txt'
+      # The eval pins gate a job that carries a live API key; a push touching
+      # only them must not skip validation.
+      - 'requirements-eval.txt'
       - 'README.md'
       - 'README_EN.md'
       - 'CONTRIBUTING.md'

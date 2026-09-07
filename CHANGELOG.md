@@ -34,7 +34,7 @@ It earned its place on the first local run, three times over:
 - **`pytest>=8.3,<9` — the pin added yesterday — capped below a security fix.**
   PYSEC-2026-1845: pytest through 9.0.2 on UNIX uses the predictable directory
   `/tmp/pytest-of-{user}`, allowing a local denial of service or possible
-  privilege escalation. Now `>=9.0.3,<10`; all 630 tests verified unchanged
+  privilege escalation. Now `>=9.0.3,<10`; full suite verified unchanged
   under 9.1.1.
 - **Two fixable advisories in the desktop dependency tree**, in the one artifact
   users download and execute: `webbrowser 1.2.1 → 1.2.4`

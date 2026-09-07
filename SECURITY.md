@@ -116,9 +116,14 @@ Master-skill 作为 AgentSkill 插件 + NPX CLI，主要关注以下安全面：
 - **GitHub Actions 全部 SHA pin**：所有 `uses:` 引用都锁定到完整 commit SHA + 版本注释，防止 tag 被重打（mutable tag attack）。Dependabot 每周一自动开 PR 升级。
 - **npm 发布使用 OIDC Trusted Publishing**：发版无需长期 `NPM_TOKEN` secret，改用 GitHub Actions OIDC id-token 在 npmjs.com 换取短期发布凭据。
 - **npm provenance attestation**：每次 `npm publish` 附带 sigstore 透明日志可验证的构建溯源，安装方可通过 `npm install --foreground-scripts master-skill` + `npm audit signatures` 验证。
-- **发布二进制的溯源**：`master-skill-desktop` 的三平台产物随发布附带 `.sha256`，并由
-  `actions/attest-build-provenance` 签发 Sigstore 构建证明。校验：
-  `gh attestation verify <file> --repo xr843/Master-skill`。
+- **发布产物的完整性与溯源**：发布附带一份 `SHA256SUMS` 清单（由 `assemble` job 生成并当场
+  `sha256sum --check` 自验），三个**原始二进制**另由 `actions/attest-build-provenance`
+  签发 Sigstore 构建证明。校验：
+  `gh attestation verify master-skill-desktop-linux-x86_64 --repo xr843/Master-skill`。
+  注意 attestation 只覆盖三个裸二进制，**不覆盖两个 `.tar.gz`** ——
+  Linux/macOS 用户若下载压缩包，用 `SHA256SUMS` 校验，或解包后校验里面的二进制。
+  （此处一度写作"随发布附带 `.sha256`"：那是本分支的一版草稿，已被 #157 的
+  `SHA256SUMS` 方案取代，而工作流的资产清单契约根本产不出 `.sha256`。）
 - **代码扫描（SAST）与漏洞库比对**（`security-scan.yml`，2026-09-06 新增；此前全仓**零** SAST、
   四个生态**零**告警库比对）：
   - **CodeQL** `security-extended` 查 `python` / `javascript-typescript` / `actions`
