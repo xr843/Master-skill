@@ -828,3 +828,75 @@ def test_the_result_never_mixes_metadata_into_the_id_mapping(monkeypatch):
     assert set(res.verdicts) == {"111", "222"}
     assert all(not k.startswith("_") for k in res.verdicts)
     assert all(v is True or v is False or v is None for v in res.verdicts.values())
+
+
+# --------------------------------------------------------------------------
+# 放行凭据的三个漏洞（独立审查发现，均已复现）。
+#
+# 上一轮只把链接里的 `\d` 收紧成 `[0-9]`，并在注释里写下「识别 id 宽松是安全的、
+# 只有放行凭据危险」。三条都证明那句话讲对了道理、没讲全范围：
+#   - 放行凭据当时还是个**无锚子串**，任何含该子串的 URL 都能放行；
+#   - 一个链接被复用给同块内**每一条** id；
+#   - `_SHORT_FORM` 不是识别器而是**解析器**，宽松让它 over-resolve 成通过。
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("link", "why"),
+    [
+        ("https://evil.example.com/?ref=fojin.app/texts/123", "域名只是查询串的一部分"),
+        ("https://myfojin.app/texts/123", "近似域名"),
+        ("https://evil.com/https://fojin.app/texts/123", "把真链接嵌进恶意路径"),
+        ("fojin.app/texts/123", "裸域名无 scheme —— 全仓真实引用一律带 https"),
+    ],
+)
+def test_a_link_that_does_not_point_at_fojin_does_not_whitelist(link, why):
+    r = audit_answer(HUINENG, f"【《伪经》，T99n9999】 {link}")
+    assert r["live"] == [], why
+    assert "T99n9999" in r["fabricated"], why
+
+
+def test_one_link_cannot_whitelist_several_fabricated_ids_in_one_block():
+    """那个链接顶多指向其中一部经，其余几条连『它指谁』都无从谈起。
+
+    歧义时判伪造 —— 放行凭据必须失败即安全。
+    """
+    ans = ("【《伪甲》，T99n9991；《伪乙》，T99n9992；《伪丙》，T99n9993】"
+           " https://fojin.app/texts/13013")
+    r = audit_answer(HUINENG, ans)
+    assert r["live"] == []
+    assert sorted(r["fabricated"]) == ["T99n9991", "T99n9992", "T99n9993"]
+
+
+def test_a_single_unresolved_id_with_a_link_is_still_live():
+    """别修过头：一块一 id 一链接，仍是本审计器认可的合法形态。"""
+    r = audit_answer(HUINENG, "【《達磨大師血脉論》，X1218】→ https://fojin.app/texts/13013")
+    assert ("X1218", "13013") in r["live"]
+    assert r["fabricated"] == []
+
+
+def test_a_fullwidth_short_form_is_not_resolved_into_a_declared_source():
+    """`T１９１１` 在任何平台都解析不出来，不能被报成『已核验的声明源』。
+
+    `_SHORT_FORM` 是解析器不是识别器：`\\d` 吃全角、`int()` 再归一，
+    结果不是多抓一条判伪造，而是 over-resolve 成通过。
+    """
+    r = audit_answer({"T46n1911"}, "【摩诃止观，T１９１１】")
+    assert r["offline"] == []
+    assert r["fabricated"] == ["T１９１１"]
+
+
+def test_the_ascii_short_form_still_resolves():
+    """对照组：半角短号必须照旧对回声明的完整号。"""
+    r = audit_answer({"T46n1911"}, "【摩诃止观，T1911】")
+    assert r["offline"] == ["T46n1911"]
+
+
+def test_an_absurdly_long_number_does_not_raise():
+    """`int()` 在 4300 位以上抛 ValueError。
+
+    这条路跑在 check_response 里，而 check_response 在 grade_one 的 try 之外 ——
+    一条畸形引文足以掀翻整轮已经付过钱的并发评测。
+    """
+    r = audit_answer({"T46n1911"}, "【x，T" + "9" * 5000 + "】")
+    assert r["fabricated"], "应判伪造而不是抛异常"
