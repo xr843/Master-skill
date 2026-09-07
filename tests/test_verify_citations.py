@@ -6,6 +6,8 @@ import time
 import pytest
 from pathlib import Path
 
+import pytest
+
 verify_citations = importlib.import_module("verify_citations")
 audit_answer = verify_citations.audit_answer
 load_declared_ids = verify_citations.load_declared_ids
