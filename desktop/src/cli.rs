@@ -21,7 +21,10 @@ impl CliClient {
     pub fn new(repo_root: impl Into<PathBuf>) -> Self {
         Self {
             repo_root: repo_root.into(),
-            node_bin: std::env::var("NODE").unwrap_or_else(|_| "node".to_string()),
+            // Through the same helper as the other two: `NODE=` set but blank
+            // used to resolve to "", which spawns nothing at all. It predates
+            // the python/npm resolvers and did not get their guard.
+            node_bin: resolve_interpreter(std::env::var_os("NODE"), "node", "node"),
             python_bin: default_python_bin(),
             npm_bin: default_npm_bin(),
             home: None,

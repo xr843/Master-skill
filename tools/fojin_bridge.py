@@ -10,6 +10,7 @@ an unwritten feature as a shipped one is its own kind of unverified claim.
 import json
 import logging
 import os
+import time
 from typing import Optional
 from urllib.parse import urlparse
 
@@ -25,6 +26,10 @@ MAX_RESPONSE_BYTES = 16 * 1024 * 1024
 # host that accepts the connection and then says nothing held the old code for
 # the full 30s. Connecting is either fast or not happening.
 DEFAULT_TIMEOUT = (5, 30)
+
+# Wall clock for a whole streamed body. `stream=True` applies the read timeout
+# to each chunk, not to the transfer, so a slow drip never trips it.
+READ_DEADLINE = 60.0
 
 
 class FojinUnavailableError(Exception):
@@ -205,23 +210,37 @@ class FojinBridge:
         return json.loads(body)
 
     @staticmethod
-    def _read_capped(resp) -> bytes:
-        """Read a response body, refusing one over MAX_RESPONSE_BYTES.
+    def _read_capped(resp, deadline: float | None = None) -> bytes:
+        """Read a response body, refusing one that is too large or too slow.
 
-        Checked while reading rather than from Content-Length, which a hostile
-        or merely chunked response need not send truthfully.
+        The size is checked while reading rather than from Content-Length,
+        which a hostile or merely chunked response need not send truthfully.
+
+        Two things the first version missed:
+
+        - it accumulated a list of chunks and then `b"".join`ed them, so at the
+          16 MB cap the peak was ~32 MB — the copy defeats part of the point of
+          capping at all. A single bytearray grows in place.
+        - `stream=True` moves the read timeout to *per chunk*, so a sender
+          dripping one byte inside every read window could hold the connection
+          indefinitely without ever tripping the size cap. A wall-clock
+          deadline closes that.
         """
-        chunks: list[bytes] = []
-        total = 0
+        limit = deadline if deadline is not None else time.monotonic() + READ_DEADLINE
+        body = bytearray()
         for chunk in resp.iter_content(64 * 1024):
-            total += len(chunk)
-            if total > MAX_RESPONSE_BYTES:
+            body += chunk
+            if len(body) > MAX_RESPONSE_BYTES:
                 raise FojinUnavailableError(
                     f"FoJin API response exceeded {MAX_RESPONSE_BYTES} bytes; "
                     "refusing to buffer it"
                 )
-            chunks.append(chunk)
-        return b"".join(chunks)
+            if time.monotonic() > limit:
+                raise FojinUnavailableError(
+                    f"FoJin API response took longer than {READ_DEADLINE}s to "
+                    "arrive; abandoning it"
+                )
+        return bytes(body)
 
     def test_connection(self) -> bool:
         """Test if FoJin API is reachable."""

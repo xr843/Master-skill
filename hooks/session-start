@@ -8,23 +8,55 @@
 # runs with "async": false at every startup / clear / compact.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Backslashes normalised first. run-hook.cmd invokes this as
+# `bash "C:\...\hooks\session-start"`, and under Git Bash `dirname` on a
+# backslash path returns "." — SCRIPT_DIR silently became the current
+# directory, session_start.py was not found, and the hook emitted `{}`.
+SELF="${BASH_SOURCE[0]//\\//}"
+SCRIPT_DIR="$(cd "$(dirname "$SELF")" 2>/dev/null && pwd)" || SCRIPT_DIR=""
+if [ -z "$SCRIPT_DIR" ] || [ ! -f "$SCRIPT_DIR/session_start.py" ]; then
+    # Last resort before giving up on locating ourselves.
+    SCRIPT_DIR="${CLAUDE_PLUGIN_ROOT:-${CURSOR_PLUGIN_ROOT:-}}/hooks"
+fi
+PLUGIN_ROOT="$(cd "$SCRIPT_DIR/.." 2>/dev/null && pwd)" || PLUGIN_ROOT=""
 
-# Fail closed. The previous fallback was `|| echo "\"$CONTEXT\""`, which on a
-# machine without python3 emitted an unescaped multi-line string where JSON
-# was expected. An empty object is the only safe thing to hand something that
-# splices its input into a system prompt.
+# Degrading to `{}` drops the five mode commands too, which the bash version
+# this replaced always emitted regardless of what it found. Those are static
+# text — nothing about them can fail — so losing them is pure loss. This is
+# the floor: the plugin still announces its modes even when the roster cannot
+# be built.
+fallback() {
+    echo "master-skill session-start: $1; listing modes only" >&2
+    python3 - <<'PYFALLBACK' 2>/dev/null || printf '%s\n' '{"additionalContext":"Master-skill plugin loaded."}'
+import json, os
+context = (
+    "Master-skill plugin loaded.\n"
+    "  /master-help — not sure which master or mode? start here\n"
+    "  /compare-masters — multi-tradition comparison\n"
+    "  /master-debate — 4-round adversarial dialectic between masters\n"
+    "  /master-curriculum — staged learning path within a tradition\n"
+    "  /create-master — generate new master from FoJin knowledge graph"
+)
+if os.environ.get("CURSOR_PLUGIN_ROOT"):
+    payload = {"additional_context": context}
+elif os.environ.get("CLAUDE_PLUGIN_ROOT") and not os.environ.get("COPILOT_CLI"):
+    payload = {"hookSpecificOutput": {"additionalContext": context}}
+else:
+    payload = {"additionalContext": context}
+print(json.dumps(payload))
+PYFALLBACK
+}
+
 if ! command -v python3 >/dev/null 2>&1; then
-    echo '{}'
+    # No python3 at all: not even the fallback heredoc can run, so emit the
+    # one shape that needs nothing. Never an unescaped string — an earlier
+    # version did that and handed invalid JSON to a system-prompt splicer.
+    printf '%s\n' '{"additionalContext":"Master-skill plugin loaded."}' 
     exit 0
 fi
 
-# A failure here must stay visible. `|| echo '{}'` alone once hid a
-# UnicodeEncodeError behind a well-formed empty payload — the harness saw
-# valid JSON, exit 0, and no masters. stderr is not part of the hook protocol,
-# so writing there degrades safely while leaving a trace.
-if ! python3 "$SCRIPT_DIR/session_start.py" "$PLUGIN_ROOT"; then
-    echo "master-skill session-start hook failed; injecting no masters" >&2
-    echo '{}'
+if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$SCRIPT_DIR/session_start.py" ]; then
+    fallback "could not locate session_start.py"
+elif ! python3 "$SCRIPT_DIR/session_start.py" "$PLUGIN_ROOT"; then
+    fallback "session_start.py failed"
 fi

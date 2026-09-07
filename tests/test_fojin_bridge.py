@@ -187,3 +187,36 @@ def test_the_streamed_response_is_always_closed():
     bridge.session = type("S", (), {"get": staticmethod(lambda *a, **k: response)})()
     assert bridge._get("/api/stats") == {}
     assert response.closed, "a streamed response holds its connection until closed"
+
+
+def test_a_slow_drip_is_abandoned_rather_than_held_forever():
+    """`stream=True` moves the read timeout to per-chunk, not per-transfer.
+
+    A sender emitting one byte inside every read window never trips the size
+    cap and never times out — the connection is held for as long as it likes.
+    """
+    import time as _time
+
+    class _Dripping:
+        closed = False
+
+        def raise_for_status(self):
+            return None
+
+        def iter_content(self, _size):
+            while True:
+                yield b"x"
+
+        def close(self):
+            self.closed = True
+
+    with pytest.raises(FojinUnavailableError, match="longer than"):
+        FojinBridge._read_capped(_Dripping(), deadline=_time.monotonic() - 1)
+
+# The "no second full copy" property (a chunk list plus `b"".join` peaked at
+# twice the cap it enforced) is deliberately NOT asserted. The first attempt
+# grepped the function source for `b"".join` and matched the docstring that
+# explains the fix — a test that reads the comment instead of the code. There
+# is no behavioural difference to observe from outside: both versions raise at
+# the same threshold. Left as a code property with its reasoning in the
+# docstring, rather than as a test that only looks like one.

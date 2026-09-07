@@ -244,6 +244,40 @@ else
     FAIL=$((FAIL + 1))
 fi
 
+# Case 15: when the hook cannot find session_start.py it must still emit the
+# five mode commands, not `{}`. The bash version this replaced was
+# self-contained and always printed them; the rewrite made the whole payload
+# contingent on locating a second file. That matters on the run-hook.cmd →
+# Git Bash path, where `dirname` on a backslash path returns "." and
+# SCRIPT_DIR silently becomes the current directory.
+tmp_hook=$(mktemp -d)
+cp "$HOOK" "$tmp_hook/session-start"
+out=$(cd "$tmp_hook" && CLAUDE_PLUGIN_ROOT=/nonexistent bash ./session-start 2>/dev/null)
+modes=$(printf '%s' "$out" | python3 -c '
+import json, sys
+ctx = json.load(sys.stdin)
+body = (ctx.get("hookSpecificOutput", {}).get("additionalContext")
+        or ctx.get("additionalContext") or ctx.get("additional_context") or "")
+print(body.count("  /"))
+' 2>/dev/null || echo 0)
+if [ "${modes:-0}" -eq 5 ]; then
+    echo "  PASS  a hook that cannot find its script still lists the modes"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL  degraded payload lost the mode commands (%s of 5)\n" "$modes"
+    FAIL=$((FAIL + 1))
+fi
+rm -rf "$tmp_hook"
+
+# Case 16: a Windows-style backslash path must not defeat SCRIPT_DIR.
+if grep -q 'BASH_SOURCE\[0\]//' "$HOOK"; then
+    echo "  PASS  backslashes are normalised before dirname"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL  dirname runs on the raw path; Git Bash returns '.' for C:\\..."
+    FAIL=$((FAIL + 1))
+fi
+
 echo
 printf "Summary: %d passed, %d failed\n" "$PASS" "$FAIL"
 exit $([ "$FAIL" -eq 0 ] && echo 0 || echo 1)

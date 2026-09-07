@@ -23,7 +23,6 @@ import json
 import os
 import re
 import sys
-import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -83,10 +82,18 @@ DEFAULT_PROVIDER = "anthropic"
 # your account's limits.
 DEFAULT_CONCURRENCY = 4
 
-# Per-request ceiling. Both SDKs default to 600s, which combined with CI jobs
-# that carry no `timeout-minutes` means one wedged call can burn a runner for
-# six hours. 300s is well above a slow reasoning answer and well below that.
+# Per-ATTEMPT ceiling, which is not the same as per-fixture. Both SDKs retry
+# twice by default, so `timeout=300` is a ~900s wall for one fixture — and
+# fidelity-full's job cap is 60 minutes, so four wedged fixtures could eat the
+# whole sweep. Retries are capped here too, and the two numbers are multiplied
+# into an explicit budget rather than left for the reader to discover.
 DEFAULT_REQUEST_TIMEOUT = 300.0
+DEFAULT_MAX_RETRIES = 2
+
+
+def per_fixture_ceiling(timeout: float, retries: int) -> float:
+    """Worst-case seconds one fixture can hold, retries included."""
+    return timeout * (retries + 1)
 
 # Anything shaped like a provider credential, stripped before an error string
 # is written to a report. `eval/reports/0.10.1-c697d5d.json` carries 127 raw
@@ -621,6 +628,7 @@ def run_tests(
     max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS,
     concurrency: int = DEFAULT_CONCURRENCY,
     request_timeout: float = DEFAULT_REQUEST_TIMEOUT,
+    max_retries: int = DEFAULT_MAX_RETRIES,
 ) -> dict:
     """Run fidelity tests for a master. Returns summary."""
     # 目录叫 `master-<slug>`,而公开写在 README / package.json 里的调用形式是短名
@@ -696,7 +704,7 @@ def run_tests(
                 "anthropic package not installed. Run: pip install anthropic",
                 provider,
             )
-        client = anthropic.Anthropic(api_key=api_key)
+        client = anthropic.Anthropic(api_key=api_key, max_retries=max_retries)
         send = lambda body: client.messages.create(  # noqa: E731
             **body, timeout=request_timeout
         )
@@ -709,7 +717,9 @@ def run_tests(
                 "openai package not installed. Run: pip install openai",
                 provider,
             )
-        client = openai.OpenAI(api_key=api_key, base_url=spec["base_url"])
+        client = openai.OpenAI(
+            api_key=api_key, base_url=spec["base_url"], max_retries=max_retries
+        )
         send = lambda body: client.chat.completions.create(  # noqa: E731
             **body, timeout=request_timeout
         )
@@ -802,7 +812,6 @@ def run_tests(
     by_index: dict[int, dict] = {}
     passed = 0
     failed = 0
-    log_lock = threading.Lock()
     done = 0
 
     # NOT `with ThreadPoolExecutor(...)`. Its `__exit__` calls
@@ -827,16 +836,19 @@ def run_tests(
                 else:
                     failed += 1
                 if not quiet:
-                    with log_lock:
-                        done += 1
-                        # One whole line per fixture. The old "print the prompt,
-                        # then the verdict on the same line" shape interleaves
-                        # into nonsense the moment more than one call is open.
-                        print(
-                            f"  [{done}/{len(tests)}] #{i + 1} "
-                            f"{tests[i]['q'][:50]}... {label}",
-                            flush=True,
-                        )
+                    # No lock: `as_completed` yields on the calling thread, so
+                    # this counter and this print are single-threaded. The lock
+                    # that used to be here guarded nothing and implied the
+                    # opposite.
+                    done += 1
+                    # One whole line per fixture. The old "print the prompt,
+                    # then the verdict on the same line" shape interleaves
+                    # into nonsense the moment more than one call is open.
+                    print(
+                        f"  [{done}/{len(tests)}] #{i + 1} "
+                        f"{tests[i]['q'][:50]}... {label}",
+                        flush=True,
+                    )
         except KeyboardInterrupt:
             interrupted = True
             print(
@@ -863,6 +875,11 @@ def run_tests(
         # concurrent run can meet rate limits a serial one never would, and
         # those arrive as api_errors that look like nothing else.
         "concurrency": workers,
+        # Recorded together: a reader comparing two runs needs to know the
+        # per-fixture wall, not just the per-attempt one.
+        "request_timeout": request_timeout,
+        "max_retries": max_retries,
+        "per_fixture_ceiling_s": per_fixture_ceiling(request_timeout, max_retries),
         # 中断的运行必须能与完整运行区分 —— 否则一份跑了 12/211 的结果读起来
         # 和跑完的一样,正是本仓一直在修的形状。
         "interrupted": interrupted,
@@ -983,7 +1000,16 @@ def main() -> int:
         "--request-timeout",
         type=float,
         default=DEFAULT_REQUEST_TIMEOUT,
-        help="Seconds before one API call is abandoned (default %(default)s)",
+        help=(
+            "Seconds before one API ATTEMPT is abandoned (default %(default)s). "
+            "With --max-retries the per-fixture wall is timeout x (retries+1)."
+        ),
+    )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=DEFAULT_MAX_RETRIES,
+        help="SDK retries per fixture (default %(default)s)",
     )
     args = parser.parse_args()
 
@@ -1020,6 +1046,7 @@ def main() -> int:
             max_output_tokens=args.max_output_tokens,
             concurrency=args.concurrency,
             request_timeout=args.request_timeout,
+            max_retries=args.max_retries,
         )
         all_results.append(result)
 
