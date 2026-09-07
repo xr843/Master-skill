@@ -243,14 +243,37 @@ _CONTROL_CHARS = re.compile(
 )
 
 
+# Everything this tool prints lands in an agent's context window, and the
+# formatters cap each snippet but not how many there are — they render whatever
+# `items` the endpoint returned. Asking for `--top_k 5` and being handed 10,000
+# produced 6.4 million characters in a measurement, from a service this repo
+# does not control and whose data is enriched from third-party editable sources.
+#
+# The cap lives here rather than in each formatter because `emit` is the single
+# place all four commands pass through: a formatter added later cannot route
+# around it. Truncation is announced, so a short answer is never mistaken for a
+# complete one.
+MAX_EMIT_CHARS = 60_000
+
+
 def emit(body: str) -> None:
     """Print a retrieval result wrapped in a data boundary, with control chars
-    and any forged boundary lines stripped so the fence can't be broken out of."""
+    and any forged boundary lines stripped so the fence can't be broken out of,
+    and the whole thing capped so it cannot flood the caller's context."""
     cleaned = _CONTROL_CHARS.sub("", body or "")
     # Loop until stable — a single replace pass is defeatable by overlapping
     # boundary lines that rejoin into a fresh marker after the inner one is cut.
     while _EMIT_HEADER in cleaned or _EMIT_FOOTER in cleaned:
         cleaned = cleaned.replace(_EMIT_HEADER, "").replace(_EMIT_FOOTER, "")
+    if len(cleaned) > MAX_EMIT_CHARS:
+        # Truncated AFTER the boundary strip, so the cut cannot leave a partial
+        # marker behind that the next pass would not see.
+        dropped = len(cleaned) - MAX_EMIT_CHARS
+        cleaned = (
+            cleaned[:MAX_EMIT_CHARS]
+            + f"\n[已截断:检索结果超过 {MAX_EMIT_CHARS} 字符,省略 {dropped} 字符。"
+            "这不是完整结果 —— 缩小查询范围或降低 --top_k 后重试。]"
+        )
     print(f"{_EMIT_HEADER}\n{cleaned}\n{_EMIT_FOOTER}")
 
 
