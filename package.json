@@ -83,6 +83,8 @@
     "LICENSE",
     "README.md",
     "README_EN.md",
+    "!scripts/tests",
+    "!hooks/tests",
     "!**/__pycache__",
     "!**/*.pyc"
   ]

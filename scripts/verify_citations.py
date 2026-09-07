@@ -23,7 +23,10 @@ import json
 import os
 import re
 import sys
+import threading
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import NamedTuple
 
 from _masterpaths import resolve_master_dir
 
@@ -427,24 +430,117 @@ def audit_answer(
     }
 
 
-def verify_online(text_ids: list[str], base_url: str = "https://fojin.app", timeout: int = 15) -> dict:
+# 每个 id 的核验结果是**三态**,不是布尔:
+#   True  → 200 + 有 JSON 正文,确实解析得到
+#   False → 404,平台明确说没有这个 id —— 唯一该硬失败的信号
+#   None  → 5xx / 连接失败 / 返回的不是 JSON,不知道
+# 旧版把这三种压成一个布尔,再让任何一次异常 `return {"_unreachable": True}`,
+# 于是一次网络抖动就把**已经验成功的全部结果丢掉**,整轮降级成一条警告。
+# "查不出来" 和 "查过了,没问题" 从此长得一样 —— 正是本仓一直在修的那个形状。
+VERIFY_TIMEOUT = 15
+VERIFY_WORKERS = 8
+
+
+def _check_one_text_id(session_factory, base_url: str, tid: str, timeout: int):
+    """核验单个 text_id,返回 (三态结果, 说明)。异常一律收敛成 None,不外抛。"""
+    try:
+        resp = session_factory().get(f"{base_url}/api/texts/{tid}", timeout=timeout)
+    except Exception as e:  # noqa: BLE001 — 传输层失败是"不知道",不是"不存在"
+        return None, f"{type(e).__name__}: {e}"
+    if resp.status_code == 404:
+        return False, "404"
+    if resp.status_code != 200:
+        return None, f"HTTP {resp.status_code}"
+    try:
+        payload = resp.json()
+    except ValueError:
+        # 200 却不是 JSON:通常是网关错误页,不能据此断定 id 不存在。
+        return None, "200 但正文不是 JSON"
+    if payload:
+        return True, ""
+    # 200 + 空正文归 None,不归 False —— 上面刚写下「404 是唯一该硬失败的信号」,
+    # 这里返回 False 就是在自己的契约上开口子。空信封可能来自 FoJin 换了外层结构、
+    # 一次读半截、或 CDN 改写了 body;拿它判伪造,会在平台抖动时把**正确**引用
+    # 批量打成伪造 —— 同一段注释说过那比漏检更糟。真的不存在,平台会回 404。
+    return None, "200 但正文为空"
+
+
+class OnlineVerification(NamedTuple):
+    """一次 --online 核验的完整结果。
+
+    最初的版本把这些塞进**同一个字典**:`{tid: 三态, "_reasons": {...}}`,
+    再让调用方 pop 掉那个下划线键。也就是说字典里有一个键不是 text_id,而
+    「是不是 text_id」只能靠命名约定分辨 —— 这正是本仓一直在修的那种形状:
+    两种语义长得一样,靠调用方记得区分。忘了 pop 也不会炸,只会把 `_reasons`
+    当成一个永远核验通过的引文,静静地混进统计里。
+    """
+
+    #: tid -> True(解析得到) / False(404,确定不存在) / None(查不出来)
+    verdicts: dict
+    #: tid -> 说明,只对 False / None 有值
+    reasons: dict
+    #: 整体不可达时的原因;可达时为 None
+    unreachable: str | None = None
+
+    @property
+    def fabricated(self) -> list:
+        """平台明确回 404 的 —— 唯一该判失败的。"""
+        return sorted(t for t, ok in self.verdicts.items() if ok is False)
+
+    @property
+    def unknown(self) -> list:
+        """传输层没给出答案的 —— 报出来,但不算伪造。"""
+        return sorted(t for t, ok in self.verdicts.items() if ok is None)
+
+
+def verify_online(
+    text_ids: list[str],
+    base_url: str = "https://fojin.app",
+    timeout: int = VERIFY_TIMEOUT,
+    workers: int = VERIFY_WORKERS,
+) -> OnlineVerification:
     """best-effort:GET /api/texts/{id} 看 live 引文的 text_id 是否真解析。
 
-    网络不可达时返回 {'_unreachable': True},调用方按告警处理(不硬失败)。
+    requests 缺失或**每一个** id 都查不出结果时,`unreachable` 带上原因;
+    部分失败不再吃掉部分成功。
     """
     try:
         import requests
     except ImportError:
-        return {"_unreachable": True, "_reason": "requests 未安装"}
+        return OnlineVerification({}, {}, "requests 未安装")
+
+    unique = sorted(set(text_ids))
+    if not unique:
+        return OnlineVerification({}, {})
+
+    # requests.Session 的线程安全性没有保证,所以每个线程持有自己的那个。
+    local = threading.local()
+
+    def session_factory():
+        if not hasattr(local, "session"):
+            local.session = requests.Session()
+        return local.session
+
     out: dict = {}
-    sess = requests.Session()
-    for tid in text_ids:
-        try:
-            r = sess.get(f"{base_url}/api/texts/{tid}", timeout=timeout)
-            out[tid] = r.status_code == 200 and bool(r.json())
-        except Exception as e:  # noqa: BLE001 — 网络层一律降级为不可达
-            return {"_unreachable": True, "_reason": str(e)}
-    return out
+    reasons: dict[str, str] = {}
+    with ThreadPoolExecutor(max_workers=max(1, min(workers, len(unique)))) as pool:
+        futures = {
+            pool.submit(_check_one_text_id, session_factory, base_url, tid, timeout): tid
+            for tid in unique
+        }
+        for future in as_completed(futures):
+            tid = futures[future]
+            out[tid], reason = future.result()
+            if reason:
+                reasons[tid] = reason
+
+    if all(v is None for v in out.values()):
+        first = next(iter(reasons.values()), "未知原因")
+        return OnlineVerification(
+            out, reasons, f"{len(out)} 个 id 全部无法核验({first})"
+        )
+
+    return OnlineVerification(out, reasons)
 
 
 def main() -> int:
@@ -474,13 +570,24 @@ def main() -> int:
 
     if args.online and report["live"]:
         res = verify_online([tid for _, tid in report["live"]])
-        if res.get("_unreachable"):
-            print(f"⚠ --online 跳过:FoJin 不可达({res.get('_reason')})", file=sys.stderr)
+        if res.unreachable:
+            print(f"⚠ --online 跳过:FoJin 不可达({res.unreachable})", file=sys.stderr)
         else:
-            bad = [tid for tid, ok in res.items() if not ok]
-            if bad:
-                print(f"✗ live 引文 text_id 无法解析: {bad}", file=sys.stderr)
+            # 只有平台明确回 404 才算伪造 —— 5xx / 超时 / 网关错误页说明的是
+            # 网络状况,不是引文真伪,拿它判 fabricated 会在 FoJin 抖动时把正确
+            # 引用打成伪造,那比漏检更糟。
+            if res.fabricated:
+                print(f"✗ live 引文 text_id 无法解析: {res.fabricated}", file=sys.stderr)
                 exit_code = 1
+            if res.unknown:
+                # 报出来而不是静默算过 —— 「没查成」必须与「查过没问题」可区分。
+                detail = ", ".join(
+                    f"{t}({res.reasons.get(t, '?')})" for t in res.unknown
+                )
+                print(
+                    f"⚠ {len(res.unknown)} 条 live 引文未能核验: {detail}",
+                    file=sys.stderr,
+                )
 
     if exit_code == 0:
         print("✓ 全部引文可核验")

@@ -1,0 +1,44 @@
+# Dependencies only the paid fidelity eval and CI need — kept out of
+# requirements.txt so `npx master-skill` users never install them.
+#
+# WHY THESE ARE PINNED HARD while requirements.txt uses floors:
+#
+# CI ran `pip install -r requirements.txt anthropic` — completely unpinned —
+# in the same job that carries ANTHROPIC_API_KEY in its environment. Two
+# problems, one supply-chain and one measurement:
+#
+#   1. Any release of any of these lands straight in a process holding a live
+#      API key. A floor is not a defence there; an exact version is.
+#   2. `anthropic` is at 1.4.0 on PyPI while every fidelity number in
+#      eval/reports/ was produced against the 0.x line. A grading harness that
+#      silently changes SDK major versions between runs is not an instrument.
+#
+# 0.122.0 is verified to carry the API surface scripts/test-fidelity.py uses:
+# messages.create(model, max_tokens, system, messages, timeout), and
+# Message.stop_reason / TextBlock.text on the response. Dependabot proposes
+# bumps weekly; a major bump is where that check gets made again, on purpose,
+# by a person.
+anthropic==0.122.0
+
+# >=9.0.3, not the 8.x line this file first pinned. PYSEC-2026-1845: pytest
+# through 9.0.2 on UNIX uses the predictable directory name
+# `/tmp/pytest-of-{user}`, which lets a local user cause a denial of service
+# or possibly escalate privileges. `pytest>=8.3,<9` capped *below* the fix.
+#
+# Found by the pip-audit job added alongside this line — on its first run,
+# against a pin written the day before. Which is the argument for the job.
+# Verified: the full suite passes unchanged under pytest 9.1.1.
+pytest>=9.0.3,<10
+
+# The deepseek / gemini providers go through the OpenAI-compatible client
+# (test-fidelity.py imports `openai`, and its ImportError branch tells you to
+# install it), so leaving it out meant `--provider deepseek` could not run from
+# a clean checkout — while the guard test only grepped for anthropic and pytest.
+#
+# `==`, same reasoning as anthropic above, and pinned to the version actually
+# verified rather than a plausible floor: 2.29.0 carries
+# `chat.completions.create(model, max_tokens, messages, timeout)`, which is
+# exactly what build_request() sends. openai is at 3.x on PyPI and the 3.x line
+# is where `max_tokens` gives way to `max_completion_tokens` — the kind of
+# change a floor would have walked into silently, mid-sweep, with a live key.
+openai==2.29.0

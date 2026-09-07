@@ -6,6 +6,12 @@ version: 2
 #   - npm:            bumps the (currently empty) package.json deps + the
 #     globally-pinned promptfoo@<ver> in persona-fidelity.yml.
 #   - pip:            bumps requirements.txt (Python validators).
+#   - cargo:          bumps desktop/Cargo.toml + Cargo.lock (408 crates behind
+#     eframe/egui). This was the ecosystem NOT covered until 2026-09-06 — and
+#     the only one whose output is an executable users download and run
+#     directly from Releases. npm and pip ship source you can read; the
+#     desktop binary is opaque, so an unwatched dependency tree there is the
+#     worst place to have one.
 #
 # All updates open weekly Monday PRs with the `dependencies` label plus an
 # ecosystem-specific label so the maintainer can filter quickly. Major-
@@ -53,6 +59,21 @@ updates:
     labels:
       - "dependencies"
       - "pip"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "cargo"
+    directory: "/desktop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "rust"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"

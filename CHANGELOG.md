@@ -10,6 +10,15 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+v0.11.0's theme was that the verification layer was not verified. This batch
+verified it — adjudicating the first full-coverage run by hand, fixing what
+that adjudication found broken in the judge and the citation auditor, then
+having the whole batch independently reviewed. The review found the
+anti-fraud gate built specifically to catch unverified claims had the same
+defect it existed to prevent, plus nine smaller ones. All ten are fixed, none
+were waved through, and the fixes that touch persona content (`master-help`)
+went through review as content, not as code.
+
 ### Fixed — four ways a fabricated citation could pass the offline gate (2026-09-07)
 
 `verify_citations.py` is the deterministic mirror of the runtime citation
@@ -50,6 +59,164 @@ should not wait on a branch of CI and performance changes.
 
 v0.11.0 stated the fabrication gap rather than closing it, and stated it too
 generously. This batch closes it and corrects the number.
+### Added — SAST and advisory-database scanning, which found a CVE in the pin written the day before (2026-09-06)
+
+There was no static analysis in this repo of any kind, and no advisory-database
+check on any of its four ecosystems. Dependabot answers "is this dependency
+old?"; it does not answer "does the version we pin have a known CVE?", and it
+says nothing at all about the code we wrote. New `security-scan.yml` adds
+CodeQL (`python`, `javascript-typescript`, and `actions` — the last catches
+script injection in `run:` blocks, a mistake this repo has already had to reason
+about once), `cargo audit`, `pip-audit`, and `dependency-review` on PRs.
+
+It earned its place on the first local run, three times over:
+
+- **`pytest>=8.3,<9` — the pin added yesterday — capped below a security fix.**
+  PYSEC-2026-1845: pytest through 9.0.2 on UNIX uses the predictable directory
+  `/tmp/pytest-of-{user}`, allowing a local denial of service or possible
+  privilege escalation. Now `>=9.0.3,<10`; full suite verified unchanged
+  under 9.1.1.
+- **Two fixable advisories in the desktop dependency tree**, in the one artifact
+  users download and execute: `webbrowser 1.2.1 → 1.2.4`
+  (RUSTSEC-2026-0257, Unix `BROWSER` argument injection) and `event-listener
+  5.4.1 → 5.4.2` (RUSTSEC-2026-0221, `!Send` values crossing thread
+  boundaries). Both fixed here.
+- **`cargo-audit 0.21.2` cannot read the current RustSec database.** It aborts
+  with "unsupported CVSS version: 4.0" before examining a single crate, so
+  pinning it — as the first draft of this workflow did — would have painted the
+  job red on every run in every repo. Pinned to 0.22.2, the version the local
+  run actually used. `pip-audit` is likewise pinned to the 2.10.0 that found
+  the pytest CVE, not to a plausible-looking number.
+
+Running the new workflow on a real PR surfaced one more thing local runs could
+not: **this repository's dependency graph is disabled**, and the same switch
+gates Dependabot *security alerts*. So `dependabot.yml` covering four
+ecosystems has been opening version-currency PRs every Monday while GitHub
+reported no CVE against a held dependency, ever — which is a large part of why
+the pytest and webbrowser advisories above went unnoticed. The
+Both were turned on the same day, and the `dependency-review` job carries no
+skip-if-disabled branch: if that setting is ever switched off again the job
+should go red, because the alerting it gates goes silent at the same moment.
+
+Turning them on also answered a question worth recording, by contradicting the
+expectation that came with it. Dependabot alerts stayed at 0, and that is the
+correct answer: of the five RustSec advisories against this repo's crates, the
+GitHub Advisory Database carries exactly one — a 2023 `webbrowser` advisory
+for `< 0.8.3`, which does not touch the 1.2.x here. It has nothing for
+`event-listener`, `quick-xml`, `paste`, or `ttf-parser`, and nothing for
+RUSTSEC-2026-0257, the `webbrowser` argument injection actually fixed above.
+GHSA's Rust coverage is materially thinner than RustSec's, so `cargo audit` is
+not redundant with Dependabot alerts — it is the only thing that sees four of
+those five. The Python side runs the other way: PYSEC-2026-1845 came from
+`pip-audit`.
+
+Two `quick-xml` advisories (RUSTSEC-2026-0194/0195, both DoS) are suppressed
+with the reasoning written where a red build would land: both copies are held
+below the 0.41.0 fix by upstream — `zbus_xml 4.0` and `wayland-scanner`, the
+latter a proc-macro that parses XML shipped inside the crate at build time and
+has no runtime exposure at all. An unsuppressed informational `cargo audit`
+runs first, so the ignore list can silence an exit code but never a finding.
+The two "unmaintained" notices are deliberately left unsuppressed: cargo-audit
+already scores them as warnings rather than errors, and hiding something that
+breaks nothing only trains the eye to skip it.
+
+### Fixed — the released Windows desktop binary could not spawn Python or npm
+
+`desktop/src/cli.rs` hardcoded `python3` and `npm`. Neither resolves on
+Windows: Python ships as `python.exe` there (the Store's `python3` is a stub),
+and npm is `npm.cmd` while Rust's `Command` appends only `.exe` to a bare name
+and does not consult PATHEXT. This repo's own Node suite already encodes the
+Python half — `tests/cli.test.mjs` has `platform === "win32" ? "python" :
+"python3"` — but the Rust client did not.
+
+Nothing caught it because nothing looks: `desktop-rust` runs on ubuntu-latest
+only, and `release-desktop.yml` builds a Windows binary but smoke-tests the
+Linux one. Both are now platform-resolved, with `MASTER_SKILL_PYTHON` /
+`MASTER_SKILL_NPM` overrides matching the existing `NODE` one.
+
+### Security & Performance — a security/performance pass over the whole repo (2026-09-06)
+
+Findings and fixes from auditing the repo end to end. The baseline was already
+strong — every action SHA-pinned, least-privilege permissions everywhere, no
+`pull_request_target`, npm publish on OIDC + provenance, no `shell=True` /
+`eval` / `pickle` / unsafe `yaml.load`, path traversal guarded on both the
+Node and Python sides, and RAG output already fenced against prompt injection.
+What follows is what that baseline did not cover.
+
+**The required gate that has never graded anything.** Branch protection
+requires `Fidelity smoke (1 master × 1 fixture)`; the repo's only secret is
+`CLAWHUB_TOKEN`, so the job takes the "no key → `{"skipped": true}` → exit 0"
+path and goes green in ~10s, every time, including on maintainer branches. Not
+paying for LLM-judge grading in CI is a decision (CONTRIBUTING.md §2) and it
+stands. Its invisibility does not: a required check's green tick looks the same
+either way. Advisory gates must now be declared in `ADVISORY_GATES` with a note
+saying what they do not check, per **job** rather than per file; undeclared
+ones fail, stale declarations fail, and the roster prints on every successful
+`npm test`. `vars.FIDELITY_GRADING_REQUIRED=true` makes the skip a hard failure
+the day the secret exists.
+
+**`check-gate-liveness.py` had a check that never ran.** The anti-fake-green
+script shipped `check_graded_suites_graded_something` fully written, with four
+unit tests, and unreferenced by `run_all()`. It is now wired, fed by
+`--fidelity-report`, and both CI fidelity jobs pipe their report through it.
+
+**A fabricated citation could be laundered by a fullwidth digit.** Python's
+`\d` is Unicode-wide, so `fojin.app/texts/１２３` — a URL fojin.app cannot
+resolve — whitelisted an undeclared citation as `live`. Narrowed to `[0-9]+`,
+and deliberately only there: loose *id* matching over-detects and fails safe,
+while a loose whitelist under-detects and passes.
+
+**One network hiccup silently disabled the online check.** `verify_online`
+fetched ids serially at 15s each and turned any single exception into
+`{"_unreachable": True}`, discarding everything already verified. Verification
+is three-state now — 404 is the only hard failure, transport errors are
+"unknown" and are reported rather than counted as passes — and the fetches run
+in a pool.
+
+**The release binary chose whose code to run from the working directory.**
+`master-skill-desktop` walked up from the cwd for `prebuilt/` +
+`scripts/test-fidelity.py` and then executed `python3`/`node` out of whatever
+it found, silently. Added `MASTER_SKILL_REPO_ROOT`, a refusal for group- or
+world-writable roots on Unix, and — for the case no permission bit can decide —
+it now announces the resolved root before executing anything from it.
+
+The binaries also carry a Sigstore build attestation now. Checksums were not
+part of this — `#157` landed a verified `SHA256SUMS` manifest on main while
+this branch was open, and did it better than the per-file `.sha256` drafted
+here, which was dropped in favour of it. What `#157` did not add is
+provenance: a manifest proves the assets match each other, not that they came
+from this repo's workflow rather than from anyone able to upload under the
+same names. npm publish has had `--provenance` since v0.8; the one artifact
+users run directly as an executable had nothing.
+
+**Supply chain.** Dependabot was missing the `cargo` ecosystem — the only one
+whose output is an opaque executable, 408 crates behind eframe/egui. CI's
+`pip install … anthropic` was entirely unconstrained in the job that carries
+`ANTHROPIC_API_KEY`; the eval deps now live in a pinned `requirements-eval.txt`.
+Provider error strings are redacted before reaching reports that get committed.
+
+**Performance, measured rather than assumed.** The local suite (10.7s), CI
+(~3.5 min end to end) and the npm tarball (424 kB) were all fine and were left
+alone. Two things were not:
+
+- *Fidelity grading ran one fixture at a time.* `0.10.1-c697d5d.json` records
+  04:06:00Z → 04:50:39Z to grade 84 fixtures, ~31s each; a full 211-fixture
+  DeepSeek sweep took 1h55m. Now pooled at `--concurrency 4`, with the setting
+  recorded in the report because a parallel run can meet rate limits a serial
+  one cannot. Plus `--request-timeout` (both SDKs default to 600s).
+- *The SessionStart hook started 17 python3 processes.* One per master to
+  sanitize a `lineage:` value, plus one for JSON, on a blocking hook that runs
+  at every startup / clear / compact. Measured 0.370s → **0.023s**. The
+  rewrite also fixed a long-standing bug it exposed: the master list was built
+  with `\n` inside a plain bash assignment and printed with a bare `echo`, so
+  all fifteen masters reached the system prompt on one line with literal
+  backslash-n between them.
+
+CI additionally gained per-job `timeout-minutes` (the GitHub default is 360),
+`concurrency` cancellation for superseded runs, and pip/cargo caching. Package
+contents, SECURITY.md's claims, and the eval-dependency pins are now covered by
+tests — SECURITY.md had been listing a required check that is not required and
+promising fixes for the 0.8.x line while main is 0.11.
 
 ### Fixed — Ouyi's Jiaxing source uses its canonical CBETA identifier
 - **《靈峰蕅益大師宗論》 is `J36nB348`, not `J36n0348`.** The earlier declaration dropped the Jiaxing catalogue's `B`, producing the invalid FoJin lookup `J0348`. Metadata validation now accepts canonical Jiaxing ids, source and answer auditors map `J36nB348` to short form `JB348`, and Ouyi's declaration and CBETA Online links use the canonical id. FoJin still does not resolve `JB348`; that external coverage gap remains tracked in #158.

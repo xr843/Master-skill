@@ -230,3 +230,160 @@ def test_this_repo_passes_the_liveness_check(liveness):
     root = Path(__file__).resolve().parents[2]
     problems = liveness.run_all(root)
     assert problems == [], "gate liveness problems: " + "; ".join(problems)
+
+
+# --------------------------------------------------------------------------
+# Advisory gates must be declared, and declarations must not outlive the job.
+#
+# The repo shipped a *required* branch-protection check — "Fidelity smoke" —
+# that exits 0 whenever ANTHROPIC_API_KEY is unset, which it always has been.
+# Nothing was wrong with the check; it just never graded anything, and a green
+# tick looks identical either way. These assert the skip has to be declared.
+# --------------------------------------------------------------------------
+
+
+def _wf(job_id, *, name=None, run='if [ -z "${SOME_KEY:-}" ]; then exit 0; fi'):
+    job = {"steps": [{"run": run}]}
+    if name:
+        job["name"] = name
+    return {".github/workflows/x.yml": {"jobs": {job_id: job}}}
+
+
+def test_undeclared_silent_skip_is_a_problem(liveness):
+    problems = liveness.check_advisory_gates_declared(_wf("g", name="Undeclared Gate"))
+    assert len(problems) == 1
+    assert "Undeclared Gate" in problems[0]
+
+
+def test_declared_advisory_gate_is_clean(liveness, monkeypatch):
+    monkeypatch.setitem(liveness.ADVISORY_GATES, "Known Gate", "grades nothing without a key")
+    assert liveness.check_advisory_gates_declared(_wf("g", name="Known Gate")) == []
+
+
+def test_job_without_a_name_key_is_reported_by_its_job_id(liveness):
+    """GitHub falls back to the job id — so must the roster, or it can't match."""
+    problems = liveness.check_advisory_gates_declared(_wf("bare-job-id"))
+    assert "bare-job-id" in problems[0]
+
+
+def test_a_silent_job_cannot_hide_behind_a_declared_sibling(liveness, monkeypatch):
+    """Per-job, not per-file: validate-and-test.yml holds six jobs.
+
+    A file-level check passes the whole file once any one job is declared,
+    which is exactly how a newly-silent seventh job would slip in.
+    """
+    monkeypatch.setitem(liveness.ADVISORY_GATES, "Declared", "known advisory")
+    docs = {
+        ".github/workflows/x.yml": {
+            "jobs": {
+                "a": {"name": "Declared", "steps": [{"run": 'if [ -z "${K:-}" ]; then exit 0; fi'}]},
+                "b": {"name": "Sneaky", "steps": [{"run": 'if [ -z "${K:-}" ]; then exit 0; fi'}]},
+            }
+        }
+    }
+    problems = liveness.check_advisory_gates_declared(docs)
+    assert len(problems) == 1
+    assert "Sneaky" in problems[0]
+
+
+def test_job_with_no_secret_skip_is_not_flagged(liveness):
+    """Don't cry wolf: an ordinary job must stay clean."""
+    assert liveness.check_advisory_gates_declared(_wf("g", name="Normal", run="pytest -q")) == []
+
+
+def test_stale_declaration_is_a_problem(liveness, monkeypatch):
+    monkeypatch.setitem(liveness.ADVISORY_GATES, "Renamed Away", "caveat")
+    problems = liveness.check_declared_gates_still_exist(
+        {".github/workflows/x.yml": {"jobs": {"g": {"name": "Current Name", "steps": []}}}}
+    )
+    assert any("Renamed Away" in p for p in problems)
+
+
+def test_this_repos_own_advisory_gates_all_still_exist(liveness):
+    """The roster is checked against the real workflows, not a fixture.
+
+    If a job is renamed, this fails here rather than silently un-declaring it.
+    """
+    root = Path(__file__).resolve().parent.parent.parent
+    assert liveness.check_declared_gates_still_exist(liveness.read_workflows(root)) == []
+
+
+def test_this_repos_own_silent_skips_are_all_declared(liveness):
+    root = Path(__file__).resolve().parent.parent.parent
+    assert liveness.check_advisory_gates_declared(liveness.read_workflows(root)) == []
+
+
+# --------------------------------------------------------------------------
+# The graded-suite check must actually be reachable from run_all().
+#
+# It shipped fully written and unit-tested but unreferenced — the anti-fake-
+# green script had a check that itself never ran.
+# --------------------------------------------------------------------------
+
+
+def test_load_fidelity_suites_ignores_a_declared_skip(liveness, tmp_path):
+    report = tmp_path / "r.json"
+    report.write_text(json.dumps({"skipped": True, "reason": "no_api_key"}), encoding="utf-8")
+    assert liveness.load_fidelity_suites(report) == []
+
+
+def test_load_fidelity_suites_wraps_a_single_suite_object(liveness, tmp_path):
+    report = tmp_path / "r.json"
+    report.write_text(json.dumps({"master": "m", "mode": "graded", "results": []}), encoding="utf-8")
+    assert len(liveness.load_fidelity_suites(report)) == 1
+
+
+def test_run_all_flags_a_report_that_graded_nothing(liveness, tmp_path):
+    """End-to-end through run_all — the wiring, not just the function."""
+    report = tmp_path / "r.json"
+    report.write_text(
+        json.dumps([{"master": "master-zhiyi", "mode": "graded",
+                     "results": [{"status": "api_error"}] * 3}]),
+        encoding="utf-8",
+    )
+    root = Path(__file__).resolve().parent.parent.parent
+    problems = liveness.run_all(root, report)
+    assert any("graded nothing" in p for p in problems)
+
+
+def test_run_all_is_clean_on_a_report_with_real_verdicts(liveness, tmp_path):
+    report = tmp_path / "r.json"
+    report.write_text(
+        json.dumps([{"master": "master-zhiyi", "mode": "graded",
+                     "results": [{"status": "PASS"}, {"status": "FAIL"}]}]),
+        encoding="utf-8",
+    )
+    root = Path(__file__).resolve().parent.parent.parent
+    assert liveness.run_all(root, report) == []
+
+
+# --------------------------------------------------------------------------
+# The --fidelity-report wiring must itself be non-vacuous.
+#
+# First version: `if fidelity_report is not None and fidelity_report.exists()`.
+# A missing path made run_all return [] and the script print "every gate
+# examined a non-empty set" about a report it never opened — the exact
+# statement it exists to make impossible.
+# --------------------------------------------------------------------------
+
+
+def test_a_named_report_that_does_not_exist_is_a_problem(liveness, tmp_path):
+    root = Path(__file__).resolve().parent.parent.parent
+    problems = liveness.run_all(root, tmp_path / "never-written.json")
+    assert any("does not exist" in p for p in problems)
+
+
+def test_an_empty_report_that_declares_no_skip_is_a_problem(liveness, tmp_path):
+    report = tmp_path / "r.json"
+    report.write_text("[]", encoding="utf-8")
+    root = Path(__file__).resolve().parent.parent.parent
+    problems = liveness.run_all(root, report)
+    assert any("no suites" in p for p in problems)
+
+
+def test_a_report_that_declares_a_skip_is_clean(liveness, tmp_path):
+    """The advisory path is accounted for by ADVISORY_GATES, not by this."""
+    report = tmp_path / "r.json"
+    report.write_text(json.dumps({"skipped": True, "reason": "no_api_key"}), encoding="utf-8")
+    root = Path(__file__).resolve().parent.parent.parent
+    assert liveness.run_all(root, report) == []

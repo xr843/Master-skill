@@ -88,7 +88,34 @@ def test_assembler_downloads_every_matrix_leg_with_a_pinned_action():
 def test_only_assembler_receives_release_write_permission():
     assert WORKFLOW.get("permissions") == {"contents": "read"}
     assert _job("build").get("permissions") is None
-    assert _job("assemble").get("permissions") == {"contents": "write"}
+    # The assembler also mints the Sigstore attestation, which needs an OIDC
+    # token and attestation write. Still the only job holding anything beyond
+    # read — the matrix builders remain read-only.
+    assert _job("assemble").get("permissions") == {
+        "contents": "write",
+        "id-token": "write",
+        "attestations": "write",
+    }
+
+
+def test_released_binaries_carry_a_build_attestation():
+    """SHA256SUMS proves the assets match each other, not where they came from.
+
+    Anyone able to upload an asset can upload a matching manifest beside it.
+    Provenance is what ties a binary to this repo's workflow run, and it is
+    what `npm publish --provenance` has given the JS half since v0.8 while the
+    executable half had nothing.
+    """
+    step = _step("assemble", "Attest build provenance")
+    assert step.get("if") == "github.event_name == 'release'"
+    assert step.get("uses", "").startswith("actions/attest-build-provenance@")
+    # SHA-pinned like every other action here.
+    assert len(step["uses"].split("@", 1)[1].split()[0]) == 40
+    subjects = step["with"]["subject-path"].split()
+    # The binaries themselves, not the checksum file — signing a manifest only
+    # moves the question one hop.
+    assert "dist/SHA256SUMS" not in subjects
+    assert len(subjects) == 3
 
 
 def test_assembler_generates_and_verifies_sorted_checksums(tmp_path: Path):

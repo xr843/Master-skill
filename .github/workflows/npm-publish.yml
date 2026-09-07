@@ -52,6 +52,7 @@ jobs:
   gate:
     name: Full suite (publish gate)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
@@ -64,9 +65,13 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            requirements-eval.txt
 
       - name: Install dependencies
-        run: pip install -r requirements.txt pytest
+        run: pip install -r requirements.txt -r requirements-eval.txt
 
       # Validators, the fidelity dry-run, and the node suite — which packs a
       # real tarball, installs it, deletes the extracted source and exercises
@@ -86,6 +91,7 @@ jobs:
   publish:
     needs: gate
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment:
       name: npm
       url: https://www.npmjs.com/package/master-skill

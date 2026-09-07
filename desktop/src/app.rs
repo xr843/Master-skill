@@ -401,8 +401,21 @@ impl MasterSkillApp {
             read_only_reason,
             load_message: trace_load_message,
         } = open_trace_store(&trace_path, TRACE_STORE_CAPACITY);
+        // The GUI executes `python3 <root>/scripts/…` and `node <root>/bin/…`
+        // out of the same discovered root that `--baseline` announces, and used
+        // to do so with no announcement at all — so the disclosure covered the
+        // headless path only, which is the one *least* likely to have been
+        // started from a directory somebody else chose.
+        //
+        // Known limitation, stated rather than papered over: this goes to
+        // stdout, so it is visible when the binary is launched from a terminal
+        // (how the README documents running it) and not when it is launched
+        // from a desktop entry. Surfacing it in the window itself is the real
+        // fix and is not done here.
+        let client = CliClient::default();
+        println!("{}", crate::cli::describe_repo_root(client.repo_root()));
         let mut app = Self {
-            client: CliClient::default(),
+            client,
             inventory: None,
             rows: Vec::new(),
             doctor: None,

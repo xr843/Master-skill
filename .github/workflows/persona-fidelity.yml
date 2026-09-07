@@ -42,10 +42,34 @@ on:
 permissions:
   contents: read
 
+# Superseded runs are cancelled: pushing three commits to a PR used to start
+# three full matrices and let all three finish.
+#
+# Keyed on `github.head_ref || github.ref`, not `github.ref` alone. For a PR,
+# the `push` and `pull_request` events carry different refs
+# (`refs/heads/<branch>` vs `refs/pull/N/merge`) and so landed in different
+# groups — two concurrent runs of the same workflow on the same commit, which
+# is half of what this was meant to stop. `head_ref` is set only on
+# pull_request events and names the source branch, so both now share a group.
+#
+# `cancel-in-progress: false` on main does NOT mean main runs independently —
+# it means they QUEUE, and GitHub cancels a *pending* run when a newer one
+# queues behind it. A merge landing while the Monday sweep holds the group can
+# therefore still be dropped. main is given its own per-run group instead, so
+# merges never contend at all.
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{
+      github.ref == 'refs/heads/main' && github.run_id
+      || github.head_ref || github.ref
+    }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   fidelity:
     name: Persona-fidelity schema + advisory eval
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
@@ -53,9 +77,13 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            requirements-eval.txt
 
       - name: Install Python deps (for repo-convention validator)
-        run: pip install -r requirements.txt pytest
+        run: pip install -r requirements.txt -r requirements-eval.txt
 
       - name: Run repo-convention validator (always)
         # This is the gate: filename convention, RAW/SPE/CUS coverage,

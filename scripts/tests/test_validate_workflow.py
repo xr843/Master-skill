@@ -306,6 +306,96 @@ def test_each_fidelity_no_key_branch_records_step_summary(job_name: str, step_na
     step = _step(WORKFLOW, job_name, step_name)
     script = step["run"]
     assert 'if [ -z "${ANTHROPIC_API_KEY:-}" ]; then' in script
-    assert script.count('echo "### Fidelity grading skipped"') == 1
+    assert script.count('echo "### Fidelity grading skipped') == 1
     assert '} >> "$GITHUB_STEP_SUMMARY"' in script
+    # The summary must say the tick graded nothing, not merely that a step was
+    # "skipped" — a required check reading green while having graded zero
+    # responses is the defect this branch exists to disclose.
+    assert "graded nothing" in script
     _assert_hard(step)
+
+
+@pytest.mark.parametrize(
+    ("job_name", "step_name"),
+    [
+        ("fidelity-smoke", "Run fidelity smoke"),
+        ("fidelity-full", "Run fidelity tests"),
+    ],
+)
+def test_each_fidelity_no_key_branch_can_be_promoted_to_a_hard_gate(
+    job_name: str, step_name: str
+):
+    """The advisory skip must be one repo variable away from failing.
+
+    Project policy is that CI does not pay for LLM-judge grading, so the key is
+    deliberately unset. That is a decision — but it has to be a *revocable* one
+    held in a single obvious place, not an emergent property of an `exit 0`.
+    """
+    step = _step(WORKFLOW, job_name, step_name)
+    assert step["env"].get("FIDELITY_GRADING_REQUIRED") == (
+        "${{ vars.FIDELITY_GRADING_REQUIRED }}"
+    )
+    script = step["run"]
+    assert '[ "${FIDELITY_GRADING_REQUIRED:-}" = "true" ]' in script
+    # …and the promoted branch must actually fail, not warn.
+    promoted = script.split('FIDELITY_GRADING_REQUIRED:-}" = "true" ]; then', 1)[1]
+    assert "exit 1" in promoted.split("fi", 1)[0]
+
+
+@pytest.mark.parametrize(
+    ("job_name", "step_name", "report"),
+    [
+        ("fidelity-smoke", "Run fidelity smoke", "fidelity-smoke.json"),
+        ("fidelity-full", "Run fidelity tests", "fidelity-results.json"),
+    ],
+)
+def test_each_graded_fidelity_run_is_checked_for_real_verdicts(
+    job_name: str, step_name: str, report: str
+):
+    """A run that reached the API must prove it produced verdicts.
+
+    `eval/reports/0.10.1-c697d5d.json` is the shape this guards: 127 of 211
+    calls returned HTTP 400 for an exhausted credit balance, so the suite
+    "completed" having graded 84. Without this line a suite where *every* call
+    errored exits 0 and reads as a clean pass.
+    """
+    script = _step(WORKFLOW, job_name, step_name)["run"]
+    assert f"check-gate-liveness.py --fidelity-report {report}" in script
+    # …and it has to be REACHABLE. `results_failed()` exits 1 on any FAIL /
+    # api_error / truncated and this `run:` is `bash -e`, so a plain sequence
+    # put the liveness check after a line that had already killed the step.
+    # The exit code must be captured and re-raised afterwards.
+    assert "set +e" in script, "the grading call must not abort the step"
+    liveness_at = script.index("check-gate-liveness.py --fidelity-report")
+    assert script.index("FIDELITY_EXIT=$?") < liveness_at
+    assert 'exit "$FIDELITY_EXIT"' in script[liveness_at:]
+    # `exit` must come LAST. Inserting it before the summary heredoc made that
+    # whole block unreachable — the smoke silently stopped reporting
+    # "N/M passed" — which shellcheck caught (SC2317) and local runs did not,
+    # because actionlint skips its shellcheck integration when shellcheck is
+    # not installed.
+    assert script.rstrip().endswith('exit "$FIDELITY_EXIT"'), (
+        "anything after the exit is dead code"
+    )
+
+
+def test_concurrency_never_lets_one_merge_cancel_another():
+    """`cancel-in-progress: false` does not make main runs independent.
+
+    It makes them QUEUE, and GitHub cancels a *pending* run when a newer one
+    queues behind it — so a merge landing while the Monday 60-minute sweep
+    holds the group could be dropped outright, which is the opposite of what
+    the first version of this comment asserted. main gets a per-run group.
+    """
+    group = WORKFLOW["concurrency"]["group"]
+    assert "github.run_id" in group, (
+        "main needs a per-run group; a shared non-cancelling group queues "
+        "merges behind the cron and drops the pending one"
+    )
+    assert "github.head_ref" in group, (
+        "keyed on github.ref alone, a PR's push and pull_request events land in "
+        "different groups and both run"
+    )
+    assert WORKFLOW["concurrency"]["cancel-in-progress"] == (
+        "${{ github.ref != 'refs/heads/main' }}"
+    )

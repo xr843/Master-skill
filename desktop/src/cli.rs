@@ -11,6 +11,8 @@ use crate::model::{DoctorReport, MasterInspect, SkillInventory};
 pub struct CliClient {
     repo_root: PathBuf,
     node_bin: String,
+    python_bin: String,
+    npm_bin: String,
     home: Option<PathBuf>,
     runner: CommandRunner,
 }
@@ -20,6 +22,8 @@ impl CliClient {
         Self {
             repo_root: repo_root.into(),
             node_bin: std::env::var("NODE").unwrap_or_else(|_| "node".to_string()),
+            python_bin: default_python_bin(),
+            npm_bin: default_npm_bin(),
             home: None,
             runner: CommandRunner::default(),
         }
@@ -69,7 +73,7 @@ impl CliClient {
 
     pub fn run_fidelity_dry_run(&self) -> Result<String> {
         self.run_command(
-            Command::new("python3")
+            Command::new(&self.python_bin)
                 .arg(self.repo_root.join("scripts").join("test-fidelity.py"))
                 .arg("--all")
                 .arg("--dry-run")
@@ -80,7 +84,7 @@ impl CliClient {
 
     pub fn run_fidelity_dry_run_for(&self, slug: &str) -> Result<String> {
         self.run_command(
-            Command::new("python3")
+            Command::new(&self.python_bin)
                 .arg(self.repo_root.join("scripts").join("test-fidelity.py"))
                 .arg("--master")
                 .arg(format!("master-{slug}"))
@@ -92,7 +96,7 @@ impl CliClient {
 
     pub fn run_full_validation(&self) -> Result<String> {
         self.run_command(
-            Command::new("npm").arg("test"),
+            Command::new(&self.npm_bin).arg("test"),
             "failed to run full validation",
         )
     }
@@ -156,6 +160,58 @@ impl CliClient {
     }
 }
 
+/// The Python interpreter to shell out to.
+///
+/// `python3` does not exist on a stock Windows install — Python ships as
+/// `python.exe`, and the Store's `python3` alias is a stub that opens the
+/// Store. This repo's own Node suite already encodes that
+/// (`tests/cli.test.mjs`: `platform === "win32" ? "python" : "python3"`);
+/// this file did not, so every Python call in the released Windows binary
+/// failed to spawn. Nothing caught it: `desktop-rust` runs on ubuntu-latest
+/// only, and release-desktop.yml smoke-tests the Linux artifact alone.
+fn default_python_bin() -> String {
+    resolve_interpreter(std::env::var_os("MASTER_SKILL_PYTHON"), "python", "python3")
+}
+
+/// The npm executable to shell out to.
+///
+/// npm on Windows is `npm.cmd`. Rust's `Command` resolves a bare name by
+/// appending `.exe` and does not consult PATHEXT, so `Command::new("npm")`
+/// simply never finds it there.
+///
+/// Naming a `.cmd` is safe *here* specifically because the only argument is
+/// the literal `test` — no caller-supplied string reaches the command line,
+/// which is the condition BatBadBut (CVE-2024-24576) turns on.
+fn default_npm_bin() -> String {
+    resolve_interpreter(std::env::var_os("MASTER_SKILL_NPM"), "npm.cmd", "npm")
+}
+
+/// The decision, with the environment passed in.
+///
+/// Split out for the same reason `resolve_repo_root_with` was, 100 lines down,
+/// and for the same reason its comment gives: driving these through
+/// `std::env::set_var` races the parallel test runner. The first version of
+/// this module did exactly that and claimed in a comment that restoring the
+/// variable made the race impossible — it does not, and the test failed 2 runs
+/// in 60. A flaky test in the code that decides which interpreter to execute
+/// is worse than no test.
+fn resolve_interpreter(
+    explicit: Option<std::ffi::OsString>,
+    windows_default: &str,
+    unix_default: &str,
+) -> String {
+    if let Some(value) = explicit {
+        if !value.is_empty() {
+            return value.to_string_lossy().into_owned();
+        }
+    }
+    if cfg!(windows) {
+        windows_default.to_string()
+    } else {
+        unix_default.to_string()
+    }
+}
+
 impl Default for CliClient {
     fn default() -> Self {
         Self::new(resolve_repo_root())
@@ -182,11 +238,147 @@ impl Default for CliClient {
 /// falls back to the compile-time `CARGO_MANIFEST_DIR`-based path so
 /// `cargo run` / `cargo test` source builds and other dev workflows keep
 /// behaving exactly as they did before runtime resolution was added.
-fn resolve_repo_root() -> PathBuf {
-    std::env::current_dir()
-        .ok()
-        .and_then(|cwd| find_repo_root_from(&cwd))
+///
+/// # Why this needs a guard
+///
+/// Whatever this returns, the app then executes: `python3 <root>/scripts/
+/// test-fidelity.py` and `node <root>/bin/cli.mjs`. A *discovered* root is
+/// therefore a decision about whose code to run, made from the current
+/// working directory alone. Running the binary in a directory somebody else
+/// can write to — a shared `/tmp`, a world-writable share — lets them choose
+/// that code by dropping `prebuilt/` and `scripts/test-fidelity.py` beside it.
+///
+/// Two mitigations, both deliberately cheap. Running inside a clone you chose
+/// is the documented workflow and stays untouched; this only removes the case
+/// where the directory was chosen *for* you:
+///
+///   1. `MASTER_SKILL_REPO_ROOT` states the root explicitly and skips
+///      discovery entirely.
+///   2. A discovered root that is group- or world-writable is refused (Unix
+///      only — the bits mean nothing on Windows). The fallback then applies,
+///      and the caller reports a resolved root that has no `prebuilt/` rather
+///      than silently running foreign code.
+pub fn resolve_repo_root() -> PathBuf {
+    resolve_repo_root_with(explicit_repo_root(), std::env::current_dir().ok())
+}
+
+/// The env override, normalized: absent and blank both mean "not set".
+///
+/// A blank value must not win — `MASTER_SKILL_REPO_ROOT=` would otherwise
+/// resolve to `""` and make every path in the app relative to the cwd.
+fn explicit_repo_root() -> Option<PathBuf> {
+    std::env::var_os("MASTER_SKILL_REPO_ROOT")
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+}
+
+/// The decision, with both inputs passed in.
+///
+/// Split out so the tests can drive it without `set_var`: mutating process
+/// globals races the parallel test runner, and a flaky test in the gate that
+/// guards code execution is worse than no test.
+fn resolve_repo_root_with(explicit: Option<PathBuf>, cwd: Option<PathBuf>) -> PathBuf {
+    if let Some(explicit) = explicit {
+        return explicit;
+    }
+    cwd.and_then(|cwd| find_repo_root_from(&cwd))
+        .filter(|root| is_safely_owned(root))
         .unwrap_or_else(compile_time_repo_root)
+}
+
+/// Whether a discovered directory is safe to execute code out of.
+///
+/// Unix: refuse group- or other-writable directories. Those are the ones a
+/// second party can plant a `scripts/test-fidelity.py` in — a shared `/tmp`,
+/// a group-writable share, a misconfigured home. Everywhere else there is no
+/// cheap equivalent signal, so this does not pretend to have one.
+///
+/// What it deliberately does NOT cover: a directory you own and wrote
+/// yourself — an extracted archive in `~/Downloads`, a cloned fork. Running
+/// the binary inside a repo you chose is the documented workflow, and no
+/// permission bit can distinguish a repo you trust from one you regret. That
+/// case is addressed by *announcing* the resolved root instead of silently
+/// executing from it; see `describe_repo_root`.
+#[cfg(unix)]
+fn is_safely_owned(root: &Path) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    match std::fs::metadata(root) {
+        Ok(meta) => meta.permissions().mode() & 0o022 == 0,
+        // Unreadable: refuse rather than guess.
+        Err(_) => false,
+    }
+}
+
+#[cfg(not(unix))]
+fn is_safely_owned(_root: &Path) -> bool {
+    true
+}
+
+/// One line naming the directory whose `scripts/` and `bin/` are about to be
+/// executed, and how it was chosen.
+///
+/// The binary runs `python3 <root>/scripts/test-fidelity.py` and
+/// `node <root>/bin/cli.mjs`. Which root that is used to be decided silently
+/// from the working directory. Printing it does not stop a bad root, but it
+/// is the difference between a user being able to notice one and not.
+pub fn describe_repo_root(root: &Path) -> String {
+    describe_repo_root_with(root, &RootProvenance::of(root))
+}
+
+/// How the resolved root was actually arrived at.
+///
+/// The first version of this printed "(discovered from the working directory)"
+/// whenever `MASTER_SKILL_REPO_ROOT` was unset — including the one case the
+/// guard exists for. A refused directory falls through to
+/// `compile_time_repo_root()`, a path from whichever machine built the binary,
+/// and the line then named a directory the user has never visited and called it
+/// discovered from their cwd, with no hint that anything had been rejected. A
+/// disclosure that misdescribes the case it was added for is worse than none.
+#[derive(Debug, PartialEq, Eq)]
+pub enum RootProvenance {
+    Explicit,
+    Discovered,
+    /// Discovery found a candidate and refused it; this is the build-time
+    /// fallback, which almost certainly does not exist here.
+    RefusedFellBack {
+        rejected: PathBuf,
+    },
+    /// Nothing qualified anywhere up the tree.
+    NoneFoundFellBack,
+}
+
+impl RootProvenance {
+    fn of(resolved: &Path) -> Self {
+        if explicit_repo_root().is_some() {
+            return Self::Explicit;
+        }
+        match std::env::current_dir()
+            .ok()
+            .and_then(|cwd| find_repo_root_from(&cwd))
+        {
+            Some(found) if found == resolved => Self::Discovered,
+            Some(rejected) => Self::RefusedFellBack { rejected },
+            None => Self::NoneFoundFellBack,
+        }
+    }
+}
+
+fn describe_repo_root_with(root: &Path, provenance: &RootProvenance) -> String {
+    let how = match provenance {
+        RootProvenance::Explicit => "MASTER_SKILL_REPO_ROOT".to_string(),
+        RootProvenance::Discovered => "discovered from the working directory".to_string(),
+        RootProvenance::RefusedFellBack { rejected } => format!(
+            "REFUSED {} as group- or world-writable; fell back to the build-time path",
+            rejected.display()
+        ),
+        RootProvenance::NoneFoundFellBack => {
+            "no repo found above the working directory; build-time path".to_string()
+        }
+    };
+    format!(
+        "repo root: {} ({how}) — its scripts/ and bin/ will be executed",
+        root.display()
+    )
 }
 
 /// The compile-time fallback: the parent of `desktop/` (this crate's
@@ -265,6 +457,181 @@ mod command_error_tests {
         assert!(message.contains("status"));
         assert!(message.contains("failure stdout marker"));
         assert!(message.contains("failure stderr marker"));
+    }
+}
+
+#[cfg(test)]
+mod interpreter_resolution_tests {
+    use super::{default_npm_bin, default_python_bin, resolve_interpreter};
+    use std::ffi::OsString;
+
+    /// The released Windows binary spawned `python3` and `npm`, neither of
+    /// which resolves there: Python ships as `python.exe`, npm as `npm.cmd`,
+    /// and Rust's `Command` appends only `.exe` to a bare name. Nothing
+    /// caught it — `desktop-rust` runs on ubuntu-latest and
+    /// release-desktop.yml smoke-tests only the Linux artifact.
+    ///
+    /// Asserted against literals rather than `cfg!(windows)`, so this cannot
+    /// become the tautology `cfg!(windows) == cfg!(windows)` that passes even
+    /// with the table inverted.
+    #[test]
+    fn each_platform_gets_the_name_that_exists_on_it() {
+        assert_eq!(resolve_interpreter(None, "python", "python3"), {
+            #[cfg(windows)]
+            {
+                "python"
+            }
+            #[cfg(not(windows))]
+            {
+                "python3"
+            }
+        });
+        assert_eq!(resolve_interpreter(None, "npm.cmd", "npm"), {
+            #[cfg(windows)]
+            {
+                "npm.cmd"
+            }
+            #[cfg(not(windows))]
+            {
+                "npm"
+            }
+        });
+    }
+
+    /// Matches the existing `NODE` override, and gives anyone on a venv,
+    /// pyenv, or a `python3`-less box a way out without editing the source.
+    #[test]
+    fn an_explicit_override_wins() {
+        let chosen = OsString::from("/opt/py/bin/python3.13");
+        assert_eq!(
+            resolve_interpreter(Some(chosen), "python", "python3"),
+            "/opt/py/bin/python3.13"
+        );
+    }
+
+    /// `MASTER_SKILL_NPM=` set but blank must not resolve to "".
+    #[test]
+    fn a_blank_override_falls_back_to_the_platform_default() {
+        let resolved = resolve_interpreter(Some(OsString::new()), "npm.cmd", "npm");
+        assert!(resolved == "npm" || resolved == "npm.cmd");
+    }
+
+    /// The wiring: the public helpers must read the variables they document.
+    #[test]
+    fn the_public_helpers_return_a_usable_name() {
+        assert!(!default_python_bin().is_empty());
+        assert!(!default_npm_bin().is_empty());
+    }
+}
+
+#[cfg(test)]
+mod repo_root_trust_tests {
+    use super::{describe_repo_root_with, is_safely_owned, resolve_repo_root_with, RootProvenance};
+    use std::path::{Path, PathBuf};
+
+    fn make_repo(dir: &Path) {
+        std::fs::create_dir_all(dir.join("prebuilt")).unwrap();
+        std::fs::create_dir_all(dir.join("scripts")).unwrap();
+        std::fs::write(dir.join("scripts").join("test-fidelity.py"), "").unwrap();
+    }
+
+    #[test]
+    fn explicit_root_wins_over_discovery() {
+        let temp = tempfile::tempdir().unwrap();
+        let discovered = temp.path().join("discovered");
+        make_repo(&discovered);
+        let chosen = temp.path().join("chosen");
+
+        let resolved = resolve_repo_root_with(Some(chosen.clone()), Some(discovered));
+        assert_eq!(resolved, chosen);
+    }
+
+    #[test]
+    fn a_safe_discovered_root_is_used() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("repo");
+        make_repo(&root);
+
+        assert_eq!(resolve_repo_root_with(None, Some(root.clone())), root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_world_writable_discovered_root_is_not_used() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("planted");
+        make_repo(&root);
+        std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o777)).unwrap();
+
+        // Falls back rather than executing out of a directory a second party
+        // can write `scripts/test-fidelity.py` into.
+        assert_ne!(resolve_repo_root_with(None, Some(root.clone())), root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn permission_bits_decide_which_directories_are_refused() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("repo");
+        make_repo(&root);
+
+        for (mode, expected) in [(0o755, true), (0o775, false), (0o777, false), (0o700, true)] {
+            std::fs::set_permissions(&root, std::fs::Permissions::from_mode(mode)).unwrap();
+            assert_eq!(is_safely_owned(&root), expected, "mode {mode:o}");
+        }
+    }
+
+    #[test]
+    fn an_unreadable_root_is_refused_rather_than_guessed() {
+        assert!(!is_safely_owned(Path::new(
+            "/definitely/not/a/real/path/xyzzy"
+        )));
+    }
+
+    #[test]
+    fn no_cwd_and_no_override_still_yields_a_path() {
+        assert_ne!(resolve_repo_root_with(None, None), PathBuf::from(""));
+    }
+
+    #[test]
+    fn the_disclosure_names_the_path_and_says_it_will_execute() {
+        let text =
+            describe_repo_root_with(Path::new("/tmp/some-repo"), &RootProvenance::Discovered);
+        assert!(text.contains("/tmp/some-repo"));
+        assert!(text.contains("will be executed"));
+        assert!(text.contains("discovered from the working directory"));
+
+        let explicit =
+            describe_repo_root_with(Path::new("/tmp/some-repo"), &RootProvenance::Explicit);
+        assert!(explicit.contains("MASTER_SKILL_REPO_ROOT"));
+    }
+
+    /// The case the guard exists for must not be described as the normal one.
+    #[test]
+    fn a_refused_directory_is_named_as_refused() {
+        let text = describe_repo_root_with(
+            Path::new("/build/machine/path"),
+            &RootProvenance::RefusedFellBack {
+                rejected: PathBuf::from("/tmp/world-writable"),
+            },
+        );
+        assert!(text.contains("REFUSED"));
+        assert!(
+            text.contains("/tmp/world-writable"),
+            "name what was rejected"
+        );
+        assert!(!text.contains("discovered from the working directory"));
+    }
+
+    #[test]
+    fn finding_nothing_is_not_described_as_a_discovery() {
+        let text = describe_repo_root_with(
+            Path::new("/build/machine/path"),
+            &RootProvenance::NoneFoundFellBack,
+        );
+        assert!(text.contains("no repo found"));
     }
 }
 

@@ -17,6 +17,9 @@ on:
       - 'references/**'
       - 'ETHICS.md'
       - 'requirements.txt'
+      # The eval pins gate a job that carries a live API key; a push touching
+      # only them must not skip validation.
+      - 'requirements-eval.txt'
       - 'README.md'
       - 'README_EN.md'
       - 'CONTRIBUTING.md'
@@ -53,10 +56,34 @@ on:
 permissions:
   contents: read
 
+# Superseded runs are cancelled: pushing three commits to a PR used to start
+# three full matrices and let all three finish.
+#
+# Keyed on `github.head_ref || github.ref`, not `github.ref` alone. For a PR,
+# the `push` and `pull_request` events carry different refs
+# (`refs/heads/<branch>` vs `refs/pull/N/merge`) and so landed in different
+# groups — two concurrent runs of the same workflow on the same commit, which
+# is half of what this was meant to stop. `head_ref` is set only on
+# pull_request events and names the source branch, so both now share a group.
+#
+# `cancel-in-progress: false` on main does NOT mean main runs independently —
+# it means they QUEUE, and GitHub cancels a *pending* run when a newer one
+# queues behind it. A merge landing while the Monday sweep holds the group can
+# therefore still be dropped. main is given its own per-run group instead, so
+# merges never contend at all.
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{
+      github.ref == 'refs/heads/main' && github.run_id
+      || github.head_ref || github.ref
+    }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   validate:
     name: Validate SKILL.md & fidelity structure
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
@@ -78,11 +105,15 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            requirements-eval.txt
 
       - name: Install dependencies
         # -r requirements.txt, not a hardcoded list — otherwise dependabot
         # bumps to the version bounds never reach CI.
-        run: pip install -r requirements.txt pytest
+        run: pip install -r requirements.txt -r requirements-eval.txt
 
       - name: Lint SKILL.md frontmatter (includes v0.8 persona-fidelity sub-check)
         run: python scripts/validate.py --strict
@@ -158,12 +189,17 @@ jobs:
   python-compat:
     name: Generator compatibility (Python 3.9)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: "3.9"
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            requirements-eval.txt
 
       - name: Install generator dependencies
         run: python -m pip install -r requirements.txt
@@ -192,6 +228,7 @@ jobs:
   cli-windows:
     name: CLI tests (Windows)
     runs-on: windows-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
@@ -202,6 +239,10 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: "3.11"
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            requirements-eval.txt
 
       - name: Install generator dependencies
         run: python -m pip install -r requirements.txt
@@ -218,6 +259,7 @@ jobs:
   desktop-rust:
     name: Desktop Rust tests
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
@@ -230,6 +272,26 @@ jobs:
             libxcb-render0-dev \
             libxcb-shape0-dev \
             libxcb-xfixes0-dev
+
+      - name: Cache cargo registry and target dir
+        # 408 crates behind eframe/egui, rebuilt from scratch on every run.
+        # Keyed on Cargo.lock so a dependency bump invalidates it and nothing
+        # else does; the OS is in the key because a target dir is not portable.
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            desktop/target
+          # `-cargo-deps-`, not a bare `-cargo-`. actions/cache resolves a
+          # restore-key by PREFIX, so `${{ runner.os }}-cargo-` would also match
+          # security-scan.yml's cargo-audit binary cache — one file, no
+          # registry, no target dir. On the first Cargo.lock change (the weekly
+          # Dependabot cargo PR) this job would miss its exact key, restore
+          # that instead, and rebuild all 408 crates while logging a cache hit.
+          key: ${{ runner.os }}-cargo-deps-${{ hashFiles('desktop/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-deps-
 
       - name: Show Rust toolchain
         run: |
@@ -251,6 +313,7 @@ jobs:
   fidelity-smoke:
     name: Fidelity smoke (1 master × 1 fixture)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: validate
     # Cost cap: one basic-difficulty question per PR, Sonnet 4.6 pricing
     # with ~10k-token system prompt → under $0.05/PR. Forks have no secret
@@ -264,9 +327,13 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            requirements-eval.txt
 
       - name: Install dependencies
-        run: pip install -r requirements.txt anthropic
+        run: pip install -r requirements.txt -r requirements-eval.txt
 
       - name: Pick smoke target
         id: pick
@@ -308,23 +375,50 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SMOKE_MASTER: ${{ steps.pick.outputs.master }}
+          # The switch that turns this from advisory into a real gate. Project
+          # policy (CONTRIBUTING.md §2) is that CI does not pay for LLM-judge
+          # grading, so the secret is deliberately unset and this check passes
+          # in ~10s having graded nothing. That is a decision, not an accident
+          # — but it is a decision a green *required* tick cannot show you.
+          # Set repo variable FIDELITY_GRADING_REQUIRED=true alongside the
+          # secret and a missing key becomes a hard failure instead.
+          FIDELITY_GRADING_REQUIRED: ${{ vars.FIDELITY_GRADING_REQUIRED }}
         run: |
           if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            if [ "${FIDELITY_GRADING_REQUIRED:-}" = "true" ]; then
+              echo "::error::FIDELITY_GRADING_REQUIRED=true but ANTHROPIC_API_KEY is unset — this gate must not pass without grading."
+              exit 1
+            fi
             echo "::warning::ANTHROPIC_API_KEY not configured — smoke is advisory on this run (expected on forks)."
             echo '{"skipped": true, "reason": "no_api_key"}' > fidelity-smoke.json
             {
-              echo "### Fidelity grading skipped"
+              echo "### Fidelity grading skipped — this green tick graded nothing"
               echo
-              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but model grading did not run."
+              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but **no model response was graded**."
+              echo "See \`ADVISORY_GATES\` in \`scripts/check-gate-liveness.py\` for what this check does and does not cover."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
+          # The exit code is captured rather than allowed to abort the step.
+          # `results_failed()` already exits 1 on any FAIL / api_error /
+          # truncated, and this `run:` is `bash -e`, so a plain sequence put the
+          # liveness check after a line that had already killed the step — the
+          # fix for "a check that never ran" was itself a line that never ran.
+          # The check is most valuable exactly when the sweep failed: it
+          # separates "graded, and something failed" from "graded nothing".
+          set +e
           python scripts/test-fidelity.py \
             --master "$SMOKE_MASTER" \
             --max-tests 1 \
             --json > fidelity-smoke.json
+          FIDELITY_EXIT=$?
+          set -e
+          python scripts/check-gate-liveness.py --fidelity-report fidelity-smoke.json
+          # Prints only. The verdict is already in $FIDELITY_EXIT, via
+          # results_failed(), and re-deriving it here would be a second
+          # definition of "did this pass" that can drift from the first.
           python - <<'PY'
-          import json, sys
+          import json
           with open("fidelity-smoke.json") as f:
               data = json.load(f)
           # --master returns a single-element list
@@ -332,8 +426,8 @@ jobs:
           failed = r.get("failed", 0)
           total = r.get("total", 0)
           print(f"Fidelity smoke: {total - failed}/{total} passed for {r.get('master', '?')}")
-          sys.exit(1 if failed else 0)
           PY
+          exit "$FIDELITY_EXIT"
 
       - name: Upload smoke results
         if: always()
@@ -346,6 +440,7 @@ jobs:
   fidelity-full:
     name: Fidelity tests — full suite (weekly + manual)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     needs: validate
     steps:
@@ -355,25 +450,39 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            requirements-eval.txt
 
       - name: Install dependencies
-        run: pip install -r requirements.txt anthropic
+        run: pip install -r requirements.txt -r requirements-eval.txt
 
       - name: Run fidelity tests
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FIDELITY_GRADING_REQUIRED: ${{ vars.FIDELITY_GRADING_REQUIRED }}
         run: |
           if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            if [ "${FIDELITY_GRADING_REQUIRED:-}" = "true" ]; then
+              echo "::error::FIDELITY_GRADING_REQUIRED=true but ANTHROPIC_API_KEY is unset — the weekly sweep must not pass without grading."
+              exit 1
+            fi
             echo "::warning::ANTHROPIC_API_KEY not configured — full fidelity sweep is advisory (structural validation in the validate job still gates)."
             echo '{"skipped": true, "reason": "no_api_key"}' > fidelity-results.json
             {
-              echo "### Fidelity grading skipped"
+              echo "### Fidelity grading skipped — this green tick graded nothing"
               echo
-              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but model grading did not run."
+              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but **no model response was graded**."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
+          set +e
           python scripts/test-fidelity.py --all --json > fidelity-results.json
+          FIDELITY_EXIT=$?
+          set -e
+          python scripts/check-gate-liveness.py --fidelity-report fidelity-results.json
+          exit "$FIDELITY_EXIT"
 
       - name: Upload results
         if: always()
