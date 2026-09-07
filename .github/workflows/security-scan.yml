@@ -45,8 +45,16 @@ on:
     - cron: '0 6 * * 2'
   workflow_dispatch:
 
+# Same grouping as validate-and-test.yml; see the note there. `head_ref` so a
+# PR's push and pull_request events share one group, and a distinct per-run
+# group on main so a merge is never queued behind (and then cancelled by) the
+# weekly cron.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: >-
+    ${{ github.workflow }}-${{
+      github.ref == 'refs/heads/main' && github.run_id
+      || github.head_ref || github.ref
+    }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:

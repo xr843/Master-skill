@@ -758,13 +758,30 @@ def run_tests(
                 "TRUNCATED",
             )
 
-        check = check_response(
-            response_text,
-            test,
-            is_first_turn=True,
-            declared_ids=declared_ids,
-            member_aliases=member_aliases,
-        )
+        try:
+            check = check_response(
+                response_text,
+                test,
+                is_first_turn=True,
+                declared_ids=declared_ids,
+                member_aliases=member_aliases,
+            )
+        except Exception as e:  # noqa: BLE001 — 判分器崩溃也是数据,不是终止条件
+            # grade_one 的 docstring 承诺「一条坏 fixture 不会掀翻整个池」,
+            # 而 check_response 原本在这个 try 之外:一次判分器异常会经
+            # future.result() 在主线程重新抛出,在**每一次 API 调用都已付过钱之后**
+            # 终止 run_tests。承诺现在是真的。
+            return (
+                {
+                    "index": i,
+                    "question": test["q"],
+                    "status": "grader_error",
+                    "error": redact_secrets(f"{type(e).__name__}: {e}"),
+                    "response": response_text,
+                },
+                False,
+                "GRADER ERROR",
+            )
         entry = result_entry(i, test, check, response_text)
         if check["passed"]:
             return entry, True, "PASS (review)" if check["needs_review"] else "PASS"
@@ -788,27 +805,47 @@ def run_tests(
     log_lock = threading.Lock()
     done = 0
 
-    with ThreadPoolExecutor(max_workers=workers) as pool:
+    # NOT `with ThreadPoolExecutor(...)`. Its `__exit__` calls
+    # `shutdown(wait=True)` without `cancel_futures`, and every fixture is
+    # submitted up front — so Ctrl-C during a paid sweep did not stop it. The
+    # worker loop drained all 211 queued calls, billed every one, and only then
+    # let the interrupt surface, discarding the verdicts already paid for. The
+    # serial loop it replaced stopped at the next iteration. An operator who
+    # sees the first few verdicts are wrong (bad model id, broken persona edit)
+    # has to be able to stop.
+    pool = ThreadPoolExecutor(max_workers=workers)
+    interrupted = False
+    try:
         futures = {pool.submit(grade_one, i, t): i for i, t in enumerate(tests)}
-        for future in as_completed(futures):
-            i = futures[future]
-            entry, ok, label = future.result()
-            by_index[i] = entry
-            if ok:
-                passed += 1
-            else:
-                failed += 1
-            if not quiet:
-                with log_lock:
-                    done += 1
-                    # One whole line per fixture. The old "print the prompt,
-                    # then the verdict on the same line" shape interleaves
-                    # into nonsense the moment more than one call is open.
-                    print(
-                        f"  [{done}/{len(tests)}] #{i + 1} "
-                        f"{tests[i]['q'][:50]}... {label}",
-                        flush=True,
-                    )
+        try:
+            for future in as_completed(futures):
+                i = futures[future]
+                entry, ok, label = future.result()
+                by_index[i] = entry
+                if ok:
+                    passed += 1
+                else:
+                    failed += 1
+                if not quiet:
+                    with log_lock:
+                        done += 1
+                        # One whole line per fixture. The old "print the prompt,
+                        # then the verdict on the same line" shape interleaves
+                        # into nonsense the moment more than one call is open.
+                        print(
+                            f"  [{done}/{len(tests)}] #{i + 1} "
+                            f"{tests[i]['q'][:50]}... {label}",
+                            flush=True,
+                        )
+        except KeyboardInterrupt:
+            interrupted = True
+            print(
+                f"\n中断:已完成 {len(by_index)}/{len(tests)} 条,"
+                "取消其余未发出的调用。",
+                file=sys.stderr,
+            )
+    finally:
+        pool.shutdown(wait=True, cancel_futures=True)
 
     results = [by_index[i] for i in sorted(by_index)]
 
@@ -826,6 +863,9 @@ def run_tests(
         # concurrent run can meet rate limits a serial one never would, and
         # those arrive as api_errors that look like nothing else.
         "concurrency": workers,
+        # 中断的运行必须能与完整运行区分 —— 否则一份跑了 12/211 的结果读起来
+        # 和跑完的一样,正是本仓一直在修的形状。
+        "interrupted": interrupted,
         "results": results,
     }
 

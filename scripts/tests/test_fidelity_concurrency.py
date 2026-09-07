@@ -202,3 +202,73 @@ def test_an_api_error_entry_is_redacted_on_the_way_into_the_report(
     assert errors, "expected api_error entries"
     assert all("sk-ant-api03-LEAKED" not in e for e in errors)
     assert all("[REDACTED]" in e for e in errors)
+
+
+# --------------------------------------------------------------------------
+# A paid sweep has to be stoppable, and one bad fixture must not end it.
+#
+# Both are regressions the parallel rewrite introduced against the serial loop
+# it replaced, and both were found by review rather than by these tests.
+# --------------------------------------------------------------------------
+
+
+def test_ctrl_c_cancels_the_calls_that_have_not_been_made_yet(fidelity, monkeypatch):
+    """`with ThreadPoolExecutor(...)` drains every queued call on the way out.
+
+    All fixtures are submitted up front, so an interrupt used to bill the whole
+    sweep anyway — 211 calls on the 1h55m run — and then discard the verdicts
+    already paid for. The serial loop stopped at the next iteration.
+    """
+    made = []
+    lock = threading.Lock()
+
+    def create(**body):
+        with lock:
+            made.append(body["messages"][0]["content"])
+            n = len(made)
+        if n == 1:
+            raise KeyboardInterrupt
+        time.sleep(0.01)
+        return _answer("回答")
+
+    _install_fake_anthropic(monkeypatch, on_create=create)
+    suite = fidelity.run_tests("yinguang", quiet=True, concurrency=2)
+
+    assert suite["interrupted"] is True
+    assert len(made) < suite["total"], (
+        f"every one of {suite['total']} calls was still made after the interrupt"
+    )
+
+
+def test_an_interrupted_run_says_so(fidelity, monkeypatch):
+    """A partial result set must not read like a complete one."""
+    _install_fake_anthropic(monkeypatch, on_create=lambda **_: _answer("回答"))
+    suite = fidelity.run_tests("yinguang", quiet=True, concurrency=2)
+    assert suite["interrupted"] is False
+
+
+def test_a_grader_exception_is_one_entry_not_a_dead_run(fidelity, monkeypatch):
+    """`check_response` sat OUTSIDE grade_one's try.
+
+    So a grader crash — e.g. `int()` on an absurd citation number, which raises
+    past 4300 digits — came back through `future.result()` in the main thread
+    and killed `run_tests` after every API call had already been billed, while
+    grade_one's docstring promised one bad fixture could not take the pool down.
+    """
+    original = fidelity.check_response
+    calls = {"n": 0}
+
+    def exploding(*args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise ValueError("Exceeds the limit (4300 digits)")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(fidelity, "check_response", exploding)
+    _install_fake_anthropic(monkeypatch, on_create=lambda **_: _answer("回答"))
+    suite = fidelity.run_tests("yinguang", quiet=True, concurrency=1)
+
+    assert "error" not in suite
+    statuses = [r["status"] for r in suite["results"]]
+    assert statuses.count("grader_error") == 1
+    assert len(suite["results"]) == suite["total"], "every other fixture still graded"

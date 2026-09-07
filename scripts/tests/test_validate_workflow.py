@@ -369,3 +369,25 @@ def test_each_graded_fidelity_run_is_checked_for_real_verdicts(
     liveness_at = script.index("check-gate-liveness.py --fidelity-report")
     assert script.index("FIDELITY_EXIT=$?") < liveness_at
     assert 'exit "$FIDELITY_EXIT"' in script[liveness_at:]
+
+
+def test_concurrency_never_lets_one_merge_cancel_another():
+    """`cancel-in-progress: false` does not make main runs independent.
+
+    It makes them QUEUE, and GitHub cancels a *pending* run when a newer one
+    queues behind it — so a merge landing while the Monday 60-minute sweep
+    holds the group could be dropped outright, which is the opposite of what
+    the first version of this comment asserted. main gets a per-run group.
+    """
+    group = WORKFLOW["concurrency"]["group"]
+    assert "github.run_id" in group, (
+        "main needs a per-run group; a shared non-cancelling group queues "
+        "merges behind the cron and drops the pending one"
+    )
+    assert "github.head_ref" in group, (
+        "keyed on github.ref alone, a PR's push and pull_request events land in "
+        "different groups and both run"
+    )
+    assert WORKFLOW["concurrency"]["cancel-in-progress"] == (
+        "${{ github.ref != 'refs/heads/main' }}"
+    )

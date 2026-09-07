@@ -322,14 +322,58 @@ fn is_safely_owned(_root: &Path) -> bool {
 /// from the working directory. Printing it does not stop a bad root, but it
 /// is the difference between a user being able to notice one and not.
 pub fn describe_repo_root(root: &Path) -> String {
-    describe_repo_root_with(root, explicit_repo_root().is_some())
+    describe_repo_root_with(root, &RootProvenance::of(root))
 }
 
-fn describe_repo_root_with(root: &Path, was_explicit: bool) -> String {
-    let how = if was_explicit {
-        "MASTER_SKILL_REPO_ROOT"
-    } else {
-        "discovered from the working directory"
+/// How the resolved root was actually arrived at.
+///
+/// The first version of this printed "(discovered from the working directory)"
+/// whenever `MASTER_SKILL_REPO_ROOT` was unset — including the one case the
+/// guard exists for. A refused directory falls through to
+/// `compile_time_repo_root()`, a path from whichever machine built the binary,
+/// and the line then named a directory the user has never visited and called it
+/// discovered from their cwd, with no hint that anything had been rejected. A
+/// disclosure that misdescribes the case it was added for is worse than none.
+#[derive(Debug, PartialEq, Eq)]
+pub enum RootProvenance {
+    Explicit,
+    Discovered,
+    /// Discovery found a candidate and refused it; this is the build-time
+    /// fallback, which almost certainly does not exist here.
+    RefusedFellBack {
+        rejected: PathBuf,
+    },
+    /// Nothing qualified anywhere up the tree.
+    NoneFoundFellBack,
+}
+
+impl RootProvenance {
+    fn of(resolved: &Path) -> Self {
+        if explicit_repo_root().is_some() {
+            return Self::Explicit;
+        }
+        match std::env::current_dir()
+            .ok()
+            .and_then(|cwd| find_repo_root_from(&cwd))
+        {
+            Some(found) if found == resolved => Self::Discovered,
+            Some(rejected) => Self::RefusedFellBack { rejected },
+            None => Self::NoneFoundFellBack,
+        }
+    }
+}
+
+fn describe_repo_root_with(root: &Path, provenance: &RootProvenance) -> String {
+    let how = match provenance {
+        RootProvenance::Explicit => "MASTER_SKILL_REPO_ROOT".to_string(),
+        RootProvenance::Discovered => "discovered from the working directory".to_string(),
+        RootProvenance::RefusedFellBack { rejected } => format!(
+            "REFUSED {} as group- or world-writable; fell back to the build-time path",
+            rejected.display()
+        ),
+        RootProvenance::NoneFoundFellBack => {
+            "no repo found above the working directory; build-time path".to_string()
+        }
     };
     format!(
         "repo root: {} ({how}) — its scripts/ and bin/ will be executed",
@@ -482,7 +526,7 @@ mod interpreter_resolution_tests {
 
 #[cfg(test)]
 mod repo_root_trust_tests {
-    use super::{describe_repo_root_with, is_safely_owned, resolve_repo_root_with};
+    use super::{describe_repo_root_with, is_safely_owned, resolve_repo_root_with, RootProvenance};
     use std::path::{Path, PathBuf};
 
     fn make_repo(dir: &Path) {
@@ -553,13 +597,41 @@ mod repo_root_trust_tests {
 
     #[test]
     fn the_disclosure_names_the_path_and_says_it_will_execute() {
-        let text = describe_repo_root_with(Path::new("/tmp/some-repo"), false);
+        let text =
+            describe_repo_root_with(Path::new("/tmp/some-repo"), &RootProvenance::Discovered);
         assert!(text.contains("/tmp/some-repo"));
         assert!(text.contains("will be executed"));
         assert!(text.contains("discovered from the working directory"));
 
-        let explicit = describe_repo_root_with(Path::new("/tmp/some-repo"), true);
+        let explicit =
+            describe_repo_root_with(Path::new("/tmp/some-repo"), &RootProvenance::Explicit);
         assert!(explicit.contains("MASTER_SKILL_REPO_ROOT"));
+    }
+
+    /// The case the guard exists for must not be described as the normal one.
+    #[test]
+    fn a_refused_directory_is_named_as_refused() {
+        let text = describe_repo_root_with(
+            Path::new("/build/machine/path"),
+            &RootProvenance::RefusedFellBack {
+                rejected: PathBuf::from("/tmp/world-writable"),
+            },
+        );
+        assert!(text.contains("REFUSED"));
+        assert!(
+            text.contains("/tmp/world-writable"),
+            "name what was rejected"
+        );
+        assert!(!text.contains("discovered from the working directory"));
+    }
+
+    #[test]
+    fn finding_nothing_is_not_described_as_a_discovery() {
+        let text = describe_repo_root_with(
+            Path::new("/build/machine/path"),
+            &RootProvenance::NoneFoundFellBack,
+        );
+        assert!(text.contains("no repo found"));
     }
 }
 
