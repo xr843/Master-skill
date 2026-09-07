@@ -361,3 +361,11 @@ def test_each_graded_fidelity_run_is_checked_for_real_verdicts(
     """
     script = _step(WORKFLOW, job_name, step_name)["run"]
     assert f"check-gate-liveness.py --fidelity-report {report}" in script
+    # …and it has to be REACHABLE. `results_failed()` exits 1 on any FAIL /
+    # api_error / truncated and this `run:` is `bash -e`, so a plain sequence
+    # put the liveness check after a line that had already killed the step.
+    # The exit code must be captured and re-raised afterwards.
+    assert "set +e" in script, "the grading call must not abort the step"
+    liveness_at = script.index("check-gate-liveness.py --fidelity-report")
+    assert script.index("FIDELITY_EXIT=$?") < liveness_at
+    assert 'exit "$FIDELITY_EXIT"' in script[liveness_at:]

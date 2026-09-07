@@ -95,7 +95,15 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
         with:
           path: ~/.cargo/bin/cargo-audit
-          key: ${{ runner.os }}-cargo-audit-0.22.2
+          # `cargo-audit-bin-`, NOT `cargo-audit-`. validate-and-test.yml's
+          # desktop-rust cache restores on `restore-keys: ${{ runner.os }}-cargo-`,
+          # and `Linux-cargo-audit-0.22.2` starts with `Linux-cargo-`. On the
+          # first Cargo.lock change after this lands — i.e. exactly the weekly
+          # Dependabot cargo PR added in the same branch — desktop-rust would
+          # miss its exact key, restore THIS cache instead (one file, no crate
+          # registry, no target dir), rebuild all 408 crates, and report
+          # "Cache restored from key: Linux-cargo-audit-…" while doing it.
+          key: ${{ runner.os }}-cargo-audit-bin-0.22.2
 
       - name: Install cargo-audit (pinned)
         # 0.22.2, NOT the 0.21.x line: 0.21.2 cannot parse the current RustSec

@@ -170,16 +170,7 @@ impl CliClient {
 /// failed to spawn. Nothing caught it: `desktop-rust` runs on ubuntu-latest
 /// only, and release-desktop.yml smoke-tests the Linux artifact alone.
 fn default_python_bin() -> String {
-    if let Ok(explicit) = std::env::var("MASTER_SKILL_PYTHON") {
-        if !explicit.is_empty() {
-            return explicit;
-        }
-    }
-    if cfg!(windows) {
-        "python".to_string()
-    } else {
-        "python3".to_string()
-    }
+    resolve_interpreter(std::env::var_os("MASTER_SKILL_PYTHON"), "python", "python3")
 }
 
 /// The npm executable to shell out to.
@@ -192,15 +183,32 @@ fn default_python_bin() -> String {
 /// the literal `test` — no caller-supplied string reaches the command line,
 /// which is the condition BatBadBut (CVE-2024-24576) turns on.
 fn default_npm_bin() -> String {
-    if let Ok(explicit) = std::env::var("MASTER_SKILL_NPM") {
-        if !explicit.is_empty() {
-            return explicit;
+    resolve_interpreter(std::env::var_os("MASTER_SKILL_NPM"), "npm.cmd", "npm")
+}
+
+/// The decision, with the environment passed in.
+///
+/// Split out for the same reason `resolve_repo_root_with` was, 100 lines down,
+/// and for the same reason its comment gives: driving these through
+/// `std::env::set_var` races the parallel test runner. The first version of
+/// this module did exactly that and claimed in a comment that restoring the
+/// variable made the race impossible — it does not, and the test failed 2 runs
+/// in 60. A flaky test in the code that decides which interpreter to execute
+/// is worse than no test.
+fn resolve_interpreter(
+    explicit: Option<std::ffi::OsString>,
+    windows_default: &str,
+    unix_default: &str,
+) -> String {
+    if let Some(value) = explicit {
+        if !value.is_empty() {
+            return value.to_string_lossy().into_owned();
         }
     }
     if cfg!(windows) {
-        "npm.cmd".to_string()
+        windows_default.to_string()
     } else {
-        "npm".to_string()
+        unix_default.to_string()
     }
 }
 
@@ -410,50 +418,65 @@ mod command_error_tests {
 
 #[cfg(test)]
 mod interpreter_resolution_tests {
-    use super::{default_npm_bin, default_python_bin};
+    use super::{default_npm_bin, default_python_bin, resolve_interpreter};
+    use std::ffi::OsString;
 
     /// The released Windows binary spawned `python3` and `npm`, neither of
     /// which resolves there: Python ships as `python.exe`, npm as `npm.cmd`,
     /// and Rust's `Command` appends only `.exe` to a bare name. Nothing
     /// caught it — `desktop-rust` runs on ubuntu-latest and
     /// release-desktop.yml smoke-tests only the Linux artifact.
+    ///
+    /// Asserted against literals rather than `cfg!(windows)`, so this cannot
+    /// become the tautology `cfg!(windows) == cfg!(windows)` that passes even
+    /// with the table inverted.
     #[test]
-    fn interpreters_match_the_platform_they_run_on() {
-        if cfg!(windows) {
-            assert_eq!(default_python_bin(), "python");
-            assert_eq!(default_npm_bin(), "npm.cmd");
-        } else {
-            assert_eq!(default_python_bin(), "python3");
-            assert_eq!(default_npm_bin(), "npm");
-        }
+    fn each_platform_gets_the_name_that_exists_on_it() {
+        assert_eq!(resolve_interpreter(None, "python", "python3"), {
+            #[cfg(windows)]
+            {
+                "python"
+            }
+            #[cfg(not(windows))]
+            {
+                "python3"
+            }
+        });
+        assert_eq!(resolve_interpreter(None, "npm.cmd", "npm"), {
+            #[cfg(windows)]
+            {
+                "npm.cmd"
+            }
+            #[cfg(not(windows))]
+            {
+                "npm"
+            }
+        });
     }
 
     /// Matches the existing `NODE` override, and gives anyone on a venv,
     /// pyenv, or a `python3`-less box a way out without editing the source.
     #[test]
     fn an_explicit_override_wins() {
-        // Serialised behind one variable each, and restored, so the parallel
-        // test runner cannot observe a half-applied state.
-        let previous = std::env::var_os("MASTER_SKILL_PYTHON");
-        std::env::set_var("MASTER_SKILL_PYTHON", "/opt/py/bin/python3.13");
-        let resolved = default_python_bin();
-        match previous {
-            Some(v) => std::env::set_var("MASTER_SKILL_PYTHON", v),
-            None => std::env::remove_var("MASTER_SKILL_PYTHON"),
-        }
-        assert_eq!(resolved, "/opt/py/bin/python3.13");
+        let chosen = OsString::from("/opt/py/bin/python3.13");
+        assert_eq!(
+            resolve_interpreter(Some(chosen), "python", "python3"),
+            "/opt/py/bin/python3.13"
+        );
     }
 
+    /// `MASTER_SKILL_NPM=` set but blank must not resolve to "".
     #[test]
     fn a_blank_override_falls_back_to_the_platform_default() {
-        let previous = std::env::var_os("MASTER_SKILL_NPM");
-        std::env::set_var("MASTER_SKILL_NPM", "");
-        let resolved = default_npm_bin();
-        match previous {
-            Some(v) => std::env::set_var("MASTER_SKILL_NPM", v),
-            None => std::env::remove_var("MASTER_SKILL_NPM"),
-        }
-        assert_ne!(resolved, "");
+        let resolved = resolve_interpreter(Some(OsString::new()), "npm.cmd", "npm");
+        assert!(resolved == "npm" || resolved == "npm.cmd");
+    }
+
+    /// The wiring: the public helpers must read the variables they document.
+    #[test]
+    fn the_public_helpers_return_a_usable_name() {
+        assert!(!default_python_bin().is_empty());
+        assert!(!default_npm_bin().is_empty());
     }
 }
 

@@ -940,21 +940,23 @@ test("mode routing outranks situations", () => {
 // --------------------------------------------------------------------------
 
 function packedFiles() {
-  // npm writes the pack manifest to stderr, not stdout. Reading only stdout
-  // returns an empty list, and a "nothing forbidden shipped" assertion over
-  // an empty list passes for the wrong reason — so both streams are read and
-  // the parse is floor-checked below.
-  const result = spawnSync("npm", ["pack", "--dry-run"], {
-    cwd: REPO,
-    encoding: "utf8",
-    ...npmExecutionOptions(),
-  });
-  const output = `${result.stdout || ""}\n${result.stderr || ""}`;
-  const files = output
-    .split("\n")
-    .map((line) => line.match(/^npm notice\s+[\d.]+\s*(?:B|kB|MB|GB)\s+(\S.*)$/))
-    .filter(Boolean)
-    .map((m) => m[1].trim());
+  // `--json`, not the `npm notice` log lines. npm suppresses every notice when
+  // `npm_config_loglevel` is below `notice`, and `npm test --silent` exports
+  // exactly that — as does any `.npmrc` with `loglevel=warn`. Parsing the log
+  // meant both assertions below ran over an empty list and failed for a reason
+  // that had nothing to do with the package.
+  //
+  // `--ignore-scripts` because this repo's own `prepack` (`cli.mjs list`)
+  // prints the master roster to stdout ahead of npm's JSON. Skipping it is
+  // also what makes the output deterministic; the roster is covered by its own
+  // tests.
+  const result = spawnSync(
+    "npm",
+    ["pack", "--dry-run", "--json", "--ignore-scripts"],
+    { cwd: REPO, encoding: "utf8", ...npmExecutionOptions() },
+  );
+  assert.equal(result.status, 0, `npm pack failed: ${result.stderr}`);
+  const files = JSON.parse(result.stdout)[0].files.map((f) => f.path);
   assert.ok(
     files.length > 50,
     `parsed only ${files.length} packed files — the manifest parse is broken, ` +
@@ -962,6 +964,23 @@ function packedFiles() {
   );
   return files;
 }
+
+test("the package manifest is readable regardless of npm loglevel", () => {
+  // The regression this guards: `npm test --silent` sets loglevel=silent, and
+  // the previous log-scraping parser returned nothing under it.
+  const quiet = spawnSync(
+    "npm",
+    ["pack", "--dry-run", "--json", "--ignore-scripts"],
+    {
+      cwd: REPO,
+      encoding: "utf8",
+      env: { ...process.env, npm_config_loglevel: "silent" },
+      ...npmExecutionOptions(),
+    },
+  );
+  assert.equal(quiet.status, 0);
+  assert.ok(JSON.parse(quiet.stdout)[0].files.length > 50);
+});
 
 test("every persona's fidelity fixtures ship in the tarball", () => {
   const packed = new Set(packedFiles());

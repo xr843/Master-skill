@@ -43,16 +43,34 @@ def _validate_base_url(url: str) -> str:
     FOJIN_URL is read from the environment and every request is built on top of
     it, so it decides where citations are verified against. Allowing `http://`
     or a `file://`-ish scheme through would silently downgrade or redirect that
-    check. `http://localhost` stays legal because the local-development path
-    documented in references/fojin-api.md needs it.
+    check.
+
+    Two deliberate exits from that rule:
+
+      - `http://localhost` (and 127.0.0.1 / ::1) is always allowed; the traffic
+        never leaves the machine.
+      - `FOJIN_ALLOW_INSECURE_URL=1` allows any http host, for someone running
+        FoJin on a LAN or inside a container network. It is opt-in because the
+        default has to be the safe one, and because self-hosting is not
+        documented anywhere in this repo — an earlier version of this docstring
+        claimed references/fojin-api.md covered the local path; that file does
+        not mention it at all.
     """
     parsed = urlparse(url)
     if parsed.scheme == "https":
         return url.rstrip("/")
-    if parsed.scheme == "http" and parsed.hostname in ("localhost", "127.0.0.1", "::1"):
-        return url.rstrip("/")
+    if parsed.scheme == "http":
+        if parsed.hostname in ("localhost", "127.0.0.1", "::1"):
+            return url.rstrip("/")
+        if os.environ.get("FOJIN_ALLOW_INSECURE_URL") == "1":
+            logging.getLogger(__name__).warning(
+                "FOJIN_URL is plain http (%s); citations will be verified over "
+                "an unauthenticated connection", url
+            )
+            return url.rstrip("/")
     raise FojinConfigError(
-        f"FOJIN_URL must be https (or http on localhost): {url!r}"
+        f"FOJIN_URL must be https: {url!r}. http is allowed on localhost, or "
+        "anywhere if you set FOJIN_ALLOW_INSECURE_URL=1 deliberately."
     )
 
 

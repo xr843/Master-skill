@@ -17,7 +17,7 @@ import os
 # Ensure tools/ is on the path so we can import fojin_bridge
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from fojin_bridge import create_bridge, FojinUnavailableError
+from fojin_bridge import create_bridge, FojinConfigError, FojinUnavailableError
 
 
 def source_identity(item: dict) -> tuple[str, str]:
@@ -316,6 +316,17 @@ def main():
 
     try:
         args.func(args)
+    except FojinConfigError as e:
+        # A misconfigured FOJIN_URL is not the same as FoJin being down, but it
+        # reaches the agent the same way: no retrieval. Routing it through the
+        # documented degradation contract (the marker on stdout, exit 0 — see
+        # prompts/rag_instructions.md §50) keeps a self-hoster's typo from
+        # blowing up a `set -e` pipeline the agent wrote, while the operator
+        # gets the actionable reason on stderr.
+        print("[FoJin API 当前不可用]")
+        print("配置有误,未发起检索。法师将仅基于预置 teaching.md 回答。")
+        print(f"[配置错误] {e}", file=sys.stderr)
+        sys.exit(0)
     except FojinUnavailableError:
         # exit 0 是**故意**的,不是本仓一直在修的那个「假绿」形状 ——
         # 这里的调用方是读 stdout 的 agent,不是读退出码的脚本:

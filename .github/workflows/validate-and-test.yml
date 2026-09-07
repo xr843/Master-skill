@@ -265,8 +265,14 @@ jobs:
             ~/.cargo/registry/cache
             ~/.cargo/git/db
             desktop/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('desktop/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+          # `-cargo-deps-`, not a bare `-cargo-`. actions/cache resolves a
+          # restore-key by PREFIX, so `${{ runner.os }}-cargo-` would also match
+          # security-scan.yml's cargo-audit binary cache — one file, no
+          # registry, no target dir. On the first Cargo.lock change (the weekly
+          # Dependabot cargo PR) this job would miss its exact key, restore
+          # that instead, and rebuild all 408 crates while logging a cache hit.
+          key: ${{ runner.os }}-cargo-deps-${{ hashFiles('desktop/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-deps-
 
       - name: Show Rust toolchain
         run: |
@@ -374,14 +380,22 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
+          # The exit code is captured rather than allowed to abort the step.
+          # `results_failed()` already exits 1 on any FAIL / api_error /
+          # truncated, and this `run:` is `bash -e`, so a plain sequence put the
+          # liveness check after a line that had already killed the step — the
+          # fix for "a check that never ran" was itself a line that never ran.
+          # The check is most valuable exactly when the sweep failed: it
+          # separates "graded, and something failed" from "graded nothing".
+          set +e
           python scripts/test-fidelity.py \
             --master "$SMOKE_MASTER" \
             --max-tests 1 \
             --json > fidelity-smoke.json
-          # A run that *claims* to have graded must have produced verdicts. The
-          # credit-exhaustion shape (every call a 400) otherwise reads as a
-          # clean pass.
+          FIDELITY_EXIT=$?
+          set -e
           python scripts/check-gate-liveness.py --fidelity-report fidelity-smoke.json
+          exit "$FIDELITY_EXIT"
           python - <<'PY'
           import json, sys
           with open("fidelity-smoke.json") as f:
@@ -442,8 +456,12 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
+          set +e
           python scripts/test-fidelity.py --all --json > fidelity-results.json
+          FIDELITY_EXIT=$?
+          set -e
           python scripts/check-gate-liveness.py --fidelity-report fidelity-results.json
+          exit "$FIDELITY_EXIT"
 
       - name: Upload results
         if: always()

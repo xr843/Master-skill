@@ -355,3 +355,35 @@ def test_run_all_is_clean_on_a_report_with_real_verdicts(liveness, tmp_path):
     )
     root = Path(__file__).resolve().parent.parent.parent
     assert liveness.run_all(root, report) == []
+
+
+# --------------------------------------------------------------------------
+# The --fidelity-report wiring must itself be non-vacuous.
+#
+# First version: `if fidelity_report is not None and fidelity_report.exists()`.
+# A missing path made run_all return [] and the script print "every gate
+# examined a non-empty set" about a report it never opened — the exact
+# statement it exists to make impossible.
+# --------------------------------------------------------------------------
+
+
+def test_a_named_report_that_does_not_exist_is_a_problem(liveness, tmp_path):
+    root = Path(__file__).resolve().parent.parent.parent
+    problems = liveness.run_all(root, tmp_path / "never-written.json")
+    assert any("does not exist" in p for p in problems)
+
+
+def test_an_empty_report_that_declares_no_skip_is_a_problem(liveness, tmp_path):
+    report = tmp_path / "r.json"
+    report.write_text("[]", encoding="utf-8")
+    root = Path(__file__).resolve().parent.parent.parent
+    problems = liveness.run_all(root, report)
+    assert any("no suites" in p for p in problems)
+
+
+def test_a_report_that_declares_a_skip_is_clean(liveness, tmp_path):
+    """The advisory path is accounted for by ADVISORY_GATES, not by this."""
+    report = tmp_path / "r.json"
+    report.write_text(json.dumps({"skipped": True, "reason": "no_api_key"}), encoding="utf-8")
+    root = Path(__file__).resolve().parent.parent.parent
+    assert liveness.run_all(root, report) == []

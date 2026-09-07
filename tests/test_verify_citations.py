@@ -732,7 +732,8 @@ def test_one_transport_failure_no_longer_discards_the_successes(monkeypatch):
     [
         (_FakeResponse(200, {"id": 1}), True, "200 + JSON 正文 → 确实解析得到"),
         (_FakeResponse(404), False, "404 是平台明确说没有 —— 唯一该硬失败的信号"),
-        (_FakeResponse(200, {}), False, "200 但正文为空 → 没有这个资源"),
+        (_FakeResponse(200, {}), None, "200 但空正文 → 不知道,不是不存在"),
+        (_FakeResponse(200, []), None, "空列表同理"),
         (_FakeResponse(503), None, "5xx 说明的是网络状况,不是引文真伪"),
         (_FakeResponse(500), None, "同上"),
         (_FakeResponse(200, raises=True), None, "网关错误页会回 200 + HTML"),

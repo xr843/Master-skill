@@ -290,6 +290,12 @@ def read_workflows(root: Path) -> dict[str, dict]:
     }
 
 
+def _declares_a_skip(report: Path) -> bool:
+    """Whether the report says outright that it graded nothing on purpose."""
+    data = json.loads(report.read_text(encoding="utf-8"))
+    return isinstance(data, dict) and bool(data.get("skipped"))
+
+
 def load_fidelity_suites(report: Path) -> list[dict]:
     """Read a `test-fidelity.py --json` report into a suite list.
 
@@ -329,10 +335,24 @@ def run_all(root: Path, fidelity_report: Path | None = None) -> list[str]:
     # check_graded_suites_graded_something shipped fully written and unit-tested
     # but unreferenced by run_all — the anti-fake-green script had a check that
     # itself never ran. This is where it runs.
-    if fidelity_report is not None and fidelity_report.exists():
-        problems += check_graded_suites_graded_something(
-            load_fidelity_suites(fidelity_report)
-        )
+    if fidelity_report is not None:
+        # A missing file is a problem, not a pass. `… and fidelity_report.exists()`
+        # meant `--fidelity-report /nonexistent.json` printed "every gate examined
+        # a non-empty set" about a report it never opened — the exact statement
+        # this script exists to make impossible.
+        if not fidelity_report.exists():
+            problems.append(
+                f"{fidelity_report} was named as the fidelity report but does "
+                "not exist — nothing was examined"
+            )
+        else:
+            suites = load_fidelity_suites(fidelity_report)
+            if not suites and not _declares_a_skip(fidelity_report):
+                problems.append(
+                    f"{fidelity_report} contains no suites and does not declare "
+                    "a skip — it grades nothing but reads as clean"
+                )
+            problems += check_graded_suites_graded_something(suites)
     return problems
 
 

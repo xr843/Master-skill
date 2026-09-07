@@ -452,10 +452,17 @@ def _check_one_text_id(session_factory, base_url: str, tid: str, timeout: int):
     if resp.status_code != 200:
         return None, f"HTTP {resp.status_code}"
     try:
-        return (True, "") if resp.json() else (False, "200 但正文为空")
+        payload = resp.json()
     except ValueError:
         # 200 却不是 JSON:通常是网关错误页,不能据此断定 id 不存在。
         return None, "200 但正文不是 JSON"
+    if payload:
+        return True, ""
+    # 200 + 空正文归 None,不归 False —— 上面刚写下「404 是唯一该硬失败的信号」,
+    # 这里返回 False 就是在自己的契约上开口子。空信封可能来自 FoJin 换了外层结构、
+    # 一次读半截、或 CDN 改写了 body;拿它判伪造,会在平台抖动时把**正确**引用
+    # 批量打成伪造 —— 同一段注释说过那比漏检更糟。真的不存在,平台会回 404。
+    return None, "200 但正文为空"
 
 
 class OnlineVerification(NamedTuple):
