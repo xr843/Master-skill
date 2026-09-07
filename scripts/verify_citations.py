@@ -26,6 +26,7 @@ import sys
 import threading
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import NamedTuple
 
 from _masterpaths import resolve_master_dir
 
@@ -429,26 +430,53 @@ def _check_one_text_id(session_factory, base_url: str, tid: str, timeout: int):
         return None, "200 但正文不是 JSON"
 
 
+class OnlineVerification(NamedTuple):
+    """一次 --online 核验的完整结果。
+
+    最初的版本把这些塞进**同一个字典**:`{tid: 三态, "_reasons": {...}}`,
+    再让调用方 pop 掉那个下划线键。也就是说字典里有一个键不是 text_id,而
+    「是不是 text_id」只能靠命名约定分辨 —— 这正是本仓一直在修的那种形状:
+    两种语义长得一样,靠调用方记得区分。忘了 pop 也不会炸,只会把 `_reasons`
+    当成一个永远核验通过的引文,静静地混进统计里。
+    """
+
+    #: tid -> True(解析得到) / False(404,确定不存在) / None(查不出来)
+    verdicts: dict
+    #: tid -> 说明,只对 False / None 有值
+    reasons: dict
+    #: 整体不可达时的原因;可达时为 None
+    unreachable: str | None = None
+
+    @property
+    def fabricated(self) -> list:
+        """平台明确回 404 的 —— 唯一该判失败的。"""
+        return sorted(t for t, ok in self.verdicts.items() if ok is False)
+
+    @property
+    def unknown(self) -> list:
+        """传输层没给出答案的 —— 报出来,但不算伪造。"""
+        return sorted(t for t, ok in self.verdicts.items() if ok is None)
+
+
 def verify_online(
     text_ids: list[str],
     base_url: str = "https://fojin.app",
     timeout: int = VERIFY_TIMEOUT,
     workers: int = VERIFY_WORKERS,
-) -> dict:
+) -> OnlineVerification:
     """best-effort:GET /api/texts/{id} 看 live 引文的 text_id 是否真解析。
 
-    返回 {tid: True/False/None, '_reasons': {tid: 说明}}。
-    requests 缺失或**每一个** id 都查不出结果时,才返回 {'_unreachable': True}
-    —— 部分失败不再吃掉部分成功。
+    requests 缺失或**每一个** id 都查不出结果时,`unreachable` 带上原因;
+    部分失败不再吃掉部分成功。
     """
     try:
         import requests
     except ImportError:
-        return {"_unreachable": True, "_reason": "requests 未安装"}
+        return OnlineVerification({}, {}, "requests 未安装")
 
     unique = sorted(set(text_ids))
     if not unique:
-        return {}
+        return OnlineVerification({}, {})
 
     # requests.Session 的线程安全性没有保证,所以每个线程持有自己的那个。
     local = threading.local()
@@ -473,10 +501,11 @@ def verify_online(
 
     if all(v is None for v in out.values()):
         first = next(iter(reasons.values()), "未知原因")
-        return {"_unreachable": True, "_reason": f"{len(out)} 个 id 全部无法核验({first})"}
+        return OnlineVerification(
+            out, reasons, f"{len(out)} 个 id 全部无法核验({first})"
+        )
 
-    out["_reasons"] = reasons
-    return out
+    return OnlineVerification(out, reasons)
 
 
 def main() -> int:
@@ -506,22 +535,24 @@ def main() -> int:
 
     if args.online and report["live"]:
         res = verify_online([tid for _, tid in report["live"]])
-        if res.get("_unreachable"):
-            print(f"⚠ --online 跳过:FoJin 不可达({res.get('_reason')})", file=sys.stderr)
+        if res.unreachable:
+            print(f"⚠ --online 跳过:FoJin 不可达({res.unreachable})", file=sys.stderr)
         else:
-            reasons = res.pop("_reasons", {})
             # 只有平台明确回 404 才算伪造 —— 5xx / 超时 / 网关错误页说明的是
             # 网络状况,不是引文真伪,拿它判 fabricated 会在 FoJin 抖动时把正确
             # 引用打成伪造,那比漏检更糟。
-            bad = sorted(tid for tid, ok in res.items() if ok is False)
-            unknown = sorted(tid for tid, ok in res.items() if ok is None)
-            if bad:
-                print(f"✗ live 引文 text_id 无法解析: {bad}", file=sys.stderr)
+            if res.fabricated:
+                print(f"✗ live 引文 text_id 无法解析: {res.fabricated}", file=sys.stderr)
                 exit_code = 1
-            if unknown:
+            if res.unknown:
                 # 报出来而不是静默算过 —— 「没查成」必须与「查过没问题」可区分。
-                detail = ", ".join(f"{t}({reasons.get(t, '?')})" for t in unknown)
-                print(f"⚠ {len(unknown)} 条 live 引文未能核验: {detail}", file=sys.stderr)
+                detail = ", ".join(
+                    f"{t}({res.reasons.get(t, '?')})" for t in res.unknown
+                )
+                print(
+                    f"⚠ {len(res.unknown)} 条 live 引文未能核验: {detail}",
+                    file=sys.stderr,
+                )
 
     if exit_code == 0:
         print("✓ 全部引文可核验")

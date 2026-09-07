@@ -719,10 +719,12 @@ def test_one_transport_failure_no_longer_discards_the_successes(monkeypatch):
 
     _fake_requests(monkeypatch, handler)
     res = verify_citations.verify_online(["111", "222", "333"])
-    assert not res.get("_unreachable"), "一个 id 挂掉不该让整轮作废"
-    assert res["111"] is True
-    assert res["333"] is True
-    assert res["222"] is None, "传输层失败是『不知道』,不是『不存在』"
+    assert res.unreachable is None, "一个 id 挂掉不该让整轮作废"
+    assert res.verdicts["111"] is True
+    assert res.verdicts["333"] is True
+    assert res.verdicts["222"] is None, "传输层失败是『不知道』,不是『不存在』"
+    assert res.fabricated == [], "『不知道』不能被算成伪造"
+    assert res.unknown == ["222"]
 
 
 @pytest.mark.parametrize(
@@ -764,8 +766,9 @@ def test_a_404_among_successes_is_reported_as_fabricated(monkeypatch):
 
     _fake_requests(monkeypatch, handler)
     res = verify_citations.verify_online(["111", "999"])
-    assert res["111"] is True
-    assert res["999"] is False
+    assert res.verdicts["111"] is True
+    assert res.verdicts["999"] is False
+    assert res.fabricated == ["999"]
 
 
 def test_everything_failing_is_still_reported_as_unreachable(monkeypatch):
@@ -774,7 +777,8 @@ def test_everything_failing_is_still_reported_as_unreachable(monkeypatch):
 
     _fake_requests(monkeypatch, handler)
     res = verify_citations.verify_online(["111", "222"])
-    assert res["_unreachable"] is True
+    assert res.unreachable is not None
+    assert res.fabricated == [], "整体不可达时不能把任何一条判成伪造"
 
 
 def test_ids_are_deduplicated_before_being_fetched(monkeypatch):
@@ -808,3 +812,19 @@ def test_requests_are_issued_concurrently(monkeypatch):
     _fake_requests(monkeypatch, handler)
     verify_citations.verify_online([str(n) for n in range(6)], workers=4)
     assert state["peak"] > 1
+
+
+def test_the_result_never_mixes_metadata_into_the_id_mapping(monkeypatch):
+    """`verdicts` 里的每一个键都必须是被查过的 text_id。
+
+    最初的实现把说明塞进同一个字典 (`{tid: 三态, "_reasons": {...}}`),靠调用方
+    记得 pop。忘了 pop 不会炸 —— `_reasons` 的值是个非空 dict,`is False` 判不中、
+    `not ok` 也判不中 —— 它只会当成一条永远通过的引文混进统计。本仓修的就是这种
+    「两种语义长得一样」的形状,别在修它的 PR 里再造一个。
+    """
+    _fake_requests(monkeypatch, lambda url: _FakeResponse(503) if url.endswith("/222")
+                   else _FakeResponse(200, {"id": 1}))
+    res = verify_citations.verify_online(["111", "222"])
+    assert set(res.verdicts) == {"111", "222"}
+    assert all(not k.startswith("_") for k in res.verdicts)
+    assert all(v is True or v is False or v is None for v in res.verdicts.values())
