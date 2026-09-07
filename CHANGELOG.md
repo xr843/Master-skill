@@ -58,6 +58,18 @@ Both were turned on the same day, and the `dependency-review` job carries no
 skip-if-disabled branch: if that setting is ever switched off again the job
 should go red, because the alerting it gates goes silent at the same moment.
 
+Turning them on also answered a question worth recording, by contradicting the
+expectation that came with it. Dependabot alerts stayed at 0, and that is the
+correct answer: of the five RustSec advisories against this repo's crates, the
+GitHub Advisory Database carries exactly one — a 2023 `webbrowser` advisory
+for `< 0.8.3`, which does not touch the 1.2.x here. It has nothing for
+`event-listener`, `quick-xml`, `paste`, or `ttf-parser`, and nothing for
+RUSTSEC-2026-0257, the `webbrowser` argument injection actually fixed above.
+GHSA's Rust coverage is materially thinner than RustSec's, so `cargo audit` is
+not redundant with Dependabot alerts — it is the only thing that sees four of
+those five. The Python side runs the other way: PYSEC-2026-1845 came from
+`pip-audit`.
+
 Two `quick-xml` advisories (RUSTSEC-2026-0194/0195, both DoS) are suppressed
 with the reasoning written where a red build would land: both copies are held
 below the 0.41.0 fix by upstream — `zbus_xml 4.0` and `wayland-scanner`, the

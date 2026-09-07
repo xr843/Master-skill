@@ -17,6 +17,14 @@ name: Security Scanning
 #   2. Advisory-database checks against the pinned dependency sets, one per
 #      ecosystem, so a CVE published against a version we hold is noticed
 #      without waiting for an upgrade to exist.
+#
+#      These are NOT redundant with Dependabot alerts. Measured 2026-09-07:
+#      of the five RustSec advisories against this repo's crates, GHSA — what
+#      Dependabot alerts read — carries exactly one, and that one (a 2023
+#      `webbrowser` advisory for < 0.8.3) does not even apply here. It has
+#      nothing for event-listener, quick-xml, paste, ttf-parser, or for
+#      RUSTSEC-2026-0257, the argument injection we actually had. `cargo
+#      audit` reads RustSec directly and is the only thing that sees them.
 #   3. dependency-review on PRs, which blocks a *newly introduced* vulnerable
 #      dependency at review time rather than reporting it after merge.
 #

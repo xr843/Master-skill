@@ -137,7 +137,18 @@ Master-skill 作为 AgentSkill 插件 + NPX CLI，主要关注以下安全面：
   > 若日后再被关掉，这个 job 就该亮红 —— 它所依赖的告警在同一刻也哑了。
 
   Dependabot 回答的是"依赖旧了吗"，回答不了"我们钉的这个版本有没有已知 CVE"，
-  也完全不看本仓自己写的代码。这四项补的是后者。它们暂未进分支保护 —— 但**会亮红叉**，
+  也完全不看本仓自己写的代码。这四项补的是后者。
+
+  > **为什么开了 Dependabot 告警还要单独跑 `cargo audit`** —— 2026-09-07 实测：
+  > 本仓 5 条 RustSec 告警里，GitHub 告警库（GHSA）只收了 1 条
+  > （`webbrowser`，且是 2023 年那条 `< 0.8.3`，与本仓的 1.2.x 无关）。
+  > `event-listener` / `quick-xml` / `paste` / `ttf-parser` 的告警 GHSA **一条都没有**。
+  > 我们实际修掉的 RUSTSEC-2026-0257（`webbrowser` 的 Unix `BROWSER` 参数注入）
+  > 也不在 GHSA 里。
+  > 结论：**GHSA 的 Rust 覆盖显著薄于 RustSec，两者不是冗余关系**。
+  > 依赖图开启后 Dependabot 告警仍为 0 条是**正确结果**，不是扫描没跑 ——
+  > 该报的它都报了，只是它能报的本来就少。Python 侧则相反：PYSEC-2026-1845
+  > 是 `pip-audit` 抓到的。它们暂未进分支保护 —— 但**会亮红叉**，
   这和"绿勾但什么都没查"是两回事：前者是有人做了不管的决定，后者是没人做过任何决定。
 - **Dependabot 四生态**：`github-actions` / `npm` / `pip` / `cargo` 每周一统一开 PR；major bump 必须人工 review。
   （`cargo` 是 2026-09-06 才补上的 —— 桌面版那 408 个 crate 是唯一会变成"下载即执行"的产物，
