@@ -20,4 +20,11 @@ if ! command -v python3 >/dev/null 2>&1; then
     exit 0
 fi
 
-python3 "$SCRIPT_DIR/session_start.py" "$PLUGIN_ROOT" || echo '{}'
+# A failure here must stay visible. `|| echo '{}'` alone once hid a
+# UnicodeEncodeError behind a well-formed empty payload — the harness saw
+# valid JSON, exit 0, and no masters. stderr is not part of the hook protocol,
+# so writing there degrades safely while leaving a trace.
+if ! python3 "$SCRIPT_DIR/session_start.py" "$PLUGIN_ROOT"; then
+    echo "master-skill session-start hook failed; injecting no masters" >&2
+    echo '{}'
+fi
