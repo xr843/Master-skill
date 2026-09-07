@@ -414,9 +414,11 @@ jobs:
           FIDELITY_EXIT=$?
           set -e
           python scripts/check-gate-liveness.py --fidelity-report fidelity-smoke.json
-          exit "$FIDELITY_EXIT"
+          # Prints only. The verdict is already in $FIDELITY_EXIT, via
+          # results_failed(), and re-deriving it here would be a second
+          # definition of "did this pass" that can drift from the first.
           python - <<'PY'
-          import json, sys
+          import json
           with open("fidelity-smoke.json") as f:
               data = json.load(f)
           # --master returns a single-element list
@@ -424,8 +426,8 @@ jobs:
           failed = r.get("failed", 0)
           total = r.get("total", 0)
           print(f"Fidelity smoke: {total - failed}/{total} passed for {r.get('master', '?')}")
-          sys.exit(1 if failed else 0)
           PY
+          exit "$FIDELITY_EXIT"
 
       - name: Upload smoke results
         if: always()

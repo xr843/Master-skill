@@ -369,6 +369,14 @@ def test_each_graded_fidelity_run_is_checked_for_real_verdicts(
     liveness_at = script.index("check-gate-liveness.py --fidelity-report")
     assert script.index("FIDELITY_EXIT=$?") < liveness_at
     assert 'exit "$FIDELITY_EXIT"' in script[liveness_at:]
+    # `exit` must come LAST. Inserting it before the summary heredoc made that
+    # whole block unreachable — the smoke silently stopped reporting
+    # "N/M passed" — which shellcheck caught (SC2317) and local runs did not,
+    # because actionlint skips its shellcheck integration when shellcheck is
+    # not installed.
+    assert script.rstrip().endswith('exit "$FIDELITY_EXIT"'), (
+        "anything after the exit is dead code"
+    )
 
 
 def test_concurrency_never_lets_one_merge_cancel_another():

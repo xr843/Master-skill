@@ -51,6 +51,11 @@ npm install -g .  # 可选，本地测试 CLI
 # 注：npm test / npm run validate 调用 `python3`（系统自带或 venv 内均可）
 ```
 
+**改 `.github/workflows/**` 时另外注意**：CI 的 actionlint 门禁会连带跑 shellcheck，
+而 actionlint 在本机**找不到 shellcheck 就静默跳过那一半检查** —— 本地绿、CI 红。
+本地复现要先装：`pip install shellcheck-py`（或系统包），再跑 `actionlint`。
+2026-09-07 就靠它抓到一处：`exit` 被插在结果汇总块之前，整段变成死代码。
+
 **基本健康检查：**
 
 ```bash
