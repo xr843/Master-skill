@@ -95,8 +95,16 @@ def extract_citation_ids(text: str) -> list[str]:
 # `JB348` = `J36nB348`),而 meta.json 存完整形态。审计无条件运行之后,
 # 模型写简写就会被误判伪造。按「藏别字母 + 经号」对齐,跨藏不对齐；
 # Jiaxing 的 B 前缀必须保留。
-_SHORT_FORM = re.compile(r"^([TXJ])(B?\d+)$")
-_FULL_FORM = re.compile(r"^([TXJ])\d+n(B?\d+)[a-z]?$")
+# `[0-9]`,不是 `\d`。这两个正则**不是**识别器,是**解析器** —— 它们把行文里的
+# 短号对回声明集,命中即判 offline(已核验)。所以上面那条「识别 id 宽松是安全的」
+# 在这里**不成立**:`\d` 吃全角,`int()` 又把 `T１９１１` 归一成 1911,于是一个在
+# 任何平台都解析不出来的引文串被报成「已核验的声明源」—— 不是多抓一条判伪造,
+# 是 over-resolve 成了通过。
+#
+# `{1,8}`:`int()` 在 4300 位以上抛 ValueError,而这条路跑在 check_response 里,
+# 一条 `【x，T999…(5000个9)】` 能把整轮付费评测掀翻。经号最长四五位,8 位够宽。
+_SHORT_FORM = re.compile(r"^([TXJ])(B?[0-9]{1,8})$")
+_FULL_FORM = re.compile(r"^([TXJ])[0-9]{1,8}n(B?[0-9]{1,8})[a-z]?$")
 
 
 def _normalize_cbeta_work_number(number: str) -> str:
@@ -279,7 +287,29 @@ def _compiled_teaching_id(
 # 引文块 【…】
 _CITATION_BLOCK = re.compile(r"【([^】]*)】")
 # live 链接 fojin.app/texts/<数字>
-_FOJIN_TEXT_LINK = re.compile(r"fojin\.app/texts/(\d+)")
+#
+# `[0-9]` 而不是 `\d`:Python 的 `\d` 默认吃全部 Unicode 数字,于是
+# `fojin.app/texts/１２３`(全角)曾被判成 live —— 一条未声明的伪造经号,靠一个
+# fojin.app 路由根本打不开的链接就被洗白。`--online`(唯一会去解析该 id 的路径)
+# 是可选的,CI 硬门只跑离线判定,永远不会发现。
+#
+# 注意这里与上面几个 id 正则的**方向相反**,不要顺手一起改:
+#   识别 id 宽松 → 多抓 → 判 fabricated → 失败,安全;
+#   放行链接宽松 → 多放 → 洗白伪造引文 → 通过,危险。
+# 所以「放行凭据」这一个要往死里收紧,`_CBETA_ID` / `_FAMILY_ID` 保持宽松。
+#
+# 只收紧数字还不够 —— 原来是个**无锚子串**匹配,于是这两个都能放行伪造引文:
+#     https://evil.example.com/?ref=fojin.app/texts/123
+#     https://myfojin.app/texts/123
+# 现在要求 `fojin.app` 紧跟在 `://` 之后,且 `://` 前面不能再接路径字符
+# (挡掉 `https://evil.com/https://fojin.app/...`)。全仓真实引用一律写
+# `https://fojin.app/texts/N`(实测 251 处无一例外),裸域名只出现在注释与散文里,
+# 所以要求 scheme 不会误伤正确引用。
+# `{1,10}`:上限存在是因为 `int()` 在 4300 位以上抛 ValueError,而调用它的
+# `_resolve_short_form` 跑在 check_response 里,一条畸形引文能掀翻整轮付费评测。
+_FOJIN_TEXT_LINK = re.compile(
+    r"(?<![\w./-])https?://fojin\.app/texts/([0-9]{1,10})(?![0-9])"
+)
 # 引文块「之后」多远内出现 live 链接仍算本块携带(且不跨过下一引文块)。link 须在引文之后。
 _LINK_WINDOW = 120
 
@@ -370,17 +400,25 @@ def audit_answer(
             if block:
                 unparsed.append(block)
             continue
-        link = _FOJIN_TEXT_LINK.search(answer, m.end(), region_end)
+        links = _FOJIN_TEXT_LINK.findall(answer, m.end(), region_end)
+        # 先分类,再决定 link 能洗白谁 —— 一个链接只能为**一条**引文作保。
+        # 原来 `for cid in ids` 复用同一个 `link`,于是
+        # 【《伪甲》，T99n9991；《伪乙》，T99n9992；《伪丙》，T99n9993】+ 一个真链接
+        # 会让三条伪造经号一起过关:那个链接指向的显然只是其中一部经(如果有的话),
+        # 其余两条连"它到底指谁"都无从谈起。歧义时判伪造 —— 放行凭据必须失败即安全。
+        unresolved: list[str] = []
         for cid in ids:
             resolved = cid if cid in declared_ids else _resolve_short_form(
                 cid, declared_ids
             )
             if resolved:
                 offline.append(resolved)
-            elif link:
-                live.append((cid, link.group(1)))
             else:
-                fabricated.append(cid)
+                unresolved.append(cid)
+        if len(unresolved) == 1 and links:
+            live.append((unresolved[0], links[0]))
+        else:
+            fabricated.extend(unresolved)
     return {
         "offline": offline,
         "live": live,

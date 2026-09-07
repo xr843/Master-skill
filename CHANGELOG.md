@@ -10,6 +10,44 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — four ways a fabricated citation could pass the offline gate (2026-09-07)
+
+`verify_citations.py` is the deterministic mirror of the runtime citation
+self-audit, and the offline half is the CI hard gate — `--online` is opt-in and
+never runs in CI. Four holes in the credential that lets an undeclared id
+through, each reproduced before and after:
+
+- **The link was matched as an unanchored substring.** Any URL merely
+  *containing* `fojin.app/texts/<digits>` whitelisted a citation, so
+  `https://evil.example.com/?ref=fojin.app/texts/123` and
+  `https://myfojin.app/texts/123` both worked. It must now follow `://`
+  directly, with a lookbehind that also rejects
+  `https://evil.com/https://fojin.app/…`. Requiring the scheme is safe: all
+  251 real citations in the repo write `https://fojin.app/texts/N`; the bare
+  form appears only in prose.
+- **Unicode digits counted as digits.** `\d` in Python matches fullwidth
+  numerals, so `fojin.app/texts/１２３` — a URL fojin.app's router cannot
+  resolve — laundered an undeclared id. Now `[0-9]`.
+- **One link whitelisted every id in its block.** A block naming three
+  fabricated sutra numbers passed in full on the strength of a single real
+  link, which can vouch for at most one of them. Ids are classified first, and
+  a link now whitelists only when exactly one is unresolved. Ambiguity fails
+  closed.
+- **The short-form resolver over-resolved into a pass.**
+  `audit_answer({'T46n1911'}, '【摩诃止观，T１９１１】')` reported
+  `offline: ['T46n1911']` — fullwidth digits through `\d`, normalised by
+  `int()`, so a string that resolves on no platform was reported as a
+  *verified declared source*. Loose matching is safe in a detector, which
+  over-detects into a failure; `_SHORT_FORM` is a parser, where it
+  over-resolves into a pass. Both resolvers are ASCII now, and bounded to
+  eight digits — `int()` raises past 4300, and this path runs inside
+  `check_response`.
+
+Found by an independent review of the citation work in #161, and split out
+ahead of it: these close real holes in the project's core integrity check and
+should not wait on a branch of CI and performance changes.
+
+
 v0.11.0 stated the fabrication gap rather than closing it, and stated it too
 generously. This batch closes it and corrects the number.
 
