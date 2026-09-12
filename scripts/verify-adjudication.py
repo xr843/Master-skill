@@ -22,6 +22,7 @@ nothing, and fails here.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -256,6 +257,26 @@ def verify(adjudication: dict, report: dict) -> list[str]:
 def main() -> int:
     found = sorted(REPORTS.glob("adjudication-*.json"))
     if not found:
+        # An adjudication that has been deleted verifies perfectly. This gate
+        # exists to keep a hand-ruling honest, so "there are none" has to be a
+        # deliberate state rather than the quiet result of removing the file
+        # that was inconvenient. Set ADJUDICATION_NONE_EXPECTED=1 to declare a
+        # tree that genuinely has not adjudicated anything yet.
+        if os.environ.get("ADJUDICATION_NONE_EXPECTED") == "1":
+            print("No adjudication files under eval/reports/ — declared expected.")
+            return 0
+        graded = sorted(
+            path for path in REPORTS.glob("*.json")
+            if not path.name.startswith("adjudication-")
+        )
+        if graded:
+            print(
+                "FAIL: eval/reports/ holds graded runs "
+                f"({', '.join(p.name for p in graded)}) but no adjudication of any "
+                "of them. Verifying nothing is not the same as verifying clean; "
+                "set ADJUDICATION_NONE_EXPECTED=1 if that is really the state."
+            )
+            return 1
         print("No adjudication files under eval/reports/ — nothing to verify.")
         return 0
 
@@ -269,6 +290,18 @@ def main() -> int:
             continue
         problems = verify(adjudication, json.loads(report.read_text()))
         cases = len(adjudication["cases"])
+
+        # The summary states how many cases were ruled on; nothing was checking
+        # it against how many are actually here. Dropping the awkward ones left
+        # the file self-inconsistent and the gate still printing OK — with a
+        # smaller number, in the same sentence that says everything is backed.
+        claimed = adjudication.get("summary", {}).get("adjudicated_cases")
+        if isinstance(claimed, int) and claimed != cases:
+            problems.append(
+                f"summary.adjudicated_cases says {claimed} but the file carries "
+                f"{cases} — cases were added or removed without the summary "
+                "following"
+            )
         if problems:
             failed = True
             print(f"FAIL: {path.name} ({cases} cases)")

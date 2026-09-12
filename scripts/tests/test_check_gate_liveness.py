@@ -416,7 +416,7 @@ def test_a_matrix_job_name_is_known_to_be_unmatchable(liveness):
     )
 
 
-def test_the_collection_subprocess_runs_once_per_process(liveness, monkeypatch):
+def test_the_collection_subprocess_runs_once_per_process(liveness, monkeypatch, tmp_path):
     """`collect_counts` forks `pytest --collect-only`, which costs ~1.1s.
 
     It was called afresh by every test that touched `run_all` — six of them —
@@ -434,9 +434,15 @@ def test_the_collection_subprocess_runs_once_per_process(liveness, monkeypatch):
     monkeypatch.setattr(liveness.subprocess, "run", counting_run)
     liveness._collect_counts_cached.cache_clear()
 
-    root = Path(__file__).resolve().parent.parent.parent
-    first = liveness.collect_counts(root)
-    second = liveness.collect_counts(root)
+    # Pointed at a one-file tree, not this repo: collecting the real suite costs
+    # ~1.1s and proves nothing extra here. What is under test is the number of
+    # forks, and that is the same whatever is being collected.
+    tiny = tmp_path / "tree"
+    (tiny / "tests").mkdir(parents=True)
+    (tiny / "tests" / "test_one.py").write_text("def test_one():\n    assert True\n")
+
+    first = liveness.collect_counts(tiny)
+    second = liveness.collect_counts(tiny)
 
     assert first == second
     assert len(calls) == 1, f"collected {len(calls)} times, expected 1"
