@@ -52,4 +52,4 @@ pytest>=9.1.1,<10
 # messages, timeout)` — the earlier comment here guessed that 3.x was where
 # `max_tokens` gave way to `max_completion_tokens`; checked on 3.8.0, both are
 # accepted, so build_request() needs no change. Same >= 3.10 floor as anthropic.
-openai==3.8.0
+openai==3.10.0
