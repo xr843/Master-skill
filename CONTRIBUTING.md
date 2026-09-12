@@ -351,6 +351,22 @@ v0.8 在 `meta.json` 引入 `lore_triggers`，让 runtime 在用户提问命中 
 | `pip` | `requirements.txt` + `requirements-eval.txt`（validate / fidelity 工具链） |
 | `cargo` | `desktop/Cargo.lock`（408 个 crate；桌面版是**唯一**下载即执行的产物） |
 
+### ⚠️ `anthropic` / `openai` 的升级 PR：绿灯不算数
+
+评测的评分路径**没有 key 就不跑**，所以这两个 SDK 的破坏性变更在 CI 上**完全不显形**——
+它会一路绿到有人真花钱跑全量的那一刻，也就是发现成本最高的时刻。
+Dependabot 一周内提过四次这两个包的升级，每次都带绿勾。
+
+评审这类 PR 时跑：
+
+```bash
+pip install -r requirements-eval.txt      # 装成 PR 里钉的那个版本
+python3 scripts/check-eval-sdk-surface.py
+```
+
+它导入实际装上的包、逐项读 `test-fidelity.py` 真正调用的表面，并核对装的
+就是钉的那个版本。缺任何一项则退出 1 并指名。
+
 **maintainer review 流程**（也欢迎贡献者帮忙跑）：
 
 1. **CI 必须全绿**——所有 required status checks 是依赖更新最可靠的回归信号。

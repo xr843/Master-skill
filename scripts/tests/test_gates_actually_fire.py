@@ -254,3 +254,33 @@ def test_an_empty_adjudication_set_can_be_declared(pristine, tmp_path):
         cwd=repo, capture_output=True, text=True, timeout=180,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_the_eval_sdk_surface_checker_names_what_it_guards():
+    """It guards exactly what test-fidelity.py calls — no more.
+
+    A surface check that guards more than the code uses turns an irrelevant
+    upstream change into a blocked upgrade; one that guards less is the green
+    tick that means nothing. Both halves are asserted against the real source.
+    """
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "sdk_surface", ROOT / "scripts" / "check-eval-sdk-surface.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    grader = (ROOT / "scripts" / "test-fidelity.py").read_text(encoding="utf-8")
+    required = module.REQUIRED
+
+    # Everything guarded must actually appear in the grader.
+    for pkg, guard in required.items():
+        for field_list in guard["model_fields"].values():
+            for field in field_list:
+                assert field in grader, f"{pkg}: guarding {field}, which the grader never reads"
+
+    # And the params the grader demonstrably sends must be guarded.
+    for param in ("max_tokens", "system", "messages", "timeout"):
+        assert param in required["anthropic"]["create_params"], param
+    assert "max_retries" in required["anthropic"]["client_kwargs"]

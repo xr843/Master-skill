@@ -13,10 +13,10 @@
 #      eval/reports/ was produced against the 0.x line. A grading harness that
 #      silently changes SDK major versions between runs is not an instrument.
 #
-# 1.3.0, verified 2026-09-12 by importing it and reading the surface this
+# 1.4.0, verified 2026-09-12 by importing it and reading the surface this
 # script actually uses — not by CI going green, which proves nothing here: the
 # grading never runs without a key, so a breaking SDK change would not show up
-# until someone spent money. Confirmed present on 1.3.0:
+# until someone spent money. Confirmed present on 1.4.0:
 #     messages.create(model, max_tokens, system, messages, timeout)
 #     Anthropic(max_retries=...)
 #     Message.stop_reason, TextBlock.text
@@ -30,7 +30,7 @@
 #   - the HTTP layer moved to httpx2, which handles proxies differently — on a
 #     machine with a SOCKS proxy set, constructing the client now raises unless
 #     `socksio` is installed. Hit while verifying this bump.
-anthropic==1.3.0
+anthropic==1.4.0
 
 # >=9.0.3, not the 8.x line this file first pinned. PYSEC-2026-1845: pytest
 # through 9.0.2 on UNIX uses the predictable directory name
@@ -48,8 +48,8 @@ pytest>=9.1.1,<10
 # a clean checkout — while the guard test only grepped for anthropic and pytest.
 #
 # `==`, same reasoning as anthropic above, and pinned to the version actually
-# verified. 3.8.0 still accepts `chat.completions.create(model, max_tokens,
+# verified. 3.10.0 still accepts `chat.completions.create(model, max_tokens,
 # messages, timeout)` — the earlier comment here guessed that 3.x was where
-# `max_tokens` gave way to `max_completion_tokens`; checked on 3.8.0, both are
+# `max_tokens` gave way to `max_completion_tokens`; checked on 3.10.0, both are
 # accepted, so build_request() needs no change. Same >= 3.10 floor as anthropic.
-openai==3.8.0
+openai==3.10.0
