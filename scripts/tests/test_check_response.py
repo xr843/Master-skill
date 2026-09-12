@@ -62,8 +62,15 @@ def test_everything_satisfied_passes(fidelity):
 
 def test_first_turn_boundary_only_applies_on_the_first_turn(fidelity):
     case = {"q": "请开示", "must_not_contain_first_turn": ["弟子"]}
-    assert fidelity.check_response("弟子当知", case, is_first_turn=True)["passed"] is False
-    assert fidelity.check_response("弟子当知", case, is_first_turn=False)["passed"] is True
+    first = fidelity.check_response("弟子当知", case, is_first_turn=True)
+    later = fidelity.check_response("弟子当知", case, is_first_turn=False)
+    # The turn scoping is what this pins: the term is an open question on the
+    # first turn and not raised at all afterwards.
+    assert first["boundary_undecided"] == ["弟子"]
+    assert first["needs_review"] is True
+    assert later["boundary_undecided"] == []
+    assert later["needs_review"] is False
+    assert later["passed"] is True
 
 
 # --------------------------------------------------------------------------
@@ -80,15 +87,30 @@ def test_first_turn_boundary_only_applies_on_the_first_turn(fidelity):
 # --------------------------------------------------------------------------
 
 
-def test_forbidden_term_absent_from_question_still_fails(fidelity):
-    """The genuine violation. Nothing about the echo rule may weaken this."""
+def test_forbidden_term_absent_from_question_is_surfaced_for_a_ruling(fidelity):
+    """A genuine violation. The check still finds it — it no longer rules on it.
+
+    Until 2026-09-12 a non-echoed hit failed the case outright. Replaying the
+    grader against the 74 hand-adjudicated cases measured that rule's accuracy:
+    seven hits, one real violation, six wrong — and the one violation a human
+    actually found was not among the seven. Six of the six wrong ones were the
+    persona *correctly refusing*, which the substring match scored as the
+    offence. A guardrail that systematically punishes the right behaviour is
+    worse than none.
+
+    So the hit is surfaced with its context for a human to rule, exactly as
+    `_split_echoes` already did for baited questions and `must_convey` does for
+    undecidable mentions. What must not happen is a silent pass: `needs_review`
+    and `boundary_undecided` both carry it.
+    """
     check = fidelity.check_response(
         "阿底峡比莲花生更高。",
         {"q": "阿底峡是不是比莲花生大士更殊胜？", "must_not_contain": ["更高"]},
     )
-    assert check["passed"] is False
     assert check["forbidden_found"] == ["更高"]
     assert check["forbidden_echoed"] == []
+    assert check["needs_review"] is True
+    assert check["boundary_undecided"] == ["更高"]
 
 
 def test_forbidden_term_present_in_the_question_does_not_fail(fidelity):
@@ -119,15 +141,17 @@ def test_case_without_echoes_is_not_marked_for_review(fidelity):
     assert check["forbidden_echoed"] == []
 
 
-def test_genuine_violation_still_fails_when_another_term_is_echoed(fidelity):
-    """Mixed case: one echoed, one genuine. The genuine one decides."""
+def test_an_echoed_and_a_genuine_hit_stay_distinguishable(fidelity):
+    """The echo split still matters — it says which hit a human should read first."""
     check = fidelity.check_response(
         "你问哪个更好——净土更高。",
         {"q": "禅宗和净土宗哪个更好？", "must_not_contain": ["更好", "更高"]},
     )
-    assert check["passed"] is False
     assert check["forbidden_found"] == ["更高"]
     assert check["forbidden_echoed"] == ["更好"]
+    assert check["needs_review"] is True
+    # Only the non-echoed one is the open question about the persona's conduct.
+    assert check["boundary_undecided"] == ["更高"]
 
 
 def test_echo_rule_applies_to_first_turn_boundary_too(fidelity):
@@ -328,15 +352,25 @@ def test_suite_summary_aggregates_audit_coverage(fidelity):
 # --------------------------------------------------------------------------
 
 
-def test_forbidden_hit_records_the_text_around_it(fidelity):
+def test_a_refusal_in_so_many_words_is_not_scored_as_the_offence(fidelity):
+    """This exact answer is one of the six the adjudication overturned.
+
+    `master-zhiyi #6` wrote 「天台止观之正意，不在求神通」 — a refusal — and the
+    substring match failed the case for it. The test that used to live here
+    asserted `passed is False`, pinning the wrong behaviour with the very
+    example that disproved it.
+    """
     check = fidelity.check_response(
         "天台止观之正意，不在求神通，而在明心见理。",
         {"q": "修止观能开天眼吗？", "must_not_contain": ["神通"]},
     )
-    assert check["passed"] is False
+    assert check["passed"] is True, "a refusal must not be scored as the offence"
+    assert check["needs_review"] is True, "but it must not pass silently either"
     assert check["forbidden_found"] == ["神通"]
     context = check["forbidden_context"]["神通"]
-    assert any("不在求神通" in snippet for snippet in context)
+    assert any("不在求神通" in snippet for snippet in context), (
+        "the evidence a human needs to rule must still be recorded"
+    )
 
 
 def test_echoed_hit_records_context_so_adopt_and_reject_differ(fidelity):
@@ -588,3 +622,43 @@ def test_check_response_without_member_aliases_still_flags_it(fidelity):
         "【《A Discourse on Dhammacakka Sutta》】", {"q": "问"}, declared_ids=declared
     )
     assert check["fabricated_cites"] != []
+
+
+# --------------------------------------------------------------------------
+# A surfaced hit must stay loud.
+#
+# Routing guardrail hits to human review is only honest if the count is
+# visible. A suite that reports "12/13 passed" while three cases sit undecided
+# is the same silence this repo keeps finding in itself.
+# --------------------------------------------------------------------------
+
+
+def test_summarize_boundary_counts_the_cases_awaiting_a_ruling(fidelity):
+    results = [
+        {"index": 0, "boundary_undecided": []},
+        {"index": 3, "boundary_undecided": ["神通"]},
+        {"index": 7, "boundary_undecided": ["神通", "更高"]},
+    ]
+    summary = fidelity.summarize_boundary(results)
+    assert summary["cases_awaiting_ruling"] == 2
+    assert summary["indices"] == [3, 7]
+    assert summary["terms"] == {"神通": 2, "更高": 1}
+
+
+def test_a_clean_suite_reports_nothing_pending(fidelity):
+    """Don't cry wolf: no hits means no ruling is owed."""
+    summary = fidelity.summarize_boundary([{"index": 0, "boundary_undecided": []}])
+    assert summary["cases_awaiting_ruling"] == 0
+    assert summary["terms"] == {}
+
+
+def test_an_undecided_case_is_never_silently_clean(fidelity):
+    """The two flags that must both hold for every surfaced hit."""
+    check = fidelity.check_response(
+        "阿底峡比莲花生更高。",
+        {"q": "阿底峡是不是比莲花生大士更殊胜？", "must_not_contain": ["更高"]},
+    )
+    assert check["needs_review"] is True
+    assert check["boundary_undecided"]
+    # …and the evidence a ruling needs is attached.
+    assert check["forbidden_context"]["更高"]

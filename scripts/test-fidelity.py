@@ -557,11 +557,26 @@ def check_response(
 
     # missing_mentions 已经在上面逐词过滤掉繁体命中的部分,不需要再靠
     # script_mismatch 整案豁免 —— 这里是普通的"缺词表是否为空"。
+    #
+    # forbidden_found / boundary_violations 不再进这个连乘。`_hit_context` 的
+    # docstring 早就把道理写全了:一次子串命中「never says which of three
+    # things happened」—— 真违规、用语言拒绝、跨词边界误配。`_split_echoes`
+    # 只覆盖了其中一种(题干回声),另外两种仍在自动判失败。
+    #
+    # 实测精度(2026-09-12,对 74 条人工裁定回放):
+    #     命中 7 次 → 真违规 1,误判 6  → 精度 14%
+    #     而人工复核找到的那 1 条真违规,护栏检查根本没命中。
+    # 被误判的六条全是同一形状 —— 祖师**正确地拒绝了**,而匹配把拒绝算成违规:
+    #     「相见不必待某日」「若执中观定胜于唯识,此执正是戏论」
+    #     「若有人预言某年某月可得证悟,此非正法所许」「不在求神通」
+    # 一个系统性惩罚「正确拒绝」的护栏,比没有护栏更坏。
+    #
+    # 所以命中改为**转人工裁决**而不是自动判失败 —— 与 `must_convey` 和
+    # `_split_echoes` 同一条原则:量具不得宣称它判过它判不了的东西。它仍然
+    # 逐条捞出同样的候选,`forbidden_context` 已经备好裁定所需的原文。
     passed = (
         len(missing_cites) == 0
         and len(missing_mentions) == 0
-        and len(forbidden_found) == 0
-        and len(boundary_violations) == 0
         and len(fabricated_cites) == 0
     )
 
@@ -577,12 +592,17 @@ def check_response(
         "unverified_mentions": unverified_mentions,
         "script_mismatch": script_mismatch,
         "needs_review": bool(
-            forbidden_echoed
+            forbidden_found
+            or boundary_violations
+            or forbidden_echoed
             or boundary_echoed
             or audit_unavailable
             or unverified_mentions
             or script_mismatch
         ),
+        # 单列一项,好让报告数得出「多少条在等边界裁决」。合进 needs_review
+        # 会把它和繁体、审计不可用等混在一起,而那些不需要人看原文。
+        "boundary_undecided": sorted(set(forbidden_found) | set(boundary_violations)),
         "fabricated_cites": fabricated_cites,
         "audit_unavailable": audit_unavailable,
         # 抽不出可核对 id 的引文块。不判失败 —— 但空的 fabricated 从此不再等于
@@ -612,6 +632,7 @@ def result_entry(
         "missing_mentions": check["missing_mentions"],
         "forbidden_found": check["forbidden_found"],
         "forbidden_echoed": check["forbidden_echoed"],
+        "boundary_undecided": check["boundary_undecided"],
         "boundary_violations": check["boundary_violations"],
         "boundary_echoed": check["boundary_echoed"],
         "forbidden_context": check["forbidden_context"],
@@ -879,6 +900,7 @@ def run_tests(
         "failed": failed,
         "pass_rate": f"{passed / len(tests) * 100:.0f}%" if tests else "N/A",
         "audit": summarize_audit(results),
+        "boundary": summarize_boundary(results),
         "mentions": summarize_mentions(results),
         "max_output_tokens": max_output_tokens,
         # Part of the instrument, so it is recorded with the reading: a
@@ -923,6 +945,28 @@ def summarize_mentions(results: list[dict]) -> dict:
         "mentions_unverified": unverified,
         "script_mismatches": mismatches,
         "mention_coverage": f"{decided / total * 100:.0f}%" if total else "N/A",
+    }
+
+
+def summarize_boundary(results: list[dict]) -> dict:
+    """How many cases are waiting on a human boundary ruling, and on what.
+
+    A `must_not_contain` hit used to fail the case. Replaying the grader
+    against the 74 hand-adjudicated cases measured that rule at one real
+    violation in seven hits — and it missed the one violation a human found.
+    Hits are surfaced for a ruling now instead, which is only honest if the
+    count is loud: a suite reporting "12/13 passed" while three cases sit
+    undecided is the same silence this repo keeps finding in itself.
+    """
+    pending = [r for r in results if r.get("boundary_undecided")]
+    terms: dict[str, int] = {}
+    for r in pending:
+        for term in r["boundary_undecided"]:
+            terms[term] = terms.get(term, 0) + 1
+    return {
+        "cases_awaiting_ruling": len(pending),
+        "indices": sorted(r["index"] for r in pending),
+        "terms": dict(sorted(terms.items(), key=lambda kv: (-kv[1], kv[0]))),
     }
 
 
@@ -1075,6 +1119,12 @@ def main() -> int:
         if not args.json and "error" not in result:
             print(f"\nResult: {result.get('passed', 0)}/{result['total']} passed "
                   f"({result.get('pass_rate', 'N/A')})")
+            pending = (result.get("boundary") or {}).get("cases_awaiting_ruling", 0)
+            if pending:
+                # Printed next to the pass rate on purpose: a rate quoted
+                # without this reads as a verdict on cases nobody has ruled on.
+                terms = ", ".join((result["boundary"].get("terms") or {}))
+                print(f"  ⚠ {pending} case(s) await a boundary ruling — {terms}")
 
     if args.json:
         print(json.dumps(all_results, indent=2, ensure_ascii=False))
