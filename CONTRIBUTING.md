@@ -43,7 +43,7 @@ cd Master-skill
 # Python（用于 validate / fidelity / verify-links）
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-pip install -r requirements-eval.txt  # 仅 fidelity 实跑需要（钉版的 anthropic / openai / pytest）
+pip install -r requirements-eval.txt  # 仅 fidelity 实跑需要（钉版的 anthropic / openai / pytest；**需 Python ≥ 3.10**，两个 SDK 的地板）
 
 # Node（用于 npx installer）
 # 需要 Node.js >= 18

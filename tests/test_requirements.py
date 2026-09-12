@@ -54,3 +54,41 @@ def test_every_workflow_that_installs_the_eval_sdk_uses_the_pinned_file():
         and "requirements-eval.txt" not in line
     ]
     assert offenders == [], offenders
+
+
+def test_the_eval_sdk_pins_record_why_their_version_was_chosen():
+    """A pin comment that cites a version the file no longer holds is worse
+    than no comment: it reads as verification of something never checked.
+
+    This bit once already — the openai comment claimed 3.x was where
+    `max_tokens` gives way to `max_completion_tokens`, which is not what 3.8.0
+    does, and the anthropic comment kept vouching for 0.122.0 after the pin
+    moved. Both were guesses left standing next to a pinned number.
+    """
+    import re
+
+    text = (Path(__file__).resolve().parents[1] / "requirements-eval.txt").read_text(
+        encoding="utf-8"
+    )
+    pinned = dict(re.findall(r"^([a-z-]+)==([\d.]+)$", text, re.M))
+    assert {"anthropic", "openai"} <= set(pinned), pinned
+
+    for package, version in pinned.items():
+        # The version must appear in prose above the pin, not only in the pin.
+        prose = text.split(f"{package}=={version}")[0]
+        assert version in prose, (
+            f"{package}=={version} is pinned but no comment says why that "
+            "version — the reasoning has to move with the number"
+        )
+
+
+def test_the_python_floor_for_the_eval_is_documented_where_it_bites():
+    """anthropic 1.x and openai 3.x both require >= 3.10, while the project
+    badge says 3.9+. The badge is about the generator tools; this file is not,
+    and a contributor following CONTRIBUTING must not discover the difference
+    from a traceback."""
+    root = Path(__file__).resolve().parents[1]
+    contributing = (root / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    section = contributing[: contributing.index("§ 1")]
+    assert "requirements-eval.txt" in section
+    assert "3.10" in section, "the eval's Python floor is not stated where it is installed"
