@@ -21,7 +21,7 @@ anyhow = "1"
 # accesskit versions, two epaint versions, and a green CI because nothing in
 # this crate actually imported the newer one. Removed: one version of egui,
 # chosen by eframe.
-eframe = "0.31"
+eframe = "0.36"
 fs4 = { version = "1.1", default-features = false, features = ["sync"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
