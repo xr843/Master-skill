@@ -9,6 +9,7 @@ Usage:
 
 import argparse
 import json
+import re
 import os
 import sys
 from pathlib import Path
@@ -18,7 +19,7 @@ from typing import Optional
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "tools"))
 
-from fojin_bridge import FojinBridge, create_bridge
+from fojin_bridge import FojinBridge, FojinConfigError, create_bridge
 
 
 # ── Teacher registry ────────────────────────────────────────────
@@ -26,9 +27,27 @@ from fojin_bridge import FojinBridge, create_bridge
 PREBUILT_DIR = PROJECT_ROOT / "prebuilt"
 
 
+# Slugs reach this module from `--teachers xuanzang,kumarajiva`, split on
+# commas and joined onto PREBUILT_DIR. Without a charset restriction
+# `--teachers ../../../../etc` read a meta.json from anywhere on the machine —
+# verified before this guard existed. Every other entry point in this repo
+# already had one: `_SAFE_MASTER` in scripts/verify_citations.py and
+# scripts/query.py, `isSafeName` in bin/cli.mjs. This file was the gap.
+_SAFE_SLUG = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
 def load_teacher_meta(slug: str) -> dict:
     """Load a teacher's meta.json by slug."""
+    if not _SAFE_SLUG.match(slug):
+        raise ValueError(
+            f"invalid teacher slug: {slug!r} (letters, digits, '-' and '_' only)"
+        )
     meta_path = PREBUILT_DIR / slug / "meta.json"
+    # Resolved and re-checked rather than trusted to the charset alone: the
+    # charset is the rule, this is the assertion that the rule held.
+    resolved = meta_path.resolve()
+    if not resolved.is_relative_to(PREBUILT_DIR.resolve()):
+        raise ValueError(f"teacher slug escapes prebuilt/: {slug!r}")
     if not meta_path.exists():
         raise FileNotFoundError(f"Teacher not found: {slug}")
     with open(meta_path, "r", encoding="utf-8") as f:
@@ -347,16 +366,31 @@ def main():
         parser.print_help()
         return
 
-    bridge = create_bridge()
+    try:
+        bridge = create_bridge()
+    except FojinConfigError as error:
+        # Matches the contract the other entry points keep: a message a person
+        # can act on, and an exit code, instead of a traceback.
+        print(f"[配置错误] {error}", file=sys.stderr)
+        sys.exit(2)
 
-    if args.command == "lineage":
-        output = cmd_lineage(bridge, args.person_a, args.person_b)
-    elif args.command == "concept":
-        teacher_slugs = [s.strip() for s in args.teachers.split(",")]
-        output = cmd_concept(bridge, args.concept, teacher_slugs)
-    else:
-        parser.print_help()
-        return
+    try:
+        if args.command == "lineage":
+            output = cmd_lineage(bridge, args.person_a, args.person_b)
+        elif args.command == "concept":
+            teacher_slugs = [s.strip() for s in args.teachers.split(",")]
+            output = cmd_concept(bridge, args.concept, teacher_slugs)
+        else:
+            parser.print_help()
+            return
+    except ValueError as error:
+        # Raised by load_teacher_meta for a slug outside the allowed charset.
+        # scripts/query.py answers the same mistake the same way, exit 2.
+        print(f"{error}", file=sys.stderr)
+        sys.exit(2)
+    except FileNotFoundError as error:
+        print(f"{error}", file=sys.stderr)
+        sys.exit(1)
 
     print(output)
 
