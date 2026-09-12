@@ -25,6 +25,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import re
 import subprocess
@@ -276,8 +277,17 @@ def read_testpaths(root: Path) -> list[str]:
     return []
 
 
-def collect_counts(root: Path) -> dict[str, int]:
-    """Ask pytest what it actually collects, per file."""
+@functools.lru_cache(maxsize=None)
+def _collect_counts_cached(root: str) -> tuple[tuple[str, int], ...]:
+    """One `pytest --collect-only` per process, not per caller.
+
+    The CLI calls `run_all` once and never noticed. The test suite calls it six
+    times, and each call forked a full collection of the whole suite — measured
+    1.11s each, ~7s of a 20s `npm test`. Worse, it grew with the suite: every
+    test added made those six slower, so the cost compounded exactly as the
+    project got more tests. Cached on the resolved root; the collection cannot
+    change within a process.
+    """
     proc = subprocess.run(
         [sys.executable, "-m", "pytest", "--collect-only", "-q"],
         cwd=root, capture_output=True, text=True,
@@ -287,7 +297,12 @@ def collect_counts(root: Path) -> dict[str, int]:
         match = re.match(r"^([\w./-]+\.py)::", line.strip())
         if match:
             counts[match.group(1)] = counts.get(match.group(1), 0) + 1
-    return counts
+    return tuple(sorted(counts.items()))
+
+
+def collect_counts(root: Path) -> dict[str, int]:
+    """Ask pytest what it actually collects, per file."""
+    return dict(_collect_counts_cached(str(Path(root).resolve())))
 
 
 def read_workflows(root: Path) -> dict[str, dict]:

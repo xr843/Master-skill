@@ -27,8 +27,17 @@ from pathlib import Path
 import pytest
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def liveness():
+    """Session-scoped on purpose.
+
+    The module holds no mutable state a test would want fresh — the one thing
+    tests do mutate, ADVISORY_GATES, they mutate through `monkeypatch.setitem`,
+    which restores it. Reloading it per test also reset the `lru_cache` on the
+    collection subprocess, so six tests each forked a full
+    `pytest --collect-only` of the entire suite: 1.11s apiece, and growing with
+    every test added to the project.
+    """
     scripts_dir = Path(__file__).resolve().parents[1]
     if str(scripts_dir) not in sys.path:
         sys.path.insert(0, str(scripts_dir))
@@ -405,3 +414,30 @@ def test_a_matrix_job_name_is_known_to_be_unmatchable(liveness):
         "an ADVISORY_GATES key looks like a matrix template; it can never match "
         "a real check-run name"
     )
+
+
+def test_the_collection_subprocess_runs_once_per_process(liveness, monkeypatch):
+    """`collect_counts` forks `pytest --collect-only`, which costs ~1.1s.
+
+    It was called afresh by every test that touched `run_all` — six of them —
+    and the cost grew with the suite, so adding tests made this file slower in
+    a loop. Counted rather than timed: a wall-clock assertion here would be
+    flaky on a loaded machine, and what matters is the number of forks.
+    """
+    calls = []
+    real_run = liveness.subprocess.run
+
+    def counting_run(*args, **kwargs):
+        calls.append(args[0])
+        return real_run(*args, **kwargs)
+
+    monkeypatch.setattr(liveness.subprocess, "run", counting_run)
+    liveness._collect_counts_cached.cache_clear()
+
+    root = Path(__file__).resolve().parent.parent.parent
+    first = liveness.collect_counts(root)
+    second = liveness.collect_counts(root)
+
+    assert first == second
+    assert len(calls) == 1, f"collected {len(calls)} times, expected 1"
+    liveness._collect_counts_cached.cache_clear()
