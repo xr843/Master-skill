@@ -30,7 +30,7 @@
 #   - the HTTP layer moved to httpx2, which handles proxies differently — on a
 #     machine with a SOCKS proxy set, constructing the client now raises unless
 #     `socksio` is installed. Hit while verifying this bump.
-anthropic==1.3.0
+anthropic==1.4.0
 
 # >=9.0.3, not the 8.x line this file first pinned. PYSEC-2026-1845: pytest
 # through 9.0.2 on UNIX uses the predictable directory name
