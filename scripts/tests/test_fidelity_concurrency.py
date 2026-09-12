@@ -272,3 +272,107 @@ def test_a_grader_exception_is_one_entry_not_a_dead_run(fidelity, monkeypatch):
     statuses = [r["status"] for r in suite["results"]]
     assert statuses.count("grader_error") == 1
     assert len(suite["results"]) == suite["total"], "every other fixture still graded"
+
+
+# --------------------------------------------------------------------------
+# Prompt caching, and why the first fixture runs alone.
+#
+# The system prompt is the persona — ~6.7k tokens, identical across a master's
+# ~11 fixtures — and a sweep re-sent it 193 times at full price. Marking it
+# cacheable is half the fix: with four workers the first four requests all
+# start before the cache entry exists, so three of them pay full price anyway.
+# --------------------------------------------------------------------------
+
+
+class _CacheSimulator:
+    """A server whose cache entry only becomes visible once a write finishes.
+
+    That delay is the whole point: a simulator that resolves the race under a
+    lock shows a perfect hit rate with or without warming, which is exactly the
+    wrong answer — the first version of this experiment did that and measured
+    nothing.
+    """
+
+    def __init__(self, system_tokens=6700, rtt=0.03):
+        self.system_tokens = system_tokens
+        self.rtt = rtt
+        self._ready: dict[str, bool] = {}
+        self._lock = threading.Lock()
+        self.writes = 0
+        self.reads = 0
+
+    def create(self, **body):
+        key = body["system"][0]["text"][:40]
+        with self._lock:
+            hit = self._ready.get(key, False)
+        time.sleep(self.rtt)
+        with self._lock:
+            self._ready[key] = True
+            if hit:
+                self.reads += 1
+            else:
+                self.writes += 1
+        usage = types.SimpleNamespace(
+            cache_creation_input_tokens=0 if hit else self.system_tokens,
+            cache_read_input_tokens=self.system_tokens if hit else 0,
+            input_tokens=20,
+        )
+        return types.SimpleNamespace(
+            content=[types.SimpleNamespace(type="text", text="答")],
+            stop_reason="end_turn",
+            usage=usage,
+        )
+
+
+def test_the_system_prompt_is_written_to_cache_once_per_suite(fidelity, monkeypatch):
+    sim = _CacheSimulator()
+    _install_fake_anthropic(monkeypatch, on_create=sim.create)
+    suite = fidelity.run_tests("yinguang", quiet=True, concurrency=4)
+
+    assert suite["total"] > 4, "need more fixtures than workers for this to mean anything"
+    assert sim.writes == 1, (
+        f"the system prompt was written to cache {sim.writes} times — the first "
+        "fixture is supposed to run alone so the rest can hit"
+    )
+    assert sim.reads == suite["total"] - 1
+
+
+def test_the_report_prices_the_saving_rather_than_counting_hits(fidelity, monkeypatch):
+    """A hit *rate* reads ~100% either way: the uncached part of a request is
+    just the question, tens of tokens against a 6.7k system prompt."""
+    sim = _CacheSimulator()
+    _install_fake_anthropic(monkeypatch, on_create=sim.create)
+    suite = fidelity.run_tests("yinguang", quiet=True, concurrency=4)
+
+    cache = suite["cache"]
+    assert cache["baseline_input_tokens"] > cache["effective_input_tokens"]
+    saved = int(cache["input_tokens_saved"].rstrip("%"))
+    assert saved > 60, f"only {saved}% saved with one write and N reads"
+
+
+def test_a_single_worker_run_still_caches(fidelity, monkeypatch):
+    """--concurrency 1 has no race to warm around, and must not regress."""
+    sim = _CacheSimulator()
+    _install_fake_anthropic(monkeypatch, on_create=sim.create)
+    suite = fidelity.run_tests("yinguang", quiet=True, concurrency=1)
+    assert sim.writes == 1
+    assert suite["cache"]["read"] > 0
+
+
+def test_an_interrupt_during_the_warm_up_still_degrades_gracefully(fidelity, monkeypatch):
+    """The warm-up is a real API call and must sit inside the same handling.
+
+    The first version of the cache warm-up ran it above the `try`, so a Ctrl-C
+    on the very first fixture propagated out of `run_tests` instead of stopping
+    the sweep — losing exactly the behaviour the interrupt work added, on the
+    one call most likely to be interrupted because it is the first.
+    """
+    def create(**_body):
+        raise KeyboardInterrupt
+
+    _install_fake_anthropic(monkeypatch, on_create=create)
+    suite = fidelity.run_tests("yinguang", quiet=True, concurrency=4)
+
+    assert suite["interrupted"] is True
+    assert "error" not in suite
+    assert suite["results"] == [], "nothing was graded, and nothing is claimed"

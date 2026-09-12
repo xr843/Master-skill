@@ -16,6 +16,7 @@ from different models are never averaged together.
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 import types
 from pathlib import Path
@@ -97,13 +98,28 @@ def test_non_anthropic_provider_without_a_model_is_an_error(fidelity):
 # --------------------------------------------------------------------------
 
 
-def test_anthropic_request_keeps_system_at_the_top_level(fidelity):
+def test_anthropic_request_marks_the_system_prompt_for_caching(fidelity):
+    """The system prompt is the persona — ~6.7k tokens, identical across the
+    ~11 fixtures of one master, and a sweep re-sent it 193 times at full price.
+
+    Marked explicitly rather than via the top-level `cache_control` shorthand:
+    that caches the *last* cacheable block, which here is the per-fixture
+    question — the one part that changes every call and can never hit.
+    """
     req = fidelity.build_request("anthropic", "claude-sonnet-4-6", "SYS", "Q?", 2048)
-    assert req["model"] == "claude-sonnet-4-6"
-    assert req["system"] == "SYS"
-    assert req["max_tokens"] == 2048
+    assert isinstance(req["system"], list), "system must be blocks to carry cache_control"
+    assert req["system"][0]["text"] == "SYS"
+    assert req["system"][0]["cache_control"] == {"type": "ephemeral"}
+    # The question stays uncached and last.
     assert req["messages"] == [{"role": "user", "content": "Q?"}]
 
+
+def test_the_openai_compatible_shape_is_left_alone(fidelity):
+    """deepseek / gemini cache automatically and take no cache_control."""
+    req = fidelity.build_request("deepseek", "deepseek-v4-flash", "SYS", "Q?", 2048)
+    assert "system" not in req
+    assert req["messages"][0] == {"role": "system", "content": "SYS"}
+    assert "cache_control" not in json.dumps(req)
 
 def test_openai_style_request_moves_system_into_messages(fidelity):
     req = fidelity.build_request("deepseek", "deepseek-chat", "SYS", "Q?", 2048)

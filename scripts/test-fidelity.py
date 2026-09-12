@@ -165,7 +165,22 @@ def build_request(
         return {
             "model": model,
             "max_tokens": max_tokens,
-            "system": system_prompt,
+            # The system prompt is the whole persona — measured at 13,505
+            # characters on average, roughly 6.7k tokens — and it is identical
+            # for every fixture of the same master, of which there are ~11. A
+            # sweep re-sent it 193 times and paid full input price each time.
+            #
+            # Marked explicitly rather than through the top-level
+            # `cache_control` shorthand: that caches the *last* cacheable
+            # block, which here is the per-fixture question — the one part
+            # that changes every call and can never hit.
+            "system": [
+                {
+                    "type": "text",
+                    "text": system_prompt,
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ],
             "messages": [{"role": "user", "content": question}],
         }
     return {
@@ -176,6 +191,44 @@ def build_request(
             {"role": "user", "content": question},
         ],
     }
+
+
+def _cache_summary(stats: dict) -> dict:
+    """What caching actually saved, priced rather than counted.
+
+    A hit *rate* is the wrong figure here: the uncached part of a request is
+    just the question, a few dozen tokens against a ~6.7k system prompt, so any
+    ratio built on it reads ~100% whether caching worked or not — the first
+    version of this did exactly that and looked identical with caching off.
+    What matters is input spend against the no-cache baseline, at the published
+    multipliers (reads 0.1x, writes 1.25x).
+    """
+    read, created, uncached = stats["read"], stats["created"], stats["uncached"]
+    baseline = read + created + uncached
+    if not baseline:
+        return {**stats, "input_tokens_saved": "N/A"}
+    actual = read * 0.1 + created * 1.25 + uncached
+    return {
+        **stats,
+        "baseline_input_tokens": baseline,
+        "effective_input_tokens": round(actual),
+        "input_tokens_saved": f"{(1 - actual / baseline) * 100:.0f}%",
+    }
+
+
+def _record_cache_usage(stats: dict, response: object) -> None:
+    """Accumulate prompt-cache token counts when the provider reports them.
+
+    Only the Anthropic responses carry these fields; the OpenAI-compatible
+    hosts cache automatically and report nothing comparable, so their suites
+    show N/A rather than a fabricated zero.
+    """
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return
+    stats["created"] += getattr(usage, "cache_creation_input_tokens", 0) or 0
+    stats["read"] += getattr(usage, "cache_read_input_tokens", 0) or 0
+    stats["uncached"] += getattr(usage, "input_tokens", 0) or 0
 
 
 def extract_text(provider: str, response: object) -> str:
@@ -778,6 +831,7 @@ def run_tests(
             )
             response_text = extract_text(provider, response)
             finish_reason = extract_finish_reason(provider, response)
+            _record_cache_usage(cache_stats, response)
         except Exception as e:  # noqa: BLE001 — provider errors are data here
             return (
                 {
@@ -844,6 +898,7 @@ def run_tests(
     passed = 0
     failed = 0
     done = 0
+    cache_stats = {"created": 0, "read": 0, "uncached": 0}
 
     # NOT `with ThreadPoolExecutor(...)`. Its `__exit__` calls
     # `shutdown(wait=True)` without `cancel_futures`, and every fixture is
@@ -853,10 +908,35 @@ def run_tests(
     # serial loop it replaced stopped at the next iteration. An operator who
     # sees the first few verdicts are wrong (bad model id, broken persona edit)
     # has to be able to stop.
+    # The first fixture runs alone. Every request in a suite shares one system
+    # prompt, so the first call is the one that writes the cache — firing four
+    # at once means three of them start before the entry exists and pay full
+    # price. One serial call up front turns ~4 misses per suite into 1.
     pool = ThreadPoolExecutor(max_workers=workers)
     interrupted = False
+    warmed = 0
     try:
-        futures = {pool.submit(grade_one, i, t): i for i, t in enumerate(tests)}
+        # Inside the same interrupt handling as the pool. The first version put
+        # this above the `try` and a Ctrl-C during the warm-up escaped instead
+        # of degrading — the exact behaviour the interrupt work exists to give.
+        try:
+            if workers > 1 and len(tests) > 1:
+                entry, ok, label = grade_one(0, tests[0])
+                by_index[0] = entry
+                passed += ok
+                failed += not ok
+                warmed = 1
+                if not quiet:
+                    done += 1
+                    print(
+                        f"  [{done}/{len(tests)}] #1 {tests[0]['q'][:50]}... {label}",
+                        flush=True,
+                    )
+        except KeyboardInterrupt:
+            interrupted = True
+
+        remaining = [] if interrupted else list(enumerate(tests))[warmed:]
+        futures = {pool.submit(grade_one, i, t): i for i, t in remaining}
         try:
             for future in as_completed(futures):
                 i = futures[future]
@@ -901,6 +981,10 @@ def run_tests(
         "pass_rate": f"{passed / len(tests) * 100:.0f}%" if tests else "N/A",
         "audit": summarize_audit(results),
         "boundary": summarize_boundary(results),
+        # Measured, not assumed. `cache_read_input_tokens` staying at zero
+        # across a suite is how a silent invalidator announces itself, and a
+        # caching change nobody verified is indistinguishable from no caching.
+        "cache": _cache_summary(cache_stats),
         "mentions": summarize_mentions(results),
         "max_output_tokens": max_output_tokens,
         # Part of the instrument, so it is recorded with the reading: a
