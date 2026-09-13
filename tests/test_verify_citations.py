@@ -1073,3 +1073,35 @@ def test_meta_skills_are_excluded_from_the_persona_set():
     assert "master-debate" not in slugs, "debate 有 meta.json 但 kind 是 meta-skill"
     assert "compare-masters" not in slugs
     assert "master-huineng" in slugs
+
+
+# ── 非引文块（_LOOKS_LIKE_CITATION）─────────────────────────────────────────
+
+
+def test_a_section_heading_is_not_counted_as_a_citation():
+    """人格拿【…】当小标题。算进 unparsed 会把分母撑大、覆盖率压低。"""
+    report = verify_citations.audit_answer(
+        {"T48n2008"}, "【辨名义】\n【立宗】\n【破异说】"
+    )
+    assert report["unparsed"] == []
+    assert report["noncitation"] == ["辨名义", "立宗", "破异说"]
+
+
+def test_a_non_citation_block_is_reported_not_discarded():
+    """排除而不申报，和静默跳过没有区别 —— 那正是本模块修过的那个形状。"""
+    report = verify_citations.audit_answer({"T48n2008"}, "【总结】")
+    assert report["noncitation"] == ["总结"]
+
+
+def test_a_title_bearing_block_is_still_unparsed_not_discarded():
+    """带书名号就是引文尝试，读不懂也必须进 unparsed，不能混进非引文。"""
+    report = verify_citations.audit_answer({"T48n2008"}, "【《六祖坛经·疑问品》】")
+    assert report["unparsed"] == ["《六祖坛经·疑问品》"]
+    assert report["noncitation"] == []
+
+
+def test_a_fabricated_id_is_never_reclassified_as_a_non_citation():
+    """伪造经号含数字与拉丁字母，永远走不到非引文那一支。"""
+    report = verify_citations.audit_answer({"T48n2008"}, "【《伪经》，T99n9999】")
+    assert report["fabricated"] == ["T99n9999"]
+    assert report["noncitation"] == []

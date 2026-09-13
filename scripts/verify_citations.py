@@ -290,6 +290,15 @@ def _compiled_teaching_id(
 
 # 引文块 【…】
 _CITATION_BLOCK = re.compile(r"【([^】]*)】")
+# 一个【…】块要算「引文」,至少得含书名号、拉丁字母或数字 —— 本仓的引文契约
+# 里每条引用都指名一部作品(《…》)或一个标识符。人格也拿【…】当小标题写
+# (`【辨名义】`、`【立宗】`、`【破异说】`,以及把问题原样复述一遍),那些既不是
+# 引文,也不该进 `unparsed`:它们会把分母撑大、把覆盖率压低,让一份诚实的报告
+# 显得比实际差。2026-09-12 那轮 629 个块里有 10 个是这种。
+#
+# 不静默丢弃 —— 单列一类回传。整块 silently skip 正是当年让「审计了但一条都
+# 没看懂」和「已审计、干净」在报告里长得一模一样的那个动作。
+_LOOKS_LIKE_CITATION = re.compile(r"《|[A-Za-z0-9]")
 # live 链接 fojin.app/texts/<数字>
 #
 # `[0-9]` 而不是 `\d`:Python 的 `\d` 默认吃全部 Unicode 数字,于是
@@ -535,7 +544,11 @@ def audit_answer(
     """把答案里每条引文分类为 offline / live / fabricated / unparsed。
 
     返回 {'offline': [...], 'live': [(cbeta_id, text_id), ...],
-          'fabricated': [...], 'unparsed': [...]}。
+          'fabricated': [...], 'unparsed': [...], 'noncitation': [...]}。
+
+    ``noncitation`` 是**根本不是引文**的【…】块 —— 人格拿它当小标题
+    (`【辨名义】`)或复述问题。它们不计入覆盖率的分母;单列而非丢弃,是为了
+    「这里有 10 个块我判定它不是引文」这句话在报告里说得出口。
 
     ``unparsed`` 是抽不出任何可核对 id 的引文块。它们以前被整块 silently skip,
     于是「审计了但一条都没看懂」和「已审计、干净」在报告里长得一模一样 —— 宗喀巴
@@ -546,6 +559,7 @@ def audit_answer(
     live: list[tuple[str, str]] = []
     fabricated: list[str] = []
     unparsed: list[str] = []
+    noncitation: list[str] = []
 
     blocks = list(_CITATION_BLOCK.finditer(answer))
     for idx, m in enumerate(blocks):
@@ -586,7 +600,10 @@ def audit_answer(
         if not ids:
             block = m.group(1).strip()
             if block:
-                unparsed.append(block)
+                if _LOOKS_LIKE_CITATION.search(block):
+                    unparsed.append(block)
+                else:
+                    noncitation.append(block)
             continue
         links = _FOJIN_TEXT_LINK.findall(answer, m.end(), region_end)
         # 先分类,再决定 link 能洗白谁 —— 一个链接只能为**一条**引文作保。
@@ -612,6 +629,7 @@ def audit_answer(
         "live": live,
         "fabricated": fabricated,
         "unparsed": unparsed,
+        "noncitation": noncitation,
     }
 
 

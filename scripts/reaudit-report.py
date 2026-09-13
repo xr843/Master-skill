@@ -81,6 +81,7 @@ def reaudit(report: dict) -> dict:
 
         checked = unparsed = 0
         fabricated: list[str] = []
+        noncitation: list[str] = []
         for result in suite["results"]:
             if result.get("status") in ("truncated", "api_error"):
                 continue
@@ -92,6 +93,7 @@ def reaudit(report: dict) -> dict:
             )
             unparsed += len(audit["unparsed"])
             fabricated.extend(audit["fabricated"])
+            noncitation.extend(audit.get("noncitation", ()))
         recomputed = {"checked": checked, "unparsed": unparsed}
         totals["recomputed"]["checked"] += checked
         totals["recomputed"]["unparsed"] += unparsed
@@ -102,6 +104,9 @@ def reaudit(report: dict) -> dict:
                 "recorded": recorded,
                 "recomputed": recomputed,
                 "fabricated": sorted(set(fabricated)),
+                # 判定为「不是引文」的【…】块。不计入覆盖率的分母,但必须
+                # 数出来:排除而不申报,和静默跳过没有区别。
+                "noncitation": sorted(set(noncitation)),
             }
         )
     return {"meta": report.get("meta", {}), "suites": suites, "totals": totals}
@@ -143,6 +148,14 @@ def main(argv: list[str]) -> int:
         f"\ntotal coverage  {_coverage(out['totals']['recorded'])}"
         f"  ->  {_coverage(out['totals']['recomputed'])}"
     )
+    skipped = sorted({b for s in out["suites"] for b in s.get("noncitation", ())})
+    if skipped:
+        print(
+            f"\n{len(skipped)} 个【…】块判定为非引文，不计入上面的分母"
+            "（人格拿它当小标题或复述问题）："
+        )
+        for block in skipped:
+            print(f"    【{block}】")
     return 0
 
 

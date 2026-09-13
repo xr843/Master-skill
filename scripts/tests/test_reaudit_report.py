@@ -160,7 +160,9 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
     # that template was fixed the same day, which this stored run predates.
     compare = by_master["compare-masters"]
     assert compare["recorded"] == {"checked": 0, "unparsed": 47}
-    assert compare["recomputed"] == {"checked": 7, "unparsed": 40}
+    assert compare["recomputed"] == {"checked": 7, "unparsed": 35}
+    # 5 个块是人格拿【…】当小标题或复述问题，不是引文。
+    assert len(compare["noncitation"]) == 5
     assert compare["fabricated"] == []
 
     curriculum = by_master["master-curriculum"]
@@ -178,7 +180,8 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
     # declared sources that no pattern could read.
     tsongkhapa = by_master["master-tsongkhapa"]
     assert tsongkhapa["recorded"] == {"checked": 3, "unparsed": 50}
-    assert tsongkhapa["recomputed"] == {"checked": 46, "unparsed": 7}
+    assert tsongkhapa["recomputed"] == {"checked": 46, "unparsed": 2}
+    assert sorted(tsongkhapa["noncitation"]) == ["出据", "总结", "破异说", "立宗", "辨名义"]
     assert tsongkhapa["fabricated"] == []
 
     # 《父法》《子法》 — the declared title of `BDRC:Pha-chos-Bu-chos`, two
