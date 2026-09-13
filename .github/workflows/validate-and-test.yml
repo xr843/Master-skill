@@ -2,6 +2,14 @@ name: Validate & Test
 
 on:
   push:
+    # 只在 main 上跑 push 校验。同仓 PR 原本会同时触发 push 与 pull_request
+    # 两套,除了白跑一遍,还有更要命的一面:PR 有冲突时 GitHub 构建不出
+    # `refs/pull/N/merge`,整类 pull_request workflow 静默不触发 —— 而分支
+    # push 跑出的绿灯会把这件事盖住,`gh pr checks` 照样显示通过(2026-09-07
+    # 实际发生过,security-scan.yml 一次都没跑)。去掉分支 push 后,那种情况
+    # 下检查是**空的**而不是绿的,分支保护会拦住,缺席看得见。
+    branches:
+      - main
     paths:
       - 'prebuilt/**'
       - 'scripts/**'

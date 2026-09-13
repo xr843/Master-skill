@@ -399,3 +399,22 @@ def test_concurrency_never_lets_one_merge_cancel_another():
     assert WORKFLOW["concurrency"]["cancel-in-progress"] == (
         "${{ github.ref != 'refs/heads/main' }}"
     )
+
+
+def test_push_validation_is_restricted_to_main():
+    """同仓 PR 不得再由分支 push 事件产生检查结果。
+
+    2026-09-07 实测过一次:PR 有冲突,GitHub 构建不出 `refs/pull/N/merge`,
+    整类 pull_request workflow 一次都没触发 —— 而分支 push 跑出的绿灯把这
+    件事盖住了,`gh pr checks` 照常显示通过,security-scan.yml 从头到尾没跑。
+
+    push 限定 main 之后,那种情况下 PR 的检查是**空的**而不是绿的,分支保护
+    会因为 required check 缺席而拦住:缺席看得见,假绿看不见。
+    """
+    triggers = WORKFLOW.get("on") or WORKFLOW.get(True)
+    assert triggers["push"]["branches"] == ["main"]
+    # pull_request 必须无过滤器 —— push 的 paths 过滤不该在 PR 上留下盲区。
+    assert triggers["pull_request"] is None, (
+        "pull_request 带上过滤器就会有既不触发 push 也不触发 pull_request "
+        "的改动,那类改动将完全无人检查"
+    )
