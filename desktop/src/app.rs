@@ -394,13 +394,27 @@ pub(crate) const TRACE_STORE_CAPACITY: usize = 200;
 
 impl MasterSkillApp {
     pub fn new() -> Self {
-        let trace_path = desktop_trace_store_path();
+        let mut app = Self::without_refresh(&desktop_trace_store_path());
+        println!("{}", crate::cli::describe_repo_root(app.client.repo_root()));
+        app.refresh_all();
+        app
+    }
+
+    /// Everything `new` does except announcing the repo root and running the
+    /// first refresh.
+    ///
+    /// The seam exists so a test can build an app without spawning `node
+    /// bin/cli.mjs` once per skill. `draw` is the only thing this crate has
+    /// that renders a frame, and until 2026-09-13 nothing exercised it at all
+    /// — the eframe 0.31 → 0.36 port broke four call sites in it and every one
+    /// of the 113 tests still passed.
+    fn without_refresh(trace_path: &std::path::Path) -> Self {
         let TraceStoreAccess {
             traces,
             lease: trace_lease,
             read_only_reason,
             load_message: trace_load_message,
-        } = open_trace_store(&trace_path, TRACE_STORE_CAPACITY);
+        } = open_trace_store(trace_path, TRACE_STORE_CAPACITY);
         // The GUI executes `python3 <root>/scripts/…` and `node <root>/bin/…`
         // out of the same discovered root that `--baseline` announces, and used
         // to do so with no announcement at all — so the disclosure covered the
@@ -413,7 +427,6 @@ impl MasterSkillApp {
         // from a desktop entry. Surfacing it in the window itself is the real
         // fix and is not done here.
         let client = CliClient::default();
-        println!("{}", crate::cli::describe_repo_root(client.repo_root()));
         let mut app = Self {
             client,
             inventory: None,
@@ -445,7 +458,6 @@ impl MasterSkillApp {
         if let Some(message) = app.read_only_reason.clone() {
             app.set_log(message);
         }
-        app.refresh_all();
         app
     }
 
@@ -2133,7 +2145,10 @@ impl MasterSkillApp {
                         if ui
                             .add_sized(
                                 egui::vec2(name_width, sidebar_row_height()),
-                                egui::SelectableLabel::new(selected, name),
+                                // egui 0.36 删掉了 `SelectableLabel`;等价物是
+                                // `Button::selectable`,同样实现 Widget,
+                                // 所以仍可交给 `add_sized`。
+                                egui::Button::selectable(selected, name),
                             )
                             .clicked()
                         {
@@ -2583,26 +2598,42 @@ impl Default for MasterSkillApp {
 }
 
 impl eframe::App for MasterSkillApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        apply_console_theme(ctx);
+    // egui 0.36:`App::update(&Context, &mut Frame)` 换成了
+    // `App::ui(&mut Ui, &mut Frame)` —— 应用不再拿到裸 Context,而是拿到一个
+    // 已经代表整个视口的 Ui,面板也改成往 Ui 里挂。Context 仍可从 `ui.ctx()`
+    // 取到(内部是 Arc,clone 很廉价),主题与重绘请求照旧。
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        // `eframe::Frame` 的字段全是 pub(crate),crate 外造不出来,所以一帧的
+        // 全部内容放在 `draw` 里 —— 它只要一个 `&mut Ui`,`Context::run_ui`
+        // 就能在无头环境下把它跑一遍。
+        self.draw(ui);
+    }
+}
+
+impl MasterSkillApp {
+    pub(crate) fn draw(&mut self, ui: &mut egui::Ui) {
+        let ctx = ui.ctx().clone();
+        apply_console_theme(&ctx);
         self.poll_task();
         if self.is_busy() {
             ctx.request_repaint();
         }
 
-        egui::TopBottomPanel::top("top").show(ctx, |ui| self.show_toolbar(ui));
+        // 0.36 把 `TopBottomPanel` 与 `SidePanel` 合并成一个 `Panel`,边由
+        // 构造器选;宽高统一成 `default_size`(纵向面板取宽、横向取高)。
+        egui::Panel::top("top").show(ui, |ui| self.show_toolbar(ui));
 
-        egui::SidePanel::left("skills")
+        egui::Panel::left("skills")
             .resizable(true)
-            .default_width(sidebar_default_width())
-            .show(ctx, |ui| self.show_sidebar(ui));
+            .default_size(sidebar_default_width())
+            .show(ui, |ui| self.show_sidebar(ui));
 
-        egui::TopBottomPanel::bottom("log")
+        egui::Panel::bottom("log")
             .resizable(true)
-            .default_height(operation_log_height(self.log_expanded))
-            .show(ctx, |ui| self.show_operation_log(ui));
+            .default_size(operation_log_height(self.log_expanded))
+            .show(ui, |ui| self.show_operation_log(ui));
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 self.show_active_workspace(ui);
             });
@@ -2688,9 +2719,11 @@ mod tests {
         EvaluationMode, EvaluationRunResult, TraceAction, TraceStore,
     };
 
+    use eframe::egui;
+
     use super::{
         finish_disconnected_trace, open_trace_store, poll_pending_task,
-        trace_action_requires_writer, PendingTask, PendingTaskEvent, TaskResult,
+        trace_action_requires_writer, MasterSkillApp, PendingTask, PendingTaskEvent, TaskResult,
     };
 
     fn temp_trace_path(label: &str) -> PathBuf {
@@ -3017,6 +3050,55 @@ mod tests {
         assert_eq!(recent_8.trend_summary.total_runs, 8);
         assert_eq!(recent_16.all_run_history.len(), 12);
         assert_eq!(recent_16.trend_summary.total_runs, 12);
+    }
+
+    /// 全仓第一个真正**执行**界面代码的测试。
+    ///
+    /// eframe 0.31 → 0.36 改动了 `draw` 里的四处 API(`App::update` → `App::ui`、
+    /// `TopBottomPanel`/`SidePanel` 合并成 `Panel`、`SelectableLabel` 换成
+    /// `Button::selectable`、`Context::style` 换成 `all_styles_mut`),而这个
+    /// crate 的 113 个测试**一个都没碰到它们** —— 全在 CLI / trace / baseline
+    /// 一侧。CI 也从不启动窗口。于是「编译通过」曾是这条路径上唯一的证据。
+    ///
+    /// `Context::run_ui` 不需要窗口、GPU 或显示服务,可以在 CI 里跑完整一帧:
+    /// 面板要真的布局出来,侧栏每一行的 `Button::selectable` 要真的被构造。
+    #[test]
+    fn one_headless_frame_lays_out_every_panel() {
+        let trace_path = temp_trace_path("headless-frame");
+        let mut app = MasterSkillApp::without_refresh(&trace_path);
+        // 空侧栏渲染不到 `Button::selectable` —— 那正是本次移植改动的一行。
+        app.rows = vec![
+            suite_row("huineng", true, true, 5),
+            suite_row("nagarjuna", false, false, 0),
+        ];
+        app.selected_slug = Some("huineng".to_string());
+        app.log_expanded = true;
+
+        let ctx = egui::Context::default();
+        ctx.set_fonts(egui::FontDefinitions::empty());
+        let output = ctx.run_ui(Default::default(), |ui| app.draw(ui));
+        output.drop_without_applying_deltas();
+
+        let _ = fs::remove_dir_all(trace_path.parent().unwrap());
+    }
+
+    /// 折叠状态是另一条分支:操作日志面板的高度由它决定。一帧只跑一种状态,
+    /// 另一种就仍然没人执行过。
+    #[test]
+    fn a_headless_frame_also_renders_with_the_log_collapsed() {
+        let trace_path = temp_trace_path("headless-frame-collapsed");
+        let mut app = MasterSkillApp::without_refresh(&trace_path);
+        app.log_expanded = false;
+
+        let ctx = egui::Context::default();
+        ctx.set_fonts(egui::FontDefinitions::empty());
+        // 跑两帧:第一帧建立面板尺寸,第二帧才会命中读回持久状态的分支。
+        for _ in 0..2 {
+            ctx.run_ui(Default::default(), |ui| app.draw(ui))
+                .drop_without_applying_deltas();
+        }
+
+        let _ = fs::remove_dir_all(trace_path.parent().unwrap());
     }
 
     fn suite_row(
