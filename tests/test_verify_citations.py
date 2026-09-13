@@ -1,6 +1,7 @@
 """Tests for scripts/verify_citations.py — B1 引证核验,纯逻辑无网络。"""
 
 import importlib
+import json
 import time
 
 import pytest
@@ -903,3 +904,115 @@ def test_an_absurdly_long_number_does_not_raise():
     """
     r = audit_answer({"T46n1911"}, "【x，T" + "9" * 5000 + "】")
     assert r["fabricated"], "应判伪造而不是抛异常"
+
+
+# ── 题名别名（load_title_aliases / audit_answer 的兜底路径）────────────────
+#
+# 这条路径把「正确引用了已声明来源、但写法解析器不认」从 `unparsed` 救回
+# `offline`（宗喀巴 6% → 81%）。它的危险方向只有一个：把伪造引文洗白，或者
+# 悄悄削掉 CBETA 契约里「必须写经号」那一条。下面四条就是钉这两件事。
+
+
+def test_a_declared_title_in_a_bare_block_resolves():
+    """宗喀巴声明 `Lam-rim-chen-mo`，答案写中文题名——这是正确引用。"""
+    aliases = verify_citations.load_title_aliases("master-tsongkhapa")
+    declared = verify_citations.load_declared_ids("master-tsongkhapa")
+    report = verify_citations.audit_answer(
+        declared, "【《菩提道次第广论》§毗钵舍那章】", None, aliases
+    )
+    assert report["offline"] == ["Lam-rim-chen-mo"]
+    assert report["unparsed"] == []
+    assert report["fabricated"] == []
+
+
+def test_the_spaced_wylie_form_resolves_to_the_hyphenated_id():
+    """meta.json 写 `Lam-gtso-rnam-gsum`，答案写 `Lam gtso rnam gsum`。
+
+    归一化差一个连字符就整条落进 unparsed —— 模块顶部那段注释警告过的正是
+    这件事（「关键在归一化，不在正则」），而它自己的藏传 id 就栽在这里。
+    """
+    aliases = verify_citations.load_title_aliases("master-tsongkhapa")
+    declared = verify_citations.load_declared_ids("master-tsongkhapa")
+    report = verify_citations.audit_answer(
+        declared, "【《三主要道》(Lam gtso rnam gsum)】", None, aliases
+    )
+    assert report["offline"] == ["Lam-gtso-rnam-gsum"]
+
+
+def test_a_cbeta_persona_may_not_cite_by_title_alone():
+    """经号家族的契约要求写经号。题名别名绝不能把这条削掉。
+
+    `load_title_aliases` 对 id 形如经号的来源一条别名都不生成，所以
+    `【《六祖坛经》】` 仍然是 unparsed —— 不是 offline。
+    """
+    aliases = verify_citations.load_title_aliases("master-huineng")
+    assert aliases == {}, f"经号来源不该产生题名别名，实得 {aliases}"
+    declared = verify_citations.load_declared_ids("master-huineng")
+    report = verify_citations.audit_answer(declared, "【《六祖坛经》】", None, aliases)
+    assert report["offline"] == []
+    assert report["unparsed"] == ["《六祖坛经》"]
+
+
+def test_a_declared_title_does_not_launder_a_fabricated_id_beside_it():
+    """块里只要抽得出 id，兜底路径就根本不运行——伪造的仍判伪造。
+
+    这是整个改动的安全性所系：它只能把 unparsed 挪成 offline，永远动不了
+    fabricated。若有人把兜底改成「先试别名」，这条会红。
+    """
+    aliases = verify_citations.load_title_aliases("master-tsongkhapa")
+    declared = verify_citations.load_declared_ids("master-tsongkhapa")
+    report = verify_citations.audit_answer(
+        declared, "【《菩提道次第广论》卷三，T99n9999】", None, aliases
+    )
+    assert report["fabricated"] == ["T99n9999"]
+    assert report["offline"] == []
+
+
+def test_an_undeclared_tibetan_title_is_not_rescued():
+    """只有**声明过**的题名才放行；编一个没声明的仍进 unparsed。"""
+    aliases = verify_citations.load_title_aliases("master-tsongkhapa")
+    declared = verify_citations.load_declared_ids("master-tsongkhapa")
+    report = verify_citations.audit_answer(
+        declared, "【《宗喀巴秘密语录》§一】", None, aliases
+    )
+    assert report["offline"] == []
+    assert report["unparsed"] == ["《宗喀巴秘密语录》§一"]
+
+
+def test_the_longest_matching_title_wins():
+    """两条别名同时命中、且指向**不同**声明时，取更长（更具体）的那条。
+
+    第一版用的是 `【《密宗道次第广论》§生起次第】`，它只命中一条别名 ——
+    max 与 min 无从区分，这条测试对它声称守的东西什么也没说。本仓现有数据里
+    互为子串的别名对全部指向同一个 id，所以这条分支**真实数据无法证伪**；
+    别名表是 audit_answer 的入参，直接构造一份才测得到代码本身。
+    """
+    declared = {"sNgags-rim-chen-mo", "Lam-rim-chen-mo"}
+    aliases = {
+        "道次第广论": "Lam-rim-chen-mo",        # 较短、被包含
+        "密宗道次第广论": "sNgags-rim-chen-mo",  # 较长、更具体
+    }
+    report = verify_citations.audit_answer(
+        declared, "【《密宗道次第广论》§生起次第】", None, aliases
+    )
+    assert report["offline"] == ["sNgags-rim-chen-mo"]
+
+
+def test_a_one_character_title_never_becomes_an_alias(tmp_path):
+    """单字题名会在散文里到处撞上，不得进入别名表。
+
+    下限本身是实测选出来的（4→523 / 3→526 / 2→530 / 1→530，2026-09-12 那轮），
+    但 1 与 2 之间差额为 0：现有声明里没有单字题名。所以这一格只能靠构造数据
+    钉住，否则它就是一段没人验过的常量。
+    """
+    master = tmp_path / "master-x"
+    master.mkdir()
+    (master / "meta.json").write_text(
+        json.dumps({"sources": [
+            {"id": "Tibetan:Whatever", "title": "论"},
+            {"id": "Tibetan:Real", "title": "入中论"},
+        ]}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    aliases = verify_citations.load_title_aliases("master-x", base=str(tmp_path))
+    assert aliases == {"入中论": "Tibetan:Real"}

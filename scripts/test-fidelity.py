@@ -30,7 +30,12 @@ from pathlib import Path
 # `must_cite_only_existing_sources` assertion is actually enforced during graded
 # runs (it was previously schema-validated but never evaluated).
 from _masterpaths import resolve_master_dir
-from verify_citations import audit_answer, load_declared_ids, load_member_aliases
+from verify_citations import (
+    audit_answer,
+    load_declared_ids,
+    load_member_aliases,
+    load_title_aliases,
+)
 
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 SCHEMA_VERSION = 1
@@ -505,6 +510,7 @@ def check_response(
     is_first_turn: bool = True,
     declared_ids: set[str] | None = None,
     member_aliases: dict[str, str] | None = None,
+    title_aliases: dict[str, str] | None = None,
 ) -> dict:
     """Check a response against expected citations, mentions, and boundaries.
 
@@ -596,7 +602,9 @@ def check_response(
     fabricated_cites = []
     audit_unavailable = False
     if declared_ids:
-        audit = audit_answer(declared_ids, response, member_aliases)
+        audit = audit_answer(
+            declared_ids, response, member_aliases, title_aliases
+        )
         fabricated_cites = audit["fabricated"]
         unparsed_citations = audit["unparsed"]
         citations_checked = (
@@ -812,9 +820,11 @@ def run_tests(
     try:
         declared_ids = load_declared_ids(master_name)
         member_aliases = load_member_aliases(master_name)
+        title_aliases = load_title_aliases(master_name)
     except (ValueError, FileNotFoundError):
         declared_ids = None
         member_aliases = None
+        title_aliases = None
 
     def grade_one(i: int, test: dict) -> tuple[dict, bool, str]:
         """Run and grade one fixture. Pure w.r.t. the enclosing suite state.
@@ -860,6 +870,7 @@ def run_tests(
                 is_first_turn=True,
                 declared_ids=declared_ids,
                 member_aliases=member_aliases,
+                title_aliases=title_aliases,
             )
         except Exception as e:  # noqa: BLE001 — 判分器崩溃也是数据,不是终止条件
             # grade_one 的 docstring 承诺「一条坏 fixture 不会掀翻整个池」,

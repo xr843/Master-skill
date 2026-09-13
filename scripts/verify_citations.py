@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import os
 import re
@@ -365,8 +366,97 @@ def load_member_aliases(master: str, base: str | None = None) -> dict[str, str]:
     return aliases
 
 
+def load_title_aliases(master: str, base: str | None = None) -> dict[str, str]:
+    """「声明题名 → 声明 id」别名表,只对**非经号**来源生成。
+
+    宗喀巴声明 `Lam-rim-chen-mo`,答案写 `【《菩提道次第广论》§毗钵舍那章】`;
+    声明 `Lam-gtso-rnam-gsum`,答案写 `【《三主要道》(Lam gtso rnam gsum)】`
+    —— 空格而非连字符。两者都是**正确引用了已声明来源**,解析器一条都认不出,
+    全进 `unparsed`。2026-09-12 那轮里这是宗喀巴 53 条引文中的 50 条。
+
+    别名就摆在 meta.json 里:`"title": "菩提道次第广论 (Lam rim chen mo)"`
+    同时给出中文题名与空格式 Wylie。这里只是把已经声明的东西读出来。
+
+    **经号家族一律不生成别名。** CBETA 契约要求的标识符是经号本身,若
+    `【《六祖坛经》】` 能靠题名过关,那条契约就被这个"修复"悄悄削掉了。判断
+    依据是 id 的形状(`_CBETA_ID` 整体匹配),不是 `type` 字段:type 是自由
+    文本,形状是审计器真正认的东西。
+
+    这道守卫跳过了 46 条经号来源,而 2026-09-12 那轮**去掉它覆盖率一字不变**
+    —— 那批答案里没有一条是只写书名不写经号的。所以它同样是前瞻护栏,不是
+    已测修复,由 test_a_cbeta_persona_may_not_cite_by_title_alone 钉住。
+    """
+    if not _SAFE_MASTER.match(master):
+        raise ValueError(f"无效的 master ID：{master!r}（仅允许字母、数字、'-'、'_'）")
+    kwargs = {"base": base} if base is not None else {}
+    master_dir = resolve_master_dir(master, **kwargs)
+    if master_dir is None:
+        raise FileNotFoundError(f"找不到 master：{master!r}（试过 {master!r} 和 master-{master}）")
+    with open(os.path.join(master_dir, "meta.json"), encoding="utf-8") as f:
+        meta = json.load(f)
+    aliases: dict[str, str] = {}
+    for src in meta.get("sources", []):
+        sid, title = src.get("id"), src.get("title")
+        if not sid or not title or _CBETA_ID.fullmatch(sid):
+            continue
+        inner = re.findall(r"[（(]([^）)]+)[）)]", title)
+        head = re.sub(r"\s*[（(].*$", "", title).strip()
+        # 一条 title 可能把多个题名粘在一起
+        # (`"《吉祥悦意》《长部注释》 (Sumaṅgalavilāsinī)"`),整串永远匹配不上
+        # 正文里的单个题名,所以把每个《…》也各登记一次。
+        parts = [head, *inner]
+        parts += [t for chunk in parts for t in _WORK_TITLE.findall(chunk)]
+        for alias in parts:
+            alias = alias.strip()
+            if len(alias) >= _MIN_TITLE_ALIAS:
+                aliases.setdefault(alias, sid)
+    return aliases
+
+
+# 题名别名的最短长度。2026-09-12 那轮实测(每次清 __pycache__ 后重跑):
+#   下限 4 → 523/603    下限 3 → 526    下限 2 → 530    下限 1 → 530
+# 差额是《入中论》(3 字,Toh:3861)与《父法》《子法》(2 字,BDRC:Pha-chos-Bu-chos)
+# —— 都是声明里原样写着的书名,挡掉它们纯属损失。取 2 而不取 1,是因为单字
+# 别名(若将来有人声明一条 title 为「论」「经」的来源)会在散文里到处撞上;
+# 现有数据里没有单字题名,所以这一格差别为 0 —— 它是前瞻护栏,由
+# test_a_one_character_title_never_becomes_an_alias 钉住,不是一处已测修复。
+_MIN_TITLE_ALIAS = 2
+
+
+@functools.lru_cache(maxsize=8)
+def _declared_literal_matcher(declared: frozenset[str]) -> re.Pattern[str] | None:
+    """A matcher for declared ids written exactly as declared.
+
+    `_FAMILY_ID` needs a family tag or a numeric work id, and four of this
+    repo's own declared ids have neither: `master-tsongkhapa` declares bare
+    Wylie titles (`Lam-rim-chen-mo`, `sNgags-rim-chen-mo`,
+    `Drang-nges-legs-bshad-snying-po`, `Lam-gtso-rnam-gsum`), and two more are
+    `BDRC:` followed by Wylie rather than a W-number (`BDRC:gsung-bum`,
+    `BDRC:Pha-chos-Bu-chos`). No regex reads a hyphenated Tibetan title apart
+    from prose, so the parser dropped all six into `unparsed`.
+
+    Re-auditing the 2026-09-12 sweep, that was every remaining failure in
+    `master-curriculum` — 26 of 32 parsed, and the 6 that did not were all
+    declared. `unparsed` reads as neutral, so a correct citation of a declared
+    source was scored the same as an uninterpretable one.
+
+    This runs only where nothing at all was extractable, and matches only a
+    string already in the declared set, so it can move a citation from
+    `unparsed` to `offline` and never from `fabricated`. The shortest declared
+    id is 8 characters, so there is nothing here short enough to collide with
+    running prose.
+    """
+    if not declared:
+        return None
+    alts = "|".join(re.escape(i) for i in sorted(declared, key=len, reverse=True))
+    return re.compile(rf"(?<![0-9A-Za-z-]){alts}(?![0-9A-Za-z-])")
+
+
 def audit_answer(
-    declared_ids: set[str], answer: str, member_aliases: dict[str, str] | None = None
+    declared_ids: set[str],
+    answer: str,
+    member_aliases: dict[str, str] | None = None,
+    title_aliases: dict[str, str] | None = None,
 ) -> dict:
     """把答案里每条引文分类为 offline / live / fabricated / unparsed。
 
@@ -398,6 +488,27 @@ def audit_answer(
             compiled = _compiled_teaching_id(m.group(1), declared_ids, member_aliases)
             if compiled:
                 ids = [compiled]
+        if not ids:
+            # Last resort: the block may name a declared id the parser has no
+            # pattern for. Exact membership only — see the matcher's docstring.
+            matcher = _declared_literal_matcher(frozenset(declared_ids))
+            if matcher is not None:
+                ids = matcher.findall(m.group(1)) + matcher.findall(
+                    answer[m.end():region_end]
+                )
+            if not ids and title_aliases:
+                # 声明题名 → 声明 id。同样只在什么都抽不出来时才走,而且映射的
+                # 目标必然在 declared_ids 里,所以只能把 unparsed 挪成 offline。
+                block = m.group(1)
+                hit = [
+                    (alias, sid)
+                    for alias, sid in title_aliases.items()
+                    if alias in block
+                ]
+                if hit:
+                    # 最长题名优先:「密宗道次第广论」包含「宗道次第广论」这类
+                    # 前缀关系下,短的那个会把引用记到错的声明上。
+                    ids = [max(hit, key=lambda pair: len(pair[0]))[1]]
         if not ids:
             block = m.group(1).strip()
             if block:
@@ -553,12 +664,13 @@ def main() -> int:
     try:
         declared = load_declared_ids(args.master)
         member_aliases = load_member_aliases(args.master)
+        title_aliases = load_title_aliases(args.master)
     except (ValueError, FileNotFoundError) as e:
         print(f"✗ {e}", file=sys.stderr)
         return 2
 
     answer = open(args.answer_file, encoding="utf-8").read() if args.answer_file else sys.stdin.read()
-    report = audit_answer(declared, answer, member_aliases)
+    report = audit_answer(declared, answer, member_aliases, title_aliases)
 
     print(f"offline 引文: {len(report['offline'])}  live 引文: {len(report['live'])}  "
           f"fabricated: {len(report['fabricated'])}")

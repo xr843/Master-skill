@@ -92,9 +92,20 @@ def test_fabricated_citations_are_named_not_just_counted(mod):
 
 
 # --------------------------------------------------------------------------
-# The committed run, re-audited. This pins what the compiled-teaching family
-# actually bought: `master-ajahn-chah` could not read a single one of its own
-# citations before it, and `master-mahasi-sayadaw` could read 12 of 52.
+# The committed run, re-audited. This pins what each auditor fix actually
+# bought. Two rounds are folded in:
+#
+#   compiled_teaching (2026-09-03) — `master-ajahn-chah` could not read a
+#   single one of its own citations before it; `master-mahasi-sayadaw` 12/52.
+#
+#   declared titles (2026-09-13) — `master-tsongkhapa` declares bare Wylie
+#   titles (`Lam-rim-chen-mo`) and cites them in Chinese (《菩提道次第广论》)
+#   or with spaces (`Lam gtso rnam gsum`); nothing matched, so 50 of its 53
+#   citations sat in `unparsed`, which reads as neutral rather than as a miss.
+#
+# Measure with a cleared __pycache__. Four consecutive readings during this
+# work were off by 4-7 citations because a stale .pyc survived a same-second
+# rewrite of verify_citations.py.
 # --------------------------------------------------------------------------
 
 
@@ -107,7 +118,7 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
 
     ajahn = by_master["master-ajahn-chah"]
     assert ajahn["recorded"] == {"checked": 0, "unparsed": 48}
-    assert ajahn["recomputed"] == {"checked": 30, "unparsed": 18}
+    assert ajahn["recomputed"] == {"checked": 43, "unparsed": 6}
     # 《Stillness Flowing》 was a genuine undeclared source (ajahn-chah #12) until
     # the maintainer declared it 2026-09-03. Coverage doesn't move — a
     # fabricated citation was already counted as "checked" — but it stops
@@ -116,22 +127,53 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
 
     mahasi = by_master["master-mahasi-sayadaw"]
     assert mahasi["recorded"] == {"checked": 12, "unparsed": 40}
-    assert mahasi["recomputed"] == {"checked": 42, "unparsed": 10}
+    assert mahasi["recomputed"] == {"checked": 49, "unparsed": 3}
     # 《A Discourse on Dhammacakka Sutta》 (mahasi #12) resolves via
     # collection-covers-member: Mahasi:DiscoursesOnSuttas' own note names it.
     assert mahasi["fabricated"] == []
 
+    buddhaghosa = by_master["master-buddhaghosa"]
+    assert buddhaghosa["recorded"] == {"checked": 44, "unparsed": 16}
+    assert buddhaghosa["recomputed"] == {"checked": 61, "unparsed": 0}
+    assert buddhaghosa["fabricated"] == []
+
+    # 《菩提道次第广论》 is the declared title of `Lam-rim-chen-mo`; 《三主要道》
+    # of `Lam-gtso-rnam-gsum`. Both were `unparsed` — correct citations of
+    # declared sources that no pattern could read.
+    tsongkhapa = by_master["master-tsongkhapa"]
+    assert tsongkhapa["recorded"] == {"checked": 3, "unparsed": 50}
+    assert tsongkhapa["recomputed"] == {"checked": 46, "unparsed": 7}
+    assert tsongkhapa["fabricated"] == []
+
+    # 《父法》《子法》 — the declared title of `BDRC:Pha-chos-Bu-chos`, two
+    # characters each. They are the whole reason the alias floor is 2 and not
+    # 3: 4 → 523, 3 → 526, 2 → 530, 1 → 530 on this run.
+    atisha = by_master["master-atisha"]
+    assert atisha["recorded"] == {"checked": 25, "unparsed": 7}
+    assert atisha["recomputed"] == {"checked": 29, "unparsed": 3}
+    assert atisha["fabricated"] == []
+
     # Everything else must be untouched — a citation-family change that moves a
-    # master it does not concern is a bug, not an improvement.
+    # master it does not concern is a bug, not an improvement. In particular no
+    # CBETA master may move: `load_title_aliases` refuses to build an alias for
+    # a source whose id is a sutra number, so 【《六祖坛经》】 with no id is still
+    # unparsed. That is the contract, not an oversight.
+    moved = (
+        "master-ajahn-chah",
+        "master-mahasi-sayadaw",
+        "master-buddhaghosa",
+        "master-tsongkhapa",
+        "master-atisha",
+    )
     for master, suite in by_master.items():
-        if master in ("master-ajahn-chah", "master-mahasi-sayadaw"):
+        if master in moved:
             continue
         if suite["status"] != "audited":
             continue
         assert suite["recorded"] == suite["recomputed"], master
 
     assert out["totals"]["recorded"]["checked"] == 386
-    assert out["totals"]["recomputed"]["checked"] == 446
+    assert out["totals"]["recomputed"]["checked"] == 530
 
 
 def test_api_error_rows_do_not_pollute_reaudit_totals(mod):

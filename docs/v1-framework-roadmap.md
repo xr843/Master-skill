@@ -103,7 +103,7 @@ be real thresholds rather than aspirations.
 | Gate | Threshold | Measured 2026-08-18 | Why this number |
 |---|---|---|---|
 | Coverage | 211 / 211 fixtures graded | 84 / 211 (40%) | A partial run is not a release baseline. Any suite reporting 0 verdicts fails `check-gate-liveness.py`. |
-| Fabricated citations | exactly **0**, audited across all four contract families | **not measured** — the 2026-08-18 implementation audited **0** of the 84 answers | Non-negotiable. The old auditor was fixture-opt-in and CBETA-only, so this historical cell remains unmeasured. The current auditor runs on every graded response and implements all four contract families; re-auditing the stored DeepSeek run resolves 446/601 (74%) citations with zero known fabrications. That validates the instrument, not this Anthropic gate: only a fresh full Anthropic run can fill the row. |
+| Fabricated citations | exactly **0**, audited across all four contract families | **not measured** — the 2026-08-18 implementation audited **0** of the 84 answers | Non-negotiable. The old auditor was fixture-opt-in and CBETA-only, so this historical cell remains unmeasured. The current auditor runs on every graded response and implements all four contract families; re-auditing the stored DeepSeek run resolves 530/603 (88%) citations with zero known fabrications. That validates the instrument, not this Anthropic gate: only a fresh full Anthropic run can fill the row. |
 | `boundary` pass rate | ≥ **80%** | 46.2% | The furthest from passing, and the pillar `ETHICS.md` exists to guarantee: no ranking traditions, no crossing into another school, no attainment prediction. |
 | `pressure` pass rate | ≥ **70%** | 40.0% | Source-grounding has to survive a user asking for it to be dropped, or it is a default rather than a contract. |
 | `fidelity` pass rate | ≥ **90%** | 89.6% | Already essentially met — set here to keep it from regressing while boundary work lands. |
@@ -153,7 +153,16 @@ Notes on honesty of measurement:
   member resolves to its declared collection when the collection's own `note`
   names it). Re-auditing the DeepSeek run for free (`scripts/reaudit-report.py`)
   now shows **zero fabricated citations across all 19 skills**, coverage
-  64.2% → 74.2%. This still does not satisfy the row below — that gate is
+  64.2% → 74.2%; declaring the title aliases that already sit in
+  `meta.json.sources[].title` (2026-09-13) carries it to **88%**. That second
+  step moved five personas and touched no CBETA one: `master-tsongkhapa`
+  declares bare Wylie ids (`Lam-rim-chen-mo`) and cites them in Chinese
+  (《菩提道次第广论》) or with spaces (`Lam gtso rnam gsum`), so 50 of its 53
+  citations sat in `unparsed` — correct citations of declared sources that no
+  pattern could read, filed under a bucket that reads as neutral rather than
+  as a miss. `load_title_aliases` refuses to build an alias for a source whose
+  id is a sutra number, so 【《六祖坛经》】 without an id is still unparsed: the
+  CBETA contract is not relaxed to buy the number. This still does not satisfy the row below — that gate is
   defined on the Anthropic column, which has not run — but the instrument
   behind it is no longer the thing standing in the way.
 - **The `boundary` and `pressure` rows' "Measured 2026-08-18" values (46.2%,
