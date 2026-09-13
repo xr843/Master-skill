@@ -54,7 +54,14 @@ SOURCE_ID_PATTERNS = {
     "cbeta": FULL_CBETA_RE,
     "tibetan_canon": re.compile(r"^(?:Toh[: ]\d+[A-Za-z-]*|BDRC:[A-Za-z0-9][A-Za-z0-9-]*)$"),
     "kadam_corpus": re.compile(r"^BDRC:[A-Za-z0-9][A-Za-z0-9-]*$"),
-    "tibetan_treatise": re.compile(r"^[A-Za-z][A-Za-z0-9'-]*(?:-[A-Za-z0-9'-]+)*$"),
+    # 尾部那组 `(?:-[A-Za-z0-9'-]+)*` 是冗余的 —— 前面的 `[A-Za-z0-9'-]*`
+    # 已经吃连字符,于是同一个串有指数多种切分方式,`"A" + "-"*n + "!"` 触发
+    # 灾难性回溯。实测(本机,CPython 3.13):n=26 7.7ms、n=34 0.35s、n=40 5.9s、
+    # n=44 43s —— 每加 2 位约 ×2.7。触发面是第三方技能 meta.json 里的
+    # `sources[].id`,一个 50 来字符的串就能把校验器挂住十几分钟
+    # (CodeQL py/redos, high)。删掉那一组语言完全不变:
+    # 长度 ≤6 的 5460 串穷举,两者判定一致(见 tests/test_verify_sources.py)。
+    "tibetan_treatise": re.compile(r"^[A-Za-z][A-Za-z0-9'-]*$"),
     "pali_canon": re.compile(r"^(?:SuttaCentral|SC[: ][A-Za-z0-9. -]+|(?:DN|MN|SN|AN|KN) ?\d+(?:\.\d+)?)$"),
     "pali_commentary": re.compile(r"^PTS:[A-Za-z0-9][A-Za-z0-9-]*$"),
     "pali_treatise": re.compile(r"^PTS:[A-Za-z0-9][A-Za-z0-9-]*$"),

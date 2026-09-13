@@ -338,3 +338,53 @@ def test_the_rewrite_never_leaves_a_truncated_file(tmp_path, monkeypatch):
     monkeypatch.setattr(verify_sources.os, "replace", real_replace)
     leftovers = [p for p in tmp_path.iterdir() if p.suffix == ".tmp"]
     assert leftovers == [], f"temp files left behind: {leftovers}"
+
+
+# ── ReDoS（CodeQL py/redos, high, 2026-09-07）──────────────────────────────
+
+
+def test_the_tibetan_treatise_pattern_does_not_backtrack_catastrophically():
+    """`"A" + "-"*n + "!"` 曾让这条正则指数回溯。
+
+    原式尾部带一组 `(?:-[A-Za-z0-9'-]+)*`，而前面的 `[A-Za-z0-9'-]*` 已经吃
+    连字符 —— 同一串有指数多种切分。实测每加 2 位约 ×2.7：n=26 7.7ms、
+    n=34 0.35s、n=40 5.9s、n=44 43s。触发只需要第三方技能 meta.json 里一个
+    `sources[].id`。
+
+    n=40 选得有讲究：旧式 5.9s（远超阈值，回退时 6 秒内红，不会把套件挂住），
+    新式 4µs。阈值 1 秒是新式实测值的二十五万倍，慢机器也不会假红。
+    """
+    import time
+
+    pattern = verify_sources.SOURCE_ID_PATTERNS["tibetan_treatise"]
+    attack = "A" + "-" * 40 + "!"
+    start = time.perf_counter()
+    assert pattern.match(attack) is None
+    assert time.perf_counter() - start < 1.0
+
+
+def test_simplifying_the_pattern_did_not_change_what_it_accepts():
+    """删掉冗余组不能改变接受的语言 —— 长度 ≤6 穷举比对。"""
+    import itertools
+    import re
+
+    original = re.compile(r"^[A-Za-z][A-Za-z0-9'-]*(?:-[A-Za-z0-9'-]+)*$")
+    current = verify_sources.SOURCE_ID_PATTERNS["tibetan_treatise"]
+    for length in range(1, 7):
+        for combo in itertools.product("a0'-", repeat=length):
+            candidate = "".join(combo)
+            assert bool(original.match(candidate)) == bool(
+                current.match(candidate)
+            ), candidate
+
+
+def test_real_declared_tibetan_treatise_ids_still_validate():
+    """仓库里真实声明的四条藏文论典 id 必须仍然通过。"""
+    pattern = verify_sources.SOURCE_ID_PATTERNS["tibetan_treatise"]
+    for declared in (
+        "Lam-rim-chen-mo",
+        "sNgags-rim-chen-mo",
+        "Drang-nges-legs-bshad-snying-po",
+        "Lam-gtso-rnam-gsum",
+    ):
+        assert pattern.match(declared), declared
