@@ -2722,8 +2722,8 @@ mod tests {
     use eframe::egui;
 
     use super::{
-        finish_disconnected_trace, open_trace_store, poll_pending_task, MasterSkillApp,
-        trace_action_requires_writer, PendingTask, PendingTaskEvent, TaskResult,
+        finish_disconnected_trace, open_trace_store, poll_pending_task,
+        trace_action_requires_writer, MasterSkillApp, PendingTask, PendingTaskEvent, TaskResult,
     };
 
     fn temp_trace_path(label: &str) -> PathBuf {

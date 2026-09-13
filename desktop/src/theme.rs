@@ -44,7 +44,9 @@ pub fn sidebar_default_width() -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use super::{apply_console_theme, sidebar_default_width, sidebar_row_height, status_badge_width};
+    use super::{
+        apply_console_theme, sidebar_default_width, sidebar_row_height, status_badge_width,
+    };
 
     /// egui 0.36 删掉了 `Context::style()` / `set_style()`。这三行间距原本靠
     /// 它们设置,换成 `all_styles_mut` 之后必须仍然生效 —— 编译通过不代表
@@ -56,10 +58,7 @@ mod tests {
         ctx.set_fonts(eframe::egui::FontDefinitions::empty());
         apply_console_theme(&ctx);
 
-        for theme in [
-            eframe::egui::Theme::Dark,
-            eframe::egui::Theme::Light,
-        ] {
+        for theme in [eframe::egui::Theme::Dark, eframe::egui::Theme::Light] {
             let style = ctx.style_of(theme);
             assert_eq!(
                 style.spacing.item_spacing,
