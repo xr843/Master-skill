@@ -31,7 +31,7 @@ Invoke: `/master-huineng`
 ### Master Zhiyi (538-597)
 
 Founder of the Tiantai school, honored as "the Little Shakyamuni of the East." Established the first comprehensive doctrinal classification system in Chinese Buddhism (Five Periods, Eight Teachings). Authored the Three Great Works of Tiantai. Core teachings: three thousand realms in a single thought-moment, perfect interfusion of the three truths, dual cultivation of samatha and vipasyana.
-Primary sources: CBETA — Mohe Zhiguan (T46n1911), Fahua Xuanyi (T33n1718).
+Primary sources: CBETA — Mohe Zhiguan (T46n1911), Fahua Xuanyi (T33n1716).
 Invoke: `/master-zhiyi`
 
 ### Master Fazang (643-712)

@@ -304,6 +304,90 @@ def verify_via_lookup(bridge, short_ids: list[str]) -> dict:
     return result
 
 
+# CBETA 自己的作品目录。FoJin 的 cbeta_id 不含卷号(`T33n1718 -> T1718`),所以
+# 拿它核验时**卷号根本没参与比对** —— 一个卷号写错的声明能一路绿灯走过去。
+# 2026-09-13 实测到的就是这种:master-zhiyi 声明 `T33n1718` 标题写「妙法莲华经
+# 玄义」,而 1718 是《文句》且在 T34 卷,《玄義》是 `T33n1716`。周检连续多周报
+# 「34/35 verified」,因为 `T1718` 确实存在。是评测跑分里模型写出正确的
+# `T33n1716` 被判成伪造,才把这个错翻出来。
+#
+# CBETA 的 works 接口返回 `file` 字段,它就是完整经号(含卷号),拿它直接比对,
+# 不需要繁简转换,也不必猜。
+CBETA_WORKS_URL = "https://cbdata.dila.edu.tw/stable/works"
+CBETA_TIMEOUT = 20
+
+# CBETA 的 `vol` 既可能是单卷(`T33`)也可能是区间(`T05..T07`)。
+_CBETA_VOL = re.compile(r"^([A-Z]{1,2})(\d+)(?:\.\.[A-Z]{1,2}(\d+))?$")
+_DECLARED_VOL = re.compile(r"^([A-Z]{1,2})(\d+)n")
+
+
+def cbeta_volume_range(vol: str) -> tuple[str, int, int] | None:
+    """把 CBETA 的 `vol` 解析成(藏别, 起卷, 迄卷)。解析不了返回 None。"""
+    m = _CBETA_VOL.match(vol.strip()) if vol else None
+    if not m:
+        return None
+    start = int(m.group(2))
+    end = int(m.group(3)) if m.group(3) else start
+    return m.group(1), start, end
+
+
+def declared_volume(full_id: str) -> tuple[str, int] | None:
+    m = _DECLARED_VOL.match(full_id)
+    return (m.group(1), int(m.group(2))) if m else None
+
+
+def classify_cbeta_volumes(
+    declared: dict[str, list[str]], cbeta_vols: dict[str, str | None]
+) -> tuple[dict[str, str], list[str]]:
+    """把声明的完整经号分成「卷号与 CBETA 不符」与「问不到」两类。
+
+    **必须按区间判定,不能只比 CBETA 的 `file`。** 第一版就是只比 `file`,
+    于是 `T07n0220`(玄奘《大般若經》)被判成错 —— 那部经 600 卷横跨
+    `T05..T07`,`file` 只给起卷 `T05n0220`。把一条正确声明判成错,正是这道
+    检查被加进来要治的那个毛病,方向调了个头而已。
+
+    三态:`cbeta_vols[full_id]` 为 None 表示**没问到**(网络不通 / CBETA 没
+    这条),既不算对也不算错。一次网络抖动不该变成一屏假告警,而「查不出来」
+    也不该和「查过了没问题」长得一样。
+    """
+    mismatched: dict[str, str] = {}
+    unknown: list[str] = []
+    for full_id in declared:
+        vol = cbeta_vols.get(full_id)
+        parsed = cbeta_volume_range(vol) if vol else None
+        mine = declared_volume(full_id)
+        if parsed is None or mine is None:
+            unknown.append(full_id)
+            continue
+        canon, start, end = parsed
+        if mine[0] != canon or not (start <= mine[1] <= end):
+            mismatched[full_id] = vol
+    return mismatched, sorted(unknown)
+
+
+def fetch_cbeta_volumes(full_ids: list[str]) -> dict[str, str | None]:
+    """向 CBETA 问每个经号所属的卷(或卷区间);问不到的记 None(未知,不是不符)。"""
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    out: dict[str, str | None] = {}
+    for full_id in full_ids:
+        short = full_to_short_cbeta(full_id)
+        if not short:
+            out[full_id] = None
+            continue
+        url = f"{CBETA_WORKS_URL}?{urllib.parse.urlencode({'work': short})}"
+        try:
+            with urllib.request.urlopen(url, timeout=CBETA_TIMEOUT) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+            results = payload.get("results") or []
+            out[full_id] = results[0].get("vol") if results else None
+        except (urllib.error.URLError, OSError, ValueError, KeyError, IndexError):
+            out[full_id] = None
+    return out
+
+
 def verify_ids(bridge, cbeta_map: dict[str, list[str]], titles: dict[str, str]) -> dict[str, dict]:
     """Verify all CBETA IDs and return {full_cbeta_id: {text_id, short_id, title, ...}}.
 
@@ -480,6 +564,21 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     titles = collect_titles_from_meta()
     verified = verify_ids(bridge, combined_map, titles)
 
+    # Step 3b: 卷号。FoJin 的查询把卷号丢掉了,所以上面那一步结构上看不见它。
+    print("\n[3b/4] Checking declared volume numbers against CBETA...")
+    cbeta_vols = fetch_cbeta_volumes(sorted(combined_map))
+    mismatched, unknown_to_cbeta = classify_cbeta_volumes(combined_map, cbeta_vols)
+    if mismatched:
+        print(f"  Declared IDs CBETA disagrees with ({len(mismatched)}):")
+        for full_id, vol in sorted(mismatched.items()):
+            teachers = ", ".join(combined_map.get(full_id, ["?"]))
+            print(f"    [WRONG] {full_id} -> CBETA puts this work in {vol}  (used by: {teachers})")
+    if unknown_to_cbeta:
+        print(f"  Could not ask CBETA about {len(unknown_to_cbeta)} ID(s) — "
+              "unknown, not wrong: " + ", ".join(unknown_to_cbeta))
+    if not mismatched and not unknown_to_cbeta:
+        print(f"  All {len(combined_map)} declared IDs sit in a volume CBETA gives this work")
+
     found = {k: v for k, v in verified.items() if v["text_id"] is not None}
     all_absent = {k: v for k, v in verified.items() if v["text_id"] is None}
     known_absent = load_known_absent()
@@ -560,6 +659,9 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     if stale_absent:
         print(f"  Stale known-absent entries:{len(stale_absent):>4}")
     print(f"  URL replacements:          {len(all_changes)}")
+    print(f"  CBETA id mismatches:       {len(mismatched)}")
+    if unknown_to_cbeta:
+        print(f"  CBETA unreachable for:     {len(unknown_to_cbeta)} (not counted as wrong)")
     if dry_run and all_changes:
         print("\n  Run with --fix to apply changes.")
 

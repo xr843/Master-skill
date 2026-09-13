@@ -458,3 +458,68 @@ def test_every_registered_id_is_actually_declared_somewhere():
                 declared.add(src["id"])
     for cid in verify_sources.load_known_absent():
         assert cid in declared, f"{cid} 不在任何 meta.json 的 sources[] 里"
+
+
+# ── 卷号核验（classify_cbeta_volumes）─────────────────────────────────────────
+#
+# FoJin 存的 cbeta_id 不含卷号（`T33n1718 -> T1718`），所以周检那一步结构上
+# 看不见卷号。master-zhiyi 声明的 `T33n1718`（题名写「妙法莲华经玄义」，而
+# 1718 是《文句》且在 T34 卷）因此连续多周报「34/35 verified」。翻出它的是
+# 2026-09-13 的一次评测跑分：模型写出正确的 `T33n1716`，被审计器判成伪造。
+
+
+def test_a_volume_outside_the_declared_range_is_flagged():
+    mismatched, unknown = verify_sources.classify_cbeta_volumes(
+        {"T33n1718": ["master-zhiyi"]}, {"T33n1718": "T34"}
+    )
+    assert mismatched == {"T33n1718": "T34"}
+    assert unknown == []
+
+
+def test_a_multi_volume_work_accepts_any_volume_in_its_range():
+    """《大般若經》600 卷横跨 `T05..T07`，`T07n0220` 是合法引用。
+
+    这道检查的第一版只比 CBETA 的 `file` 字段（只给起卷 `T05n0220`），于是把
+    这条**正确**声明判成错 —— 正是它被加进来要治的那个毛病，方向调了个头。
+    """
+    mismatched, unknown = verify_sources.classify_cbeta_volumes(
+        {"T07n0220": ["master-xuanzang"]}, {"T07n0220": "T05..T07"}
+    )
+    assert mismatched == {}
+    assert unknown == []
+
+
+def test_a_volume_past_the_end_of_the_range_is_still_flagged():
+    mismatched, _ = verify_sources.classify_cbeta_volumes(
+        {"T08n0220": ["x"]}, {"T08n0220": "T05..T07"}
+    )
+    assert "T08n0220" in mismatched
+
+
+def test_a_different_canon_letter_is_flagged():
+    """X62n1182 不能拿 T 卷的区间来放行。"""
+    mismatched, _ = verify_sources.classify_cbeta_volumes(
+        {"X62n1182": ["x"]}, {"X62n1182": "T62"}
+    )
+    assert "X62n1182" in mismatched
+
+
+def test_an_unanswerable_id_is_unknown_not_wrong():
+    """CBETA 问不到时既不算对也不算错。
+
+    算成错，一次网络抖动就是一屏假告警；算成对，「查不出来」就和「查过了没
+    问题」长得一样 —— 这个仓库两种都栽过。
+    """
+    mismatched, unknown = verify_sources.classify_cbeta_volumes(
+        {"T99n9999": ["x"]}, {"T99n9999": None}
+    )
+    assert mismatched == {}
+    assert unknown == ["T99n9999"]
+
+
+def test_the_volume_range_parser_reads_both_shapes():
+    assert verify_sources.cbeta_volume_range("T33") == ("T", 33, 33)
+    assert verify_sources.cbeta_volume_range("T05..T07") == ("T", 5, 7)
+    assert verify_sources.cbeta_volume_range("J36") == ("J", 36, 36)
+    assert verify_sources.cbeta_volume_range("") is None
+    assert verify_sources.cbeta_volume_range("garbage") is None

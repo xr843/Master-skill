@@ -39,11 +39,16 @@ jobs:
           # Extract key stats for the issue body
           FAILED=$(grep -oP "Not found in FoJin:\s*\K\d+" verify_output.txt || echo "0")
           UPDATES=$(grep -oP "URL replacements:\s*\K\d+" verify_output.txt || echo "0")
+          # 卷号写错的声明。FoJin 的查询不含卷号，所以 FAILED 那一行结构上
+          # 看不见这一类 —— master-zhiyi 的 `T33n1718` 就是这样连续多周绿灯
+          # 走过去的，直到一次评测跑分把模型写对的 `T33n1716` 判成伪造才翻出来。
+          MISMATCHED=$(grep -oP "CBETA id mismatches:\s*\K\d+" verify_output.txt || echo "0")
+          echo "mismatched=$MISMATCHED" >> "$GITHUB_OUTPUT"
           echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
           echo "updates=$UPDATES" >> "$GITHUB_OUTPUT"
 
       - name: Create issue if links need updating
-        if: steps.verify.outputs.updates != '0' || steps.verify.outputs.failed != '0'
+        if: steps.verify.outputs.updates != '0' || steps.verify.outputs.failed != '0' || steps.verify.outputs.mismatched != '0'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
@@ -59,6 +64,7 @@ jobs:
                   `Automated weekly link verification found changes.\n\n` +
                   `- **URL replacements needed:** ${updates}\n` +
                   `- **CBETA IDs not found in FoJin:** ${failed}\n` +
+                  `- **Declared IDs CBETA disagrees with:** ${{ steps.verify.outputs.mismatched }}\n` +
                   `- **Last run:** ${new Date().toISOString()}\n\n` +
                   `## Full output\n\n\`\`\`\n${output}\n\`\`\`\n\n` +
                   `Run \`python3 tools/verify_sources.py --fix\` locally and commit the changes.`;

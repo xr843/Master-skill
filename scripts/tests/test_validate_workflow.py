@@ -107,11 +107,45 @@ def test_validate_job_lints_workflows_with_verified_pinned_actionlint():
 
 
 def test_verify_links_quotes_github_output_path():
+    """每一处写 `$GITHUB_OUTPUT` 都要加引号 —— 断言的是性质，不是条数。
+
+    原来写的是 `count(...) == 2`。加第三个 output 时它就红了，而它本来想守的
+    那件事（引号）一点没被破坏 —— 一个数着行数的测试，第一次真正扩展就得改，
+    改的人只会把 2 换成 3，于是它连自己守什么都说不清了。
+    """
+    import re
+
     step = _step(VERIFY_LINKS_WORKFLOW, "verify", "Run verify_sources.py (dry run)")
     script = step.get("run", "")
     assert 'cd "${{ github.workspace }}"' in script
-    assert script.count('>> "$GITHUB_OUTPUT"') == 2
-    assert ">> $GITHUB_OUTPUT" not in script
+
+    writes = re.findall(r">>\s*\S*GITHUB_OUTPUT\S*", script)
+    assert writes, "这一步没有写任何 output —— 那下面的 if: 条件永远为假"
+    for write in writes:
+        assert write.replace(">>", "").strip() == '"$GITHUB_OUTPUT"', write
+
+
+def test_every_output_the_issue_condition_reads_is_actually_written():
+    """`if:` 里引用的每个 output 都必须真的被写过。
+
+    拼错一个名字，GitHub 把它求值成空字符串，`!= '0'` 恒真或恒假 —— 要么每周
+    开一个空 issue，要么永远不开。两种都不会报错，也不会有人发现：这道周检的
+    全部产出就是「开没开 issue」这一件事。
+    """
+    import re
+
+    verify = _step(VERIFY_LINKS_WORKFLOW, "verify", "Run verify_sources.py (dry run)")
+    written = set(re.findall(r'echo\s+"(\w+)=', verify.get("run", "")))
+
+    read = set()
+    for job in VERIFY_LINKS_WORKFLOW["jobs"].values():
+        for step in job.get("steps", []):
+            blob = str(step.get("if", "")) + str(step.get("with", "")) + str(step.get("run", ""))
+            read |= set(re.findall(r"steps\.verify\.outputs\.(\w+)", blob))
+
+    assert read, "没有任何地方读取 outputs —— 这两个断言都会空转"
+    missing = read - written
+    assert not missing, f"读取了但从未写入的 output: {sorted(missing)}"
 
 
 @pytest.mark.parametrize(
