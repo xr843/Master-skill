@@ -1105,3 +1105,62 @@ def test_a_fabricated_id_is_never_reclassified_as_a_non_citation():
     report = verify_citations.audit_answer({"T48n2008"}, "【《伪经》，T99n9999】")
     assert report["fabricated"] == ["T99n9999"]
     assert report["noncitation"] == []
+
+
+# ── 未补零的完整经号（_resolve_short_form 的第二支）──────────────────────────
+#
+# CBETA 习惯把作品号补到四位（`T14n0475`），模型常照写不补（`T14n475`）。
+# 那不是短号（`T2008` 那种没有卷号的形态），`_SHORT_FORM` 匹配不上，于是解析器
+# 直接返回 None —— 一条**正确**引用被判成**伪造**。漏检只是没看，判伪造是指着
+# 真话说假话，方向更坏。2026-09-13 探针里 master-debate 一条回答 4 个引文块，
+# 3 个栽在这上面。
+
+
+def test_an_unpadded_work_number_resolves_to_the_declared_id():
+    declared = {"T14n0475", "T48n2008"}
+    report = verify_citations.audit_answer(declared, "【T14n475】")
+    assert report["offline"] == ["T14n0475"]
+    assert report["fabricated"] == []
+
+
+def test_a_wrong_volume_is_still_fabricated():
+    """这一支比短号那一支更严：卷号也要相等。
+
+    不比卷号的话 `T99n0475` 会冒充 `T14n0475` —— 卷号写错的引用被洗白成正确的，
+    正是这个放宽最容易带出来的副作用。
+    """
+    declared = {"T14n0475"}
+    report = verify_citations.audit_answer(declared, "【T99n0475】")
+    assert report["fabricated"] == ["T99n0475"]
+    assert report["offline"] == []
+
+
+def test_a_work_number_nobody_declared_is_still_fabricated():
+    declared = {"T14n0475"}
+    report = verify_citations.audit_answer(declared, "【T14n9999】")
+    assert report["fabricated"] == ["T14n9999"]
+
+
+def test_a_differing_letter_suffix_is_still_fabricated():
+    """`T14n0475a` 是另一部子经，不是 `T14n0475` 的别写。"""
+    declared = {"T14n0475"}
+    report = verify_citations.audit_answer(declared, "【T14n475a】")
+    assert report["fabricated"] == ["T14n475a"]
+
+
+def test_an_ambiguous_unpadded_number_is_not_resolved():
+    """两条声明归一后同号时不放行 —— 放行凭据必须失败即安全。
+
+    现有声明集里没有这种冲突（实测 35 条完整形、0 处），所以只能构造。
+    """
+    declared = {"T14n0475", "T14n475"}
+    report = verify_citations.audit_answer(declared, "【T14n00475】")
+    assert report["offline"] == []
+    assert report["fabricated"] == ["T14n00475"]
+
+
+def test_the_short_form_path_still_works():
+    """没有卷号的短号是另一支，不能被这次改动挤掉。"""
+    declared = {"T48n2008"}
+    report = verify_citations.audit_answer(declared, "【T2008】")
+    assert report["offline"] == ["T48n2008"]

@@ -118,22 +118,55 @@ def _normalize_cbeta_work_number(number: str) -> str:
     return f"{prefix}{int(digits)}"
 
 
+# 完整形但作品号未补零:`T14n475` 之于声明的 `T14n0475`。CBETA 习惯把作品号
+# 补到四位,模型常照写不补 —— 这不是短号(`T2008` 那种没有卷号的形态),所以
+# `_SHORT_FORM` 匹配不上,`_resolve_short_form` 直接返回 None,于是一条**正确**
+# 引用被判成**伪造**。2026-09-13 探针实测:master-debate 一条回答里 4 个引文块,
+# 3 个栽在这上面。判伪造比漏检更糟 —— 漏检只是没看,判伪造是指着真话说假话。
+_UNPADDED_FULL_FORM = re.compile(r"^([TXJ])([0-9]{1,8})n(B?[0-9]{1,8})([a-z]?)$")
+
+
 def _resolve_short_form(cid: str, declared_ids: set[str]) -> str | None:
-    """把短号对回声明里的完整号;对不上返回 None(仍按伪造处理)。"""
+    """把短号 / 未补零的完整号对回声明里的完整号;对不上返回 None(仍按伪造处理)。"""
     m = _SHORT_FORM.match(cid)
-    if not m:
+    if m:
+        prefix = m.group(1)
+        number = _normalize_cbeta_work_number(m.group(2))
+        for declared in declared_ids:
+            d = _FULL_FORM.match(declared)
+            if (
+                d
+                and d.group(1) == prefix
+                and _normalize_cbeta_work_number(d.group(2)) == number
+            ):
+                return declared
         return None
-    prefix = m.group(1)
-    number = _normalize_cbeta_work_number(m.group(2))
+
+    full = _UNPADDED_FULL_FORM.match(cid)
+    if not full:
+        return None
+    # 比短号那一支**更严**:卷号也必须相等。否则 `T99n0475` 会冒充
+    # `T14n0475` —— 卷号写错的引用不该被洗白成正确的。
+    prefix, volume, number, suffix = (
+        full.group(1),
+        full.group(2).lstrip("0") or "0",
+        _normalize_cbeta_work_number(full.group(3)),
+        full.group(4),
+    )
+    matches = []
     for declared in declared_ids:
-        d = _FULL_FORM.match(declared)
+        d = _UNPADDED_FULL_FORM.match(declared)
         if (
             d
             and d.group(1) == prefix
-            and _normalize_cbeta_work_number(d.group(2)) == number
+            and (d.group(2).lstrip("0") or "0") == volume
+            and _normalize_cbeta_work_number(d.group(3)) == number
+            and d.group(4) == suffix
         ):
-            return declared
-    return None
+            matches.append(declared)
+    # 歧义时不放行。现有声明集里归一后没有撞号(实测 35 条完整形,0 处冲突),
+    # 但放行凭据必须失败即安全 —— 将来多一条就会撞。
+    return matches[0] if len(matches) == 1 else None
 
 
 # 第四个契约家族:编集开示(compiled_teaching)。声明形态是 `Author:Work`
