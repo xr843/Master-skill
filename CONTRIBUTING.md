@@ -138,6 +138,26 @@ CI 一直单独跑 `pytest`，直到 2026-09-03 本地 `npm test` 才补上这�
 - Review 生成结果，补充 `references/teaching.md`、`voice.md` 的细节
 - 起草 5 条 `tests/fidelity.jsonl`（1 basic + 2 intermediate + 2 advanced）
 - 跑一次 `test-fidelity.py --master <slug>` 确认 ≥ 4/5 通过
+
+### FoJin 查不到某部经时
+
+周检（`.github/workflows/verify-links.yml`）会为「FoJin 里查不到的 CBETA id」
+开 issue。如果那是 **FoJin 确实不收录**的一部（例如嘉兴藏 J 系列），把它登记进
+`tools/fojin-known-absent.json`，它就不再计入 `Not found in FoJin` —— 否则同一条
+每周开一次，而一个永远响的告警等于没有告警：真出现新缺失时没人看得出来。
+
+登记有三条硬性要求，`tests/test_verify_sources.py` 会验：
+
+1. **写清理由**（≥ 20 字），并给出**可解析的核验日期**——不接受「TODO」「待定」。
+   理由里要说明是怎么确认的，最好附一次对照查询（同一次请求里另一个 id 能查到，
+   才能区分「缺这部书」和「接口不通」）。
+2. **该 id 必须已在某个 `meta.json` 的 `sources[]` 里声明**。给一个没人引用的 id
+   预留豁免，等于为将来的伪造引用开后门。
+3. 清单会**双向**失效：登记过的 id 若哪天在 FoJin 查得到了，周检报 `[STALE]`
+   并计入失败，要求删掉那一条。清单不会悄悄烂掉。
+
+离线引文审计不受此清单影响——只要 id 在 `meta.json` 里声明过，
+`verify_citations.py` 照常解析。它影响的只是能不能附 fojin.app 活链接。
 - 提 PR
 
 ### 3.3 选项 B：手工编写

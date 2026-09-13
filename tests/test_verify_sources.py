@@ -388,3 +388,73 @@ def test_real_declared_tibetan_treatise_ids_still_validate():
         "Lam-gtso-rnam-gsum",
     ):
         assert pattern.match(declared), declared
+
+
+# ── FoJin 已知缺失清单（classify_absent / load_known_absent）────────────────
+
+
+def _absent(cid):
+    return {cid: {"text_id": None, "short_cbeta_id": cid}}
+
+
+def test_a_registered_absence_does_not_count_as_a_failure():
+    """嘉兴藏 J36nB348 永远查不到，不该每周开一次同样的 issue。"""
+    not_found, expected, stale = verify_sources.classify_absent(
+        found={}, all_absent=_absent("J36nB348"),
+        known_absent={"J36nB348": {"reason": "嘉兴藏不在收录范围"}},
+    )
+    assert not_found == {}
+    assert list(expected) == ["J36nB348"]
+    assert stale == []
+
+
+def test_an_unregistered_absence_still_counts():
+    """清单不是用来把所有缺失都消音的 —— 新出现的缺失照常报。"""
+    not_found, expected, stale = verify_sources.classify_absent(
+        found={}, all_absent=_absent("T99n9999"),
+        known_absent={"J36nB348": {"reason": "…"}},
+    )
+    assert list(not_found) == ["T99n9999"]
+    assert expected == {}
+
+
+def test_a_registered_id_that_is_now_present_is_reported_as_stale():
+    """清单的另一半失效方式：FoJin 补收了这部书，登记就该删掉。
+
+    不报的话，这份清单会把一个已经解决的问题继续挡在门外 —— 而且是无声地挡，
+    这正是它被引入来治的那个毛病换了个方向。
+    """
+    not_found, expected, stale = verify_sources.classify_absent(
+        found={"J36nB348": {"text_id": 1234}}, all_absent={},
+        known_absent={"J36nB348": {"reason": "…"}},
+    )
+    assert stale == ["J36nB348"]
+
+
+def test_the_registry_on_disk_parses_and_every_entry_is_justified():
+    """清单里每一条都必须写明理由与核验日期，否则它就是一张消音名单。"""
+    import datetime
+    import json as _json
+
+    data = _json.loads(verify_sources.KNOWN_ABSENT_PATH.read_text(encoding="utf-8"))
+    assert data["absent"], "清单为空时这几条检查什么也没验"
+    for entry in data["absent"]:
+        assert entry["cbeta_id"]
+        assert len(entry.get("reason", "")) >= 20, entry["cbeta_id"]
+        # 日期必须可解析，防止写成 "TODO" 之类
+        datetime.date.fromisoformat(entry["verified_absent_on"])
+        assert entry.get("used_by"), entry["cbeta_id"]
+
+
+def test_every_registered_id_is_actually_declared_somewhere():
+    """登记一个仓库里根本没人引用的 id，是在给将来的伪造引用预留豁免。"""
+    import json as _json
+    from pathlib import Path as _Path
+
+    declared = set()
+    for meta in _Path("prebuilt").glob("*/meta.json"):
+        for src in _json.loads(meta.read_text(encoding="utf-8")).get("sources") or []:
+            if src.get("id"):
+                declared.add(src["id"])
+    for cid in verify_sources.load_known_absent():
+        assert cid in declared, f"{cid} 不在任何 meta.json 的 sources[] 里"

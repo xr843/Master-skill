@@ -481,7 +481,14 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     verified = verify_ids(bridge, combined_map, titles)
 
     found = {k: v for k, v in verified.items() if v["text_id"] is not None}
-    not_found = {k: v for k, v in verified.items() if v["text_id"] is None}
+    all_absent = {k: v for k, v in verified.items() if v["text_id"] is None}
+    known_absent = load_known_absent()
+    # 已登记的缺失不再计入 failed;未登记的照常。
+    # 清单有两种失效方式:漏登记(新缺失被当成已知)、过期(登记的 id 现在
+    # 查得到了)。两种都必须报,否则它会静静地把问题挡在门外。
+    not_found, expected_absent, stale_absent = classify_absent(
+        found, all_absent, known_absent
+    )
 
     print(f"\n  Verified: {len(found)}/{len(verified)}")
     for cid in sorted(found):
@@ -494,6 +501,23 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
         for cid in sorted(not_found):
             teachers = combined_map.get(cid, ["?"])
             print(f"    [MISS] {cid} (-> {not_found[cid]['short_cbeta_id']}) used by: {', '.join(teachers)}")
+
+    if expected_absent:
+        print(f"\n  Known absent from FoJin ({len(expected_absent)}), not counted:")
+        for cid in sorted(expected_absent):
+            entry = known_absent[cid]
+            print(
+                f"    [KNOWN] {cid} — {entry.get('reason', '').splitlines()[0][:90]}"
+                f"  (核验于 {entry.get('verified_absent_on', '?')})"
+            )
+
+    if stale_absent:
+        print(f"\n  Stale entries in {KNOWN_ABSENT_PATH.name} ({len(stale_absent)}):")
+        for cid in stale_absent:
+            print(
+                f"    [STALE] {cid} 现在能在 FoJin 查到 (text_id="
+                f"{found[cid]['text_id']}) —— 从清单里删掉这一条"
+            )
 
     # Step 4: Update URLs
     # Build replacement map: full_cbeta_id -> str(internal_text_id)
@@ -530,12 +554,52 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     print(f"  CBETA IDs in URLs:         {len([u for u in all_url_ids if FULL_CBETA_RE.match(u)])}")
     print(f"  Total unique CBETA IDs:    {len(all_ids)}")
     print(f"  Verified in FoJin:         {len(found)}")
-    print(f"  Not found in FoJin:        {len(not_found)}")
+    print(f"  Not found in FoJin:        {len(not_found) + len(stale_absent)}")
+    if expected_absent:
+        print(f"  Known absent (not counted):{len(expected_absent):>4}")
+    if stale_absent:
+        print(f"  Stale known-absent entries:{len(stale_absent):>4}")
     print(f"  URL replacements:          {len(all_changes)}")
     if dry_run and all_changes:
         print("\n  Run with --fix to apply changes.")
 
     return 0
+
+
+def classify_absent(
+    found: dict[str, dict],
+    all_absent: dict[str, dict],
+    known_absent: dict[str, dict],
+) -> tuple[dict[str, dict], dict[str, dict], list[str]]:
+    """把「FoJin 查不到」分成三堆:未登记的缺失 / 已登记的缺失 / 清单过期项。
+
+    抽成纯函数是为了能测:原来它写在要联网的
+    `_run_legacy_link_verification` 里,一份「已登记的缺失不再计入 failed」
+    的规则如果只能靠周检联网时顺带验证,那它到底有没有在挡对东西,谁也说
+    不准 —— 而这条规则挡错了的后果,正是让一个新出现的缺失无声无息。
+    """
+    not_found = {k: v for k, v in all_absent.items() if k not in known_absent}
+    expected = {k: v for k, v in all_absent.items() if k in known_absent}
+    stale = sorted(k for k in known_absent if k in found)
+    return not_found, expected, stale
+
+
+KNOWN_ABSENT_PATH = Path(__file__).resolve().parent / "fojin-known-absent.json"
+
+
+def load_known_absent(path: Path | None = None) -> dict[str, dict]:
+    """FoJin 确认不收录的 CBETA id → 该条记录。
+
+    没有这份清单时,周检的 `failed` 计数永远是 1(嘉兴藏的 J36nB348),于是
+    verify-links.yml 每周开一次同样的 issue。一个永远响的告警等于没有告警 ——
+    真出现一个**新**的缺失时,它混在同一行数字里,没人看得出来。
+    """
+    if path is None:
+        path = KNOWN_ABSENT_PATH
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {entry["cbeta_id"]: entry for entry in data.get("absent", [])}
 
 
 def main(argv: list[str] | None = None) -> int:
