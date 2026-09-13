@@ -1131,8 +1131,12 @@ def main() -> int:
         help=(
             "Output budget per answer (default %(default)s). Reasoning models "
             "spend this on reasoning before writing: deepseek-v4-pro needs "
-            "~8192 or it stops mid-answer. A different budget is a different "
-            "instrument — record it with the run."
+            "~8192 or it stops mid-answer, and master-debate needs 16384 — "
+            "measured 2026-09-13 on deepseek-v4-flash, 3 of its 8 fixtures "
+            "truncated at 8192 on two consecutive runs and 0 of 8 at 16384. "
+            "Its four-round format is simply longer than a single answer. "
+            "A different budget is a different instrument — record it with "
+            "the run, and do not compare across one."
         ),
     )
     parser.add_argument(
