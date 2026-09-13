@@ -96,6 +96,30 @@ CASES = [
         ),
     ),
     (
+        "validate-citation-templates.py", (),
+        "a skill demanding citations must show the one shape the auditor parses",
+        # Aimed at the measured defect, not at a proxy for it: master-debate
+        # required "至少 1 个本宗 citation" four times and wrote 24 real ids as
+        # 《坛经》（T48n2008）. `_CITATION_BLOCK` parses 【…】 only, so the run
+        # reported `audit_coverage: N/A` — the cell master-help prints for
+        # never citing at all. Swapping the brackets back reproduces it.
+        lambda r: (r / "prebuilt/master-debate/SKILL.md").write_text(
+            (r / "prebuilt/master-debate/SKILL.md")
+            .read_text(encoding="utf-8").replace("【", "（").replace("】", "）"),
+            encoding="utf-8",
+        ),
+    ),
+    (
+        "validate-citation-templates.py", (),
+        "a verifiability claim must not sit beside an id-less literal template",
+        lambda r: (r / "prebuilt/compare-masters/SKILL.md").write_text(
+            (r / "prebuilt/compare-masters/SKILL.md")
+            .read_text(encoding="utf-8")
+            .replace("【《{title}》…】", "【《经名》卷N】"),
+            encoding="utf-8",
+        ),
+    ),
+    (
         "validate-fidelity.py", (),
         "every persona must ship gradeable fixtures",
         lambda r: (r / "prebuilt/master-huineng/tests/fidelity.jsonl").write_text("", encoding="utf-8"),
