@@ -29,7 +29,7 @@ import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import NamedTuple
 
-from _masterpaths import resolve_master_dir
+from _masterpaths import PREBUILT as PREBUILT_ROOT, resolve_master_dir
 
 # master feeds into path resolution; restrict to a slug charset so a value like
 # "../../etc" can never read files outside prebuilt/. Mirrors the isSafeName
@@ -318,6 +318,74 @@ _FOJIN_TEXT_LINK = re.compile(
 _LINK_WINDOW = 120
 
 
+_FRONTMATTER_KIND = re.compile(r"^kind:\s*[\"']?([A-Za-z-]+)", re.M)
+
+
+def _skill_kind(master_dir: str) -> str | None:
+    """技能类型:先看 meta.json 的 `kind`,没有再看 SKILL.md frontmatter。
+
+    两处都声明 `kind`,而三个元技能(compare-masters / master-curriculum /
+    master-help)只有 SKILL.md 没有 meta.json —— 只读 meta.json 就会把它们
+    当成"找不到",于是 load_declared_ids 抛异常、审计整个跳过。
+    """
+    meta_path = os.path.join(master_dir, "meta.json")
+    if os.path.exists(meta_path):
+        with open(meta_path, encoding="utf-8") as f:
+            kind = json.load(f).get("kind")
+        if kind:
+            return kind
+    skill_path = os.path.join(master_dir, "SKILL.md")
+    if os.path.exists(skill_path):
+        with open(skill_path, encoding="utf-8") as f:
+            head = f.read(2048)
+        m = _FRONTMATTER_KIND.search(head)
+        if m:
+            return m.group(1)
+    return None
+
+
+def _persona_slugs(base: str | None = None) -> list[str]:
+    """`prebuilt/` 下所有**非**元技能的目录名。"""
+    root = base if base is not None else PREBUILT_ROOT
+    out = []
+    for name in sorted(os.listdir(root)):
+        path = os.path.join(root, name)
+        if not os.path.isdir(path):
+            continue
+        if _skill_kind(path) == "meta-skill":
+            continue
+        if os.path.exists(os.path.join(path, "meta.json")):
+            out.append(name)
+    return out
+
+
+def _union_over_personas(loader, base: str | None = None):
+    """把 loader 施加到每一位 persona 上并合并结果 —— 元技能的声明集。
+
+    compare-masters / master-debate / master-curriculum 引的是**别人**的经论,
+    自己不声明来源。以前这意味着 `load_declared_ids` 要么抛 FileNotFoundError
+    (没有 meta.json),要么返回空集(debate 的 meta.json 只有协议没有 sources),
+    两条路都让调用方的 `if declared_ids:` 短路,审计整个不跑。2026-09-12 那轮
+    因此有 53 条引文(compare-masters 47 + curriculum 6)被发出去、一条未查。
+
+    **这个并集严格弱于逐 persona 核验。** 审计时手上只有答案正文,不知道当次
+    选了哪两位祖师,所以「把慧能的经号安到宗喀巴名下」这类张冠李戴它查不出来。
+    它能查出的是真正的幻觉引文 —— 全库都没声明过的经号。比不查强,比逐 persona
+    弱,不要把它当成后者。
+    """
+    merged = None
+    for slug in _persona_slugs(base):
+        part = loader(slug, base)
+        if merged is None:
+            merged = part.copy()
+        elif isinstance(merged, dict):
+            for k, v in part.items():
+                merged.setdefault(k, v)
+        else:
+            merged |= part
+    return merged if merged is not None else type(loader("", base))()
+
+
 def load_declared_ids(master: str, base: str | None = None) -> set[str]:
     """读 <base or prebuilt>/<master>/meta.json,返回声明的离线 cbeta_id 集合。
 
@@ -332,6 +400,8 @@ def load_declared_ids(master: str, base: str | None = None) -> set[str]:
     master_dir = resolve_master_dir(master, **kwargs)  # 兼容 "huineng" / "master-huineng"
     if master_dir is None:
         raise FileNotFoundError(f"找不到 master：{master!r}（试过 {master!r} 和 master-{master}）")
+    if _skill_kind(master_dir) == "meta-skill":
+        return _union_over_personas(load_declared_ids, base)
     with open(os.path.join(master_dir, "meta.json"), encoding="utf-8") as f:
         meta = json.load(f)
     ids: set[str] = set()
@@ -354,6 +424,8 @@ def load_member_aliases(master: str, base: str | None = None) -> dict[str, str]:
     master_dir = resolve_master_dir(master, **kwargs)
     if master_dir is None:
         raise FileNotFoundError(f"找不到 master：{master!r}（试过 {master!r} 和 master-{master}）")
+    if _skill_kind(master_dir) == "meta-skill":
+        return _union_over_personas(load_member_aliases, base)
     with open(os.path.join(master_dir, "meta.json"), encoding="utf-8") as f:
         meta = json.load(f)
     aliases: dict[str, str] = {}
@@ -392,6 +464,8 @@ def load_title_aliases(master: str, base: str | None = None) -> dict[str, str]:
     master_dir = resolve_master_dir(master, **kwargs)
     if master_dir is None:
         raise FileNotFoundError(f"找不到 master：{master!r}（试过 {master!r} 和 master-{master}）")
+    if _skill_kind(master_dir) == "meta-skill":
+        return _union_over_personas(load_title_aliases, base)
     with open(os.path.join(master_dir, "meta.json"), encoding="utf-8") as f:
         meta = json.load(f)
     aliases: dict[str, str] = {}

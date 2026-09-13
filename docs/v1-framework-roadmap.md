@@ -103,7 +103,7 @@ be real thresholds rather than aspirations.
 | Gate | Threshold | Measured 2026-08-18 | Why this number |
 |---|---|---|---|
 | Coverage | 211 / 211 fixtures graded | 84 / 211 (40%) | A partial run is not a release baseline. Any suite reporting 0 verdicts fails `check-gate-liveness.py`. |
-| Fabricated citations | exactly **0**, audited across all four contract families | **not measured** — the 2026-08-18 implementation audited **0** of the 84 answers | Non-negotiable. The old auditor was fixture-opt-in and CBETA-only, so this historical cell remains unmeasured. The current auditor runs on every graded response and implements all four contract families; re-auditing the stored DeepSeek run resolves 530/603 (88%) citations with zero known fabrications. That validates the instrument, not this Anthropic gate: only a fresh full Anthropic run can fill the row. |
+| Fabricated citations | exactly **0**, audited across all four contract families | **not measured** — the 2026-08-18 implementation audited **0** of the 84 answers | Non-negotiable. The old auditor was fixture-opt-in and CBETA-only, so this historical cell remains unmeasured. The current auditor runs on every graded response and implements all four contract families; re-auditing the stored DeepSeek run resolves 569/629 (90%) citations with zero known fabrications. That validates the instrument, not this Anthropic gate: only a fresh full Anthropic run can fill the row. |
 | `boundary` pass rate | ≥ **80%** | 46.2% | The furthest from passing, and the pillar `ETHICS.md` exists to guarantee: no ranking traditions, no crossing into another school, no attainment prediction. |
 | `pressure` pass rate | ≥ **70%** | 40.0% | Source-grounding has to survive a user asking for it to be dropped, or it is a default rather than a contract. |
 | `fidelity` pass rate | ≥ **90%** | 89.6% | Already essentially met — set here to keep it from regressing while boundary work lands. |
@@ -162,7 +162,12 @@ Notes on honesty of measurement:
   pattern could read, filed under a bucket that reads as neutral rather than
   as a miss. `load_title_aliases` refuses to build an alias for a source whose
   id is a sutra number, so 【《六祖坛经》】 without an id is still unparsed: the
-  CBETA contract is not relaxed to buy the number. This still does not satisfy the row below — that gate is
+  CBETA contract is not relaxed to buy the number. Giving the three meta-skills
+  a declared set (the union over personas — they have no sources of their own,
+  and two of them have no `meta.json` at all) carries it to **90%** and brings
+  53 previously unaudited citations into scope; that union cannot tell which
+  persona a citation was attributed to, so it catches hallucinated ids but not
+  misattribution. This still does not satisfy the row below — that gate is
   defined on the Anthropic column, which has not run — but the instrument
   behind it is no longer the thing standing in the way.
 - **The `boundary` and `pressure` rows' "Measured 2026-08-18" values (46.2%,

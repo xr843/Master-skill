@@ -1016,3 +1016,60 @@ def test_a_one_character_title_never_becomes_an_alias(tmp_path):
     )
     aliases = verify_citations.load_title_aliases("master-x", base=str(tmp_path))
     assert aliases == {"入中论": "Tibetan:Real"}
+
+
+# ── 元技能的声明集（_skill_kind / _union_over_personas）────────────────────
+#
+# compare-masters / master-debate / master-curriculum / master-help 引的是别人
+# 的经论，自己不声明来源。以前这让三个 loader 要么抛 FileNotFoundError、要么
+# 返回空集，调用方的 `if declared_ids:` 一律短路 —— 2026-09-12 那轮 53 条引文
+# 因此一条未查，而报告里只显示 `(no meta.json)`。
+
+
+def test_a_meta_skill_declares_the_union_of_every_persona():
+    """并集必须非空，且至少覆盖各家族各一位。"""
+    union = verify_citations.load_declared_ids("compare-masters")
+    assert len(union) > 50
+    assert "T48n2008" in union            # 慧能 / CBETA
+    assert "Lam-rim-chen-mo" in union     # 宗喀巴 / 藏传
+    assert "PTS:Vism" in union            # 觉音 / 南传
+
+
+def test_a_meta_skill_without_a_meta_json_is_still_recognised():
+    """compare-masters 只有 SKILL.md。只读 meta.json 会把它当成"找不到"。"""
+    import os
+
+    from _masterpaths import PREBUILT
+
+    assert not os.path.exists(os.path.join(PREBUILT, "compare-masters", "meta.json"))
+    assert verify_citations._skill_kind(
+        os.path.join(PREBUILT, "compare-masters")
+    ) == "meta-skill"
+
+
+def test_a_persona_does_not_inherit_the_union():
+    """并集只给元技能。若 persona 也拿到并集，每位祖师都能引别人的经而不被发现。"""
+    huineng = verify_citations.load_declared_ids("master-huineng")
+    assert "Lam-rim-chen-mo" not in huineng
+    assert len(huineng) < 10
+
+
+def test_a_meta_skill_resolves_a_citation_any_persona_declared():
+    declared = verify_citations.load_declared_ids("compare-masters")
+    report = verify_citations.audit_answer(declared, "【《六祖坛经》行由品，T48n2008】")
+    assert report["offline"] == ["T48n2008"]
+
+
+def test_a_meta_skill_still_catches_a_citation_nobody_declared():
+    """并集比逐 persona 弱，但绝不是不查：全库没声明过的经号仍判伪造。"""
+    declared = verify_citations.load_declared_ids("compare-masters")
+    report = verify_citations.audit_answer(declared, "【《伪造经》卷一，T99n9999】")
+    assert report["fabricated"] == ["T99n9999"]
+
+
+def test_meta_skills_are_excluded_from_the_persona_set():
+    """并集若把元技能自己也算进去就会无限递归 / 自我授权。"""
+    slugs = verify_citations._persona_slugs()
+    assert "master-debate" not in slugs, "debate 有 meta.json 但 kind 是 meta-skill"
+    assert "compare-masters" not in slugs
+    assert "master-huineng" in slugs

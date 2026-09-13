@@ -56,9 +56,23 @@ def test_a_resolvable_citation_counts_as_checked(mod):
     assert suite["recomputed"]["unparsed"] == 0
 
 
-def test_a_master_without_meta_json_is_unavailable_not_zero(mod):
-    out = mod.reaudit(_report("master-curriculum", "【《坛经》，T48n2008】"))
+def test_a_master_with_no_declared_set_is_unavailable_not_zero(mod):
+    """没有声明集就必须说"查不了"，不能报 0 —— 0 会被读成"查过了，没问题"。
+
+    这条原来用的是 `master-curriculum`，因为它没有 meta.json。那是 2026-09-13
+    修掉的缺陷本身：它是元技能，引的是别人的经论，声明集应当是各 persona 的
+    并集，而不是"不可用"。原则没变，只是不能再拿它当例子。
+    """
+    out = mod.reaudit(_report("master-nobody-at-all", "【《坛经》，T48n2008】"))
     assert out["suites"][0]["status"] == "unavailable"
+
+
+def test_a_meta_skill_is_audited_against_the_union(mod):
+    """元技能引任一 persona 声明过的经号，算 checked。"""
+    out = mod.reaudit(_report("master-curriculum", "【《坛经》，T48n2008】"))
+    suite = out["suites"][0]
+    assert suite["status"] == "audited"
+    assert suite["recomputed"]["checked"] == 1
 
 
 def test_truncated_results_are_not_audited(mod):
@@ -98,6 +112,14 @@ def test_fabricated_citations_are_named_not_just_counted(mod):
 #   compiled_teaching (2026-09-03) — `master-ajahn-chah` could not read a
 #   single one of its own citations before it; `master-mahasi-sayadaw` 12/52.
 #
+#   meta-skill declared sets (2026-09-13) — compare-masters and
+#   master-curriculum have no meta.json at all and master-debate's carries
+#   only its protocol, so all three read as "nothing declared" and their
+#   citations were never audited. They quote other personas, so their declared
+#   set is the union over personas. That union is strictly weaker than a
+#   per-persona check — it cannot see a sutra attributed to the wrong master —
+#   and strictly stronger than auditing nothing.
+#
 #   declared titles (2026-09-13) — `master-tsongkhapa` declares bare Wylie
 #   titles (`Lam-rim-chen-mo`) and cites them in Chinese (《菩提道次第广论》)
 #   or with spaces (`Lam gtso rnam gsum`); nothing matched, so 50 of its 53
@@ -132,6 +154,20 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
     # collection-covers-member: Mahasi:DiscoursesOnSuttas' own note names it.
     assert mahasi["fabricated"] == []
 
+    # Had no meta.json, so `load_declared_ids` raised and the audit was
+    # skipped entirely — 47 citations served, none checked. The remaining 40
+    # unparsed are the id-less 【《中论》卷四】 the output template asked for;
+    # that template was fixed the same day, which this stored run predates.
+    compare = by_master["compare-masters"]
+    assert compare["recorded"] == {"checked": 0, "unparsed": 47}
+    assert compare["recomputed"] == {"checked": 7, "unparsed": 40}
+    assert compare["fabricated"] == []
+
+    curriculum = by_master["master-curriculum"]
+    assert curriculum["recorded"] == {"checked": 0, "unparsed": 6}
+    assert curriculum["recomputed"] == {"checked": 32, "unparsed": 0}
+    assert curriculum["fabricated"] == []
+
     buddhaghosa = by_master["master-buddhaghosa"]
     assert buddhaghosa["recorded"] == {"checked": 44, "unparsed": 16}
     assert buddhaghosa["recomputed"] == {"checked": 61, "unparsed": 0}
@@ -164,6 +200,8 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
         "master-buddhaghosa",
         "master-tsongkhapa",
         "master-atisha",
+        "compare-masters",
+        "master-curriculum",
     )
     for master, suite in by_master.items():
         if master in moved:
@@ -173,7 +211,7 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
         assert suite["recorded"] == suite["recomputed"], master
 
     assert out["totals"]["recorded"]["checked"] == 386
-    assert out["totals"]["recomputed"]["checked"] == 530
+    assert out["totals"]["recomputed"]["checked"] == 569
 
 
 def test_api_error_rows_do_not_pollute_reaudit_totals(mod):
