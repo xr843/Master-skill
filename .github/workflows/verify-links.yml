@@ -43,9 +43,12 @@ jobs:
           # 看不见这一类 —— master-zhiyi 的 `T33n1718` 就是这样连续多周绿灯
           # 走过去的，直到一次评测跑分把模型写对的 `T33n1716` 判成伪造才翻出来。
           MISMATCHED=$(grep -oP "CBETA id mismatches:\s*\K\d+" verify_output.txt || echo "0")
-          echo "mismatched=$MISMATCHED" >> "$GITHUB_OUTPUT"
-          echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
-          echo "updates=$UPDATES" >> "$GITHUB_OUTPUT"
+          # 一组重定向而不是三条 —— shellcheck SC2129。
+          {
+            echo "failed=$FAILED"
+            echo "updates=$UPDATES"
+            echo "mismatched=$MISMATCHED"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create issue if links need updating
         if: steps.verify.outputs.updates != '0' || steps.verify.outputs.failed != '0' || steps.verify.outputs.mismatched != '0'

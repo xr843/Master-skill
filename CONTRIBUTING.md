@@ -53,7 +53,27 @@ npm install -g .  # 可选，本地测试 CLI
 
 **改 `.github/workflows/**` 时另外注意**：CI 的 actionlint 门禁会连带跑 shellcheck，
 而 actionlint 在本机**找不到 shellcheck 就静默跳过那一半检查** —— 本地绿、CI 红。
-本地复现要先装：`pip install shellcheck-py`（或系统包），再跑 `actionlint`。
+本地复现要先装 shellcheck，再跑 `actionlint`。
+
+```bash
+# 首选；若系统 Python 受 PEP 668 管控（Debian/Ubuntu/WSL 常见），pip 会拒装
+pip install shellcheck-py
+
+# 退路：官方静态二进制，解开就能用，不动系统 Python
+curl -sL https://github.com/koalaman/shellcheck/releases/download/v0.10.0/shellcheck-v0.10.0.linux.x86_64.tar.xz \
+  | tar -xJ --strip-components=1 -C /tmp shellcheck-v0.10.0/shellcheck
+PATH="/tmp:$PATH" actionlint
+```
+
+**装完先验它真的在跑**：actionlint 找不到 shellcheck 时不会报错，只会静默
+少跑一半检查——绿灯看起来一模一样。拿一段故意写坏的脚本试一次：
+
+```bash
+mkdir -p /tmp/probe/.github/workflows && cd /tmp/probe && git init -q
+printf 'name: p\non: push\njobs:\n  j:\n    runs-on: ubuntu-latest\n    steps:\n      - run: ls | tail -1\n' \
+  > .github/workflows/p.yml
+actionlint    # 应报 SC2012；什么都不报，就说明 shellcheck 没在跑
+```
 2026-09-07 就靠它抓到一处：`exit` 被插在结果汇总块之前，整段变成死代码。
 
 **基本健康检查：**
