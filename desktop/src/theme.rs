@@ -19,11 +19,15 @@ pub fn apply_console_theme(ctx: &egui::Context) {
         egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(186, 194, 190));
     ctx.set_visuals(visuals);
 
-    let mut style = (*ctx.style()).clone();
-    style.spacing.item_spacing = egui::vec2(8.0, 5.0);
-    style.spacing.button_padding = egui::vec2(8.0, 3.0);
-    style.spacing.interact_size.y = 22.0;
-    ctx.set_style(style);
+    // egui 0.36 把 style 变成按主题存放:`Context::style()` / `set_style()` 没了,
+    // 取而代之的是 `style_of(theme)` / `set_style_of(theme, style)`。这里要的是
+    // 旧行为 —— 不分主题一律生效 —— 所以用 `all_styles_mut`,而不是挑一个
+    // `Theme::Dark` 写进去:那样浅色主题下这三行间距就会无声地失效。
+    ctx.all_styles_mut(|style| {
+        style.spacing.item_spacing = egui::vec2(8.0, 5.0);
+        style.spacing.button_padding = egui::vec2(8.0, 3.0);
+        style.spacing.interact_size.y = 22.0;
+    });
 }
 
 pub fn status_badge_width() -> f32 {
@@ -40,7 +44,32 @@ pub fn sidebar_default_width() -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use super::{sidebar_default_width, sidebar_row_height, status_badge_width};
+    use super::{apply_console_theme, sidebar_default_width, sidebar_row_height, status_badge_width};
+
+    /// egui 0.36 删掉了 `Context::style()` / `set_style()`。这三行间距原本靠
+    /// 它们设置,换成 `all_styles_mut` 之后必须仍然生效 —— 编译通过不代表
+    /// 值写进去了:`set_style_of(Theme::Dark, …)` 也编译得过,却会让浅色主题
+    /// 下这一段无声失效。
+    #[test]
+    fn console_theme_sets_spacing_on_a_real_context() {
+        let ctx = eframe::egui::Context::default();
+        ctx.set_fonts(eframe::egui::FontDefinitions::empty());
+        apply_console_theme(&ctx);
+
+        for theme in [
+            eframe::egui::Theme::Dark,
+            eframe::egui::Theme::Light,
+        ] {
+            let style = ctx.style_of(theme);
+            assert_eq!(
+                style.spacing.item_spacing,
+                eframe::egui::vec2(8.0, 5.0),
+                "{theme:?} 的 item_spacing 没被设置"
+            );
+            assert_eq!(style.spacing.button_padding, eframe::egui::vec2(8.0, 3.0));
+            assert_eq!(style.spacing.interact_size.y, 22.0);
+        }
+    }
 
     #[test]
     fn keeps_sidebar_rows_dense_but_clickable() {

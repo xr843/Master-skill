@@ -4,35 +4,39 @@
     {
       "id": "RUSTSEC-2026-0194",
       "crate": "quick-xml",
-      "affected_versions": ["0.30.0", "0.39.4"],
+      "affected_versions": [
+        "0.39.4"
+      ],
       "title": "Quadratic run time when checking a start tag for duplicate attribute names",
       "severity": "7.5 (high)",
       "fixed_in": ">=0.41.0",
-      "why_not_applicable": "两个版本的漏洞代码都进不了发布二进制，已实测而非推断。",
+      "why_not_applicable": "唯一剩下的那份 quick-xml 只经 proc-macro 进来，进不了发布二进制，已实测而非推断。",
       "evidence": [
-        "0.39.4 ← wayland-scanner，是 proc-macro：`cargo tree -e normal,no-proc-macro -i quick-xml@0.39.4` 返回 'nothing to print'，即排除 proc-macro 边后它不在依赖图里。它解析的是随 wayland-protocols 分发的协议 XML，编译期跑在宿主上。",
-        "0.30.0 ← zbus_xml ← zbus-lockstep ← atspi-common。该路径是正常依赖会被链接，但 atspi-common 源码里唯一用到**库** zbus_lockstep 的地方是 src/lib.rs:238，在 `#[cfg(test)]` 内；另外三处是 zbus_lockstep_macros::validate，proc-macro。",
-        "2026-09-13 直接验证发布产物：`cargo build --release` 后的 master-skill-desktop（15.9MB）中 quick_xml / zbus_lockstep / zbus_xml 符号数与路径串均为 0，而对照的 egui 24 处、winit 29 处、eframe 7 处、serde_json 5 处路径串俱在。"
+        "eframe 0.31→0.36 升级后，经 zbus_xml 链进二进制的 quick-xml 0.30.0 已消失（zbus_xml 5.2.1 不再依赖 quick-xml），cargo audit 命中数 4 → 2。",
+        "剩下的 0.39.4 只来自 wayland-scanner（proc-macro）：`cargo tree -e normal,no-proc-macro -i quick-xml` 返回 'nothing to print'，即排除编译期边后它不在依赖图里。它解析的是随 wayland-protocols 分发的协议 XML。",
+        "2026-09-13 直接验证发布产物：`cargo build --release` 得到的 master-skill-desktop（26.9MB）中 quick_xml 符号与路径串均为 0、zbus 相关符号为 0，而对照的 egui 36 处、winit 50 处路径串俱在。"
       ],
-      "cannot_upgrade_because": "两份都由上游钉死：zbus_xml 4.0 要 0.30、wayland-scanner 要 0.39。`cargo update -p quick-xml@<ver> --precise` 今天动不了它们，得等 eframe/egui 换上游。",
+      "cannot_upgrade_because": "wayland-scanner 0.31.10 钉死 quick-xml 0.39.x；它是 winit → egui-winit → eframe 的传递依赖，本仓无法直接指定。",
       "reviewed_on": "2026-09-13",
-      "recheck_when": "eframe 升级（见 PR #167）后重跑本检查，很可能可以整条删除"
+      "recheck_when": "wayland-scanner / winit 换上 quick-xml ≥0.41 后重跑本检查，届时应可整条删除"
     },
     {
       "id": "RUSTSEC-2026-0195",
       "crate": "quick-xml",
-      "affected_versions": ["0.30.0", "0.39.4"],
+      "affected_versions": [
+        "0.39.4"
+      ],
       "title": "Unbounded namespace-declaration allocation in NsReader enables memory-exhaustion denial of service",
       "severity": "7.5 (high)",
       "fixed_in": ">=0.41.0",
-      "why_not_applicable": "与 RUSTSEC-2026-0194 同一批 crate、同两条依赖路径，同一份实测证据。",
+      "why_not_applicable": "与 RUSTSEC-2026-0194 同一个 crate、同一条 proc-macro 路径，同一份实测证据。",
       "evidence": [
-        "见 RUSTSEC-2026-0194 条目：同为 quick-xml 0.30.0 / 0.39.4，二进制中零符号。",
+        "见 RUSTSEC-2026-0194 条目：升级后只剩 quick-xml 0.39.4，且只经 proc-macro 引入。",
         "NsReader 相关符号在发布产物里同样不存在（`nm -C` 无命中）。"
       ],
-      "cannot_upgrade_because": "同上。",
+      "cannot_upgrade_because": "wayland-scanner 0.31.10 钉死 quick-xml 0.39.x；它是 winit → egui-winit → eframe 的传递依赖，本仓无法直接指定。",
       "reviewed_on": "2026-09-13",
-      "recheck_when": "同上"
+      "recheck_when": "wayland-scanner / winit 换上 quick-xml ≥0.41 后重跑本检查，届时应可整条删除"
     }
   ]
 }
