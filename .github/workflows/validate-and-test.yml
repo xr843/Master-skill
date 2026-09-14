@@ -123,6 +123,22 @@ jobs:
         # bumps to the version bounds never reach CI.
         run: pip install -r requirements.txt -r requirements-eval.txt
 
+      # The grading path never runs here — no key — so an anthropic/openai bump
+      # used to arrive green having exercised nothing. check-eval-sdk-surface.py
+      # reads signatures; smoke-eval-sdk.py sends a real request through
+      # test-fidelity.py to a local server and checks the reply is parsed,
+      # graded and audited. No key, no network, no cost. `--break` makes the
+      # server drop the answer text and must fail: a smoke that cannot go red
+      # is a green tick, not a check.
+      - name: Eval SDK smoke (keyless, local server)
+        run: |
+          python scripts/check-eval-sdk-surface.py
+          python scripts/smoke-eval-sdk.py
+          if python scripts/smoke-eval-sdk.py --break; then
+            echo "::error::smoke-eval-sdk.py --break exited 0 — the smoke cannot detect a broken reply"
+            exit 1
+          fi
+
       - name: Lint SKILL.md frontmatter (includes v0.8 persona-fidelity sub-check)
         run: python scripts/validate.py --strict
 

@@ -397,15 +397,25 @@ v0.8 在 `meta.json` 引入 `lore_triggers`，让 runtime 在用户提问命中 
 它会一路绿到有人真花钱跑全量的那一刻，也就是发现成本最高的时刻。
 Dependabot 一周内提过四次这两个包的升级，每次都带绿勾。
 
+2026-09-14 起这句话只对一半：线协议与响应解析层面的破坏，CI 现在看得见（见下文
+`smoke-eval-sdk.py`）；**真实模型的行为变化**仍然只有付费跑分才看得见。
+
 评审这类 PR 时跑：
 
 ```bash
 pip install -r requirements-eval.txt      # 装成 PR 里钉的那个版本
 python3 scripts/check-eval-sdk-surface.py
+python3 scripts/smoke-eval-sdk.py
 ```
 
-它导入实际装上的包、逐项读 `test-fidelity.py` 真正调用的表面，并核对装的
+前者导入实际装上的包、逐项读 `test-fidelity.py` 真正调用的表面，并核对装的
 就是钉的那个版本。缺任何一项则退出 1 并指名。
+
+后者更进一步：起一个本地假服务，按各家的线协议应答，让 `test-fidelity.py`
+**真的**构造请求、由钉住的 SDK 发送并解析，再走一遍判分与引文审计——不需要
+key，不联网，不花钱。签名没变而线协议或响应模型变了，只有它看得出来。
+CI 的 validate job 在每个 PR 上都跑它，**并且同时跑 `--break`**（假服务返回
+缺正文的回复、断言不变，必须退出 1）——一个不会失败的冒烟测试只是个绿勾。
 
 **maintainer review 流程**（也欢迎贡献者帮忙跑）：
 

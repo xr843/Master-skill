@@ -452,3 +452,29 @@ def test_push_validation_is_restricted_to_main():
         "pull_request 带上过滤器就会有既不触发 push 也不触发 pull_request "
         "的改动,那类改动将完全无人检查"
     )
+
+
+def test_the_eval_sdk_smoke_runs_both_ways_after_the_sdks_are_installed():
+    """The keyless SDK smoke must run, must run against the pinned SDKs, and its
+    `--break` self-test must be able to fail the job.
+
+    Each clause guards a way it could quietly stop meaning anything: removed
+    outright; moved above `pip install`, where it would import whatever the
+    runner image happens to carry; or the `--break` branch softened to a warning,
+    after which a smoke that can no longer detect a broken reply stays green.
+    """
+    import re
+
+    steps = WORKFLOW["jobs"]["validate"]["steps"]
+    names = [step.get("name") for step in steps]
+    assert "Eval SDK smoke (keyless, local server)" in names
+    install = names.index("Install dependencies")
+    smoke = names.index("Eval SDK smoke (keyless, local server)")
+    assert smoke > install, "the smoke runs before the pinned SDKs are installed"
+
+    run = steps[smoke]["run"]
+    assert re.search(r"^python scripts/smoke-eval-sdk\.py$", run, re.M)
+    assert re.search(
+        r"if python scripts/smoke-eval-sdk\.py --break; then\s+echo[^\n]*\n\s+exit 1",
+        run,
+    ), "`--break` exiting 0 must fail the job"
