@@ -612,3 +612,69 @@ def test_the_frontmatter_collector_reads_the_real_repo():
     assert ("master-zhiyi", "妙法蓮華經玄義", "T1716", "7889") in rows
     assert rows and all(fid.isdigit() for _, _, _, fid in rows)
 
+
+# ── 人设文档里引文后的 FoJin 链接（collect / classify_doc_citation_links）────
+#
+# 已声明的引文凭经号过审计，后面的链接从来没人看。2026-09-15 一次核查发现
+# prebuilt/ 里 124 个「引文块 + 同行链接」有 16 个打开的是别的书：智顗的
+# 《法华玄义》链到《法华文句》，法藏的《金师子章》链到《五教章》，虚云的
+# 开示录链到《楞严经》……
+
+
+def test_a_doc_link_to_another_sutra_number_is_flagged():
+    mismatched, unknown = verify_sources.classify_doc_citation_links(
+        [("a.md:1", "52", ["T1716"], "法華玄義")],
+        {"52": {"cbeta_id": "T1718", "title_zh": "妙法蓮華經文句"}},
+    )
+    assert [m[0] for m in mismatched] == ["a.md:1"]
+    assert "T1718" in mismatched[0][2]
+    assert unknown == []
+
+
+def test_a_doc_link_whose_title_names_another_book_is_flagged():
+    mismatched, _ = verify_sources.classify_doc_citation_links(
+        [("b.md:3", "65", [], "虚云老和尚开示录")],
+        {"65": {"cbeta_id": "T0945", "title_zh": "大佛頂如來密因修證了義諸菩薩萬行首楞嚴經"}},
+    )
+    assert [m[0] for m in mismatched] == ["b.md:3"]
+
+
+def test_a_doc_link_to_the_cited_work_passes_even_with_a_chapter():
+    mismatched, unknown = verify_sources.classify_doc_citation_links(
+        [("c.md:5", "20", ["T12n0366"], "佛说阿弥陀经·六方段")],
+        {"20": {"cbeta_id": "T0366", "title_zh": "佛說阿彌陀經"}},
+    )
+    assert mismatched == [] and unknown == []
+
+
+def test_a_doc_link_fojin_did_not_return_is_unknown_not_wrong():
+    mismatched, unknown = verify_sources.classify_doc_citation_links(
+        [("d.md:7", "999", ["T48n2008"], "坛经")], {"999": None}
+    )
+    assert mismatched == []
+    assert unknown == ["d.md:7"]
+
+
+def test_the_collector_pairs_a_citation_only_with_a_link_on_its_own_line(tmp_path, monkeypatch):
+    """A link in a table below a citation is not that citation's link: the first
+    wide scan paired master-yinguang's 【《印光法师文钞续编》…】 with a
+    《佛說阿彌陀經》 row two lines down."""
+    persona = tmp_path / "master-example" / "references"
+    persona.mkdir(parents=True)
+    (persona / "teaching.md").write_text(
+        "> 出处：【《法華玄義》卷一上，T1716】→ https://fojin.app/texts/7889\n"
+        "> 出处：【《某文钞》卷上】\n"
+        "\n"
+        "| 《佛說阿彌陀經》 | 说明 | [阅读原文](https://fojin.app/texts/20) |\n"
+        "**引用格式：**【《{title}》卷{juan}，{cbeta_id}】→ https://fojin.app/texts/{id}\n"
+        "见【《法華玄義》，T1716】与【《法華文句》，T1718】→ https://fojin.app/texts/52\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(verify_sources, "PREBUILT_DIR", str(tmp_path))
+    pairs = verify_sources.collect_doc_citation_links()
+    # A link belongs to the citation it follows, not to an earlier one on the line.
+    assert pairs == [
+        ("master-example/references/teaching.md:1", "7889", ["T1716"], "法華玄義"),
+        ("master-example/references/teaching.md:6", "52", ["T1718"], "法華文句"),
+    ]
+
