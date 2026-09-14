@@ -19,13 +19,14 @@ defect it existed to prevent, plus nine smaller ones. All ten are fixed, none
 were waved through, and the fixes that touch persona content (`master-help`)
 went through review as content, not as code.
 
-### Fixed — `doctor` checked 18 of the 20 installable skills (2026-09-14)
+### Fixed — `doctor` never checked `compare-masters` (2026-09-14)
 
 `doctorData()` looked for a missing `SKILL.md` only among `availableMasters()`,
-which filters out `compare-masters`, and `create-master` keeps its `SKILL.md`
-at the package root rather than under `prebuilt/`. Either could vanish from an
-install and `doctor` would still print `Status: ok`. It now checks every skill
-in `skill-catalog.json`. The `availableSkills` / `installedKnownSkills` counts
+which filters out `compare-masters`, so it could vanish from an install and
+`doctor` would still print `Status: ok`. It now checks every skill in
+`skill-catalog.json`. (`create-master` was never exposed the same way: its
+`bundle_paths` list `SKILL.md`, and a missing bundle path already stops the
+catalog from loading.) The `availableSkills` / `installedKnownSkills` counts
 keep their narrower meaning, because the desktop manager reads them as its
 denominator.
 

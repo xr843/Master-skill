@@ -183,9 +183,10 @@ test("doctor --json returns machine-readable runtime diagnostics", (t) => {
 });
 
 test("doctor checks SKILL.md for every catalog skill, not only prebuilt masters", (t) => {
-  // compare-masters is filtered out of availableMasters(), and create-master's
-  // SKILL.md is the package root, so doctor used to check neither and report
-  // "ok" with both missing.
+  // availableMasters() filters out compare-masters, so doctor never looked at
+  // its SKILL.md and reported "ok" with it gone. (create-master is not the same
+  // gap: its bundle_paths list SKILL.md, and a missing bundle path already stops
+  // the catalog from loading — louder than doctor could be.)
   const catalog = {
     version: 1,
     skills: [
@@ -195,19 +196,17 @@ test("doctor checks SKILL.md for every catalog skill, not only prebuilt masters"
     ],
   };
   const { cli } = catalogFixture(t, catalog, (root) => {
+    fs.writeFileSync(path.join(root, "SKILL.md"), "---\nname: create-master\n---\n");
     fs.mkdirSync(path.join(root, "prebuilt", "master-zhiyi"), { recursive: true });
     fs.writeFileSync(path.join(root, "prebuilt", "master-zhiyi", "SKILL.md"), "---\nname: master-zhiyi\n---\n");
     fs.mkdirSync(path.join(root, "prebuilt", "compare-masters"), { recursive: true });
   });
   const { env } = tmpHome(t);
-  const result = spawnSync(process.execPath, [cli, "doctor", "--json"], {
-    env: { ...process.env, ...env },
-    encoding: "utf8",
-  });
-  assert.equal(result.status, 1, result.stdout + result.stderr);
-  const payload = JSON.parse(result.stdout);
+  const { stdout, code } = run(["doctor", "--json"], env, cli);
+  assert.equal(code, 1, stdout);
+  const payload = JSON.parse(stdout);
   assert.equal(payload.status, "problems");
-  assert.deepEqual(payload.problems.map((p) => p.name).sort(), ["compare-masters", "create-master"]);
+  assert.deepEqual(payload.problems.map((p) => p.name), ["compare-masters"]);
 });
 
 test("doctor counts installed known skills", (t) => {
