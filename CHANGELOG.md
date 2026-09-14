@@ -10,6 +10,12 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.1] — 2026-09-14
+
+v0.12.0's GitHub release attached no desktop binaries; this release carries
+them. The fix is confined to the desktop manager, which is not part of the npm
+package — see the entry below for what differs there.
+
 ### Fixed — v0.12.0's desktop release attached no binaries (2026-09-14)
 
 The Windows build failed, and the release workflow assembles assets only when
@@ -1157,7 +1163,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/xr843/Master-skill/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/xr843/Master-skill/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/xr843/Master-skill/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/xr843/Master-skill/compare/v0.10.0...v0.10.1
