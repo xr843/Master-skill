@@ -49,6 +49,8 @@ jobs:
           TITLE_MISMATCHED=$(grep -oP "CBETA title mismatches:\s*\K\d+" verify_output.txt || echo "0")
           # SKILL.md frontmatter 里指向别的书的 fojin_text_id（人设给读者拼链接用）。
           FRONTMATTER_MISMATCHED=$(grep -oP "Frontmatter FoJin id mismatches:\s*\K\d+" verify_output.txt || echo "0")
+          # 人设文档里引文后的 FoJin 链接打开了别的书（2026-09-15 首次核查发现 16 处）。
+          DOC_LINK_MISMATCHED=$(grep -oP "Doc citation links to another work:\s*\K\d+" verify_output.txt || echo "0")
           # 一组重定向而不是多条 —— shellcheck SC2129。
           {
             echo "failed=$FAILED"
@@ -56,10 +58,11 @@ jobs:
             echo "mismatched=$MISMATCHED"
             echo "title_mismatched=$TITLE_MISMATCHED"
             echo "frontmatter_mismatched=$FRONTMATTER_MISMATCHED"
+            echo "doc_link_mismatched=$DOC_LINK_MISMATCHED"
           } >> "$GITHUB_OUTPUT"
 
       - name: Create issue if links need updating
-        if: steps.verify.outputs.updates != '0' || steps.verify.outputs.failed != '0' || steps.verify.outputs.mismatched != '0' || steps.verify.outputs.title_mismatched != '0' || steps.verify.outputs.frontmatter_mismatched != '0'
+        if: steps.verify.outputs.updates != '0' || steps.verify.outputs.failed != '0' || steps.verify.outputs.mismatched != '0' || steps.verify.outputs.title_mismatched != '0' || steps.verify.outputs.frontmatter_mismatched != '0' || steps.verify.outputs.doc_link_mismatched != '0'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
@@ -78,6 +81,7 @@ jobs:
                   `- **Declared IDs CBETA disagrees with:** ${{ steps.verify.outputs.mismatched }}\n` +
                   `- **Declared titles CBETA disagrees with:** ${{ steps.verify.outputs.title_mismatched }}\n` +
                   `- **Frontmatter FoJin ids that point elsewhere:** ${{ steps.verify.outputs.frontmatter_mismatched }}\n` +
+                  `- **Doc citation links that open another work:** ${{ steps.verify.outputs.doc_link_mismatched }}\n` +
                   `- **Last run:** ${new Date().toISOString()}\n\n` +
                   `## Full output\n\n\`\`\`\n${output}\n\`\`\`\n\n` +
                   `Run \`python3 tools/verify_sources.py --fix\` locally and commit the changes.`;

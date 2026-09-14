@@ -10,6 +10,24 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — the weekly source check opens every citation link in the persona docs (2026-09-15)
+
+The 16 wrong links fixed below had passed every existing check. A declared
+citation passes the audit on its id alone, and the weekly check looked at the
+id, never at the link written after it. `tools/verify_sources.py` now collects
+each citation block in `prebuilt/` that is followed by a numeric FoJin link,
+fetches the linked text, and compares its sutra number with the ids in the
+block and its title with the block's title (by pinyin, after removing any
+`·chapter`). A text FoJin does not return counts as unknown, not as wrong.
+
+A link is paired only with the citation it directly follows on the same line.
+The first, wider scan used a 120-character window, which paired a Yinguang
+citation that has no link with a table link two lines further down.
+
+Run against main before the link fixes, it reported exactly the 16 links
+below. After them, all 119 citation links open the work they cite. The weekly
+workflow opens its issue when the count is not zero.
+
 ### Fixed — persona docs linked citations to other books (2026-09-15)
 
 Many citation examples in the persona docs end in a FoJin link, and nothing

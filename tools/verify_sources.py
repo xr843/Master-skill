@@ -505,6 +505,79 @@ def classify_frontmatter_fojin_ids(
     return mismatched, sorted(unknown)
 
 
+_DOC_CITATION = re.compile(r"【([^】]*)】")
+_DOC_FOJIN_LINK = re.compile(r"https://fojin\.app/texts/([0-9]+)")
+_DOC_CBETA_ID = re.compile(r"(?<![0-9A-Za-z])([TXJ])(?:[0-9]{1,3}n)?(B?[0-9]{3,5})[a-z]?(?![0-9A-Za-z])")
+_DOC_TEMPLATE = re.compile(r"\{|卷N|[A-Za-z][xX]{3,}")
+
+
+def _cbeta_work(cid: str) -> tuple[str, str] | None:
+    """`T33n1716` / `T1716` → ("T", "1716")，经号去零；不是 CBETA 号 → None。"""
+    m = _DOC_CBETA_ID.fullmatch(cid.strip())
+    if not m:
+        return None
+    number = m.group(2)
+    return m.group(1), ("B" + str(int(number[1:]))) if number.startswith("B") else str(int(number))
+
+
+def collect_doc_citation_links() -> list[tuple[str, str, list[str], str | None]]:
+    """(位置, text_id, 引文里的 CBETA 号, 引文书名)：人设文档里每个后面同一行跟着
+    FoJin 数字链接的引文块。
+
+    只认同一行、且在下一个引文块之前的链接。第一次核查用 120 字符窗口，把
+    master-yinguang 一条没有链接的引文和两行之后表格里《佛說阿彌陀經》的链接
+    配成了一对。格式模板（`{title}`、`卷N`、`Wxxxxx`）不是引文，跳过。
+    """
+    pairs: list[tuple[str, str, list[str], str | None]] = []
+    base = Path(PREBUILT_DIR)
+    files = sorted(base.glob("*/SKILL.md")) + sorted(base.glob("*/references/*.md")) + sorted(base.glob("*/sources/*.md"))
+    for path in files:
+        where = path.relative_to(base).as_posix()
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            for block in _DOC_CITATION.finditer(line):
+                if _DOC_TEMPLATE.search(block.group(1)):
+                    continue
+                rest = line[block.end():]
+                following = _DOC_CITATION.search(rest)
+                link = _DOC_FOJIN_LINK.search(rest[: following.start()] if following else rest)
+                if not link:
+                    continue
+                ids = [m.group(0) for m in _DOC_CBETA_ID.finditer(block.group(1))]
+                title = re.search(r"《([^》]+)》", block.group(1))
+                pairs.append((f"{where}:{number}", link.group(1), ids, title.group(1) if title else None))
+    return pairs
+
+
+def classify_doc_citation_links(
+    pairs: list[tuple[str, str, list[str], str | None]], records: dict[str, dict | None]
+) -> tuple[list[tuple[str, str, str]], list[str]]:
+    """哪些文档链接打开的不是引文所说的那部书；FoJin 没给出记录的记为未知。
+
+    比两样：链接文本的经号是否是引文里的某个号，书名（截掉「·品名」）是否与
+    `title_zh` 读音对得上（`titles_agree`）。
+    """
+    mismatched: list[tuple[str, str, str]] = []
+    unknown: list[str] = []
+    for where, tid, ids, title in pairs:
+        record = records.get(tid)
+        if not record:
+            unknown.append(where)
+            continue
+        problems = []
+        linked = record.get("cbeta_id")
+        wanted = {_cbeta_work(c) for c in ids} - {None}
+        if wanted and linked and _cbeta_work(str(linked)) not in wanted:
+            problems.append(f"texts/{tid} 是 {linked}，不是 {'/'.join(ids)}")
+        linked_title = record.get("title_zh")
+        if title and linked_title:
+            book = re.split(r"[·・‧〈<]", title, maxsplit=1)[0].strip()
+            if book and titles_agree(book, str(linked_title)) is False:
+                problems.append(f"《{title}》对不上 texts/{tid} 的《{linked_title}》")
+        if problems:
+            mismatched.append((where, tid, "；".join(problems)))
+    return mismatched, unknown
+
+
 def verify_ids(bridge, cbeta_map: dict[str, list[str]], titles: dict[str, str]) -> dict[str, dict]:
     """Verify all CBETA IDs and return {full_cbeta_id: {text_id, short_id, title, ...}}.
 
@@ -768,6 +841,25 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     if not fm_mismatched and not fm_unknown:
         print("  Every frontmatter fojin_text_id matches what FoJin resolves")
 
+    # Step 3e: 人设文档里引文后面的 FoJin 链接打开的是不是那部书（见 collect_doc_citation_links）。
+    print("\n[3e/4] Checking FoJin links after citations in persona docs...")
+    doc_pairs = collect_doc_citation_links()
+    doc_records: dict[str, dict | None] = {}
+    for tid in sorted({tid for _, tid, _, _ in doc_pairs}, key=int):
+        try:
+            record = bridge.get_text(tid)
+        except Exception:  # noqa: BLE001 — 查不到是「未知」，不是「不符」
+            record = None
+        doc_records[tid] = record if isinstance(record, dict) and record else None
+    doc_mismatched, doc_unknown = classify_doc_citation_links(doc_pairs, doc_records)
+    for where, tid, problem in doc_mismatched:
+        print(f"    [WRONG] {where}: {problem}")
+    if doc_unknown:
+        print(f"  FoJin returned nothing for {len(doc_unknown)} doc link(s) — "
+              "unknown, not wrong: " + ", ".join(doc_unknown))
+    if not doc_mismatched and not doc_unknown:
+        print(f"  All {len(doc_pairs)} citation links in persona docs open the cited work")
+
     # Step 4: Update URLs
     # Build replacement map: full_cbeta_id -> str(internal_text_id)
     id_replacement_map: dict[str, str] = {}
@@ -812,6 +904,7 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     print(f"  CBETA id mismatches:       {len(mismatched)}")
     print(f"  CBETA title mismatches:    {len(title_mismatched)}")
     print(f"  Frontmatter FoJin id mismatches: {len(fm_mismatched)}")
+    print(f"  Doc citation links to another work: {len(doc_mismatched)}")
     if unknown_to_cbeta:
         print(f"  CBETA unreachable for:     {len(unknown_to_cbeta)} (not counted as wrong)")
     if dry_run and all_changes:
