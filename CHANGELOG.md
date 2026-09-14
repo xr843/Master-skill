@@ -19,6 +19,202 @@ defect it existed to prevent, plus nine smaller ones. All ten are fixed, none
 were waved through, and the fixes that touch persona content (`master-help`)
 went through review as content, not as code.
 
+### Fixed — `doctor` checked 18 of the 20 installable skills (2026-09-14)
+
+`doctorData()` looked for a missing `SKILL.md` only among `availableMasters()`,
+which filters out `compare-masters`, and `create-master` keeps its `SKILL.md`
+at the package root rather than under `prebuilt/`. Either could vanish from an
+install and `doctor` would still print `Status: ok`. It now checks every skill
+in `skill-catalog.json`. The `availableSkills` / `installedKnownSkills` counts
+keep their narrower meaning, because the desktop manager reads them as its
+denominator.
+
+### Fixed — scholarly `T31 No.1585` citations were skipped instead of read (2026-09-14)
+
+`_CBETA_ID` read only `T31n1585`, so a citation block written the academic way
+(`T31 No.1585`, `T 48, no. 2008`) yielded no id and went to `unparsed` — real
+citations unchecked, invented ones uncaught. The form is normalised to the
+declared spelling and compared exactly like every other id, with `[0-9]` rather
+than `\d` so fullwidth digits cannot be `int()`-ed into a verified number. No
+stored number moves: the four instances in committed reports are either prose
+outside a citation block or inside a truncated answer.
+
+### Changed — the README, corrected claim by claim (2026-09-14)
+
+Checked against the repository, the live FoJin API and the GitHub release, in
+both languages. The showcase answer broke its own persona's citation contract
+(no CBETA id in either block) and matched no stored answer; it is replaced by
+a stored answer reproduced unedited, whose five citations all resolve. The
+desktop download text described `.tar.gz` and `SHA256SUMS` assets v0.11.0
+does not have and pointed Windows users at a binary that cannot launch Python
+or npm. The fidelity section led with the 84-case partial run its own notes
+said not to trust; it now leads with the full run and its adjudication. FoJin
+figures were stale (503 → 612 registered sources, 31K → 113,582 knowledge-graph
+entities) and overstated: only four of those sources supply full text. The
+desktop manager lists 18 skills, not 19. The screenshot was re-shot on eframe
+0.36 without the local-path row that exposed the capturing machine's home
+directory.
+
+### Added — a keyless smoke for the eval SDKs, run on every PR (2026-09-14)
+
+`requirements-eval.txt` had said for weeks that a green tick on an `anthropic`
+or `openai` bump proves nothing, because grading never runs without a key.
+`scripts/smoke-eval-sdk.py` runs `test-fidelity.py`'s real path against a
+local server answering in each provider's wire format — request built, sent
+and parsed by the pinned SDK, graded and citation-audited — and checks what
+arrived and what came back. `--break` makes the server drop the answer text
+and must exit 1; the validate job runs both and fails if `--break` passes.
+Model behaviour still needs a paid run; the transport and parsing layer no
+longer does. Used to verify anthropic 1.5.0 and openai 3.13.0.
+
+codeql-action `init` and `analyze` moved to v4.38.0 in one commit: split
+across two PRs each is red, because `analyze` refuses a configuration written
+by a different `init` version.
+
+### Changed — desktop ported to eframe 0.36, and the GUI has its first executed test (2026-09-13)
+
+Not a bump: `App::update(&Context)` became `App::ui(&mut Ui)`,
+`TopBottomPanel` / `SidePanel` merged into `Panel`, `SelectableLabel` became
+`Button::selectable`, and `Context::style` / `set_style` became
+`all_styles_mut` — where the compiler's suggestion, `set_style_of(Theme::Dark)`,
+would have dropped the spacing on light theme without a word. rustc 1.95 is now
+the declared `rust-version`; the crate had never declared one.
+
+- **cargo audit: 4 vulnerabilities → 2.** The linked copy of quick-xml is gone
+  (`zbus_xml` 5.2.1 no longer depends on it); the remaining 0.39.4 arrives only
+  through the `wayland-scanner` proc-macro.
+- **The GUI had no test that executed it** — all 113 tests sat in the CLI,
+  trace and baseline modules. `Context::run_ui` now renders full headless frames,
+  shown to reach the ported code by planting panics in the sidebar row and the
+  bottom panel.
+- **The binary grows 64%**, 16.4 MB → 26.9 MB with the same rustc on both sides;
+  stripped, 12.8 → 21.3 MB, so it is code rather than symbols.
+- Seen and driven for the first time since the port: it launches under WSLg
+  with llvmpipe and X11, a sidebar click selects the skill and opens its detail,
+  and the Evaluation tab renders.
+
+### Fixed — the citation auditor, measured against the stored full run (2026-09-13)
+
+Re-auditing `0.11.0-06b8142-deepseek.json` went from 446/601 (74%) to
+**569/619 (92%)** checkable citations, with zero known fabrications, through
+four changes that each move a citation from unreadable to decided and none that
+can move one from fabricated to passed:
+
+- **The auditor could not read six of the repository's own declared ids.**
+  `master-tsongkhapa` declares bare Wylie ids and cites them in Chinese or with
+  spaces; 50 of its 53 citations sat in `unparsed`. `load_title_aliases` reads
+  the aliases `meta.json` already carries — and refuses to build one for a
+  source whose id is a sutra number, so 【《六祖坛经》】 without an id is still
+  unparsed and the CBETA contract is not relaxed to buy the number.
+- **The three meta-skills had no declared set,** so nothing audited their 53
+  citations. Their set is now the union over personas — which catches a
+  hallucinated id but not a sutra attributed to the wrong master, and says so.
+- **Ten section headings were counted as unreadable citations.** They are now
+  reported as non-citations rather than discarded.
+- **An unpadded work number (`T14n475`) was scored a fabrication** of the
+  declared `T14n0475`. Resolution requires canon, volume, number and letter
+  suffix to match, and an ambiguous match resolves to nothing.
+
+`compare-masters` and `master-debate` demanded verifiable citations while
+showing templates that could not carry one — an id-less 【《经名》卷N】, and no
+shape at all, which led the model to write ids in parentheses the auditor never
+parses. Both templates now show 【…】 and defer to each persona's declared
+format; `scripts/validate-citation-templates.py` holds the rule.
+
+### Fixed — master-zhiyi declared a sutra number that does not exist (2026-09-13)
+
+`T33n1718` was declared as 妙法莲华经玄义; CBETA puts 1718 (文句) in volume 34
+and 玄義 is `T33n1716`. The model wrote the correct id and was scored a
+fabrication. The weekly link check never noticed because FoJin stores ids
+without the volume. `tools/verify_sources.py` now asks CBETA's catalogue which
+volumes each declared work occupies — as a range, since the first version
+compared a single volume and flagged 《大般若經》 `T07n0220`, which spans
+`T05..T07`. The same check exposed no other error across 35 declarations.
+
+The weekly FoJin issue had fired on the same id since it was written:
+`J36nB348` is in the Jiaxing canon, which FoJin does not carry.
+`tools/fojin-known-absent.json` records it with the evidence; an unregistered
+absence still counts, and a registered id that later appears is reported stale.
+
+### Added — a targeted re-run of the meta-skills (2026-09-13)
+
+34 fixtures on deepseek-v4-flash, committed as
+`eval/reports/0.11.0-e97ded0-deepseek-metaskills.json` and labelled partial.
+Checkable citations: `compare-masters` 0% → 90%, `master-curriculum` 0% → 100%,
+`master-debate` from invisible to 100%. `master-debate` truncated 3 of 8 at
+8192 output tokens; an A/B against the old prompt (2 of 8) and a 16384 run
+(0 of 8) showed a budget, not a regression, and the harness help now says so.
+Five of its "fabrications" at 16384 are real Xuanzang translations his persona
+does not declare — correct under the contract, left as a content decision.
+
+### Security — three fixes and a check on the checks (2026-09-13)
+
+- **Catastrophic backtracking in the `tibetan_treatise` id pattern** (CodeQL
+  `py/redos`, high): `"A" + "-"*n + "!"` took 5.9 s at n=40 and 43 s at n=44.
+  The redundant group is gone; equivalence is proven by exhaustive comparison
+  over every string of length ≤ 6.
+- **Nothing checked that a cargo-audit suppression was still needed.** The ids
+  now come from `desktop/audit-ignore.json`, each with evidence — measured, the
+  suppressed quick-xml code is absent from the release binary — and
+  `scripts/check-audit-ignores.py` fails when a suppressed advisory no longer
+  appears.
+- **Push validation runs only on `main`.** A conflicted PR used to show green
+  from branch pushes while no `pull_request` workflow ran at all.
+
+CONTRIBUTING now carries a way to install shellcheck under PEP 668 and a probe
+proving it runs: actionlint without it checks half as much and looks the same.
+
+### Fixed — the guardrail check scored correct refusals as violations (2026-09-12)
+
+**This changes grading.** Replaying the grader against the 74 hand-adjudicated
+cases, agreement was 66/74, and five of the six disputes were `forbidden_found`
+on a persona refusing — 「不在求神通」, 「若有人预言某年某月可得证悟，此非正法所许」.
+Measured precision was 1 real violation in 7 hits, and it missed the one a
+human found. A forbidden-term hit now routes to `needs_review` with its context
+instead of failing; agreement rises to 71/74. `summarize_boundary` prints the
+cases awaiting a ruling beside the pass rate. A negation detector was measured
+and rejected: it catches 2 of the 6.
+
+### Changed — the persona prompt is cached (2026-09-12)
+
+The system prompt is the persona, ~6.7k tokens, identical across a master's
+fixtures, and a sweep paid full input price for it every time. It is marked
+cacheable explicitly, and the first fixture runs alone so the others read the
+entry instead of racing to write it: 78% of input spend saved against 44%
+without the warm-up, in a simulator where the entry appears only once a write
+completes. Reports carry reads, writes and priced savings. The Batch API was
+considered and not adopted — a second code path for one of three providers,
+without streaming or interruption, to save roughly $2.4 per sweep.
+
+### Security — the cross-reference tool joined a teacher slug onto a path unchecked (2026-09-12)
+
+`--teachers ../../..` read a `meta.json` from outside the repository and
+rendered it as a persona. Every other entry point already restricted the slug;
+this one now does, asserts the resolved path stays under `prebuilt/`, and exits
+2 with a message instead of a traceback.
+
+### Added — every gate in `npm test` is shown able to fail (2026-09-12)
+
+`scripts/tests/test_gates_actually_fire.py` copies the tree, breaks one thing
+each gate names as its job, runs the real script and requires a non-zero exit,
+with a meta-test that every gate in the chain has a case. It found two holes in
+`verify-adjudication.py`: a file that dropped awkward rulings still printed
+"OK", and deleting every adjudication returned 0 — now a failure unless
+`ADJUDICATION_NONE_EXPECTED=1` declares it. The liveness check's pytest
+collection is cached per process (npm test 20–24 s → ~13 s), and a tripwire
+scans the shipped persona files for bidi and zero-width characters.
+
+### Changed — dependencies, and a checker for the ones CI cannot verify (2026-09-12)
+
+Nine Dependabot PRs cleared in one commit. The redundant direct `egui`
+dependency is removed — it let Dependabot pull egui 0.36 beside eframe 0.31's
+egui 0.31, compiling clean because nothing imported the newer one. The eval
+SDKs moved to the 1.x / 3.x lines, which require Python ≥ 3.10 for the eval
+(the generator tools keep 3.9). `scripts/check-eval-sdk-surface.py` reads the
+surface `test-fidelity.py` calls and fails when the installed version is not
+the pinned one — its first run had read the system Python's anthropic 0.122.0
+and reported the 1.4.0 surface intact.
+
 ### Fixed — four ways a fabricated citation could pass the offline gate (2026-09-07)
 
 `verify_citations.py` is the deterministic mirror of the runtime citation
