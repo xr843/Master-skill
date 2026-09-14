@@ -10,6 +10,41 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — persona docs linked citations to other books (2026-09-15)
+
+Many citation examples in the persona docs end in a FoJin link, and nothing
+checked that the link opens the book being cited. A declared citation passes
+the audit on its id, so the link after it had never been examined. Every
+citation block in `prebuilt/` followed by a numeric FoJin link on the same
+line — 124 of them — was checked against FoJin's record: the linked text's
+sutra number and its title. 16 did not match:
+
+- **master-zhiyi** gave 《法华玄义》 (`T1716`) the link `texts/52`, which is
+  《妙法蓮華經文句》; the frontmatter was corrected on 2026-09-14, but the
+  teaching notes, the voice notes, the source index and all six citations in
+  the excerpt file still carried it. They now use `texts/7889`.
+- **master-fazang** cited 《金师子章》 as `T45n1866`, 《华严一乘教义分齐章》, and
+  its excerpt file said the treatise was collected there. It is not: all four
+  fascicles of T1866 were checked, and none contains the treatise's title or
+  any of its ten section headings. T45n1880, 《金師子章雲間類解》, preserves the
+  text, with every heading present. It is now declared and cited, and linked
+  as `texts/8052`. The one fixture that required `T45n1866` for this question
+  now requires `T45n1880`. The stored answer to that case cited `T45n1866`, so
+  the regrade pins it as a finding. The excerpt file also claimed its text was
+  excerpted from CBETA, but its passages do not match T1880 word for word. It
+  now says they are a summary of the argument.
+- **master-ouyi** linked 《成唯识论观心法要》, Ouyi's own work (`X51n0824`), to
+  《成唯識論》 itself. The work is now declared, cited by id, and linked as
+  `texts/12717`.
+- **master-xuyun** linked 《虚云老和尚开示录》, 《虚云和尚法汇》 and
+  《虚云老和尚年谱》 to 《楞严经》 and 《坛经》. None of these works is in CBETA or
+  FoJin, so the five links are gone. As with Yinguang's Wenchao, the three works
+  are declared as compiled teachings, and their titles are given in both
+  scripts.
+
+After the change, all 119 remaining citation links match. Coverage on the
+committed runs does not move.
+
 ## [0.12.2] — 2026-09-15
 
 This release corrects what several installed personas tell the model to cite.

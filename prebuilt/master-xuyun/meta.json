@@ -5,7 +5,7 @@
     "version": 1,
     "claim_policy": "declared_sources_only",
     "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
-    "allowed_source_types": ["cbeta"],
+    "allowed_source_types": ["cbeta", "compiled_teaching"],
     "minimum_claim_coverage": 0.9,
     "live_retrieval_allowed": true
   },
@@ -36,6 +36,22 @@
       "type": "cbeta",
       "id": "T17n0842",
       "title": "大方广圆觉修多罗了义经"
+    },
+    {
+      "type": "compiled_teaching",
+      "id": "Xuyun:Kaishilu",
+      "title": "虚云老和尚开示录（虛雲老和尚開示錄）"
+    },
+    {
+      "type": "compiled_teaching",
+      "id": "Xuyun:Fahui",
+      "title": "虚云和尚法汇（虛雲和尚法彙）"
+    },
+    {
+      "type": "compiled_teaching",
+      "id": "Xuyun:Nianpu",
+      "title": "虚云老和尚年谱（虛雲老和尚年譜）",
+      "note": "开示录、法汇、年谱均为近代编集，CBETA 与 FoJin 均未收录（2026-09-15 核查），故无经号、无在线链接。"
     }
   ],
   "version": "1.0.0",

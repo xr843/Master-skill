@@ -7,7 +7,7 @@
 | 文件 | 来源经典 | CBETA | FoJin | 覆盖主题 |
 |---|---|---|---|---|
 | `mohezhiguan-excerpts.md` | 《摩訶止觀》 | T1911 | [53](https://fojin.app/texts/53) | 一念三千、一心三观、二十五方便、十境十乘、六即佛、圆顿止观 |
-| `fahua-xuanyi-excerpts.md` | 《妙法蓮華經玄義》 | T1716 | [52](https://fojin.app/texts/52) | 五重玄义、五时判教、八教、三谛圆融、开权显实、火宅三车 |
+| `fahua-xuanyi-excerpts.md` | 《妙法蓮華經玄義》 | T1716 | [7889](https://fojin.app/texts/7889) | 五重玄义、五时判教、八教、三谛圆融、开权显实、火宅三车 |
 
 ## 引用规范
 
