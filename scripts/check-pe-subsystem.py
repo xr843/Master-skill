@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Check which Windows subsystem a PE executable was linked for.
 
-A Rust binary is a console program unless `#![windows_subsystem = "windows"]`
-says otherwise, and Windows gives every console program a console window.
-v0.12.1's desktop manager was one: double-clicking it opened a console window
-behind the GUI. `file` reports such a binary as `PE32+ executable (console)`.
-The field behind that is the Subsystem word of the optional header: 2 for a
-GUI program, 3 for a console one.
+The field is the Subsystem word of the PE optional header: 2 for a GUI
+program, 3 for a console one (`file` prints the latter as `PE32+ executable
+(console)`). The desktop manager is kept a console program. A GUI-subsystem
+build stops double-clicking from opening a console window, but on
+release-desktop run 34858072308 PowerShell did not wait for it, closed the
+pipe, and `--help > help.txt` panicked. The release smoke test runs this with
+`--expect 3` so the switch cannot come back unmeasured.
 
 Output is ASCII only. This runs on the Windows release runner, whose console
 encoding is cp1252; a check mark there raised UnicodeEncodeError after the

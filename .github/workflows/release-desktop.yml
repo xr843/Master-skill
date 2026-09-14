@@ -109,21 +109,26 @@ jobs:
 
       - name: Smoke-test staged binary (Windows only)
         if: runner.os == 'Windows'
-        # Two things only a Windows build can show. The binary must be linked
-        # for the GUI subsystem: v0.12.1's was a console program, so
-        # double-clicking it opened a console window behind the app. And that
-        # GUI build must still print `--help` to a redirected stdout. The
-        # interactive case, a terminal with nothing redirected, cannot be
-        # exercised on a runner.
+        # The first CI step that runs the Windows binary at all.
+        # - It must stay a console program. A GUI-subsystem build was tried on
+        #   release-desktop run 34858072308: PowerShell does not wait for a GUI
+        #   program, closed the pipe, and `--help > help.txt` panicked with
+        #   "failed printing to stdout: The pipe is being closed. (os error 232)".
+        # - `--help` must reach a redirected stdout.
+        # - `--baseline` must run from the checkout root with an isolated store,
+        #   as on Linux; here it resolves `python`, `node` and `npm.cmd`.
         shell: pwsh
         run: |
-          python scripts/check-pe-subsystem.py "dist/${{ matrix.artifact_name }}" --expect 2
+          python scripts/check-pe-subsystem.py "dist/${{ matrix.artifact_name }}" --expect 3
           if ($LASTEXITCODE -ne 0) { exit 1 }
           & "./dist/${{ matrix.artifact_name }}" --help > help.txt
           if ($LASTEXITCODE -ne 0) { throw "--help exited with $LASTEXITCODE" }
           if (-not (Select-String -Path help.txt -SimpleMatch "Usage: master-skill-desktop" -Quiet)) {
             throw "--help printed nothing to a redirected stdout"
           }
+          $env:XDG_DATA_HOME = (New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP "desktop-store")).FullName
+          & "./dist/${{ matrix.artifact_name }}" --baseline
+          if ($LASTEXITCODE -ne 0) { throw "--baseline exited with $LASTEXITCODE" }
 
       - name: Upload staged assets
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1

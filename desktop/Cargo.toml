@@ -40,12 +40,6 @@ serde_json = "1"
 tempfile = "3"
 wait-timeout = "0.2"
 
-# `AttachConsole` for `--help` / `--baseline` in the GUI-subsystem Windows build
-# (see src/main.rs). 0.61 is the version eframe, fs4 and tempfile already lock,
-# so this adds no crate to the build.
-[target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Console"] }
-
 # Strip symbols from release binaries. Measured on the eframe 0.36 build:
 # 26,903,544 → 21,277,616 bytes (−20%), and the stripped binary runs. The cost
 # is a panic backtrace showing addresses instead of function names; this app
