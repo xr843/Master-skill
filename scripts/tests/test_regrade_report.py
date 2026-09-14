@@ -108,11 +108,15 @@ def test_the_committed_run_regrades_against_the_repository_as_it_stands(mod):
         for c in out["cases"]
         if c["was"] == "PASS" and c["now"] == "FAIL"
     ]
-    # One regression, and it is a finding: master-curriculum #1 recommended
+    # Two regressions, and both are findings. master-curriculum #1 recommended
     # X62n1182–1184 as 《印光法师文钞》. They are three other Qing works, and the
     # case passed only while master-yinguang declared the same wrong ids
-    # (corrected 2026-09-14). Any other regression still fails here.
-    assert regressions == [("master-curriculum", 1)], regressions
+    # (corrected 2026-09-14). master-fazang #3 asks about 《金师子章》 and its
+    # stored answer cites T45n1866, 《华严一乘教义分齐章》, which does not contain
+    # that text (checked fascicle by fascicle, 2026-09-15). The fixture had
+    # required the same wrong id; it now requires T45n1880, where the text is
+    # preserved. Any other regression still fails here.
+    assert regressions == [("master-curriculum", 1), ("master-fazang", 3)], regressions
     assert out["mentions"]["mention_coverage"].endswith("%")
 
 

@@ -7,7 +7,7 @@
 | 文件 | 来源经典 | CBETA | FoJin | 覆盖主题 |
 |---|---|---|---|---|
 | `wujiao-zhang-excerpts.md` | 《华严一乘教义分齐章》 | T45n1866 | [8038](https://fojin.app/texts/8038) | 四法界、十玄门、六相圆融、五教判教 |
-| `jinshizi-excerpts.md` | 《金师子章》 | T45n1866 | [8038](https://fojin.app/texts/8038) | 金师子喻理事圆融、同时具足、事事无碍 |
+| `jinshizi-excerpts.md` | 《金师子章》 | T45n1880 | [8052](https://fojin.app/texts/8052) | 金师子喻理事圆融、同时具足、事事无碍 |
 
 ## 引用规范
 

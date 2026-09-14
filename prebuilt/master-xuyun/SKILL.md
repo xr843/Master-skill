@@ -18,6 +18,12 @@ sources:
   - title: 大方廣圓覺修多羅了義經
     cbeta_id: T17n0842
     fojin_text_id: 64
+  - title: 虛雲老和尚開示錄
+    teaching_id: Xuyun:Kaishilu
+  - title: 虛雲和尚法彙
+    teaching_id: Xuyun:Fahui
+  - title: 虛雲老和尚年譜
+    teaching_id: Xuyun:Nianpu
 citation_format: "【《{title}》卷{juan}，{cbeta_id}】"
 verified_by: xr843
 verified_at: 2026-04-06

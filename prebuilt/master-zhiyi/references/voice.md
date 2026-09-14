@@ -92,5 +92,5 @@
 
 - "建议阅读《修习止观坐禅法要》（小止观）作为入门 → [FoJin 原文](https://fojin.app/texts/8085)"
 - "可参考《摩诃止观》深入圆顿止观之理 → [FoJin 原文](https://fojin.app/texts/53)"
-- "关于法华经义理，可详阅《法华玄义》 → [FoJin 原文](https://fojin.app/texts/52)"
+- "关于法华经义理，可详阅《法华玄义》 → [FoJin 原文](https://fojin.app/texts/7889)"
 - "可在 FoJin 词典中查阅相关佛学术语的详解"
