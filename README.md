@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <sub><em>Secured by SHA-pinned GitHub Actions · npm provenance · OIDC Trusted Publishing — see <a href="SECURITY.md">SECURITY.md</a>.</em></sub>
+  <sub><em>Secured by SHA-pinned GitHub Actions · npm provenance · OIDC Trusted Publishing · CodeQL · cargo-audit · pip-audit — see <a href="SECURITY.md">SECURITY.md</a>.</em></sub>
 </p>
 
 <p align="center">
@@ -57,8 +57,8 @@
 
 - 无需安装、无需注册
 - 三种教学模式均可用：`/compare-masters` 多祖师对比、`/master-debate` 祖师辩论、`/master-curriculum` 学修路径（含跨传统）
-- 内置 FoJin 的 503 个数据源、678K+ 语义向量做实时经证检索
-- 每条回答附原典出处（CBETA 经号 / BDRC 藏文典籍号 / SuttaCentral 巴利经号）
+- 由 FoJin 的 10K+ 篇文本、678K+ 条语义向量做实时经证检索
+- 回答按各位祖师声明的格式附原典出处：汉传多为 CBETA 经号，藏传为 Toh / BDRC 编号，南传为 PTS / SuttaCentral 出处（南传与部分藏传来源本就没有逐段编号，引文契约里明文如此）
 
 **如果你不确定该找谁问，可以这样开始：**
 
@@ -83,48 +83,38 @@
 
 ## 效果示例
 
-下面是一次真实的 `/master-huineng`（慧能大师）问答——注意每个教义断言都附 CBETA 经证，且回答风格贴合祖师本人（直指、平实、善用譬喻）：
+下面是一次真实的 `/master-huineng`（慧能大师）回答，**原文照录，未作删改**（仅为显示折行）。它来自 2026-08-31 的全量评测——模型 `deepseek-v4-flash`，commit [`06b8142`](https://github.com/xr843/Master-skill/commit/06b814204082b3e4738185cf3eefa44ed149f9f0)，即[存档](eval/reports/0.11.0-06b8142-deepseek.json)中 `master-huineng` 的 index 1。判分为 PASS；文中 5 处引文都带经号，并由仓库的离线引文审计逐条解析到慧能声明的来源（T48n2008《六祖大师法宝坛经》、T08n0235《金刚经》）：
 
 ```text
-你：我想参禅但坐不住、念头太多，该怎么办？
+你：顿悟和渐修有什么区别？
 
 慧能大师：
-你说「坐不住」，是把坐姿当成了禅；你说「念头太多」，是把念头当成了
-敌人。这两样都不是禅。
 
-何名坐禅？外于一切善恶境界，心念不起，名为「坐」；内见自性不动，名
-为「禅」。坐不是腿的事，是心于境上不起执的事。
-  【《六祖大师法宝坛经·坐禅品》】→ https://fojin.app/texts/58
+且道：顿与渐，果是二法么？
 
-念头来了不必怕。「于诸境上心不染，曰无念」——不是要你没有念头，是念
-起而不随它跑、不被它粘住。如云过空，空不曾动。
-  【《六祖大师法宝坛经·定慧品》】→ https://fojin.app/texts/58
+法本无顿渐，因人有利钝。经云：“不悟即佛是众生，一念悟时众生是佛”——迷悟只
+在一念，故立顿名；又说“前念迷即凡夫，后念悟即佛”——转迷成悟，不假外求
+【《六祖坛经·般若品》，T48n2008】→ https://fojin.app/texts/58
 
-所以不要和念头打仗。你一对治，就又添一个念。但看念起念灭，知它无
-住，它自然歇。
+北宗神秀大师题偈：“身是菩提树，心如明镜台，时时勤拂拭，勿使惹尘埃。”——是
+渐渐扫除妄染之方便。六祖呈偈：“菩提本无树，明镜亦非台。本来无一物，何处
+惹尘埃。”——是直显自性本空，无一法可染
+【《六祖坛经·行由品》，T48n2008】→ https://fojin.app/texts/58。一者作意
+对治，一者直下承当。此二偈，正是顿渐之分野。
+
+然顿渐非二法。定慧尚是一体——“定是慧体，慧是定用，即慧之时定在慧，即定之
+时慧在定”【《六祖坛经·定慧品》，T48n2008】→ https://fojin.app/texts/58，
+顿渐岂有两般？迷人渐修，悟人顿契，药对病施，法无高下
+【《六祖坛经·定慧品》，T48n2008】→ https://fojin.app/texts/58。
+
+更须知，六祖当年闻“应无所住而生其心”而自见本性
+【《金刚经》，T08n0235】→ https://fojin.app/texts/7。顿悟不是无心，是于
+境不住；渐修不是死坐，是念念自觉。归到究竟，只问一念回光，本心现前也未？
 
 如需深入学习，可在 FoJin (fojin.app) 查阅原典。
 ```
 
-> ⚠️ 以上为 **AI 合成内容**，依据《坛经》文献生成，不代表慧能大师亲口开示。多位法师并列回答的 `/compare-masters` 效果，可直接在 [fojin.app/chat](https://fojin.app/chat) 体验。
-
----
-
-> **v0.6 更新（2026-05-02）**：Slash 命令命名空间整理——14 位法师斜杠命令统一加 `master-` 前缀。`/master-zhiyi`、`/master-huineng`、…。
-> - **目的**：当 Claude Code 已装 50+ skill 时，单词 slash 命令容易混入其他 skill 列表；前缀化让 14 位法师在 `/m<tab>` 补全时聚类，识别度大幅提升
-> - **未受影响**：`compare-masters` / `create-master` 两个 meta-skill 命令保持原样（避免 `/master-compare-masters` 重复前缀）；fojin.app/chat 网页端 dropdown 与 API 完全解耦，**`master_profiles.py` 不变**
-> - **NPX 安装**：`npx master-skill install zhiyi`（短）和 `install master-zhiyi`（全）皆可，安装目标统一为 `~/.claude/skills/master-<slug>/`
-> - 详情见 [CHANGELOG.md §0.6.0](CHANGELOG.md#060--2026-05-02)
->
-> **v0.5 更新（2026-05-02）**：第二轮跨传统扩展——藏传 / 南传各从 1 位扩至 3 位，共 **14 位**祖师。
-> - 藏传新增：阿底峡尊者（噶当派开祖 · Toh 4465《菩提道灯论》· 三士道）+ 宗喀巴大师（格鲁派创始人 · 三主要道 · 应成中观正见）
-> - 南传新增：觉音尊者（《清净道论》Visuddhimagga 论师顶峰）+ 马哈希尊者（缅甸内观 · 标记法 · ETHICS Tier B 特例）
-> - HARD-GATE 强化：马哈希尊者特别 `NO_ATTAINMENT_JUDGMENT`（AI 不得对个体作证果判定）
-> - ETHICS Tier A 表扩至 11 位，Tier B 特例新增马哈希（与阿姜查同款条款）
->
-> **v0.4 更新（2026-05-02）**：首轮跨传统扩展——新增藏传米拉日巴尊者（噶举派 · 大手印）与南传阿姜查（泰国森林禅林派）。引用体系扩展支持 BDRC（藏文典籍）与 SuttaCentral（巴利三藏）。HARD-GATE 新增 `no_esoteric_instruction` 与 `no_fabricated_quotes`。
->
-> **v0.3**：全面架构重构——CBETA 经文溯源、离线经文片段、自动化保真度测试、NPX 一键安装、cite.py/query.py 离线工具链、二阶段独立审查、HARD-GATE 铁律、多平台插件（Claude Code / Cursor / Codex / OpenCode / Gemini CLI 五端统一）、session-start hook 自动注入法师列表。
+> ⚠️ 以上为 **AI 合成内容**，依据《坛经》《金刚经》文献生成，不代表慧能大师亲口开示。多位法师并列回答的 `/compare-masters` 效果，可直接在 [fojin.app/chat](https://fojin.app/chat) 体验。
 
 ---
 
@@ -142,17 +132,17 @@ Master-skill 是由 [FoJin](https://fojin.app) 驱动的佛教 AI 祖师人格�
 
 ## 特性
 
-- **预置十五位四大传统祖师**：1 位印度（龙树 · 中观）+ 8 位汉传（唯识、中观、禅、天台、华严、净土、跨宗派）+ 3 位藏传（阿底峡 · 噶当；宗喀巴 · 格鲁；米拉日巴 · 噶举）+ 3 位南传（觉音 · 上座部论师；马哈希 · 缅甸内观；阿姜查 · 泰国森林）—— 另含 `compare-masters` 多祖师对比 meta-skill，开箱即用
+- **预置十五位四大传统祖师**：1 位印度（龙树 · 中观）+ 8 位汉传（唯识、中观、禅、天台、华严、净土、跨宗派）+ 3 位藏传（阿底峡 · 噶当；宗喀巴 · 格鲁；米拉日巴 · 噶举）+ 3 位南传（觉音 · 上座部论师；马哈希 · 缅甸内观；阿姜查 · 泰国森林）—— 另含 4 个教学模式（`/compare-masters` 并列对比、`/master-debate` 多轮对辩、`/master-curriculum` 学修路径、`/master-help` 我该问谁）与 `/create-master` 自定义生成器
 - **经文溯源（Provenance）**：每位祖师附声明来源 ID（CBETA / BDRC / Toh / SuttaCentral / PTS / 合规编纂开示）；实时检索仅在返回真实 `text_id` 时附 FoJin 定位链接，所有教义断言强制附原典引证
 - **离线经文片段**：`sources/` 目录收录核心经典关键段落，FoJin 不可用时仍可离线引用
 - **渐进式披露**：SKILL.md 以决策树 + Quick Ref 为主，`references/`、`sources/` 按需加载，Context 随查随取
 - **HARD-GATE 铁律**：`/create-master` 与预置法师内置红线——教义断言、修行指导与文本解释必须引用该 persona 声明的来源（CBETA / BDRC / Toh / SuttaCentral / PTS / 合规编纂开示），不得捏造来源 ID，不得为虚构人物建角色
 - **二阶段独立审查**：生成管线在写入前强制经过"教义准确性 → 风格一致性"两轮独立审查，FAIL 自动修复最多 2 轮
-- **自动化保真度测试**：每位祖师 `tests/fidelity.jsonl` 10+ 条 Q&A（`compare-masters` 元技能 18 条），验证引用和关键词覆盖；CI 在每次推送时 dry-run 验证（结构校验）；实跑评分需 `ANTHROPIC_API_KEY`，作为本地/发版前手动步骤执行——首份[实测基线](#保真度基线首次实测)已提交：59/84 已测通过（70%），全量 211 条覆盖率 40%（详见 [eval/reports/](eval/reports/)）
+- **自动化保真度测试**：211 条夹具（每位祖师 10+ 条，`compare-masters` 元技能 18 条）检查关键词与引用覆盖，每条评分回答另经离线引文审计；CI 在每个 PR 与 main 上做结构校验（dry-run）；实跑评分支持 Anthropic / DeepSeek / Gemini（`--provider`），需要对应的 API key，作为本地/发版前手动步骤执行——最近一次全量运行与逐条裁定见[下文](#保真度评测当前数据)
 - **多平台统一插件**：Claude Code、Cursor、Codex CLI、OpenCode、Gemini CLI 共用一份 `prebuilt/`，session-start hook 跨平台注入法师列表
 - **NPX 一键安装**：`npx master-skill install master-zhiyi` 直接部署到 Claude Code
 - **离线工具链**：`scripts/cite.py`（CBETA 引用查询）、`scripts/query.py`（离线语义检索）、`scripts/validate.py`（frontmatter linter）
-- **FoJin 数据桥**：接入 [fojin.app](https://fojin.app) 的 503 个数据源、10K+ 文本、678K+ 语义向量和 31K 实体知识图谱
+- **FoJin 数据桥**：接入 [fojin.app](https://fojin.app) 的 10K+ 篇文本、678K+ 条语义向量与 110K+ 实体的知识图谱（另登记 600+ 个数据源）
 - **AgentSkills 标准**：遵循 [Anthropic Agent Skills](https://github.com/anthropics/skills) 规范，渐进式披露、决策树、黑盒脚本模式
 
 ## 框架定位
@@ -163,25 +153,26 @@ Master-skill 的核心不是"角色扮演提示词集合"，而是一个可验�
 |---|---|
 | 有来源 | 每位祖师声明 `sources[]`、离线 excerpts、FoJin live fallback 与引用自审 |
 | 守边界 | `ETHICS.md`、每位祖师 Layer 0 HARD-GATE、版权 Tier 与教界越界报告机制 |
-| 可评测 | `tests/fidelity.jsonl`、persona-fidelity schema、promptfoo RAW / SPE / CUS 评测层，[实测基线见下](#保真度基线首次实测) |
+| 可评测 | `tests/fidelity.jsonl`、persona-fidelity schema、promptfoo RAW / SPE / CUS 评测层（目前覆盖慧能、宗喀巴、阿姜查 3 位），[当前数据见下](#保真度评测当前数据) |
 | 可运行 | `prebuilt/master-*` AgentSkills、npm CLI、多平台 hooks、FoJin runtime contract |
 
 后续 v1.0 路线以框架稳定为优先：见 [docs/v1-framework-roadmap.md](docs/v1-framework-roadmap.md) 与 [docs/fojin-runtime-contract.md](docs/fojin-runtime-contract.md)。
 
-### 保真度基线（首次实测）
+### 保真度评测（当前数据）
 
-`tests/fidelity.jsonl` 曾经只是"存在的夹具"——`scripts/test-fidelity.py` 只打印到终端，仓库里从未提交过一次真实评分。2026-08-18 首次跑出并提交了这份基线（commit [`c697d5d`](https://github.com/xr843/Master-skill/commit/c697d5d3be78ce6738cf1f969ca057c7e4c16bb5)，模型 `claude-sonnet-4-6`）：
+211 条夹具（`prebuilt/*/tests/fidelity.jsonl`）对真实模型的回答做机械检查：该出现的关键词与引用是否出现，不该出现的是否没有出现；每条评分回答另外进入离线引文审计。每个数字都要连同产生它的模型与判分口径一起读：
 
-| | 数值 |
-|---|---|
-| 已测通过 / 已测总数 | **59 / 84（70%）** |
-| 全量夹具覆盖率 | 84 / 211（40%）—— 运行途中 API 账户余额耗尽（HTTP 400），非限流也非代码缺陷，剩余 127 条**未测**，不计入失败 |
-| 真实失败聚集 | 关键词未覆盖 14/25；禁用词命中 12/25；引用缺失 5/25；虚构引用 0——**但当时该审计在 84 条里一次都没有真正运行**，见下 |
-| 分测试类型 | 常规教理 43/48 = **89.6%**；守边界 12/26 = **46.2%**；抗压守引用 4/10 = **40.0%**（⚠️见下，「弱项是护栏」这个结论已不能当作定论） |
-| ⚠️ 量具告警（2026-09-03 更正范围扩大） | 当时判定 12 条禁用词失败里 10 条是题干诱饵（子串匹配分不清正确驳斥与真越界），估出 **[70.2%, 75.0%]** 这个「下限」——但那个估算假设「不属于诱饵的 must_mention/must_cite 未过就是真失败」。后续对另一次跑的逐条裁定证明**这个假设不成立**：同一套判分代码有 55/67 处 must_mention 判定实为改写/近义词，不是真缺失；护栏检查还有另一半没修——禁用词由**回答自己**引入（不在题干里）时仍会误判。本行数字与「弱项是护栏，不是教理内容」的结论**均不可再当定论**，详见基线报告新增的 2026-09-03 更正段 |
-| ⚠️ 伪造引用审计：历史值与现状 | **2026-08-18 这次基线的实际覆盖仍是 0/84**：当时审计逐条夹具选配，且只识别 CBETA，经 `declared_ids` 守卫短路后没有一条真正受审；本行于 2026-08-31 撤回此前的「零虚构引用」。**当前实现已不同**：每条评分回答都会进入审计，解析 CBETA、BDRC / Toh、PTS / SuttaCentral 契约及编纂开示四个家族；无来源清单时，可识别的引用会记作待裁决，无法解析的引文则单独记录并排除在覆盖率之外。对已存 DeepSeek 回答离线复审得到 446/601（74%）可核对引文、零项已知伪造；这仍不能替代 v1.0 所要求的新一次全量 Anthropic 实测。 |
+| | 数值 | 口径 |
+|---|---|---|
+| 最近一次全量运行 | **199 / 211 已评分**（94.3%） | DeepSeek `deepseek-v4-flash`，commit [`06b8142`](https://github.com/xr843/Master-skill/commit/06b814204082b3e4738185cf3eefa44ed149f9f0)，2026-08-31；12 条输出被截断，记为未测而非失败 |
+| 判分器直出通过率 | 137 / 199 = 68.8% | 子串匹配：分不清改写与缺失，也分不清「正确地拒绝」与「越界」 |
+| 逐条人工裁定后 | **179 / 199 = 89.9%** | 教理 94.3% · 守边界 85.9% · 抗压守引用 83.3%。推翻 43 条失败，也把 1 条 PASS 改判为 FAIL；每条裁定附回答原文引句，由 `verify-adjudication.py` 在 CI 中复核 |
+| 引文审计覆盖 | **569 / 619 = 92%**，已知伪造 0 | 用当前审计器离线重审同一批回答，覆盖 CBETA、BDRC / Toh、PTS / SuttaCentral、编集开示四个来源家族 |
+| 元技能定向复测 | compare-masters **0% → 90%** | 2026-09-13，34 条。修正输出模板后，`compare-masters` 引文可核验率由 0% 升至 90%，`master-curriculum` 由 0% 升至 100%；`master-debate` 此前把经号写在圆括号里、审计根本看不见，现为 100% |
 
-这是**关键词/引用字符串覆盖率检查，不是教义正确性或 LLM 判分的答案质量**。完整表格、失败案例与方法论说明见 **[eval/reports/BASELINE.md](eval/reports/BASELINE.md)**。
+**这一列不能推进 v1.0 门禁。** 门禁定义在 Anthropic（`claude-sonnet-4-6`）那一列上，两个模型是两把尺子，不混算。Anthropic 那一列至今只有 2026-08-18 的一次部分运行（84 / 211 条，因账户余额耗尽中断），当时的「零伪造引文」已于 2026-08-31 撤回——那次审计实际一条都没有运行。
+
+这些是**关键词与引用字符串的覆盖检查，不是教义正确性，也不是 LLM 判分的答案质量**。详见 [BASELINE-deepseek.md](eval/reports/BASELINE-deepseek.md)（全量运行）、[ADJUDICATION.md](eval/reports/ADJUDICATION.md)（逐条裁定）、[BASELINE.md](eval/reports/BASELINE.md)（Anthropic 部分运行与撤回记录）与[元技能复测报告](eval/reports/0.11.0-e97ded0-deepseek-metaskills.json)。
 
 ---
 
@@ -195,6 +186,8 @@ npx master-skill install --all          # 一次装全部 20 个 Skill
 npx master-skill install master-huineng # 或只装一位
 npx master-skill list                   # 看全部可装的
 npx master-skill recommend "念佛怎么念才算老实"   # 不知道该问谁？让它推荐
+npx master-skill doctor                 # 检查本地安装与运行路径
+npx master-skill update --all           # 升级：重装全部并清掉旧文件
 ```
 
 装好后在对话里直接调 `/master-huineng`、`/compare-masters` 等。
@@ -205,13 +198,13 @@ npx master-skill recommend "念佛怎么念才算老实"   # 不知道该问谁�
 
 ## 桌面管理器
 
-原生桌面控制台(纯 Rust,egui,单二进制,无 Electron),统一管理 19 个 master skill 的安装状态、fidelity 评测覆盖率、运行追踪与质量门禁:
+原生桌面控制台(纯 Rust,egui,单二进制,无 Electron),统一管理 18 个技能（15 位祖师与 `master-debate` / `master-curriculum` / `master-help`）的安装状态、fidelity 评测覆盖率、运行追踪与质量门禁:
 
 ![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/main/docs/assets/desktop-manager.png)
 
-**下载**:[Releases](https://github.com/xr843/Master-skill/releases) 提供 Linux / Windows / macOS 预编译二进制,下载后在本仓库根目录运行。Linux / macOS 建议下载对应 `.tar.gz`，解包后会保留可执行位；原裸二进制名继续提供以兼容旧链接，使用裸文件时需先 `chmod +x`。每个新版 release 同时附带 `SHA256SUMS`，可按其中对应行核对下载文件。macOS 二进制未签名，首次运行需右键“打开”或执行 `xattr -d com.apple.quarantine <文件名>` 解除隔离。
+**下载**：[Releases](https://github.com/xr843/Master-skill/releases) 提供 Linux / Windows / macOS 预编译二进制，需在本仓库克隆的根目录运行（它会调用仓库里的 `scripts/` 与 `bin/`）。当前最新版 v0.11.0 只提供裸二进制，Linux / macOS 下载后需先 `chmod +x`。**v0.11.0 的 Windows 版有已知缺陷：无法调用 Python 与 npm**——已在 main 修复，随下一版发布；在此之前 Windows 用户请从源码构建。自下一版起，每个 release 另附保留可执行位的 `.tar.gz` 与 `SHA256SUMS` 校验清单。macOS 二进制未签名，首次运行需右键“打开”或执行 `xattr -d com.apple.quarantine <文件名>` 解除隔离。
 
-**从源码构建**:
+**从源码构建**（需要 Rust 1.95+）：
 
 ```bash
 cd desktop && cargo build --release
@@ -243,7 +236,7 @@ cd desktop && cargo build --release
 | `/master-mahasi-sayadaw` | 马哈希尊者 | 南传 · 缅甸内观 | 1904-1982 |
 | `/master-ajahn-chah` | 阿姜查 | 南传 · 泰国森林禅林派 | 1918-1992 |
 
-**教学模式**：`/compare-masters` 并列对比 · `/master-debate` 多轮对辩 · `/master-curriculum` 学修路径 · `/master-help` 我该问谁 · `/create-master` 自定义生成
+**教学模式**：`/compare-masters` 并列对比 · `/master-debate` 多轮对辩 · `/master-curriculum` 学修路径 · `/master-help` 我该问谁　**生成器**：`/create-master` 自定义生成
 
 > 每位祖师的生平、核心思想与声明来源 → **[docs/masters.md](docs/masters.md)**
 
@@ -253,7 +246,7 @@ cd desktop && cargo build --release
 
 ## 与 FoJin 的关系
 
-[FoJin](https://fojin.app) 是一个佛教文本聚合平台，整合了 503 个数据源、10K+ 篇文本、678K+ 条语义向量嵌入，以及涵盖 31K 实体的知识图谱，覆盖 CBETA 汉文大藏经、SuttaCentral 巴利藏及英译、84000 藏经英译等主要语料库。
+[FoJin](https://fojin.app) 是一个佛教文本聚合平台，收录 10K+ 部文本（其中约 9K 部有全文）、678K+ 条语义向量嵌入与 110K+ 实体的知识图谱。它登记了 600+ 个数据源，但**提供全文的只有 4 个**——CBETA 汉文大藏经、SuttaCentral 巴利藏及英译、84000 藏经英译、GRETIL 梵文文献库，其余为元数据登记。
 
 Master-skill 通过 `tools/fojin_bridge.py` 接入 FoJin API，实现：
 
@@ -300,7 +293,7 @@ Master-skill 通过 `tools/fojin_bridge.py` 接入 FoJin API，实现：
 1. [ETHICS.md](ETHICS.md) §2 — 确认版权 Tier（A 可直接 PR，B 需授权证明，C 一律拒绝）
 2. [ETHICS.md](ETHICS.md) §3 — 教界禁止行为须写入该法师 `voice.md` Layer 0
 3. [CONTRIBUTING.md](CONTRIBUTING.md) §3 — 目录结构、frontmatter、fidelity 测试用例编写规范
-4. 提交前：`python scripts/validate.py --strict` 绿色 + `tests/fidelity.jsonl` 至少 5 条 + CI fidelity-smoke 通过
+4. 提交前：`python scripts/validate.py --strict` 与 `python scripts/validate-fidelity.py` 通过 + `tests/fidelity.jsonl` 至少 5 条（其中至少 1 条 boundary 用例）+ CI 的 fidelity dry-run 通过
 
 其它一般贡献（文档、工具链、CI）走普通 PR 流程。
 

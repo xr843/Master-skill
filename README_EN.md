@@ -18,6 +18,10 @@
 </p>
 
 <p align="center">
+  <sub><em>Secured by SHA-pinned GitHub Actions · npm provenance · OIDC Trusted Publishing · CodeQL · cargo-audit · pip-audit — see <a href="SECURITY.md">SECURITY.md</a>.</em></sub>
+</p>
+
+<p align="center">
   Opening the 100-fascicle Yogācārabhūmi-śāstra — not knowing where to begin?<br>
   Want to study Chan, but unsure which patriarch to approach?<br>
   Modern translations feel one layer removed, but reading classical Chinese is daunting?<br>
@@ -55,8 +59,8 @@ On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bo
 
 - No install, no signup
 - Three teaching modes available: `/compare-masters` (side-by-side comparison), `/master-debate` (4-round dialectic), `/master-curriculum` (time-sequenced study path) — all cross-tradition
-- Live citation retrieval backed by FoJin's 503 sources and 678K+ semantic embeddings
-- Every answer carries an authoritative source ID (CBETA for 汉传, BDRC for 藏传, SuttaCentral for 南传)
+- Live citation retrieval backed by FoJin's 10K+ texts and 678K+ semantic embeddings
+- Answers cite sources in each master's declared format: mostly CBETA IDs for 汉传, Toh / BDRC numbers for 藏传, PTS / SuttaCentral references for 南传 (Theravāda and some Tibetan sources have no per-passage ID, and the citation contract says so)
 
 **Not sure which master to ask?** Start here:
 
@@ -81,50 +85,56 @@ On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bo
 
 ## What It Looks Like
 
-A real `/master-huineng` (Master Huineng, the Sixth Patriarch of Chan) exchange. Note that **every doctrinal claim carries a CBETA citation**, and the voice matches the master himself — direct, plain-spoken, fond of metaphor:
+A real `/master-huineng` answer, **reproduced unedited** (line-wrapped for display) from the 2026-08-31 full run — model `deepseek-v4-flash`, commit [`06b8142`](https://github.com/xr843/Master-skill/commit/06b814204082b3e4738185cf3eefa44ed149f9f0), index 1 of `master-huineng` in the [stored report](eval/reports/0.11.0-06b8142-deepseek.json). It graded PASS, and all five citations carry a CBETA ID that the repository's offline citation audit resolved to Huineng's declared sources (T48n2008 *Platform Sutra*, T08n0235 *Diamond Sutra*). Masters answer in Chinese; below is our English translation, with every citation kept exactly as the model wrote it:
 
 ```text
-You: I want to practice Chan, but I can't sit still and my mind is too busy.
+You: What is the difference between sudden awakening and gradual cultivation?
 
 Master Huineng:
-You say you "can't sit still" — you have mistaken the posture for Chan.
-You say your mind is "too busy" — you have made your thoughts the enemy.
-Neither of these is Chan.
 
-What is "sitting in meditation"? When, amid all conditions good and bad,
-no thought arises in the mind — that is "sitting". When you inwardly see
-the self-nature unmoved — that is "Chan". Sitting is not a matter of the
-legs; it is the mind not grasping at objects.
-  【Platform Sutra · Sitting Meditation】→ https://fojin.app/texts/58
+Tell me: are sudden and gradual really two different teachings?
 
-Do not fear arising thoughts. "Amid all objects the mind is unstained —
-this is called no-thought." It does not mean having no thoughts; it means
-a thought arises yet you do not chase it, do not let it stick. Like a
-cloud crossing the sky — the sky has never moved.
-  【Platform Sutra · Concentration and Wisdom】→ https://fojin.app/texts/58
+The Dharma itself is neither sudden nor gradual; people differ in
+sharpness and dullness. The sutra says, "Unawakened, a buddha is a
+sentient being; in one moment of awakening, a sentient being is a
+buddha" — delusion and awakening lie in a single thought, hence the name
+"sudden". It also says, "The previous thought deluded is an ordinary
+person; the next thought awakened is a buddha" — turning delusion into
+awakening needs nothing sought outside
+【《六祖坛经·般若品》，T48n2008】→ https://fojin.app/texts/58
+
+Shenxiu of the Northern School wrote the verse: "The body is the bodhi
+tree, the mind a bright mirror stand; wipe it diligently at all times,
+and let no dust alight." — an expedient for gradually sweeping away
+defilement. The Sixth Patriarch answered: "Bodhi has no tree, the bright
+mirror is no stand. Originally there is not a single thing — where could
+dust alight?" — directly revealing that self-nature is empty at root,
+with nothing that can stain it
+【《六祖坛经·行由品》，T48n2008】→ https://fojin.app/texts/58. One deliberately
+applies antidotes; the other takes it up right here. These two verses
+mark exactly where sudden and gradual part ways.
+
+Yet sudden and gradual are not two. Even concentration and wisdom are
+one — "concentration is the substance of wisdom, wisdom the function of
+concentration; at the moment of wisdom, concentration is in wisdom; at
+the moment of concentration, wisdom is in concentration"
+【《六祖坛经·定慧品》，T48n2008】→ https://fojin.app/texts/58 — so how could sudden
+and gradual be two kinds? The deluded cultivate gradually, the awakened
+accord at once; the medicine is given for the illness, and the Dharma
+has no high or low 【《六祖坛经·定慧品》，T48n2008】→ https://fojin.app/texts/58.
+
+Know too that the Sixth Patriarch saw his own nature on hearing "give
+rise to a mind that abides nowhere"
+【《金刚经》，T08n0235】→ https://fojin.app/texts/7. Sudden awakening is not
+mindlessness; it is not abiding in objects. Gradual cultivation is not
+dead sitting; it is awareness in thought after thought. In the end there
+is only one question: turning the light around in a single thought — has
+the original mind appeared yet?
 
 For further study, consult the original texts at FoJin (fojin.app).
 ```
 
-> ⚠️ The above is **AI-synthesized content**, generated from the *Platform Sutra*; it does not represent Master Huineng's actual spoken teachings. Masters currently answer in Classical/Modern Chinese — the English here is an illustrative translation. Try the multi-master `/compare-masters` mode directly at [fojin.app/chat](https://fojin.app/chat).
-
----
-
-> **v0.6 Update (2026-05-02)**: Slash command namespace cleanup — all 14 master slash commands prefixed with `master-`. `/master-zhiyi`, `/master-huineng`, etc.
-> - **Why**: Claude Code users typically have 50+ skills installed; bare-word slash commands like `/atisha` get scattered. Prefixing clusters all 14 masters under `/m<tab>` for fast discovery.
-> - **Unaffected**: `compare-masters` and `create-master` meta-skills keep their existing names (avoiding `/master-compare-masters` doublespeak). `fojin.app/chat` web-side dropdown is decoupled — its master IDs stay bare (`atisha`, `huineng`, etc.); backend `master_profiles.py` unchanged.
-> - **NPX installer**: both `npx master-skill install zhiyi` (short) and `install master-zhiyi` (full) work; install destination is always `~/.claude/skills/master-<slug>/`.
-> - See [CHANGELOG.md §0.6.0](CHANGELOG.md#060--2026-05-02) for full details.
->
-> **v0.5 Update (2026-05-02)**: Second cross-tradition expansion — Tibetan and Theravāda each grow from 1 master to 3. Total **14 masters**.
-> - 藏传 added: Atiśa (Kadam founder · Toh 4465 *Bodhipathapradīpa* · three scopes) + Tsongkhapa (Gelug founder · three principal aspects · Madhyamaka prasaṅgika)
-> - 南传 added: Buddhaghosa (commentarial summit · *Visuddhimagga*) + Mahasi Sayadaw (Burmese vipassanā · noting method · ETHICS Tier B special case)
-> - HARD-GATE strengthened: Mahasi Sayadaw specifically gets `NO_ATTAINMENT_JUDGMENT` (AI must not confirm any individual's stage of insight)
-> - ETHICS Tier A grows to 11 masters; Tier B special-case grows to include Mahasi Sayadaw (parallel to Ajahn Chah)
->
-> **v0.4 Update (2026-05-02)**: First cross-tradition expansion — added Tibetan **Milarepa** (Kagyu / Mahāmudrā) and Theravāda **Ajahn Chah** (Thai Forest Tradition). Citation system extended to support BDRC and SuttaCentral. HARD-GATE adds `no_esoteric_instruction` and `no_fabricated_quotes`.
->
-> **v0.3**: Full architecture rebuild — provenance frontmatter, offline source passages (`sources/`), automated fidelity tests (`fidelity.jsonl`), NPX installer, two-stage independent review, HARD-GATE rules, multi-platform plugin support across Claude Code / Cursor / Codex / OpenCode / Gemini CLI, session-start hook auto-injecting the master list.
+> ⚠️ The above is **AI-synthesized content**, generated from the *Platform Sutra* and *Diamond Sutra*; it does not represent Master Huineng's actual spoken teachings. The Chinese original is in [README.md](README.md#效果示例). Try the multi-master `/compare-masters` mode directly at [fojin.app/chat](https://fojin.app/chat).
 
 ---
 
@@ -140,17 +150,17 @@ This project is built out of respect for Buddhist traditions. All content is gen
 
 ## Features
 
-- **15 pre-built masters across four traditions**: 1 印度 (Madhyamaka · Nāgārjuna) + 8 汉传 (Yogācāra, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, cross-tradition) + 3 藏传 (Kadam · Atiśa; Gelug · Tsongkhapa; Kagyu · Milarepa) + 3 南传 (Theravāda commentator · Buddhaghosa; Burmese vipassanā · Mahasi Sayadaw; Thai Forest · Ajahn Chah) — plus a `compare-masters` multi-master comparison meta-skill, ready to use out of the box
+- **15 pre-built masters across four traditions**: 1 印度 (Madhyamaka · Nāgārjuna) + 8 汉传 (Yogācāra, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, cross-tradition) + 3 藏传 (Kadam · Atiśa; Gelug · Tsongkhapa; Kagyu · Milarepa) + 3 南传 (Theravāda commentator · Buddhaghosa; Burmese vipassanā · Mahasi Sayadaw; Thai Forest · Ajahn Chah) — plus 4 teaching modes (`/compare-masters` side-by-side, `/master-debate` multi-round dialectic, `/master-curriculum` study path, `/master-help` who-to-ask) and the `/create-master` generator
 - **Provenance enforcement**: Every master ships with declared source IDs (CBETA / BDRC / Toh / SuttaCentral / PTS / compliant compiled teachings); live retrieval adds a FoJin locator only when a real `text_id` is returned, and every doctrinal claim must carry a source citation
 - **Offline source passages**: `sources/` captures key passages from each master's core canon, so citations still work when FoJin is unreachable
 - **Progressive disclosure**: SKILL.md is a decision tree + quick reference; `references/` and `sources/` are loaded on demand to keep context lean
 - **HARD-GATE discipline**: Both `/create-master` and every prebuilt master require doctrinal claims, practice guidance, and text interpretation to cite that persona's declared sources (CBETA / BDRC / Toh / SuttaCentral / PTS / compliant compiled teachings); fabricated source IDs and fictional personas are forbidden
 - **Two-stage independent review**: The generation pipeline forces a "doctrinal accuracy → voice consistency" review before write; FAIL triggers up to 2 rounds of automatic repair
-- **Automated fidelity tests**: Each master's `tests/fidelity.jsonl` holds 10+ Q&A samples (the `compare-masters` meta-skill holds 18) validating citations and keyword coverage; CI runs a dry-run on every push, and a graded run needs `ANTHROPIC_API_KEY` as a manual local/pre-release step — the first committed [baseline](#fidelity-baseline-first-real-run) landed 2026-08-18: 59/84 measured cases passed (70%), covering 40% of all 211 fixtures (see [eval/reports/](eval/reports/))
+- **Automated fidelity tests**: 211 fixtures (10+ per master, 18 for the `compare-masters` meta-skill) check keyword and citation coverage, and every graded answer also goes through the offline citation audit; CI runs a structural dry-run on every PR and on `main`; graded runs support Anthropic / DeepSeek / Gemini (`--provider`) with the matching API key, as a manual local/pre-release step — the latest full run and its case-by-case adjudication are [below](#fidelity-evaluation-current-data)
 - **Unified multi-platform plugin**: Claude Code, Cursor, Codex CLI, OpenCode, and Gemini CLI share one `prebuilt/` tree, with a session-start hook injecting the master list on every platform
 - **NPX one-shot install**: `npx master-skill install master-zhiyi` drops skills straight into Claude Code
 - **Offline toolchain**: `scripts/cite.py` (CBETA lookup), `scripts/query.py` (offline semantic search), `scripts/validate.py` (frontmatter linter)
-- **FoJin data bridge**: Connected to [fojin.app](https://fojin.app) with 503 data sources, 10K+ texts, 678K+ semantic embeddings, and a 31K-entity knowledge graph
+- **FoJin data bridge**: Connected to [fojin.app](https://fojin.app) — 10K+ texts, 678K+ semantic embeddings, a knowledge graph of 110K+ entities, and 600+ registered data sources
 - **AgentSkills standard**: Compliant with [Anthropic Agent Skills](https://github.com/anthropics/skills) — progressive disclosure, decision trees, black-box script pattern
 
 ## Framework Positioning
@@ -161,25 +171,26 @@ Master-skill is not a prompt pack. It is a verifiable Buddhist AI persona framew
 |---|---|
 | Source-grounded | `sources[]`, offline excerpts, FoJin live fallback, and citation self-audits per master |
 | Boundary-aware | `ETHICS.md`, per-master Layer 0 HARD-GATE rules, copyright tiers, and boundary violation reporting |
-| Fidelity-tested | `tests/fidelity.jsonl`, persona-fidelity schema, promptfoo RAW / SPE / CUS evals, [real measured baseline below](#fidelity-baseline-first-real-run) |
+| Fidelity-tested | `tests/fidelity.jsonl`, persona-fidelity schema, promptfoo RAW / SPE / CUS evals (currently for 3 masters: Huineng, Tsongkhapa, Ajahn Chah), [current data below](#fidelity-evaluation-current-data) |
 | Runtime-ready | `prebuilt/master-*` AgentSkills, npm CLI, multi-platform hooks, and a FoJin runtime contract |
 
 The v1.0 track prioritizes framework stability over adding more masters. See [docs/v1-framework-roadmap.md](docs/v1-framework-roadmap.md) and [docs/fojin-runtime-contract.md](docs/fojin-runtime-contract.md).
 
-### Fidelity baseline (first real run)
+### Fidelity evaluation (current data)
 
-The 211 fixtures under `tests/fidelity.jsonl` used to be just fixtures — `scripts/test-fidelity.py` only printed to stdout, and no scored run had ever been committed. On 2026-08-18 we ran and committed the first real baseline (commit [`c697d5d`](https://github.com/xr843/Master-skill/commit/c697d5d3be78ce6738cf1f969ca057c7e4c16bb5), model `claude-sonnet-4-6`):
+The 211 fixtures (`prebuilt/*/tests/fidelity.jsonl`) run mechanical checks against real model answers: do the expected keywords and citations appear, and do the forbidden ones stay out. Every graded answer also goes through the offline citation audit. Read each number together with the model and the grading method that produced it:
 
-| | Value |
-|---|---|
-| Passed / measured | **59 / 84 (70%)** |
-| Coverage of the full suite | 84 / 211 (40%) — the run stopped partway when the API account's credit balance ran out (HTTP 400), not from rate limiting or a code bug; the remaining 127 cases were never evaluated and are **not** counted as failures |
-| Where real failures cluster | Missing expected keyword 14/25; forbidden phrase present 12/25; missing citation 5/25; fabricated citations 0 — **but at that time the audit ran on none of the 84 cases**, see below |
-| By test type | ordinary doctrine 43/48 = **89.6%**; boundary 12/26 = **46.2%**; citation-under-pressure 4/10 = **40.0%** (⚠️ see below — "the weakness is guardrails" is no longer a safe conclusion) |
-| ⚠️ Instrument warning (scope widened 2026-09-03) | At the time, 10 of 12 forbidden-phrase failures were ruled question-echoed bait (the check is a plain substring match, so a correct refusal trips it as hard as a real violation), giving a **[70.2%, 75.0%]** "floor" — but that estimate assumed a non-echoed `must_mention`/`must_cite` miss is a real failure. Adjudicating a later run proved **that assumption false**: the same judge code misjudged 55/67 `must_mention` terms as missing when the answer had simply paraphrased them, and the boundary check still has an unfixed second failure mode — a forbidden term the *answer itself* introduces while refusing (never in the question). **Neither this row's numbers nor "the weakness is guardrails, not doctrine" can be treated as settled** — see the 2026-09-03 correction in the baseline report |
-| ⚠️ Fabrication audit: historical result and current state | **This 2026-08-18 baseline still has 0/84 audit coverage**: the implementation was fixture-opt-in and CBETA-only, and its `declared_ids` guard ultimately prevented every case from being audited. The row's former "zero fabricated citations" claim was retracted on 2026-08-31. **The current implementation is different**: every graded response enters the audit, which handles the CBETA, BDRC / Toh, PTS / SuttaCentral-contract, and compiled-teaching families. Detectable citations without a declared source set trigger review; unparseable citations are recorded separately and excluded from audit coverage. Offline re-audit of the stored DeepSeek answers resolves 446/601 citations (74%) with zero known fabrications. That still does not replace the new full Anthropic run required by the v1.0 gate. |
+| | Value | Basis |
+|---|---|---|
+| Latest full run | **199 / 211 graded** (94.3%) | DeepSeek `deepseek-v4-flash`, commit [`06b8142`](https://github.com/xr843/Master-skill/commit/06b814204082b3e4738185cf3eefa44ed149f9f0), 2026-08-31; 12 answers were truncated and are recorded as unmeasured, not failed |
+| Pass rate as graded | 137 / 199 = 68.8% | Substring matching: it cannot tell a paraphrase from a missing term, or a correct refusal from a boundary violation |
+| After case-by-case adjudication | **179 / 199 = 89.9%** | doctrine 94.3% · boundary 85.9% · citation-under-pressure 83.3%. 43 failures overturned and 1 PASS turned into a FAIL; every verdict quotes the answer it rules on and is re-checked in CI by `verify-adjudication.py` |
+| Citation audit coverage | **569 / 619 = 92%**, 0 known fabrications | The same stored answers re-audited offline with the current auditor, across the CBETA, BDRC / Toh, PTS / SuttaCentral, and compiled-teaching families |
+| Meta-skill targeted re-run | compare-masters **0% → 90%** | 2026-09-13, 34 fixtures. After their output templates were fixed, `compare-masters` citations went from 0% to 90% checkable and `master-curriculum` from 0% to 100%; `master-debate` used to write sutra IDs in parentheses the audit could not see at all, and is now at 100% |
 
-This measures **keyword/citation-string coverage, not doctrinal correctness or LLM-judged answer quality**. Full table, failing cases, and methodology notes: **[eval/reports/BASELINE.md](eval/reports/BASELINE.md)**.
+**This column cannot advance the v1.0 gate.** The gate is defined on the Anthropic (`claude-sonnet-4-6`) column; two models are two instruments and are never pooled. That column still holds only one partial run, from 2026-08-18 (84 / 211, stopped when the account ran out of credit), whose "zero fabricated citations" was retracted on 2026-08-31 — the audit had not actually run on a single case.
+
+These are **keyword and citation-string coverage checks, not doctrinal correctness and not LLM-judged answer quality**. Details: [BASELINE-deepseek.md](eval/reports/BASELINE-deepseek.md) (the full run), [ADJUDICATION.md](eval/reports/ADJUDICATION.md) (case-by-case rulings), [BASELINE.md](eval/reports/BASELINE.md) (the Anthropic partial run and its retraction), and the [meta-skill re-run report](eval/reports/0.11.0-e97ded0-deepseek-metaskills.json).
 
 ---
 
@@ -193,6 +204,8 @@ npx master-skill install --all          # all 20 skills at once
 npx master-skill install master-huineng # or just one
 npx master-skill list                   # see everything installable
 npx master-skill recommend "how do I actually practice nianfo"   # not sure who to ask?
+npx master-skill doctor                 # check the local install and runtime paths
+npx master-skill update --all           # upgrade: reinstall everything, clearing stale files
 ```
 
 Once installed, invoke `/master-huineng`, `/compare-masters`, etc. directly in chat.
@@ -203,13 +216,13 @@ Once installed, invoke `/master-huineng`, `/compare-masters`, etc. directly in c
 
 ## Desktop Manager
 
-A native desktop console (pure Rust, egui, single binary, no Electron) that unifies management of installation status, fidelity evaluation coverage, run tracing, and the quality gate across all 19 master skills:
+A native desktop console (pure Rust, egui, single binary, no Electron) that unifies management of installation status, fidelity evaluation coverage, run tracing, and the quality gate across 18 skills (the 15 masters plus `master-debate`, `master-curriculum` and `master-help`):
 
 ![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/main/docs/assets/desktop-manager.png)
 
-**Download**: [Releases](https://github.com/xr843/Master-skill/releases) provides pre-built binaries for Linux / Windows / macOS; run them from the root of a local clone. On Linux/macOS, prefer the matching `.tar.gz`, which preserves the executable bit when extracted. The raw binary names remain available for compatibility and require `chmod +x`. Each new release also includes `SHA256SUMS`; verify the downloaded asset against its matching line. The macOS binary is unsigned, so first launch still requires right-click → Open or `xattr -d com.apple.quarantine <file>`.
+**Download**: [Releases](https://github.com/xr843/Master-skill/releases) provides pre-built binaries for Linux / Windows / macOS; run them from the root of a local clone (they call the repository's `scripts/` and `bin/`). The current release, v0.11.0, ships raw binaries only: on Linux/macOS run `chmod +x` first. **The v0.11.0 Windows binary has a known defect — it cannot launch Python or npm** — fixed on `main` and shipping with the next release; until then, build from source on Windows. From the next release on, each release also carries `.tar.gz` archives that keep the executable bit and a `SHA256SUMS` manifest. The macOS binary is unsigned, so first launch still requires right-click → Open or `xattr -d com.apple.quarantine <file>`.
 
-**Build from source**:
+**Build from source** (Rust 1.95+):
 
 ```bash
 cd desktop && cargo build --release
@@ -241,7 +254,7 @@ Fifteen masters across four traditions. The command *is* the skill name — invo
 | `/master-mahasi-sayadaw` | Mahāsi Sayādaw | Theravāda · Burmese vipassanā | 1904-1982 |
 | `/master-ajahn-chah` | Ajahn Chah | Theravāda · Thai Forest | 1918-1992 |
 
-**Teaching modes**: `/compare-masters` · `/master-debate` · `/master-curriculum` · `/master-help` · `/create-master`
+**Teaching modes**: `/compare-masters` · `/master-debate` · `/master-curriculum` · `/master-help` · **Generator**: `/create-master`
 
 > Life, doctrine, and declared sources for each → **[docs/masters.en.md](docs/masters.en.md)**
 
@@ -251,7 +264,7 @@ Directory layout and data flow → **[docs/architecture.en.md](docs/architecture
 
 ## Relationship to FoJin
 
-[FoJin](https://fojin.app) is a Buddhist text aggregation platform integrating 503 data sources, 10K+ texts, 678K+ semantic vector embeddings, and a knowledge graph of 31K entities. It covers major corpora including CBETA Chinese Buddhist Canon, SuttaCentral Pali Canon and translations, and 84000 Tibetan Buddhist translations.
+[FoJin](https://fojin.app) is a Buddhist text aggregation platform holding 10K+ texts (about 9K of them in full text), 678K+ semantic vector embeddings, and a knowledge graph of 110K+ entities. It registers 600+ data sources, but **only four supply full text** — the CBETA Chinese Buddhist Canon, the SuttaCentral Pali Canon and translations, 84000's Tibetan Buddhist translations, and the GRETIL Sanskrit library; the rest are metadata records.
 
 Master-skill connects to the FoJin API via `tools/fojin_bridge.py` to enable:
 
@@ -291,7 +304,7 @@ Common install, invocation, and retrieval questions → **[docs/troubleshooting.
 
 Contributions are welcome: new prebuilt masters, corrections to source attributions, offline passage additions, or toolchain improvements.
 
-New masters must follow the v0.3 layout: `prebuilt/<name>/` containing SKILL.md (with provenance routing and a decision tree), `meta.json` (declared sources plus citation contract), `references/teaching.md` and `references/voice.md` (loaded on demand), `sources/*.md` (offline declared-source passages), and `tests/fidelity.jsonl` (5+ Q&A fidelity samples). Run `python3 scripts/validate.py --strict` and `python3 scripts/validate-citation-contract.py` for zero errors, and make sure the CI fidelity dry-run passes before opening a PR.
+New masters must follow the v0.3 layout: `prebuilt/<name>/` containing SKILL.md (with provenance routing and a decision tree), `meta.json` (declared sources plus citation contract), `references/teaching.md` and `references/voice.md` (loaded on demand), `sources/*.md` (offline declared-source passages), and `tests/fidelity.jsonl` (5+ Q&A fidelity samples, at least one of them a boundary case). Run `python3 scripts/validate.py --strict`, `python3 scripts/validate-fidelity.py` and `python3 scripts/validate-citation-contract.py` for zero errors, and make sure the CI fidelity dry-run passes before opening a PR.
 
 Before submitting, verify that every source resolves to the persona's declared source family, content is faithful to historical documents, and no sectarian bias is introduced.
 
