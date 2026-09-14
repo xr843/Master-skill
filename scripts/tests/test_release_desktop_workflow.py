@@ -193,3 +193,23 @@ def test_gh_cli_in_a_job_without_checkout_names_its_repository():
                     if calls_gh and not names_repo:
                         problems.append(f"{path.name}:{job_name}:{step.get('name')}: {line.strip()}")
     assert not problems, "gh without a repository in a job with no checkout:\n" + "\n".join(problems)
+
+
+def test_the_windows_build_is_a_gui_program_that_still_answers_help():
+    """v0.12.1's Windows binary was linked as a console program, so double-clicking
+    it opened a console window behind the GUI. The fix is a crate attribute; the
+    proof is a check only a Windows build can run, before its assets upload."""
+    main_rs = (ROOT / "desktop" / "src" / "main.rs").read_text(encoding="utf-8")
+    assert '#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]' in main_rs
+
+    step = _step("build", "Smoke-test staged binary (Windows only)")
+    assert step.get("if") == "runner.os == 'Windows'"
+    assert step.get("shell") == "pwsh"
+    script = step["run"]
+    assert 'scripts/check-pe-subsystem.py "dist/${{ matrix.artifact_name }}" --expect 2' in script
+    assert "--help > help.txt" in script
+    usage = (ROOT / "desktop" / "src" / "desktop_args.rs").read_text(encoding="utf-8")
+    assert '"Usage: master-skill-desktop' in usage and "Usage: master-skill-desktop" in script
+
+    names = [s.get("name") for s in _job("build")["steps"]]
+    assert names.index("Smoke-test staged binary (Windows only)") < names.index("Upload staged assets")

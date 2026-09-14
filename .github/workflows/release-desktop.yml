@@ -107,6 +107,24 @@ jobs:
           chmod +x "dist/${{ matrix.artifact_name }}"
           XDG_DATA_HOME="$(mktemp -d)" "./dist/${{ matrix.artifact_name }}" --baseline
 
+      - name: Smoke-test staged binary (Windows only)
+        if: runner.os == 'Windows'
+        # Two things only a Windows build can show. The binary must be linked
+        # for the GUI subsystem: v0.12.1's was a console program, so
+        # double-clicking it opened a console window behind the app. And that
+        # GUI build must still print `--help` to a redirected stdout. The
+        # interactive case, a terminal with nothing redirected, cannot be
+        # exercised on a runner.
+        shell: pwsh
+        run: |
+          python scripts/check-pe-subsystem.py "dist/${{ matrix.artifact_name }}" --expect 2
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          & "./dist/${{ matrix.artifact_name }}" --help > help.txt
+          if ($LASTEXITCODE -ne 0) { throw "--help exited with $LASTEXITCODE" }
+          if (-not (Select-String -Path help.txt -SimpleMatch "Usage: master-skill-desktop" -Quiet)) {
+            throw "--help printed nothing to a redirected stdout"
+          }
+
       - name: Upload staged assets
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
