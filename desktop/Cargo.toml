@@ -31,3 +31,10 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tempfile = "3"
 wait-timeout = "0.2"
+
+# Strip symbols from release binaries. Measured on the eframe 0.36 build:
+# 26,903,544 → 21,277,616 bytes (−20%), and the stripped binary runs. The cost
+# is a panic backtrace showing addresses instead of function names; this app
+# has no crash reporting, and dev builds keep their symbols.
+[profile.release]
+strip = true
