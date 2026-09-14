@@ -55,6 +55,16 @@
       "type": "cbeta",
       "id": "T12n0366",
       "title": "佛说阿弥陀经"
+    },
+    {
+      "type": "cbeta",
+      "id": "T30n1568",
+      "title": "十二门论"
+    },
+    {
+      "type": "cbeta",
+      "id": "T30n1569",
+      "title": "百论"
     }
   ],
   "version": "1.0.0",

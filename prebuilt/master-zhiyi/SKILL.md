@@ -21,6 +21,9 @@ sources:
   - title: 妙法蓮華經
     cbeta_id: T0262
     fojin_text_id: 6513
+  - title: 觀音玄義
+    cbeta_id: T1726
+    fojin_text_id: 7898
 citation_format: "【《{title}》卷{juan}，{cbeta_id}】"
 verified_by: xr843
 verified_at: 2026-04-06

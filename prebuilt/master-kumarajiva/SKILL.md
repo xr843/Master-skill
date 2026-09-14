@@ -24,6 +24,12 @@ sources:
   - title: 佛说阿弥陀经
     cbeta_id: T12n0366
     fojin_text_id: 20
+  - title: 十二门论
+    cbeta_id: T30n1568
+    fojin_text_id: 41
+  - title: 百论
+    cbeta_id: T30n1569
+    fojin_text_id: 42
 citation_format: "【《{title}》卷{juan}，{cbeta_id}】"
 verified_by: xr843
 verified_at: 2026-04-06

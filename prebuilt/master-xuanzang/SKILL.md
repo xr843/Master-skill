@@ -24,6 +24,12 @@ sources:
   - title: 大唐西域记
     cbeta_id: T51n2087
     fojin_text_id: 8236
+  - title: 大乘百法明门论
+    cbeta_id: T31n1614
+    fojin_text_id: 7791
+  - title: 因明入正理论
+    cbeta_id: T32n1630
+    fojin_text_id: 50
 citation_format: "【《{title}》卷{juan}，{cbeta_id}】"
 verified_by: xr843
 verified_at: 2026-04-06

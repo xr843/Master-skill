@@ -79,8 +79,9 @@ def test_finds_a_persona_instructing_an_undeclared_citation(validator, tmp_path)
 
 def test_the_real_repo_has_no_undeclared_citations_left(validator):
     """Both KNOWN_UNDECLARED findings this gate ever recorded are now declared
-    (Toh:3861 in master-tsongkhapa, J36nB348 in master-ouyi). A live repo with
-    zero real findings should produce zero — this is the gate's own green,
+    (Toh:3861 in master-tsongkhapa, J36nB348 in master-ouyi), and so are the six
+    bare ids it found once it read outside brackets (2026-09-14). A live repo
+    with zero real findings should produce zero — this is the gate's own green,
     not a fixture's."""
     found = validator.find_undeclared(ROOT / "prebuilt")
     assert found == []
@@ -145,3 +146,96 @@ def test_static_sweep_resolves_a_collection_member_via_its_note(validator, tmp_p
     found = {(f.master, f.citation) for f in validator.find_undeclared(tmp_path)}
     assert ("master-example", "Ex:Discourses") not in found
     assert not any(f[0] == "master-example" for f in found)
+
+
+# --------------------------------------------------------------------------
+# Ids outside brackets. A routing table is an instruction too: until
+# 2026-09-14 this gate read only 【…】 blocks, and six genuine works cited in
+# persona tables and prose had never been declared.
+# --------------------------------------------------------------------------
+
+_DECLARES_CHENGWEISHI = (
+    '{"name":"x","slug":"example","sources":[{"type":"cbeta","id":"T31n1585",'
+    '"title":"t"}]}'
+)
+
+
+def test_finds_an_undeclared_id_in_a_routing_table(validator, tmp_path):
+    """master-xuanzang's SKILL.md sent 五位百法 questions to 《百法明门论》
+    T31n1614, in a table cell with no brackets, while meta.json never declared
+    it."""
+    persona = tmp_path / "master-example"
+    persona.mkdir()
+    (persona / "meta.json").write_text(_DECLARES_CHENGWEISHI, encoding="utf-8")
+    (persona / "SKILL.md").write_text(
+        "| 五位百法是什么 | `references/teaching.md` | 《百法明门论》，T31n1614 |\n",
+        encoding="utf-8",
+    )
+    found = {(f.master, f.citation) for f in validator.find_undeclared(tmp_path)}
+    assert found == {("master-example", "T31n1614")}
+
+
+def test_a_fojin_link_beside_a_bare_id_does_not_declare_it(validator, tmp_path):
+    """master-ouyi's sources/INDEX.md gave 《教觀綱宗》 T46n1939 an excerpt file
+    and a FoJin link. In an answer a link can make one citation `live`; in the
+    persona's own material a link is not a declaration."""
+    persona = tmp_path / "master-example"
+    (persona / "sources").mkdir(parents=True)
+    (persona / "meta.json").write_text(_DECLARES_CHENGWEISHI, encoding="utf-8")
+    (persona / "sources" / "INDEX.md").write_text(
+        "| `jiaoguan-gangzong-excerpts.md` | 《教觀綱宗》 | T46n1939 | "
+        "[T46n1939](https://fojin.app/texts/8109) |\n",
+        encoding="utf-8",
+    )
+    found = {(f.master, f.citation) for f in validator.find_undeclared(tmp_path)}
+    assert found == {("master-example", "T46n1939")}
+
+
+def test_a_declared_id_in_short_form_outside_brackets_passes(validator, tmp_path):
+    """master-zhiyi's frontmatter writes `cbeta_id: T1716` for the declared
+    T33n1716 — the same short-form resolution the answer audit uses."""
+    persona = tmp_path / "master-example"
+    persona.mkdir()
+    (persona / "meta.json").write_text(
+        '{"name":"x","slug":"example","sources":[{"type":"cbeta","id":"T33n1716",'
+        '"title":"t"}]}',
+        encoding="utf-8",
+    )
+    (persona / "SKILL.md").write_text(
+        "---\nsources:\n  - title: 妙法蓮華經玄義\n    cbeta_id: T1716\n---\n",
+        encoding="utf-8",
+    )
+    assert validator.find_undeclared(tmp_path) == []
+
+
+def test_the_sweep_reports_what_it_read(validator):
+    """A sweep that reads nothing passes everything. The real repo has ids both
+    inside and outside brackets, so both counts must be non-zero."""
+    from collections import Counter
+
+    reach = Counter()
+    validator.find_undeclared(ROOT / "prebuilt", reach)
+    assert reach["bracketed"] > 0
+    assert reach["bare"] > 0
+
+
+def test_a_rule_naming_the_bdrc_field_is_not_an_id(validator, tmp_path):
+    """master-tsongkhapa's rules say 不得编造未验证的 BDRC W-number — the name of
+    a field, which the auditor's deliberately loose recognizer reads as
+    `BDRC:W-number`. A real-shaped undeclared id in prose still fails."""
+    persona = tmp_path / "master-example"
+    persona.mkdir()
+    (persona / "meta.json").write_text(
+        '{"name":"x","slug":"example","sources":[{"type":"cbeta","id":"T48n2008",'
+        '"title":"t"}]}',
+        encoding="utf-8",
+    )
+    (persona / "SKILL.md").write_text(
+        "**NO UNVERIFIED BDRC W-NUMBERS.** 不得编造未验证的 BDRC W-number。\n",
+        encoding="utf-8",
+    )
+    assert validator.find_undeclared(tmp_path) == []
+
+    (persona / "SKILL.md").write_text("所据：BDRC: W12345\n", encoding="utf-8")
+    found = {(f.master, f.citation) for f in validator.find_undeclared(tmp_path)}
+    assert found == {("master-example", "BDRC:W12345")}
