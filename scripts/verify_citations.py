@@ -82,6 +82,29 @@ def _normalize_family_id(m: "re.Match[str]") -> str:
     return f"BDRC:{m.group('bare_w')}"
 
 
+# 学术引用常把大正藏经号写成「T31 No.1585」「T 48, no. 2008」—— 藏别字母、册号、
+# `No.`、经号。`_CBETA_ID` 只认 `T31n1585` 这一种拼写，于是这类引文整块进
+# `unparsed`：真引用没被核对，编造的也抓不到。存档里实测四处：2026-08-31 全量运行
+# `compare-masters` 一处 `T48 No.2008`；2026-09-13 元技能复测三处 `T31 No.1585`
+# ×2、`T31 No.1614`。
+#
+# 归一成声明集的拼写（`T31n1585`，册号补到两位、经号补到四位），再交给同一套比对
+# ——包括只在册号、经号、字母后缀全部相等时才放行的未补零分支。这里不另开放行口子，
+# 只让这种写法进得了审计。
+#
+# `[0-9]` 而非 `\d`：这是解析器，理由同下方 `_SHORT_FORM` —— 全角数字不得经 `int()`
+# 洗成一个「已核验」的真经号。
+_CBETA_NO_FORM = re.compile(
+    r"(?<![0-9A-Za-z])([TXJ])\s?([0-9]{1,3}),?\s*[Nn][Oo]\.\s*(B?[0-9]{1,5})(?![0-9A-Za-z])"
+)
+
+
+def _canonical_no_form(match: re.Match) -> str:
+    canon, volume, number = match.group(1), int(match.group(2)), match.group(3)
+    work = number if number.startswith("B") else f"{int(number):04d}"
+    return f"{canon}{volume:02d}n{work}"
+
+
 def extract_citation_ids(text: str) -> list[str]:
     """抽出一段文本里所有可核对的来源 id,四个家族一视同仁。
 
@@ -91,6 +114,7 @@ def extract_citation_ids(text: str) -> list[str]:
     已知边界,不是遗漏。
     """
     ids = list(_CBETA_ID.findall(text))
+    ids.extend(_canonical_no_form(m) for m in _CBETA_NO_FORM.finditer(text))
     ids.extend(_normalize_family_id(m) for m in _FAMILY_ID.finditer(text))
     return ids
 

@@ -1164,3 +1164,50 @@ def test_the_short_form_path_still_works():
     declared = {"T48n2008"}
     report = verify_citations.audit_answer(declared, "【T2008】")
     assert report["offline"] == ["T48n2008"]
+
+
+# ── 「T31 No.1585」写法（_CBETA_NO_FORM）──────────────────────────────────────
+#
+# 学术引用常见的大正藏写法。`_CBETA_ID` 只认 `T31n1585`，这类引文原本整块进
+# unparsed —— 真引用没被核对，编造的也抓不到。存档里实测四处。
+
+
+def test_the_no_form_resolves_to_the_declared_id():
+    report = verify_citations.audit_answer({"T31n1585"}, "【《成唯识论》卷一，T31 No.1585】")
+    assert report["offline"] == ["T31n1585"]
+    assert report["unparsed"] == []
+
+
+def test_the_scholarly_spacing_and_case_variants_resolve():
+    for text in ("【《坛经》，T 48, no. 2008】", "【《坛经》，T48 No. 2008】", "【《坛经》，T48 NO.2008】"):
+        report = verify_citations.audit_answer({"T48n2008"}, text)
+        assert report["offline"] == ["T48n2008"], text
+
+
+def test_an_undeclared_work_in_the_no_form_is_now_caught():
+    """原来它只是 unparsed —— 读不懂就放过。现在读得懂，就得判。"""
+    report = verify_citations.audit_answer({"T31n1585"}, "【《大乘百法明门论》，T31 No.1614】")
+    assert report["fabricated"] == ["T31n1614"]
+    assert report["unparsed"] == []
+
+
+def test_a_wrong_volume_in_the_no_form_is_still_fabricated():
+    report = verify_citations.audit_answer({"T31n1585"}, "【《成唯识论》，T30 No.1585】")
+    assert report["fabricated"] == ["T30n1585"]
+    assert report["offline"] == []
+
+
+def test_full_width_digits_in_the_no_form_are_not_laundered():
+    """解析器不得把全角数字经 int() 归一成真经号。"""
+    report = verify_citations.audit_answer({"T31n1585"}, "【《成唯识论》，T３１ No.１５８５】")
+    assert report["offline"] == []
+
+
+def test_a_number_without_a_canon_letter_is_not_a_citation_id():
+    report = verify_citations.audit_answer({"T31n1585"}, "【《某书》，No.1585】")
+    assert report["offline"] == [] and report["fabricated"] == []
+
+
+def test_a_jiaxing_number_keeps_its_b_prefix_in_the_no_form():
+    report = verify_citations.audit_answer({"J36nB348"}, "【《灵峰宗论》，J36 No.B348】")
+    assert report["offline"] == ["J36nB348"]
