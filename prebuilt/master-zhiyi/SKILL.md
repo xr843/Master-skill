@@ -11,7 +11,7 @@ sources:
     fojin_text_id: 53
   - title: 妙法蓮華經玄義
     cbeta_id: T1716
-    fojin_text_id: 52
+    fojin_text_id: 7889
   - title: 妙法蓮華經文句
     cbeta_id: T1718
     fojin_text_id: 52

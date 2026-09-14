@@ -239,3 +239,23 @@ def test_a_rule_naming_the_bdrc_field_is_not_an_id(validator, tmp_path):
     (persona / "SKILL.md").write_text("所据：BDRC: W12345\n", encoding="utf-8")
     found = {(f.master, f.citation) for f in validator.find_undeclared(tmp_path)}
     assert found == {("master-example", "BDRC:W12345")}
+
+
+def test_a_citation_by_declared_title_counts_as_read(validator, tmp_path):
+    """master-yinguang's Wenchao has no sutra number, so its own docs cite it by
+    title. Without the persona's title aliases the sweep could not read those
+    citations and silently checked fewer."""
+    from collections import Counter
+
+    persona = tmp_path / "master-example"
+    persona.mkdir()
+    (persona / "meta.json").write_text(
+        '{"name":"x","slug":"example","sources":[{"type":"compiled_teaching",'
+        '"id":"Ex:Wenchao","title":"某文钞（某文鈔）"}]}',
+        encoding="utf-8",
+    )
+    (persona / "SKILL.md").write_text("出处：【《某文鈔》卷一】\n", encoding="utf-8")
+    reach = Counter()
+    assert validator.find_undeclared(tmp_path, reach) == []
+    assert reach["bracketed"] == 1
+

@@ -35,6 +35,7 @@ from verify_citations import (  # noqa: E402
     extract_citation_ids,
     load_declared_ids,
     load_member_aliases,
+    load_title_aliases,
 )
 
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
@@ -144,6 +145,13 @@ def find_undeclared(prebuilt_dir: Path, reach: Counter | None = None) -> list[Fi
         try:
             declared = load_declared_ids(persona.name, base=str(prebuilt_dir))
             aliases = load_member_aliases(persona.name, base=str(prebuilt_dir))
+            # Declared titles, as reaudit-report.py and test-fidelity.py already
+            # pass them. Without them a source with no sutra number is unreadable:
+            # master-yinguang's own 【《印光法師文鈔正編》卷一】 examples counted as
+            # nothing, and the sweep read fewer citations after the Wenchao was
+            # re-declared. An alias only makes a block readable; it cannot turn an
+            # undeclared id into a declared one.
+            titles = load_title_aliases(persona.name, base=str(prebuilt_dir))
         except (FileNotFoundError, ValueError):
             continue  # meta.json exists (meta_path.is_file() above) but is unreadable
         if not declared:
@@ -155,7 +163,7 @@ def find_undeclared(prebuilt_dir: Path, reach: Counter | None = None) -> list[Fi
             if not doc.is_file():
                 continue
             text = _strip_template_citations(doc.read_text(encoding="utf-8"))
-            bracketed = audit_answer(declared, text, aliases)
+            bracketed = audit_answer(declared, text, aliases, titles)
             undeclared = list(bracketed["fabricated"])
             bare = _bare_ids(text)
             for cid in bare:

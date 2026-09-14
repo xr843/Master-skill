@@ -523,3 +523,92 @@ def test_the_volume_range_parser_reads_both_shapes():
     assert verify_sources.cbeta_volume_range("J36") == ("J", 36, 36)
     assert verify_sources.cbeta_volume_range("") is None
     assert verify_sources.cbeta_volume_range("garbage") is None
+
+
+# ── 题名核验（titles_agree / classify_cbeta_titles）──────────────────────────
+#
+# 经号在 FoJin 查得到、卷号也对，仍可能是另一部书。master-yinguang 把《印光法师
+# 文钞》正编/续编/三编声明成 X62n1182–1184（CBETA 实为《徹悟禪師語錄》《淨業
+# 知津》《念佛百問》），这道周检一直是绿的，直到 2026-09-14 逐条比对题名。
+
+
+def test_a_simplified_title_agrees_with_the_traditional_cbeta_title():
+    assert verify_sources.titles_agree("妙法莲华经玄义", "妙法蓮華經玄義") is True
+
+
+def test_a_common_short_title_agrees_with_the_full_cbeta_title():
+    assert verify_sources.titles_agree(
+        "大佛顶首楞严经", "大佛頂如來密因修證了義諸菩薩萬行首楞嚴經"
+    ) is True
+
+
+def test_a_parenthetical_in_the_declared_title_is_ignored():
+    assert verify_sources.titles_agree("大方广佛华严经(八十华严)", "大方廣佛華嚴經") is True
+
+
+def test_another_book_under_the_declared_id_is_flagged():
+    mismatched, unknown = verify_sources.classify_cbeta_titles(
+        {"X62n1182": ["印光法师文钞正编"]}, {"X62n1182": "徹悟禪師語錄"}
+    )
+    assert mismatched == {"X62n1182": (["印光法师文钞正编"], "徹悟禪師語錄")}
+    assert unknown == []
+
+
+def test_a_sibling_work_is_flagged_even_when_most_of_the_title_agrees():
+    """master-zhiyi 的旧错：题名写《妙法莲华经玄义》，1718 是《文句》。"""
+    assert verify_sources.titles_agree("妙法莲华经玄义", "妙法蓮華經文句") is False
+
+
+def test_a_title_cbeta_did_not_return_is_unknown_not_wrong():
+    mismatched, unknown = verify_sources.classify_cbeta_titles(
+        {"T48n2008": ["六祖大师法宝坛经"]}, {"T48n2008": None}
+    )
+    assert mismatched == {}
+    assert unknown == ["T48n2008"]
+
+
+def test_one_wrong_title_is_not_hidden_by_another_that_cannot_be_compared():
+    mismatched, _ = verify_sources.classify_cbeta_titles(
+        {"X62n1182": ["印光法师文钞正编", "Wenchao"]}, {"X62n1182": "徹悟禪師語錄"}
+    )
+    assert mismatched == {"X62n1182": (["印光法师文钞正编"], "徹悟禪師語錄")}
+
+
+# ── frontmatter fojin_text_id（classify_frontmatter_fojin_ids）──────────────
+#
+# 它不进审计，却是人设给读者拼链接用的。master-zhiyi 把《法華玄義》（T1716）
+# 写成 52 —— 那是《法華文句》（T1718）的 text id。
+
+
+def test_a_frontmatter_text_id_belonging_to_another_work_is_flagged():
+    mismatched, unknown = verify_sources.classify_frontmatter_fojin_ids(
+        [("master-zhiyi", "妙法蓮華經玄義", "T1716", "52")], {"T1716": 7889}
+    )
+    assert mismatched == [("master-zhiyi", "T1716", "妙法蓮華經玄義", "52", "7889")]
+    assert unknown == []
+
+
+def test_full_and_short_frontmatter_ids_both_resolve():
+    mismatched, unknown = verify_sources.classify_frontmatter_fojin_ids(
+        [("a", "t", "T31n1585", "44"), ("b", "t", "T1716", "7889")],
+        {"T1585": 44, "T1716": "7889"},
+    )
+    assert mismatched == []
+    assert unknown == []
+
+
+def test_a_frontmatter_id_fojin_did_not_resolve_is_unknown_not_wrong():
+    mismatched, unknown = verify_sources.classify_frontmatter_fojin_ids(
+        [("a", "t", "T99n9999", "1")], {}
+    )
+    assert mismatched == []
+    assert unknown == ["a:T99n9999"]
+
+
+def test_the_frontmatter_collector_reads_the_real_repo():
+    """离线也能看出的一类：fojin_text_id 必须是 FoJin 的数字 id。master-yinguang
+    曾把 `X62n1182` 这种经号填进这一栏，FoJin 的接口对它直接报参数错误。"""
+    rows = verify_sources.collect_frontmatter_fojin_ids()
+    assert ("master-zhiyi", "妙法蓮華經玄義", "T1716", "7889") in rows
+    assert rows and all(fid.isdigit() for _, _, _, fid in rows)
+

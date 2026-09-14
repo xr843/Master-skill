@@ -10,6 +10,35 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — the weekly source check compares titles and frontmatter FoJin ids (2026-09-14)
+
+`tools/verify_sources.py` confirmed that a declared CBETA id resolves on FoJin
+and sits in the volume CBETA gives it. master-yinguang's Wenchao, declared as
+three other books' ids, passed both checks. The weekly check now also compares
+each declared title with the title CBETA returns for that id. The comparison
+is by pinyin: the declared title must be a subsequence of CBETA's. That way
+simplified and traditional script agree, and so does a common short title such
+as 《大佛顶首楞严经》 for the full CBETA title. A different book does not agree,
+and neither does a sibling work such as 《文句》 declared as 《玄义》. A very short
+title can still pass by coincidence. All 37 current declarations agree; the
+three former Yinguang ids all disagree when checked against CBETA.
+
+It also compares the `fojin_text_id` in each SKILL.md frontmatter, the id a
+persona builds reader links from, with what FoJin resolves. That found one
+error: master-zhiyi gave 《妙法蓮華經玄義》 (`T1716`) the id 52, which belongs to
+《妙法蓮華經文句》. FoJin's id is 7889, and the frontmatter now uses it. A test
+also requires every frontmatter `fojin_text_id` to be numeric; Yinguang's
+used to hold `X62n1182`. The weekly workflow opens its issue when either new
+count is non-zero.
+
+`validate-citation-references.py` now passes each persona's title aliases to
+the audit, as the reaudit and fidelity runner already do. Without them, a
+citation of a source with no sutra number was unreadable — Yinguang's
+【《印光法師文鈔正編》卷一】, for example — and after the Wenchao was
+re-declared the sweep read fewer citations: 231 before, 226 after. It now
+reads 263. A title alias can only make a citation readable; it cannot hide an
+undeclared id.
+
 ### Fixed — master-yinguang cited three sutra numbers that belong to other books (2026-09-14)
 
 Since the persona was added on 2026-04-04, `meta.json` declared 《印光法师文钞》
