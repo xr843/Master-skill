@@ -14,17 +14,28 @@ as the prescribed format while `meta.json` declares five sources, none of them
 That was found by a ¥3.89 graded run over 211 fixtures, which caught it only
 because one fixture happened to trigger it. This finds every instance of the
 class deterministically, for free, on every PR.
+
+It reads source ids outside 【…】 too. A routing table is an instruction as
+much as a citation template is, and until 2026-09-14 this gate saw only
+bracketed citations — while six genuine works that personas' own tables and
+prose pointed at had never been declared (see `_bare_ids`).
 """
 from __future__ import annotations
 
 import json
 import re
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from verify_citations import audit_answer, load_declared_ids, load_member_aliases  # noqa: E402
+from verify_citations import (  # noqa: E402
+    audit_answer,
+    extract_citation_ids,
+    load_declared_ids,
+    load_member_aliases,
+)
 
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 
@@ -47,12 +58,14 @@ _TEMPLATE_MARKERS = (
 # been permitted. Do not add to it to turn a red build green — that is exactly
 # the failure this gate exists to prevent.
 #
-# Empty as of 2026-09-03. Both findings this gate ever recorded were resolved
+# Empty as of 2026-09-14. The first two findings this gate recorded were resolved
 # by declaring the source: `Toh:3861` in master-tsongkhapa/meta.json (月称《入
 # 中论》is a real Tengyur text Tsongkhapa's tradition treats as its own
 # foundation) and `J36nB348` in master-ouyi/meta.json (《灵峰宗论》is Ouyi's own
 # collected works). Neither needed a B1 contract change — both simply belonged
-# in the declared set. See CHANGELOG.md for the maintainer decision.
+# in the declared set. See CHANGELOG.md for the maintainer decision. The six the
+# bare-id sweep found on 2026-09-14 were resolved the same way, never entered
+# here.
 KNOWN_UNDECLARED: dict[tuple[str, str], str] = {}
 
 
@@ -77,6 +90,33 @@ def _strip_template_citations(text: str) -> str:
     return "".join(out)
 
 
+# `BDRC W-number` in a persona's own rules names a field, it is not an id:
+# master-tsongkhapa says 不得编造未验证的 BDRC W-number, master-atisha asks for
+# a BDRC W-ID. `_FAMILY_ID` stays loose on purpose — in an answer, reading too
+# much fails safe as fabricated (see the note above `_FOJIN_TEXT_LINK` in
+# verify_citations.py) — so it reads both as ids. Only this prose sweep drops
+# them: a real BDRC work id is W followed by a digit (W22272, W1KG14334), the
+# rule the auditor's own bare-W branch already applies.
+_BDRC_FIELD_NAME = re.compile(r"^BDRC:W(?![0-9])")
+
+
+def _bare_ids(text: str) -> list[str]:
+    """Source ids written outside every 【…】 block: table cells, prose, frontmatter.
+
+    `audit_answer` reads only bracketed citations, so a persona's routing table
+    was invisible to this gate. master-xuanzang's SKILL.md sent 五位百法
+    questions to `《百法明门论》，T31n1614` in a table cell; master-ouyi had an
+    offline excerpt file for 《教觀綱宗》 T46n1939. Neither id was declared.
+
+    Callers audit each id alone, as `【id】` with nothing after it, so a FoJin
+    link in the same table row cannot make it `live`: in an answer a link can
+    vouch for one citation, but in the persona's own material a link is not a
+    declaration.
+    """
+    ids = extract_citation_ids(_BLOCK.sub(" ", text))
+    return [cid for cid in ids if not _BDRC_FIELD_NAME.match(cid)]
+
+
 @dataclass(frozen=True)
 class Finding:
     master: str
@@ -84,8 +124,12 @@ class Finding:
     path: str
 
 
-def find_undeclared(prebuilt_dir: Path) -> list[Finding]:
-    """Every citation the personas' own material makes that meta.json omits."""
+def find_undeclared(prebuilt_dir: Path, reach: Counter | None = None) -> list[Finding]:
+    """Every citation the personas' own material makes that meta.json omits.
+
+    `reach`, when given, counts what was read: bracketed citations the audit
+    could resolve to an id, and bare ids outside brackets.
+    """
     findings: list[Finding] = []
     for persona in sorted(Path(prebuilt_dir).iterdir()):
         meta_path = persona / "meta.json"
@@ -111,7 +155,17 @@ def find_undeclared(prebuilt_dir: Path) -> list[Finding]:
             if not doc.is_file():
                 continue
             text = _strip_template_citations(doc.read_text(encoding="utf-8"))
-            for citation in dict.fromkeys(audit_answer(declared, text, aliases)["fabricated"]):
+            bracketed = audit_answer(declared, text, aliases)
+            undeclared = list(bracketed["fabricated"])
+            bare = _bare_ids(text)
+            for cid in bare:
+                undeclared += audit_answer(declared, f"【{cid}】", aliases)["fabricated"]
+            if reach is not None:
+                reach["bracketed"] += sum(
+                    len(bracketed[bucket]) for bucket in ("offline", "live", "fabricated")
+                )
+                reach["bare"] += len(bare)
+            for citation in dict.fromkeys(undeclared):
                 findings.append(
                     Finding(persona.name, citation, str(doc.relative_to(prebuilt_dir.parent)))
                 )
@@ -119,7 +173,18 @@ def find_undeclared(prebuilt_dir: Path) -> list[Finding]:
 
 
 def main() -> int:
-    findings = find_undeclared(PREBUILT_DIR)
+    reach: Counter = Counter()
+    findings = find_undeclared(PREBUILT_DIR, reach)
+    print(
+        f"Read {reach['bracketed']} bracketed citations and {reach['bare']} bare "
+        "source ids in the personas' own docs."
+    )
+    if not reach["bracketed"] or not reach["bare"]:
+        print(
+            "FAIL: the sweep read nothing of one kind — it is not looking at what "
+            "it claims to check."
+        )
+        return 1
     known, new = [], []
     for f in findings:
         (known if (f.master, f.citation) in KNOWN_UNDECLARED else new).append(f)

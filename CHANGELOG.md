@@ -10,6 +10,43 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — six works personas point to were never declared (2026-09-14)
+
+`validate-citation-references.py` read only 【…】 blocks. A routing table is an
+instruction too, and once the gate read source ids outside brackets it found
+six genuine works that personas' own tables and prose pointed to, none of them
+in `meta.json`:
+
+- **master-xuanzang** — 《大乘百法明门论》 `T31n1614` and 《因明入正理论》
+  `T32n1630`, the SKILL.md rows for 五位百法 and 因明. The committed DeepSeek
+  run already shows the cost: its one unreadable Xuanzang citation is
+  《大乘百法明门论》.
+- **master-ouyi** — 《教观纲宗》 `T46n1939`, which has its own offline excerpt
+  file and a FoJin link in `sources/INDEX.md`.
+- **master-kumarajiva** — 《十二门论》 `T30n1568` and 《百论》 `T30n1569`, from the
+  三论 table in `references/teaching.md`.
+- **master-zhiyi** — 《观音玄义》 `T34n1726`, the SKILL.md row for 性具善恶,
+  written `T1726`.
+
+Each was checked on CBETA — volume, and author or translator: Xuanzang, Ouyi
+Zhixu, Kumārajīva, and Zhiyi as recorded by Guanding — and resolved on FoJin
+(text ids 7791, 50, 8109, 41, 42, 7898). All six are now declared in
+`meta.json` and in the SKILL.md frontmatter; the weekly source verifier finds
+all of them and reports no volume mismatch. As with `Toh:3861` and `J36nB348`,
+none needed a contract change: they belonged in the declared set.
+
+The gate now audits every id outside brackets — table cells, prose,
+frontmatter — each on its own, so a FoJin link in the same row cannot pass it
+off as live. It prints how much it read (231 bracketed citations, 292 bare
+ids) and fails if either count is zero. Three more matches were not ids:
+master-tsongkhapa's 「不得编造未验证的 BDRC W-number」 and master-atisha's
+「BDRC W-ID」 name a field. The auditor reads ids loosely on purpose, since in
+an answer over-reading fails safe as fabricated, so only this sweep of the
+persona's own prose drops a BDRC id whose `W` is not followed by a digit.
+
+The committed run's coverage does not move (569/619): CBETA sources get no
+title aliases, so Xuanzang's id-less 《大乘百法明门论》 stays unparsed.
+
 ### Fixed — release assets could not be uploaded from the assemble job (2026-09-14)
 
 v0.12.1's desktop run built all three platforms, verified `SHA256SUMS` and
