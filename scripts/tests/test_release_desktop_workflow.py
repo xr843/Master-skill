@@ -193,3 +193,29 @@ def test_gh_cli_in_a_job_without_checkout_names_its_repository():
                     if calls_gh and not names_repo:
                         problems.append(f"{path.name}:{job_name}:{step.get('name')}: {line.strip()}")
     assert not problems, "gh without a repository in a job with no checkout:\n" + "\n".join(problems)
+
+
+def test_the_windows_build_is_smoke_tested_as_a_console_program():
+    """No CI step ran the Windows binary. This one does, before its assets upload.
+
+    It also pins the binary as a console program. A GUI-subsystem build, which
+    would stop double-clicking from opening a console window, was tried on
+    release-desktop run 34858072308. PowerShell does not wait for a GUI
+    program: it closed the pipe, and `--help > help.txt` panicked with "failed
+    printing to stdout: The pipe is being closed. (os error 232)".
+    """
+    main_rs = (ROOT / "desktop" / "src" / "main.rs").read_text(encoding="utf-8")
+    assert "windows_subsystem" not in main_rs
+
+    step = _step("build", "Smoke-test staged binary (Windows only)")
+    assert step.get("if") == "runner.os == 'Windows'"
+    assert step.get("shell") == "pwsh"
+    script = step["run"]
+    assert 'scripts/check-pe-subsystem.py "dist/${{ matrix.artifact_name }}" --expect 3' in script
+    assert "--help > help.txt" in script
+    usage = (ROOT / "desktop" / "src" / "desktop_args.rs").read_text(encoding="utf-8")
+    assert '"Usage: master-skill-desktop' in usage and "Usage: master-skill-desktop" in script
+    assert "$env:XDG_DATA_HOME" in script and "--baseline" in script
+
+    names = [s.get("name") for s in _job("build")["steps"]]
+    assert names.index("Smoke-test staged binary (Windows only)") < names.index("Upload staged assets")

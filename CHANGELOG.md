@@ -10,6 +10,37 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — the release workflow runs the Windows binary (2026-09-14)
+
+No CI step had ever executed the Windows desktop binary. The release
+workflow built it, checksummed it and attested it, while only the Linux build
+was run. The Windows leg now runs three checks before its assets upload:
+`scripts/check-pe-subsystem.py --expect 3` (a console program); `--help`
+printed to a redirected stdout; and `--baseline` from the checkout root with
+an isolated `XDG_DATA_HOME`. On dispatch run 34858936323 all three passed:
+subsystem 3, usage printed, and `baseline: 18/18 ok`. That run is the first
+time anyone confirmed that v0.12.1's per-platform resolution of `python`,
+`node` and `npm.cmd` works on Windows. The same build was also run on a
+Windows host: `--help` redirected to a file and piped into `Select-String`
+both worked, and an unknown flag exited 2.
+
+The binary stays a console program, so double-clicking it still opens a
+console window. A GUI-subsystem build, eframe's template setting, removed
+that window, and dispatch run 34858072308 confirmed subsystem 2. On the same
+run PowerShell did not wait for the GUI program: it closed the pipe, and
+`--help > help.txt` panicked with "failed printing to stdout: The pipe is
+being closed. (os error 232)". That change was reverted. The other approach
+would keep a console program and release the console only when this process
+is its sole owner, which is what a double-click produces. That path runs only
+on a real double-click, which no runner reaches, and a mistake there would
+turn a cosmetic window into a crash at launch. It has not been done without
+that test.
+
+The first dispatch also failed for a reason inside the check itself. The
+script printed a check mark, and the runner's console encoding is cp1252, so
+the print raised `UnicodeEncodeError` after the check had passed. Its output
+is now ASCII, and a test runs it under `PYTHONIOENCODING=cp1252`.
+
 ### Fixed — master-ouyi's self-audit list omitted a source it declares (2026-09-14)
 
 Nine personas end SKILL.md with the same pre-answer rule: before replying,
