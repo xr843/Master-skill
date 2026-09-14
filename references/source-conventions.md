@@ -6,12 +6,12 @@
 
 | 系统 | 适用 | 编号格式 | 示例 |
 |------|------|---------|------|
-| **CBETA** | 汉文藏经 | `<藏别><册号>n<经号>` | `T08n0235`（金刚经）/ `X62n1182`（印光文钞） |
+| **CBETA** | 汉文藏经 | `<藏别><册号>n<经号>` | `T08n0235`（金刚经）/ `X62n1182`（彻悟禅师语录） |
 | **BDRC** | 藏文文献 | `BDRC:W<编号>`；具体版本可用 `BDRC:MW<编号>` | `BDRC:W22084`（作品 ID） |
 | **SuttaCentral** | 巴利经藏 | `MN 10` / `SC:MN 10`，或语料库声明 `SuttaCentral` | `MN 10`（中部第 10 经《念处经》） |
 | **Toh.** | 藏文大藏经德格版 | `Toh <序号>` | `Toh 4465`（阿底峡《菩提道灯论》） |
 | **PTS** | 巴利圣典协会版本 | `PTS:<作品简称>`；册页 / 章节单列为 locator | `PTS:Vism`，locator `I.85` |
-| **compiled teachings** | 经授权或合规收录的编纂开示 | `<权利人或语料名>:<作品 ID>` | `AjahnChah:FoodForTheHeart` |
+| **compiled teachings** | 经授权或合规收录的编纂开示 | `<权利人或语料名>:<作品 ID>` | `AjahnChah:FoodForTheHeart` / `Yinguang:WenchaoZhengbian`（印光文钞，CBETA 未收） |
 
 ## 来源中立 Citation Contract
 

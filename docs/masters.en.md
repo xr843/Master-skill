@@ -43,7 +43,7 @@ Invoke: `/master-fazang`
 ### Master Yinguang (1861-1940)
 
 13th Patriarch of the Chinese Pure Land school. Central figure in the modern Pure Land revival. His writing is sincere and straightforward; he guided countless practitioners through correspondence, collected in the three volumes of the Yinguang Fashi Wenchao.
-Primary sources: CBETA — Wenchao volumes and the three Pure Land sutras.
+Primary sources: the three volumes of the Wenchao (not in CBETA; declared as compiled teachings) and the three Pure Land sutras (CBETA).
 Invoke: `/master-yinguang`
 
 ### Master Ouyi (1599-1655)

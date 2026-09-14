@@ -10,6 +10,47 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-yinguang cited three sutra numbers that belong to other books (2026-09-14)
+
+Since the persona was added on 2026-04-04, `meta.json` declared 《印光法师文钞》
+正编 / 续编 / 三编 as `X62n1182`, `X62n1183` and `X62n1184`. In CBETA those are
+《徹悟禪師語錄》, 《淨業知津》 and 《念佛百問》 — three Qing works by other authors.
+The Wenchao is not in CBETA at all: a title search returns nothing, and a
+search by creator 印光 finds only the mountain gazetteers he revised. FoJin
+does not carry it either. Yet the persona told the model to attach `X62n1182`
+and a FoJin link to every Wenchao citation; the link opened
+《徹悟禪師語錄》; six fixtures required the wrong id; and the auditor counted
+every such citation as a verified declared source.
+
+The weekly source check could not see this. It confirms that a CBETA id
+resolves on FoJin and falls in the right volume, but never that its title
+matches.
+
+The Wenchao is now declared as compiled teachings: `Yinguang:WenchaoZhengbian`,
+`Yinguang:WenchaoXubian`, `Yinguang:WenchaoSanbian`, and `Yinguang:Wenchao` for
+citations that name only the collection. Their titles are given in both
+simplified and traditional Chinese, so 【《印光法師文鈔正編》卷一·…】 resolves
+through the declared title, as Tsongkhapa's citations do. The three Pure Land
+sutras stay CBETA. Every wrong id and FoJin link is gone from the persona
+(SKILL.md, sources, references). Its fixtures now require the title, and its
+cross-critique entries and master-debate's ammunition cite
+`Yinguang:WenchaoZhengbian`. master-curriculum recommends the compiled ids.
+The excerpt files no longer claim to come from CBETA; their wording has not
+been checked against a printed edition.
+
+Re-auditing the committed runs under this declaration:
+
+- **06b8142:** coverage goes from 569/619 to 573/619 (93%). Four compare-masters
+  citations of 《印光法师文钞》 now resolve. master-curriculum's case 1
+  recommended X62n1182–1184, which are now three fabricated citations; it is
+  the regrade's only PASS→FAIL, and the test pins it as a finding.
+  Yinguang's own 23 Wenchao citations carried the wrong ids with FoJin links,
+  so they are now `live` (unverifiable offline) rather than counted as
+  declared.
+- **e97ded0 (meta-skills):** coverage goes from 102/106 to 105/106.
+  master-debate's four X62n1182 citations and master-curriculum's three are
+  now fabricated.
+
 ### Fixed — six works personas point to were never declared (2026-09-14)
 
 `validate-citation-references.py` read only 【…】 blocks. A routing table is an

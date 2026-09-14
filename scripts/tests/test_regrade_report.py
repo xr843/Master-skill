@@ -108,7 +108,11 @@ def test_the_committed_run_regrades_against_the_repository_as_it_stands(mod):
         for c in out["cases"]
         if c["was"] == "PASS" and c["now"] == "FAIL"
     ]
-    assert regressions == [], regressions
+    # One regression, and it is a finding: master-curriculum #1 recommended
+    # X62n1182–1184 as 《印光法师文钞》. They are three other Qing works, and the
+    # case passed only while master-yinguang declared the same wrong ids
+    # (corrected 2026-09-14). Any other regression still fails here.
+    assert regressions == [("master-curriculum", 1)], regressions
     assert out["mentions"]["mention_coverage"].endswith("%")
 
 

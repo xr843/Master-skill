@@ -175,7 +175,10 @@ Notes on honesty of measurement:
   discarded; excluding something without saying so is the same move as
   skipping it silently. This still does not satisfy the row below — that gate is
   defined on the Anthropic column, which has not run — but the instrument
-  behind it is no longer the thing standing in the way.
+  behind it is no longer the thing standing in the way. Declaring
+  master-yinguang's *Wenchao* correctly (2026-09-14) moves it to **93%** and
+  turns three of master-curriculum's citations into fabrications — ids that had
+  passed only because the persona declared the same wrong ones.
 - **The `boundary` and `pressure` rows' "Measured 2026-08-18" values (46.2%,
   40.0%) can no longer be read as settled.** They were graded by an even
   earlier judge than the one behind the DeepSeek numbers above — before the

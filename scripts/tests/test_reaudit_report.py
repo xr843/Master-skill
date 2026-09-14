@@ -160,7 +160,10 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
     # that template was fixed the same day, which this stored run predates.
     compare = by_master["compare-masters"]
     assert compare["recorded"] == {"checked": 0, "unparsed": 47}
-    assert compare["recomputed"] == {"checked": 7, "unparsed": 35}
+    # 7 → 11 on 2026-09-14: four blocks cite 《印光法师文钞》 by collection name,
+    # which resolves once the Wenchao is declared as compiled teachings with its
+    # Chinese titles. It had been declared as X62n1182–1184, three other Qing works.
+    assert compare["recomputed"] == {"checked": 11, "unparsed": 31}
     # 5 个块是人格拿【…】当小标题或复述问题，不是引文。
     assert len(compare["noncitation"]) == 5
     assert compare["fabricated"] == []
@@ -168,7 +171,11 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
     curriculum = by_master["master-curriculum"]
     assert curriculum["recorded"] == {"checked": 0, "unparsed": 6}
     assert curriculum["recomputed"] == {"checked": 32, "unparsed": 0}
-    assert curriculum["fabricated"] == []
+    # Case 1 recommended 【X62n1182】【X62n1183】【X62n1184】 as Yinguang's Wenchao.
+    # In CBETA they are 《徹悟禪師語錄》《淨業知津》《念佛百問》. They passed only
+    # because master-yinguang declared the same wrong ids; since 2026-09-14 it
+    # declares the Wenchao as compiled teachings.
+    assert curriculum["fabricated"] == ["X62n1182", "X62n1183", "X62n1184"]
 
     buddhaghosa = by_master["master-buddhaghosa"]
     assert buddhaghosa["recorded"] == {"checked": 44, "unparsed": 16}
@@ -214,7 +221,10 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
         assert suite["recorded"] == suite["recomputed"], master
 
     assert out["totals"]["recorded"]["checked"] == 386
-    assert out["totals"]["recomputed"]["checked"] == 569
+    # 569 → 573 on 2026-09-14: compare-masters' four 《印光法师文钞》 citations
+    # (see above). The three curriculum ids were already counted as checked;
+    # they moved from declared to fabricated, which does not change the total.
+    assert out["totals"]["recomputed"]["checked"] == 573
 
 
 def test_api_error_rows_do_not_pollute_reaudit_totals(mod):
