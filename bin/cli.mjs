@@ -439,14 +439,19 @@ function doctorData() {
   const masters = availableMasters();
   const installed = installedSkillDirs();
   const expectedInstalled = masters.filter((m) => installed.includes(m.name));
-  const missingSkillMd = masters.filter((m) => {
-    const masterDir = path.join(PREBUILT, m.name);
-    return !fs.existsSync(path.join(masterDir, "SKILL.md"));
-  });
-  const problems = missingSkillMd.map((m) => ({
+  // Every catalog skill, not only `availableMasters()`. That list leaves out
+  // compare-masters, and create-master's SKILL.md lives at the package root
+  // rather than under prebuilt/, so doctor checked 18 of the 20 installable
+  // skills and would have reported "ok" with either of the other two gone.
+  // The two counts above keep their narrower meaning: the desktop manager
+  // reads them as its denominator.
+  const missingSkillMd = catalogSkills().filter(
+    (skill) => !fs.existsSync(path.join(PACKAGE_ROOT, skill.source, "SKILL.md"))
+  );
+  const problems = missingSkillMd.map((skill) => ({
     code: "missing-skill-md",
-    name: m.name,
-    message: `${m.name} is missing SKILL.md`,
+    name: skill.name,
+    message: `${skill.name} is missing SKILL.md`,
   }));
 
   return {
