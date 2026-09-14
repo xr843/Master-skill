@@ -10,6 +10,17 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — the macOS binary is run before release too (2026-09-14)
+
+Once the Windows leg had its smoke test, the macOS binary was the only
+release artifact that no CI step executed. The Linux smoke step now runs on
+macOS as well. It also checks `--help`, writing the output to a file rather
+than a pipe, before `--baseline`. On dispatch run 34860125310, `--baseline`
+reported `18/18 ok` on macOS and on Linux, and the Windows smoke step passed.
+A structure test requires each matrix leg to be covered by exactly one smoke
+step that runs both commands before its assets upload. Restoring the
+Linux-only condition fails it.
+
 ### Added — the release workflow runs the Windows binary (2026-09-14)
 
 No CI step had ever executed the Windows desktop binary. The release
