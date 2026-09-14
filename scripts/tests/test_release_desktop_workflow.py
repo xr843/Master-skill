@@ -219,3 +219,41 @@ def test_the_windows_build_is_smoke_tested_as_a_console_program():
 
     names = [s.get("name") for s in _job("build")["steps"]]
     assert names.index("Smoke-test staged binary (Windows only)") < names.index("Upload staged assets")
+
+
+def _covered_oses(condition: str | None) -> set[str]:
+    """The runner.os values an `if:` of the forms used here selects."""
+    oses = {"Linux", "Windows", "macOS"}
+    if condition is None:
+        return oses
+    match = re.fullmatch(r"runner\.os (==|!=) '(\w+)'", condition.strip())
+    assert match, f"unrecognised condition: {condition!r}"
+    op, value = match.groups()
+    assert value in oses, value
+    return {value} if op == "==" else oses - {value}
+
+
+def test_every_release_binary_is_run_before_its_assets_upload():
+    """Each matrix leg's binary must actually be executed: `--help` and
+    `--baseline`. For a long time only the Linux leg was, and the Windows binary
+    shipped without ever running (its interpreter lookup was broken for a
+    release); macOS ran in no CI step until 2026-09-14."""
+    build = _job("build")
+    legs = {entry["os"] for entry in build["strategy"]["matrix"]["include"]}
+    runner_os = {"ubuntu-latest": "Linux", "windows-latest": "Windows", "macos-latest": "macOS"}
+    assert {runner_os[leg] for leg in legs} == {"Linux", "Windows", "macOS"}
+
+    names = [step.get("name") for step in build["steps"]]
+    upload = names.index("Upload staged assets")
+    coverage: dict[str, list[str]] = {"Linux": [], "Windows": [], "macOS": []}
+    for index, step in enumerate(build["steps"]):
+        if not str(step.get("name", "")).startswith("Smoke-test staged binary"):
+            continue
+        assert index < upload, f"{step['name']} runs after the assets upload"
+        script = step.get("run", "")
+        assert "--help" in script and "--baseline" in script, step["name"]
+        for os_name in _covered_oses(step.get("if")):
+            coverage[os_name].append(step["name"])
+    for os_name, steps in coverage.items():
+        assert len(steps) == 1, f"{os_name} is smoke-tested by {steps}"
+

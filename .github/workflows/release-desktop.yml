@@ -93,18 +93,23 @@ jobs:
           tar -czf "dist/${{ matrix.artifact_name }}.tar.gz" \
             -C dist "${{ matrix.artifact_name }}"
 
-      - name: Smoke-test staged binary (Linux only)
-        if: runner.os == 'Linux'
+      - name: Smoke-test staged binary (Linux and macOS)
+        if: runner.os != 'Windows'
         # Guards against non-portable binaries (e.g. one that bakes in a
         # compile-time repo path that only exists on this runner) reaching
-        # a release: run the staged artifact's headless `--baseline` from
-        # the checkout root, the same way a downloaded release binary is
-        # documented to be run, with an isolated store so it can't read or
-        # write a real user's trace history. `python3` is preinstalled on
-        # GitHub-hosted Linux runners, which `--baseline` shells out to.
+        # a release: run the staged artifact from the checkout root, the same
+        # way a downloaded release binary is documented to be run, with an
+        # isolated store so it can't read or write a real user's trace history.
+        # `python3` and `node` are preinstalled on GitHub-hosted Linux and macOS
+        # runners, and `--baseline` shells out to both. The macOS binary ran in
+        # no CI step until 2026-09-14. `--help` goes to a file rather than a
+        # pipe, so an early-exiting reader cannot turn a short write into a
+        # broken-pipe failure.
         shell: bash
         run: |
           chmod +x "dist/${{ matrix.artifact_name }}"
+          "./dist/${{ matrix.artifact_name }}" --help > help.txt
+          grep -q "Usage: master-skill-desktop" help.txt
           XDG_DATA_HOME="$(mktemp -d)" "./dist/${{ matrix.artifact_name }}" --baseline
 
       - name: Smoke-test staged binary (Windows only)

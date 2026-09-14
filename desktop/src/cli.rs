@@ -477,8 +477,9 @@ mod interpreter_resolution_tests {
     /// The released Windows binary spawned `python3` and `npm`, neither of
     /// which resolves there: Python ships as `python.exe`, npm as `npm.cmd`,
     /// and Rust's `Command` appends only `.exe` to a bare name. Nothing
-    /// caught it — `desktop-rust` runs on ubuntu-latest and
-    /// release-desktop.yml smoke-tests only the Linux artifact.
+    /// caught it — `desktop-rust` runs on ubuntu-latest, and at the time
+    /// release-desktop.yml smoke-tested only the Linux artifact. Since
+    /// 2026-09-14 every release leg runs `--help` and `--baseline`.
     ///
     /// Asserted against literals rather than `cfg!(windows)`, so this cannot
     /// become the tautology `cfg!(windows) == cfg!(windows)` that passes even
