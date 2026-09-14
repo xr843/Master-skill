@@ -10,6 +10,38 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-09-14
+
+80 commits since v0.11.0. The first half ruled by hand on every failure in the
+first full-coverage run and fixed what that found in the judge and the citation
+auditor. The second half measured those instruments against stored answers and
+a fresh run: citation-audit coverage on the committed run went from 64% to 92%
+with no known fabrication, a sutra number the repository itself had wrong turned
+up because a model wrote the right one, and the README's showcase answer turned
+out to break the citation contract it was advertising. Every gate in `npm test`
+is now shown able to fail, and CI gained SAST, advisory scanning and a keyless
+check of the eval SDKs.
+
+**Upgrade notes.**
+- **Grading changed.** A forbidden-term hit in a boundary fixture now routes to
+  `needs_review` instead of failing, so pass rates are not comparable across this
+  release without saying so.
+- **Desktop manager**: source builds need rustc 1.95 (eframe 0.36). Release
+  binaries are stripped and ship with `.tar.gz` archives, a `SHA256SUMS` manifest
+  and build-provenance attestations. The Windows binary now resolves `python` and
+  `npm.cmd` instead of hardcoding `python3` / `npm`; CI does not yet run the desktop
+  manager on a Windows host, so `MASTER_SKILL_PYTHON` / `MASTER_SKILL_NPM` remain
+  the way to point it at an interpreter explicitly.
+- **Paid fidelity eval** needs Python 3.10+ (anthropic 1.x / openai 3.x). The
+  generator tools keep Python 3.9.
+
+### Changed — desktop release binaries are stripped (2026-09-14)
+
+`[profile.release] strip = true`. Measured on the eframe 0.36 build:
+26,903,544 → 21,277,616 bytes (−20%), and the stripped binary runs. A panic
+backtrace shows addresses rather than function names; the app has no crash
+reporting, and dev builds keep their symbols.
+
 v0.11.0's theme was that the verification layer was not verified. This batch
 verified it — adjudicating the first full-coverage run by hand, fixing what
 that adjudication found broken in the judge and the citation auditor, then
@@ -1105,7 +1137,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/xr843/Master-skill/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/xr843/Master-skill/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/xr843/Master-skill/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/xr843/Master-skill/compare/v0.9.1...v0.10.0
