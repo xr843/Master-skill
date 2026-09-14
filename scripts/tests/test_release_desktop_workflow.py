@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 import tarfile
 from pathlib import Path
@@ -151,7 +152,7 @@ def test_assembler_publishes_release_or_combined_dry_run_artifact():
     assert release.get("if") == "github.event_name == 'release'"
     assert release.get("env") == {"GH_TOKEN": "${{ github.token }}"}
     assert release.get("run") == (
-        'gh release upload "$GITHUB_REF_NAME" dist/* --clobber'
+        'gh release upload "$GITHUB_REF_NAME" dist/* --clobber --repo "$GITHUB_REPOSITORY"'
     )
 
     dry_run = _step("assemble", "Upload combined workflow artifact")
@@ -164,3 +165,31 @@ def test_assembler_publishes_release_or_combined_dry_run_artifact():
         "path": "dist/*",
         "if-no-files-found": "error",
     }
+
+
+def test_gh_cli_in_a_job_without_checkout_names_its_repository():
+    """`gh` finds the repository from a git remote; a job with no checkout has none.
+
+    The assemble job uploaded release assets with no `--repo`. That step runs
+    only on a release event, so the manual dispatch that verified all three
+    builds skipped it, and v0.12.1 failed there with "not a git repository"
+    after every build, checksum and attestation had succeeded. This scans every
+    workflow, not just this one, for the same shape.
+    """
+    problems = []
+    for path in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
+        for job_name, job in (workflow.get("jobs") or {}).items():
+            steps = job.get("steps") or []
+            if any(str(step.get("uses", "")).startswith("actions/checkout@") for step in steps):
+                continue
+            for step in steps:
+                env = {**(job.get("env") or {}), **(step.get("env") or {})}
+                for line in (step.get("run") or "").splitlines():
+                    calls_gh = re.search(
+                        r"(^|[\s;&|(])gh\s+(release|pr|issue|run|workflow|attestation)\b", line
+                    )
+                    names_repo = "--repo" in line or re.search(r"\s-R\s", line) or "GH_REPO" in env
+                    if calls_gh and not names_repo:
+                        problems.append(f"{path.name}:{job_name}:{step.get('name')}: {line.strip()}")
+    assert not problems, "gh without a repository in a job with no checkout:\n" + "\n".join(problems)

@@ -10,6 +10,26 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — release assets could not be uploaded from the assemble job (2026-09-14)
+
+v0.12.1's desktop run built all three platforms, verified `SHA256SUMS` and
+recorded build-provenance attestations, then failed at `gh release upload`:
+the assemble job has no checkout, and `gh` looks for the repository in a git
+remote — "failed to run git: fatal: not a git repository". The step runs only
+on a release event, so the manual dispatch that verified the builds skipped it;
+v0.12.1 was the first time it ran at all. It now passes
+`--repo "$GITHUB_REPOSITORY"`, and a test scans every workflow for a `gh`
+command in a job without a checkout that doesn't name its repository.
+
+v0.12.1's assets were attached by hand from that run's own artifacts, after
+checking `SHA256SUMS` and each binary's attestation (release event,
+`refs/tags/v0.12.1`, commit `ae10211`), then downloaded again from the release
+and checked the same way.
+
+The README's `gh attestation verify` instruction now says it needs a recent gh
+CLI: 2.51 rejects the transparency-log key with
+`unsupported tlog public key type: PKIX_ED25519`; 2.100 verifies.
+
 ## [0.12.1] — 2026-09-14
 
 v0.12.0's GitHub release attached no desktop binaries; this release carries

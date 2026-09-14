@@ -182,7 +182,12 @@ jobs:
         if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+        # `--repo`, because this job has no checkout: without it `gh` looks
+        # for a git remote, finds no repository, and fails with "not a git
+        # repository". v0.12.1 was the first release event this step ever ran
+        # on — the manual dispatch that verified the builds skips it — and it
+        # failed here after every build, checksum and attestation had succeeded.
+        run: gh release upload "$GITHUB_REF_NAME" dist/* --clobber --repo "$GITHUB_REPOSITORY"
 
       - name: Upload combined workflow artifact
         if: github.event_name == 'workflow_dispatch'
