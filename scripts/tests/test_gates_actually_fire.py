@@ -87,6 +87,19 @@ CASES = [
         lambda r: _edit_json(r / "package.json", lambda d: d.__setitem__("version", "9.9.9")),
     ),
     (
+        "validate-self-audit-sources.py", (),
+        "a persona's self-audit list must include every source it declares",
+        # The measured defect: master-ouyi's frontmatter omitted 《灵峰宗论》
+        # J36nB348, which meta.json declares and the B1 rule checks citations
+        # against. Removing that entry again reproduces it.
+        lambda r: (r / "prebuilt/master-ouyi/SKILL.md").write_text(
+            (r / "prebuilt/master-ouyi/SKILL.md")
+            .read_text(encoding="utf-8")
+            .replace("  - title: 靈峰宗論\n    cbeta_id: J36nB348\n", ""),
+            encoding="utf-8",
+        ),
+    ),
+    (
         "validate-citation-references.py", (),
         "a persona must not instruct a citation its contract forbids",
         lambda r: (r / "prebuilt/master-huineng/SKILL.md").write_text(
