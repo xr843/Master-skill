@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import struct
+import subprocess
 import sys
 from pathlib import Path
 
@@ -65,3 +67,22 @@ def test_a_header_pointing_past_the_data_fails_instead_of_raising(mod, tmp_path)
     exe = tmp_path / "app.exe"
     exe.write_bytes(bytes(image))
     assert mod.main([str(exe), "--expect", "2"]) == 1
+
+
+@pytest.mark.parametrize("subsystem, expect", [(2, "2"), (3, "2")])
+def test_it_reports_under_a_windows_console_encoding(tmp_path, subsystem, expect):
+    """The Windows runner's console encoding is cp1252. The first version printed
+    a check mark; on the release run the check passed and the print raised
+    UnicodeEncodeError, failing the step. Run as CI runs it, both verdicts must
+    come out and set the exit code rather than crash."""
+    exe = tmp_path / "app.exe"
+    exe.write_bytes(_pe(subsystem))
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), str(exe), "--expect", expect],
+        capture_output=True,
+        env={**os.environ, "PYTHONIOENCODING": "cp1252"},
+        check=False,
+    )
+    assert b"Traceback" not in result.stderr, result.stderr.decode("utf-8", "replace")
+    assert result.returncode == (0 if str(subsystem) == expect else 1)
+

@@ -8,6 +8,10 @@ behind the GUI. `file` reports such a binary as `PE32+ executable (console)`.
 The field behind that is the Subsystem word of the optional header: 2 for a
 GUI program, 3 for a console one.
 
+Output is ASCII only. This runs on the Windows release runner, whose console
+encoding is cp1252; a check mark there raised UnicodeEncodeError after the
+check itself had passed.
+
 Usage:
     python scripts/check-pe-subsystem.py <exe> --expect 2
 """
@@ -44,14 +48,14 @@ def main(argv: list[str] | None = None) -> int:
         with args.exe.open("rb") as handle:
             subsystem = pe_subsystem(handle.read(4096))
     except (OSError, ValueError, struct.error) as exc:
-        print(f"✗ {args.exe}: {exc}")
+        print(f"FAIL {args.exe}: {exc}")
         return 1
     found = f"{subsystem} ({SUBSYSTEMS.get(subsystem, 'other')})"
     if subsystem != args.expect:
         wanted = f"{args.expect} ({SUBSYSTEMS.get(args.expect, 'other')})"
-        print(f"✗ {args.exe}: subsystem {found}, expected {wanted}")
+        print(f"FAIL {args.exe}: subsystem {found}, expected {wanted}")
         return 1
-    print(f"✓ {args.exe}: subsystem {found}")
+    print(f"OK {args.exe}: subsystem {found}")
     return 0
 
 
