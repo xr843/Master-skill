@@ -156,7 +156,8 @@ jobs:
         # upstream, those flags stay on the command line; a later dependency
         # dragging 0.30 back in would have its 7.5 swallowed in silence, CI
         # green. A suppression has to disappear together with the thing it
-        # suppresses.
+        # suppresses. On 2026-09-14 this step reported both quick-xml entries
+        # as stale once wayland-scanner 0.31.11 took quick-xml to 0.41.
         #
         # This checks the list, not the verdict — `cargo audit` below is still
         # the only thing that decides whether the scan passes, so there is no
@@ -175,31 +176,22 @@ jobs:
         # --deny warnings would promote them into a permanent red over
         # something nobody can act on. A false red is worse than no check —
         # the same conclusion clawhub-publish.yml reached the hard way. They
-        # are therefore left visible and unsuppressed; the only --ignore flags
-        # are the two below.
+        # are therefore left visible and unsuppressed.
         #
         # Measured 2026-09-06 with cargo-audit 0.22.2: 4 vulnerabilities and
-        # 2 warnings. Only two distinct advisories are suppressed, and only
-        # because upstream holds both copies below the fix:
+        # 2 warnings. Two quick-xml advisories were then suppressed while
+        # upstream held both copies below the fix:
         #
         #   RUSTSEC-2026-0194  quick-xml  DoS: quadratic duplicate-attribute scan
         #   RUSTSEC-2026-0195  quick-xml  DoS: unbounded namespace allocation
         #
-        # Both are fixed in 0.41.0, and neither reaches the shipped binary —
-        # measured 2026-09-13, not reasoned. `0.39.4` comes from
-        # `wayland-scanner`, a proc-macro:
-        # `cargo tree -e normal,no-proc-macro -i quick-xml@0.39.4` prints
-        # "nothing to print", so it is out of the graph once build-time edges
-        # are dropped. `0.30.0` comes from `zbus_xml` ← `zbus-lockstep` ←
-        # `atspi-common`, which IS a normal dependency — but atspi-common's
-        # only use of the zbus_lockstep *library* is at src/lib.rs:238, inside
-        # `#[cfg(test)]`; its three other references are the proc-macro.
-        # `cargo build --release` then `nm`/`strings` on the 15.9 MB binary
-        # finds zero quick_xml, zbus_lockstep or zbus_xml symbols, against 24
-        # egui / 29 winit / 7 eframe / 5 serde_json path strings as a control.
-        # The full evidence is in `desktop/audit-ignore.json`. They come off
-        # the list when eframe/egui pulls newer upstreams;
-        # `cargo update -p quick-xml@<ver>` cannot move them today.
+        # Neither reached the shipped binary, measured on 2026-09-13; the
+        # evidence is in the git history of desktop/audit-ignore.json. On
+        # 2026-09-14 wayland-scanner 0.31.11 had moved to quick-xml 0.41:
+        # `cargo update -p wayland-scanner` took the lock from quick-xml 0.39.4
+        # to 0.41.0, cargo audit reported no vulnerabilities, and both
+        # suppressions were deleted. The registry is empty, so this step passes
+        # no --ignore at all.
         #
         # The two unmaintained notices (RUSTSEC-2024-0436 paste,
         # RUSTSEC-2026-0192 ttf-parser) are deliberately NOT suppressed. Neither
@@ -216,8 +208,11 @@ jobs:
         # one list, so a suppression cannot be added here without the reason,
         # the evidence and the review date that the check above enforces.
         run: |
+          # One id per line, and nothing at all for an empty registry.
+          # `print('\n'.join(...))` printed a blank line for an empty list,
+          # mapfile read it as one empty id, and the command got `--ignore ""`.
           mapfile -t IGNORES < <(
-            python3 -c "import json,sys; print('\n'.join(e['id'] for e in json.load(open('desktop/audit-ignore.json'))['ignore']))"
+            python3 -c "import json; [print(e['id']) for e in json.load(open('desktop/audit-ignore.json'))['ignore']]"
           )
           ARGS=()
           for id in "${IGNORES[@]}"; do ARGS+=(--ignore "$id"); done

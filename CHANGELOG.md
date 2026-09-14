@@ -10,6 +10,32 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Security — the last two cargo audit suppressions are gone (2026-09-14)
+
+`desktop/audit-ignore.json` suppressed RUSTSEC-2026-0194 and RUSTSEC-2026-0195,
+two high-severity denial-of-service advisories in quick-xml 0.39.4. The reason
+was that wayland-scanner, a proc-macro that never reaches the shipped binary,
+held quick-xml below the 0.41.0 fix. wayland-scanner 0.31.11, released on
+2026-07-22, requires quick-xml ^0.41, which met the registry's own condition
+for deleting both entries. The lockfile still held 0.31.10, and nothing
+reports a suppression whose fix has become available — only one whose
+advisory has disappeared.
+
+`cargo update -p wayland-scanner` changes exactly two packages: wayland-scanner
+0.31.10 → 0.31.11 and quick-xml 0.39.4 → 0.41.0. cargo audit went from 2
+vulnerabilities to 0, and `check-audit-ignores.py` reported both entries as
+stale, so both were deleted. The Rust tests, clippy, and the Windows and macOS
+cross-checks pass.
+
+Emptying the registry exposed a latent bug in the audit step. It built the
+ignore list with `print('\n'.join(...))`, which prints a blank line for an
+empty list, so `mapfile` read one empty id and the command received
+`--ignore ""`. cargo-audit accepts that and ignores nothing, as measured, and
+the log line `suppressing: <none>` hid it. The step now prints one id per line
+and nothing for an empty registry. A test runs the real step with a fake
+`cargo` for an empty and a two-entry registry; against the old line, the empty
+case failed.
+
 ### Added — the macOS binary is run before release too (2026-09-14)
 
 Once the Windows leg had its smoke test, the macOS binary was the only
