@@ -365,13 +365,13 @@ def classify_cbeta_volumes(
     return mismatched, sorted(unknown)
 
 
-def fetch_cbeta_volumes(full_ids: list[str]) -> dict[str, str | None]:
-    """向 CBETA 问每个经号所属的卷(或卷区间);问不到的记 None(未知,不是不符)。"""
+def fetch_cbeta_works(full_ids: list[str]) -> dict[str, dict | None]:
+    """向 CBETA 问每个经号的卷(或卷区间)与题名;问不到的记 None(未知,不是不符)。"""
     import urllib.error
     import urllib.parse
     import urllib.request
 
-    out: dict[str, str | None] = {}
+    out: dict[str, dict | None] = {}
     for full_id in full_ids:
         short = full_to_short_cbeta(full_id)
         if not short:
@@ -382,10 +382,127 @@ def fetch_cbeta_volumes(full_ids: list[str]) -> dict[str, str | None]:
             with urllib.request.urlopen(url, timeout=CBETA_TIMEOUT) as resp:
                 payload = json.loads(resp.read().decode("utf-8"))
             results = payload.get("results") or []
-            out[full_id] = results[0].get("vol") if results else None
+            out[full_id] = (
+                {"vol": results[0].get("vol"), "title": results[0].get("title")}
+                if results
+                else None
+            )
         except (urllib.error.URLError, OSError, ValueError, KeyError, IndexError):
             out[full_id] = None
     return out
+
+
+def _title_syllables(title: str | None) -> list[set[str]]:
+    """题名 → 逐字读音集合。去掉括注，只留汉字；多音字保留全部读音。"""
+    from pypinyin import Style, pinyin
+
+    bare = re.sub(r"[（(][^）)]*[）)]", "", title or "")
+    bare = "".join(ch for ch in bare if "\u3400" <= ch <= "\u9fff" or "\uf900" <= ch <= "\ufaff")
+    return [set(readings) for readings in pinyin(bare, style=Style.NORMAL, heteronym=True)]
+
+
+def titles_agree(declared: str, cbeta: str | None) -> bool | None:
+    """声明题名按读音是否为 CBETA 题名的子序列。
+
+    经号在 FoJin 查得到、卷号也对，仍可能是另一部书：master-yinguang 把《印光
+    法师文钞》声明成 X62n1182–1184，CBETA 那三号是《徹悟禪師語錄》《淨業知津》
+    《念佛百問》，卷号 X62 分毫不差，这道周检一直是绿的。
+
+    声明用简体、常用简称（《大佛顶首楞严经》），CBETA 用繁体全称，逐字比两边都
+    会误报。按读音比，繁简同音即对得上，简称是全称的子序列也对得上；另一部书一
+    个音都对不上。用读音而不用繁简转换表，是因为仓库已依赖 pypinyin。已知边界：
+    过短的题名可能碰巧是别书题名的子序列。
+
+    返回 None 表示比不了（任一侧没有汉字），既不是对也不是错。
+    """
+    mine, theirs = _title_syllables(declared), _title_syllables(cbeta)
+    if not mine or not theirs:
+        return None
+    position = 0
+    for readings in theirs:
+        if position < len(mine) and mine[position] & readings:
+            position += 1
+    return position == len(mine)
+
+
+def collect_declared_titles() -> dict[str, list[str]]:
+    """{完整经号: [各 meta.json 为它声明的题名]} —— 同一部经可能被几位祖师声明。"""
+    titles: dict[str, list[str]] = {}
+    for teacher in sorted(os.listdir(PREBUILT_DIR)):
+        meta_path = os.path.join(PREBUILT_DIR, teacher, "meta.json")
+        if not os.path.isfile(meta_path):
+            continue
+        with open(meta_path, encoding="utf-8") as f:
+            meta = json.load(f)
+        for src in meta.get("sources", []):
+            if src.get("type") == "cbeta" and src.get("id") and src.get("title"):
+                known = titles.setdefault(src["id"], [])
+                if src["title"] not in known:
+                    known.append(src["title"])
+    return titles
+
+
+def classify_cbeta_titles(
+    declared: dict[str, list[str]], cbeta_titles: dict[str, str | None]
+) -> tuple[dict[str, tuple[list[str], str | None]], list[str]]:
+    """把声明题名分成「与 CBETA 对不上」与「比不了」两类，三态同卷号检查。
+
+    一个 id 若有一条题名对不上，就算不符 —— 另一条比不了的题名不能把它盖住。
+    """
+    mismatched: dict[str, tuple[list[str], str | None]] = {}
+    unknown: list[str] = []
+    for full_id, mine in declared.items():
+        theirs = cbeta_titles.get(full_id)
+        verdicts = {title: titles_agree(title, theirs) for title in mine}
+        wrong = [title for title, verdict in verdicts.items() if verdict is False]
+        if wrong:
+            mismatched[full_id] = (wrong, theirs)
+        elif not mine or any(verdict is None for verdict in verdicts.values()):
+            unknown.append(full_id)
+    return mismatched, sorted(unknown)
+
+
+def collect_frontmatter_fojin_ids() -> list[tuple[str, str, str, str]]:
+    """(祖师目录, 题名, cbeta_id, fojin_text_id)，取自各 SKILL.md frontmatter 的 sources。"""
+    import yaml
+
+    rows: list[tuple[str, str, str, str]] = []
+    for teacher in sorted(os.listdir(PREBUILT_DIR)):
+        path = os.path.join(PREBUILT_DIR, teacher, "SKILL.md")
+        if not os.path.isfile(path):
+            continue
+        with open(path, encoding="utf-8") as f:
+            parts = f.read().split("---", 2)
+        if len(parts) < 3 or parts[0].strip():
+            continue
+        front = yaml.safe_load(parts[1]) or {}
+        for src in front.get("sources") or []:
+            if isinstance(src, dict) and src.get("cbeta_id") and src.get("fojin_text_id") is not None:
+                rows.append(
+                    (teacher, str(src.get("title", "")), str(src["cbeta_id"]), str(src["fojin_text_id"]))
+                )
+    return rows
+
+
+def classify_frontmatter_fojin_ids(
+    rows: list[tuple[str, str, str, str]], short_to_text: dict[str, object]
+) -> tuple[list[tuple[str, str, str, str, str]], list[str]]:
+    """frontmatter 的 fojin_text_id 与 FoJin 对该经号的解析结果不符的条目。
+
+    这个 id 不进审计，却是人设给读者拼链接用的：master-zhiyi 把《法華玄義》
+    （T1716）写成 52，那是《法華文句》的 text id。frontmatter 里完整号与短号
+    （`T1716`）两种写法都有，一律折成短号再比。查不到的记为未知，不算错。
+    """
+    mismatched: list[tuple[str, str, str, str, str]] = []
+    unknown: list[str] = []
+    for teacher, title, cbeta_id, written in rows:
+        short = full_to_short_cbeta(cbeta_id) if FULL_CBETA_RE.match(cbeta_id) else cbeta_id
+        actual = short_to_text.get(short)
+        if actual is None:
+            unknown.append(f"{teacher}:{cbeta_id}")
+        elif str(actual) != written:
+            mismatched.append((teacher, cbeta_id, title, written, str(actual)))
+    return mismatched, sorted(unknown)
 
 
 def verify_ids(bridge, cbeta_map: dict[str, list[str]], titles: dict[str, str]) -> dict[str, dict]:
@@ -566,7 +683,8 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
 
     # Step 3b: 卷号。FoJin 的查询把卷号丢掉了,所以上面那一步结构上看不见它。
     print("\n[3b/4] Checking declared volume numbers against CBETA...")
-    cbeta_vols = fetch_cbeta_volumes(sorted(combined_map))
+    cbeta_works = fetch_cbeta_works(sorted(combined_map))
+    cbeta_vols = {k: (v or {}).get("vol") for k, v in cbeta_works.items()}
     mismatched, unknown_to_cbeta = classify_cbeta_volumes(combined_map, cbeta_vols)
     if mismatched:
         print(f"  Declared IDs CBETA disagrees with ({len(mismatched)}):")
@@ -578,6 +696,22 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
               "unknown, not wrong: " + ", ".join(unknown_to_cbeta))
     if not mismatched and not unknown_to_cbeta:
         print(f"  All {len(combined_map)} declared IDs sit in a volume CBETA gives this work")
+
+    # Step 3c: 题名。卷号对、FoJin 查得到，仍可能是另一部书（见 titles_agree）。
+    print("\n[3c/4] Checking declared titles against CBETA...")
+    declared_titles = collect_declared_titles()
+    title_mismatched, title_unknown = classify_cbeta_titles(
+        {cid: declared_titles.get(cid, []) for cid in cbeta_map},
+        {k: (v or {}).get("title") for k, v in cbeta_works.items()},
+    )
+    for full_id, (mine, theirs) in sorted(title_mismatched.items()):
+        teachers = ", ".join(combined_map.get(full_id, ["?"]))
+        print(f"    [WRONG] {full_id} declared as 《{' / '.join(mine)}》 -> CBETA: 《{theirs}》  (used by: {teachers})")
+    if title_unknown:
+        print(f"  Could not compare titles for {len(title_unknown)} ID(s) — "
+              "unknown, not wrong: " + ", ".join(title_unknown))
+    if not title_mismatched and not title_unknown:
+        print(f"  All {len(cbeta_map)} declared titles match the work CBETA gives each ID")
 
     found = {k: v for k, v in verified.items() if v["text_id"] is not None}
     all_absent = {k: v for k, v in verified.items() if v["text_id"] is None}
@@ -617,6 +751,22 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
                 f"    [STALE] {cid} 现在能在 FoJin 查到 (text_id="
                 f"{found[cid]['text_id']}) —— 从清单里删掉这一条"
             )
+
+    # Step 3d: SKILL.md frontmatter 的 fojin_text_id（见 classify_frontmatter_fojin_ids）。
+    print("\n[3d/4] Checking SKILL.md frontmatter fojin_text_id values against FoJin...")
+    short_to_text = {
+        info.get("short_cbeta_id"): info["text_id"] for info in found.values()
+    }
+    fm_mismatched, fm_unknown = classify_frontmatter_fojin_ids(
+        collect_frontmatter_fojin_ids(), short_to_text
+    )
+    for teacher, cbeta_id, title, written, actual in fm_mismatched:
+        print(f"    [WRONG] {teacher}: 《{title}》 {cbeta_id} fojin_text_id={written} -> FoJin resolves {actual}")
+    if fm_unknown:
+        print(f"  FoJin did not resolve {len(fm_unknown)} frontmatter ID(s) — "
+              "unknown, not wrong: " + ", ".join(fm_unknown))
+    if not fm_mismatched and not fm_unknown:
+        print("  Every frontmatter fojin_text_id matches what FoJin resolves")
 
     # Step 4: Update URLs
     # Build replacement map: full_cbeta_id -> str(internal_text_id)
@@ -660,6 +810,8 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
         print(f"  Stale known-absent entries:{len(stale_absent):>4}")
     print(f"  URL replacements:          {len(all_changes)}")
     print(f"  CBETA id mismatches:       {len(mismatched)}")
+    print(f"  CBETA title mismatches:    {len(title_mismatched)}")
+    print(f"  Frontmatter FoJin id mismatches: {len(fm_mismatched)}")
     if unknown_to_cbeta:
         print(f"  CBETA unreachable for:     {len(unknown_to_cbeta)} (not counted as wrong)")
     if dry_run and all_changes:
