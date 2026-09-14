@@ -10,6 +10,27 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-ouyi's self-audit list omitted a source it declares (2026-09-14)
+
+Nine personas end SKILL.md with the same pre-answer rule: before replying,
+check each offline citation's identifier against the frontmatter `sources:`
+list, and strip any claim that fails. That list is not meta.json, and nothing
+compared the two. master-ouyi declares 《灵峰宗论》 `J36nB348` in meta.json and
+cites it in `references/teaching.md`, but its frontmatter never listed it. A
+model following the rule would delete a correct citation of Ouyi's own
+collected works, and the audit, which reads meta.json, would not see it
+happen. The entry is added without a `fojin_text_id`, because FoJin does not
+carry the Jiaxing canon.
+
+`scripts/validate-self-audit-sources.py` now runs in `npm test`. For every
+persona whose rule names the frontmatter list, each declared source must
+appear there in a spelling the auditor accepts, so `T1716` covers `T33n1716`.
+It names the personas it examined and fails if the rule's wording matches
+none of them. Before the fix it reported exactly the Ouyi entry; the
+gate-liveness suite removes that entry again and requires a failure. The six
+personas whose rule points at meta.json are not examined. Several of their
+frontmatter lists are incomplete too, which has no effect at runtime.
+
 ### Added — the weekly source check compares titles and frontmatter FoJin ids (2026-09-14)
 
 `tools/verify_sources.py` confirmed that a declared CBETA id resolves on FoJin
