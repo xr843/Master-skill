@@ -334,6 +334,18 @@ jobs:
       - name: Build desktop app
         run: cargo build --locked --manifest-path desktop/Cargo.toml
 
+      # release-desktop.yml compiles Windows and macOS only once a release is
+      # published, so until then nothing does — v0.12.0 failed to build for
+      # Windows with every check green and shipped no desktop binaries. A
+      # type-check needs neither the MSVC linker nor the Xcode SDK, and catches
+      # compile errors on both. It does not catch link errors; the release
+      # workflow's manual dispatch is the check for those.
+      - name: Type-check the other release targets
+        run: |
+          rustup target add x86_64-pc-windows-msvc aarch64-apple-darwin
+          cargo check --locked --manifest-path desktop/Cargo.toml --target x86_64-pc-windows-msvc
+          cargo check --locked --manifest-path desktop/Cargo.toml --target aarch64-apple-darwin
+
   fidelity-smoke:
     name: Fidelity smoke (1 master × 1 fixture)
     runs-on: ubuntu-latest
