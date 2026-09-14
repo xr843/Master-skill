@@ -617,6 +617,7 @@ def audit_answer(
     fabricated: list[str] = []
     unparsed: list[str] = []
     noncitation: list[str] = []
+    live_detail: list[dict] = []
 
     blocks = list(_CITATION_BLOCK.finditer(answer))
     for idx, m in enumerate(blocks):
@@ -679,11 +680,22 @@ def audit_answer(
                 unresolved.append(cid)
         if len(unresolved) == 1 and links:
             live.append((unresolved[0], links[0]))
+            # `--online` needs more than the pair to tell whether the link is the
+            # work the citation names: the title the block gives it.
+            title = _WORK_TITLE.search(m.group(1))
+            live_detail.append(
+                {
+                    "cited_id": unresolved[0],
+                    "text_id": links[0],
+                    "title": title.group(1) if title else None,
+                }
+            )
         else:
             fabricated.extend(unresolved)
     return {
         "offline": offline,
         "live": live,
+        "live_detail": live_detail,
         "fabricated": fabricated,
         "unparsed": unparsed,
         "noncitation": noncitation,
@@ -701,8 +713,58 @@ VERIFY_TIMEOUT = 15
 VERIFY_WORKERS = 8
 
 
-def _check_one_text_id(session_factory, base_url: str, tid: str, timeout: int):
-    """核验单个 text_id,返回 (三态结果, 说明)。异常一律收敛成 None,不外抛。"""
+def _cbeta_key(cid: str) -> tuple[str, str] | None:
+    """`T30n1568` / `T1568` / `JB348` → (藏别, 去零经号);不是 CBETA 号 → None。"""
+    m = _FULL_FORM.match(cid) or _SHORT_FORM.match(cid)
+    if not m:
+        return None
+    return m.group(1), _normalize_cbeta_work_number(m.group(2))
+
+
+def _titles_agree(cited: str, linked: str) -> bool | None:
+    """借用 tools/verify_sources.titles_agree(读音子序列);加载不了返回 None。"""
+    tools = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "tools")
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    try:
+        from verify_sources import titles_agree
+    except ImportError:
+        return None
+    return titles_agree(cited, linked)
+
+
+def _live_link_mismatch(citation: dict, payload: dict) -> str | None:
+    """一个解析得到的 FoJin 文本,为什么仍不是这条 live 引文所说的那部书;可能是则 None。
+
+    只验「打得开」时,【《伪经》,T99n9999】→ texts/20 能过:texts/20 是
+    《佛說阿彌陀經》。master-yinguang 的存档引文更隐蔽:X62n1182 → texts/12977,
+    链接的 cbeta_id 正是 X1182,经号自洽,可那部书是《徹悟禪師語錄》而不是引文
+    写的《印光法師文鈔正編》。所以比两样:经号(只对 CBETA 号),书名(引文给了
+    才比)。书名先截掉「·品名」「〈篇名〉」,篇章不是书名的一部分。
+    """
+    tid = citation.get("text_id")
+    cited = citation.get("cited_id") or ""
+    linked_id = payload.get("cbeta_id")
+    cited_key = _cbeta_key(cited)
+    if cited_key and linked_id and _cbeta_key(str(linked_id)) != cited_key:
+        return f"texts/{tid} 是 {linked_id},不是引文写的 {cited}"
+    title = citation.get("title")
+    linked_title = payload.get("title_zh")
+    if title and linked_title:
+        book = re.split(r"[·・‧〈<]", title, maxsplit=1)[0].strip()
+        if book and _titles_agree(book, str(linked_title)) is False:
+            return f"引文题名《{title}》对不上 texts/{tid} 的《{linked_title}》"
+    return None
+
+
+def _check_one_text_id(
+    session_factory, base_url: str, tid: str, timeout: int, citations=()
+):
+    """核验单个 text_id,返回 (三态结果, 说明)。异常一律收敛成 None,不外抛。
+
+    `citations` 是用这个 text_id 作链接的 live 引文;给了就还要核对链接是不是
+    它们所说的那部书(见 `_live_link_mismatch`),对不上判 False。
+    """
     try:
         resp = session_factory().get(f"{base_url}/api/texts/{tid}", timeout=timeout)
     except Exception as e:  # noqa: BLE001 — 传输层失败是"不知道",不是"不存在"
@@ -717,6 +779,11 @@ def _check_one_text_id(session_factory, base_url: str, tid: str, timeout: int):
         # 200 却不是 JSON:通常是网关错误页,不能据此断定 id 不存在。
         return None, "200 但正文不是 JSON"
     if payload:
+        if isinstance(payload, dict):
+            for citation in citations:
+                mismatch = _live_link_mismatch(citation, payload)
+                if mismatch:
+                    return False, mismatch
         return True, ""
     # 200 + 空正文归 None,不归 False —— 上面刚写下「404 是唯一该硬失败的信号」,
     # 这里返回 False 就是在自己的契约上开口子。空信封可能来自 FoJin 换了外层结构、
@@ -758,6 +825,7 @@ def verify_online(
     base_url: str = "https://fojin.app",
     timeout: int = VERIFY_TIMEOUT,
     workers: int = VERIFY_WORKERS,
+    citations: list[dict] | None = None,
 ) -> OnlineVerification:
     """best-effort:GET /api/texts/{id} 看 live 引文的 text_id 是否真解析。
 
@@ -770,6 +838,9 @@ def verify_online(
         return OnlineVerification({}, {}, "requests 未安装")
 
     unique = sorted(set(text_ids))
+    by_tid: dict[str, list[dict]] = {}
+    for citation in citations or ():
+        by_tid.setdefault(str(citation.get("text_id")), []).append(citation)
     if not unique:
         return OnlineVerification({}, {})
 
@@ -785,7 +856,14 @@ def verify_online(
     reasons: dict[str, str] = {}
     with ThreadPoolExecutor(max_workers=max(1, min(workers, len(unique)))) as pool:
         futures = {
-            pool.submit(_check_one_text_id, session_factory, base_url, tid, timeout): tid
+            pool.submit(
+                _check_one_text_id,
+                session_factory,
+                base_url,
+                tid,
+                timeout,
+                by_tid.get(tid, ()),
+            ): tid
             for tid in unique
         }
         for future in as_completed(futures):
@@ -807,7 +885,10 @@ def main() -> int:
     p = argparse.ArgumentParser(description="B1 引证核验器")
     p.add_argument("--master", required=True, help="master slug,如 huineng")
     p.add_argument("--answer-file", help="答案文件;省略则从 stdin 读")
-    p.add_argument("--online", action="store_true", help="额外验证 live 引文 text_id 可解析")
+    p.add_argument(
+        "--online", action="store_true",
+        help="额外验证 live 引文:链接可解析,且是引文所说的那部书(经号、书名)",
+    )
     args = p.parse_args()
 
     try:
@@ -830,7 +911,9 @@ def main() -> int:
         exit_code = 1
 
     if args.online and report["live"]:
-        res = verify_online([tid for _, tid in report["live"]])
+        res = verify_online(
+            [tid for _, tid in report["live"]], citations=report["live_detail"]
+        )
         if res.unreachable:
             print(f"⚠ --online 跳过:FoJin 不可达({res.unreachable})", file=sys.stderr)
         else:
@@ -838,7 +921,10 @@ def main() -> int:
             # 网络状况,不是引文真伪,拿它判 fabricated 会在 FoJin 抖动时把正确
             # 引用打成伪造,那比漏检更糟。
             if res.fabricated:
-                print(f"✗ live 引文 text_id 无法解析: {res.fabricated}", file=sys.stderr)
+                detail = "; ".join(
+                    f"{t}({res.reasons.get(t, '?')})" for t in res.fabricated
+                )
+                print(f"✗ live 引文链接无法解析或不是所引之书: {detail}", file=sys.stderr)
                 exit_code = 1
             if res.unknown:
                 # 报出来而不是静默算过 —— 「没查成」必须与「查过没问题」可区分。

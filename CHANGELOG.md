@@ -10,6 +10,29 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — `--online` confirmed that a live link opened, not that it was the cited work (2026-09-15)
+
+A live citation is one whose id is not declared but which carries a FoJin link.
+Offline it passes on that link alone, and `verify_citations.py --online` is
+the only step that ever examines the link. It asked FoJin whether the text id
+resolved and checked nothing else. So 【《伪经》，T99n9999】→ fojin.app/texts/20
+passed, because texts/20 is 《佛說阿彌陀經》 and does resolve.
+
+The check now also compares the linked text with the citation. The linked
+text's CBETA id must be the one cited. The citation's title, with any
+`·chapter` part removed, must agree with FoJin's title, using the same pinyin
+comparison as the weekly source check. Run against FoJin, the fake citation
+above is reported as "texts/20 是 T0366,不是引文写的 T99n9999". The old Yinguang
+form 【《印光法師文鈔正編》卷一，X62n1182】→ texts/12977 has a number and link that
+agree with each other, but the wrong book, and is reported as a title that does
+not match 《徹悟禪師語錄》. A correct citation of 《佛說觀無量壽佛經》 passes.
+
+`audit_answer` also returns `live_detail`, which records each live citation's
+id, link and title. `scripts/reaudit-report.py --online` runs the same check
+over a stored run. On 06b8142 it reports all 23 master-yinguang citations that
+the Wenchao re-declaration left as live: 16 link to texts/12977
+(《徹悟禪師語錄》) and 7 to texts/12978 (《淨業知津》).
+
 ### Security — the last two cargo audit suppressions are gone (2026-09-14)
 
 `desktop/audit-ignore.json` suppressed RUSTSEC-2026-0194 and RUSTSEC-2026-0195,
