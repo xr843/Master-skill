@@ -162,7 +162,9 @@ Master-skill 作为 AgentSkill 插件 + NPX CLI，主要关注以下安全面：
   这些包被装进**带着 live `ANTHROPIC_API_KEY` 的那个 job**，下限约束在那儿不算防线。
 - **主分支保护**：required status checks 实际为
   `Validate SKILL.md & fidelity structure`、`Fidelity smoke (1 master × 1 fixture)`、
-  `GitGuardian Security Checks`；禁止 force push 与分支删除。
+  `GitGuardian Security Checks`、`Desktop Rust tests`、`CLI tests (Windows)`、
+  `Generator compatibility (Python 3.9)`（后三项 2026-09-15 加入：不依赖密钥、
+  每个 PR 都运行、结果稳定）；禁止 force push 与分支删除。
 
 > ⚠️ **`Fidelity smoke` 是 required，但它不评分。**
 > 本项目的既定政策是 CI 不为 LLM-as-judge 付费（见 CONTRIBUTING.md §2），所以

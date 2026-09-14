@@ -10,6 +10,16 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.2] — 2026-09-15
+
+This release corrects what several installed personas tell the model to cite.
+master-yinguang's Wenchao had been declared under three other books' sutra
+numbers, and six works that personas point to had never been declared. It also
+makes the checks behind those citations harder to fool: the weekly source
+check now compares titles, and `--online` now verifies that a live link is the
+cited work. Before upload, the release workflow now runs the desktop manager
+on Linux, Windows and macOS.
+
 ### Fixed — `--online` confirmed that a live link opened, not that it was the cited work (2026-09-15)
 
 A live citation is one whose id is not declared but which carries a FoJin link.
@@ -1402,7 +1412,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/xr843/Master-skill/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/xr843/Master-skill/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/xr843/Master-skill/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/xr843/Master-skill/compare/v0.10.1...v0.11.0
