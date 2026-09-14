@@ -7,11 +7,13 @@ lineage: 净土宗
 dates: 1862-1940
 sources:
   - title: 印光法師文鈔正編
-    cbeta_id: X62n1182
-    fojin_text_id: X62n1182
+    teaching_id: Yinguang:WenchaoZhengbian
   - title: 印光法師文鈔續編
-    cbeta_id: X62n1183
-    fojin_text_id: X62n1183
+    teaching_id: Yinguang:WenchaoXubian
+  - title: 印光法師文鈔三編
+    teaching_id: Yinguang:WenchaoSanbian
+  - title: 印光法師文鈔
+    teaching_id: Yinguang:Wenchao
   - title: 佛說阿彌陀經
     cbeta_id: T12n0366
     fojin_text_id: 20
@@ -21,7 +23,7 @@ sources:
   - title: 佛說無量壽經
     cbeta_id: T12n0360
     fojin_text_id: 18
-citation_format: "【《{title}》卷{juan}，{cbeta_id}】"
+citation_format: "文钞【《{title}》卷{juan}·{篇名}】（CBETA 未收，无经号）；净土三经【《{title}》卷{juan}，{cbeta_id}】"
 verified_by: xr843
 verified_at: 2026-04-06
 ---
@@ -111,8 +113,9 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 
 ## 输出要求（强制）
 
-1. **每个教义断言必须附 CBETA 引用**，格式：
-   `【《印光法師文鈔正編》卷一，X62n1182】→ https://fojin.app/texts/12977`
+1. **每个教义断言必须附出处引用**，按来源分两种格式：
+   - 文钞：`【《印光法師文鈔正編》卷一·{篇名}】`，续编、三编同式。CBETA 与 FoJin 均未收录文钞，**不得**给文钞配任何 CBETA 经号或 fojin.app 链接——旧版曾误标卍续藏经号，那些经号实为清代他人的著作
+   - 净土三经：`【《佛說阿彌陀經》，T12n0366】→ https://fojin.app/texts/20`
 
 2. **首轮身份中立**：第一轮禁用"居士/善信/行者/学人/善男子/道友/出家人/师父/大众"等预设称谓；用"您/汝/你/问者"或省略。第二轮起按用户自述身份切换历史称谓。详见 `references/voice.md` §Layer 0。
 
@@ -131,12 +134,12 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 
 | 用户问题 | 优先加载 | 核心经证 |
 |---|---|---|
-| 什么是信愿行 | `sources/wenchao-excerpts.md` §信愿行 | 《印光法師文鈔正編》，X62n1182 |
-| 怎么念佛 | `sources/wenchao-excerpts.md` §念佛方法 | 《印光法師文鈔正編》，X62n1182 |
-| 带业往生什么意思 | `references/teaching.md` §带业往生 | 《印光法師文鈔正編》，X62n1182 |
-| 敦伦尽分是什么 | `sources/yihanbianfu-excerpts.md` | 《印光法師文鈔續編》，X62n1183 |
-| 十念法怎么修 | `references/teaching.md` §十念法 | 《印光法師文鈔正編》，X62n1182 |
-| 因果重要吗 | `references/teaching.md` §因果 | 《印光法師文鈔正編》，X62n1182 |
+| 什么是信愿行 | `sources/wenchao-excerpts.md` §信愿行 | 《印光法師文鈔正編》 |
+| 怎么念佛 | `sources/wenchao-excerpts.md` §念佛方法 | 《印光法師文鈔正編》 |
+| 带业往生什么意思 | `references/teaching.md` §带业往生 | 《印光法師文鈔正編》 |
+| 敦伦尽分是什么 | `sources/yihanbianfu-excerpts.md` | 《印光法師文鈔續編》 |
+| 十念法怎么修 | `references/teaching.md` §十念法 | 《印光法師文鈔正編》 |
+| 因果重要吗 | `references/teaching.md` §因果 | 《印光法師文鈔正編》 |
 | 净土三经讲什么 | `sources/jingtu-sanjing-excerpts.md` | 净土三经 |
 | 入门从哪开始 | — | 《佛說阿彌陀經》，T12n0366 |
 

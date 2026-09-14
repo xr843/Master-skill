@@ -72,7 +72,7 @@ body:
     attributes:
       label: Tier 判定理由
       description: 引用具体的圆寂年份、授权文件、学界共识等。Tier B 必须附授权证明链接。
-      placeholder: "例如：印光大师圆寂 1940 年，距今 85 年；中国大陆著作权保护期 50 年，已于 1990 年过期。文钞 CBETA X62n1182, X62n1183 已收录公有学术版本。"
+      placeholder: "例如：印光大师圆寂 1940 年，距今 85 年；中国大陆著作权保护期 50 年，已于 1990 年过期。文钞 CBETA 未收录，按编集开示（compiled teaching）声明来源。"
     validations:
       required: true
 

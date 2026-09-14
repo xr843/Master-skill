@@ -5,7 +5,7 @@
     "version": 1,
     "claim_policy": "declared_sources_only",
     "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
-    "allowed_source_types": ["cbeta"],
+    "allowed_source_types": ["cbeta", "compiled_teaching"],
     "minimum_claim_coverage": 0.9,
     "live_retrieval_allowed": true
   },
@@ -19,19 +19,25 @@
   "fojin_entity_id": null,
   "sources": [
     {
-      "type": "cbeta",
-      "id": "X62n1182",
-      "title": "印光法师文钞正编"
+      "type": "compiled_teaching",
+      "id": "Yinguang:WenchaoZhengbian",
+      "title": "印光法师文钞正编（印光法師文鈔正編）"
     },
     {
-      "type": "cbeta",
-      "id": "X62n1183",
-      "title": "印光法师文钞续编"
+      "type": "compiled_teaching",
+      "id": "Yinguang:WenchaoXubian",
+      "title": "印光法师文钞续编（印光法師文鈔續編）"
     },
     {
-      "type": "cbeta",
-      "id": "X62n1184",
-      "title": "印光法师文钞三编"
+      "type": "compiled_teaching",
+      "id": "Yinguang:WenchaoSanbian",
+      "title": "印光法师文钞三编（印光法師文鈔三編）"
+    },
+    {
+      "type": "compiled_teaching",
+      "id": "Yinguang:Wenchao",
+      "title": "印光法师文钞（印光法師文鈔）",
+      "note": "正编、续编、三编的合称，供只写总名的引用解析。CBETA 与 FoJin 均未收录文钞（2026-09-14 核查），故无经号、无在线链接。"
     },
     {
       "type": "cbeta",
@@ -55,9 +61,6 @@
   "disclaimer": "本内容依据历史佛教文献生成，仅供参考学习。如需正式修行指导，请亲近善知识。",
   "search_scope": {
     "primary_cbeta_ids": [
-      "X62n1182",
-      "X62n1183",
-      "X62n1184",
       "T12n0366",
       "T12n0365",
       "T12n0360"
@@ -128,7 +131,7 @@
     "monologue": "文钞式开示先示因果敦伦，次明信愿持名为正行，末以仗佛慈力带业往生为归宿。"
   },
   "cross_critique": [
-    { "target_master": "huineng", "position": "对禅宗：见性须现量证悟，末法众生根机陋劣，难当此任；信愿持名是阿弥陀佛大悲普被，老实念佛即是真见性。", "citation": "X62n1182" },
-    { "target_master": "ouyi", "position": "对天台净土合修：要解六信极是；然事持理持终归一念，今人务理而废事，唯老实持名方为稳妥。", "citation": "X62n1182" }
+    { "target_master": "huineng", "position": "对禅宗：见性须现量证悟，末法众生根机陋劣，难当此任；信愿持名是阿弥陀佛大悲普被，老实念佛即是真见性。", "citation": "Yinguang:WenchaoZhengbian" },
+    { "target_master": "ouyi", "position": "对天台净土合修：要解六信极是；然事持理持终归一念，今人务理而废事，唯老实持名方为稳妥。", "citation": "Yinguang:WenchaoZhengbian" }
   ]
 }
