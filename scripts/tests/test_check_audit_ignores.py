@@ -10,6 +10,8 @@ from __future__ import annotations
 import datetime
 import importlib.util
 import json
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -91,9 +93,13 @@ def test_an_unparseable_review_date_is_rejected(bad):
 
 
 def test_the_registry_on_disk_is_complete():
-    """仓库里那份清单每条都要过同一套要求。"""
+    """仓库里那份清单每条都要过同一套要求。
+
+    清单可以为空：抑制本就应当随 advisory 一起消失（2026-09-14，quick-xml 那两
+    条随 wayland-scanner 0.31.11 一起删掉）。空清单时 audit 步骤不带任何
+    --ignore，由 test_the_audit_step_passes_exactly_the_registry_ids 钉住。
+    """
     registry = mod.load_registry()
-    assert registry, "清单为空时这道检查什么也没核对"
     for entry in registry:
         assert entry["id"].startswith("RUSTSEC-"), entry["id"]
         assert len(entry["why_not_applicable"]) >= 10, entry["id"]
@@ -110,3 +116,52 @@ def test_the_workflow_takes_its_ignore_ids_from_the_registry():
         assert f"--ignore {entry['id']}" not in workflow, (
             f"{entry['id']} 被硬写进了 workflow；ignore 参数必须由清单生成"
         )
+
+
+def _audit_step_script() -> str:
+    import yaml
+
+    workflow = yaml.safe_load(
+        (ROOT / ".github/workflows/security-scan.yml").read_text(encoding="utf-8")
+    )
+    for job in workflow["jobs"].values():
+        for step in job.get("steps", []):
+            if step.get("name") == "Fail on any actionable advisory":
+                return step["run"]
+    raise AssertionError("security-scan.yml has no 'Fail on any actionable advisory' step")
+
+
+@pytest.mark.parametrize("ids", [[], ["RUSTSEC-1", "RUSTSEC-2"]])
+def test_the_audit_step_passes_exactly_the_registry_ids(tmp_path, ids):
+    """An empty registry must mean no --ignore at all.
+
+    The step built its list with `print('\n'.join(...))`, which prints one blank
+    line for an empty registry; mapfile read that as one empty id and the
+    command carried `--ignore ""`. cargo-audit accepted it and ignored nothing,
+    and the log's `suppressing: <none>` hid it.
+    """
+    (tmp_path / "desktop").mkdir()
+    (tmp_path / "desktop" / "audit-ignore.json").write_text(
+        json.dumps({"ignore": [{"id": i} for i in ids]}), encoding="utf-8"
+    )
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    fake_cargo = bindir / "cargo"
+    fake_cargo.write_text(
+        '#!/bin/bash\nprintf "%s\\n" "$@" > "$(dirname "$0")/../args.txt"\n', encoding="utf-8"
+    )
+    fake_cargo.chmod(0o755)
+    result = subprocess.run(
+        ["bash", "-e", "-c", _audit_step_script()],
+        cwd=tmp_path,
+        env={**os.environ, "PATH": f"{bindir}{os.pathsep}{os.environ['PATH']}"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    expected = ["audit", "--file", "desktop/Cargo.lock"]
+    for advisory in ids:
+        expected += ["--ignore", advisory]
+    assert (tmp_path / "args.txt").read_text(encoding="utf-8").splitlines() == expected
+
