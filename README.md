@@ -202,7 +202,7 @@ npx master-skill update --all           # 升级：重装全部并清掉旧文�
 
 ![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/main/docs/assets/desktop-manager.png)
 
-**下载**：[Releases](https://github.com/xr843/Master-skill/releases) 提供 Linux / Windows / macOS 预编译二进制，需在本仓库克隆的根目录运行（它会调用仓库里的 `scripts/` 与 `bin/`）。Linux / macOS 建议下载对应的 `.tar.gz`，解包后保留可执行位；裸二进制仍保留以兼容旧链接，使用时需先 `chmod +x`。每个 release 附带 `SHA256SUMS`，可用 `sha256sum --check --ignore-missing SHA256SUMS` 核对下载文件，并附构建溯源证明，可用 `gh attestation verify <文件> --repo xr843/Master-skill` 验证。**v0.12.0 之前的 Windows 版无法调用 Python 与 npm**；v0.12.0 起改为按平台解析，但 CI 尚未在 Windows 主机上运行桌面端，如遇问题可用环境变量 `MASTER_SKILL_PYTHON` / `MASTER_SKILL_NPM` 指定解释器。macOS 二进制未签名，首次运行需右键“打开”或执行 `xattr -d com.apple.quarantine <文件名>` 解除隔离。
+**下载**：[Releases](https://github.com/xr843/Master-skill/releases) 提供 Linux / Windows / macOS 预编译二进制，需在本仓库克隆的根目录运行（它会调用仓库里的 `scripts/` 与 `bin/`）。v0.12.1 起，Linux / macOS 建议下载对应的 `.tar.gz`，解包后保留可执行位；裸二进制仍保留以兼容旧链接，使用时需先 `chmod +x`。每个 release（v0.12.1 起）附带 `SHA256SUMS`，可用 `sha256sum --check --ignore-missing SHA256SUMS` 核对下载文件，并附构建溯源证明，可用 `gh attestation verify <文件> --repo xr843/Master-skill` 验证。**v0.12.1 之前没有可用的 Windows 桌面二进制**（更早的版本无法调用 Python 与 npm，v0.12.0 未能构建出 Windows 版）；v0.12.1 起改为按平台解析，但 CI 尚未在 Windows 主机上运行桌面端，如遇问题可用环境变量 `MASTER_SKILL_PYTHON` / `MASTER_SKILL_NPM` 指定解释器。macOS 二进制未签名，首次运行需右键“打开”或执行 `xattr -d com.apple.quarantine <文件名>` 解除隔离。
 
 **从源码构建**（需要 Rust 1.95+）：
 
