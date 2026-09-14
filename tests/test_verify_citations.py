@@ -1211,3 +1211,68 @@ def test_a_number_without_a_canon_letter_is_not_a_citation_id():
 def test_a_jiaxing_number_keeps_its_b_prefix_in_the_no_form():
     report = verify_citations.audit_answer({"J36nB348"}, "【《灵峰宗论》，J36 No.B348】")
     assert report["offline"] == ["J36nB348"]
+
+
+# --------------------------------------------------------------------------
+# `--online` 只验证了链接「打得开」，没验证它「是那部书」。
+#
+# 【《伪经》，T99n9999】→ https://fojin.app/texts/20 能过：texts/20 是《佛說阿彌陀經》，
+# 当然解析得到。master-yinguang 存档里的 23 条更隐蔽：【《印光法師文鈔正編》卷一，
+# X62n1182】→ texts/12977，链接的 cbeta_id 恰是 X1182（经号自洽），可那部书是
+# 《徹悟禪師語錄》。所以核验要比两样：链接的经号是不是引文写的那个，书名对不对得上。
+# --------------------------------------------------------------------------
+
+
+def test_audit_answer_records_each_live_citation_with_its_title():
+    r = audit_answer(set(), "【《伪经》卷一，T99n9999】→ https://fojin.app/texts/13013")
+    assert r["live"] == [("T99n9999", "13013")]
+    assert r["live_detail"] == [{"cited_id": "T99n9999", "text_id": "13013", "title": "伪经"}]
+
+
+def test_a_live_link_to_another_sutra_number_is_fabricated_online(monkeypatch):
+    _fake_requests(
+        monkeypatch,
+        lambda url: _FakeResponse(200, {"cbeta_id": "T0366", "title_zh": "佛說阿彌陀經"}),
+    )
+    res = verify_citations.verify_online(
+        ["20"], citations=[{"cited_id": "T99n9999", "text_id": "20", "title": "伪经"}]
+    )
+    assert res.verdicts["20"] is False
+    assert res.fabricated == ["20"]
+    assert "T0366" in res.reasons["20"]
+
+
+def test_a_live_link_whose_number_matches_but_whose_book_does_not_is_fabricated(monkeypatch):
+    """The stored master-yinguang answers: the id and the link agree with each
+    other, and both belong to 《徹悟禪師語錄》, not the Wenchao the text names."""
+    _fake_requests(
+        monkeypatch,
+        lambda url: _FakeResponse(200, {"cbeta_id": "X1182", "title_zh": "徹悟禪師語錄"}),
+    )
+    res = verify_citations.verify_online(
+        ["12977"],
+        citations=[{"cited_id": "X62n1182", "text_id": "12977", "title": "印光法師文鈔正編"}],
+    )
+    assert res.verdicts["12977"] is False
+    assert "徹悟禪師語錄" in res.reasons["12977"]
+
+
+def test_a_live_link_to_the_cited_work_passes_even_with_a_chapter_in_the_title(monkeypatch):
+    _fake_requests(
+        monkeypatch,
+        lambda url: _FakeResponse(200, {"cbeta_id": "T0366", "title_zh": "佛說阿彌陀經"}),
+    )
+    res = verify_citations.verify_online(
+        ["20"],
+        citations=[
+            {"cited_id": "T12n0366", "text_id": "20", "title": "佛说阿弥陀经"},
+            {"cited_id": "T0366", "text_id": "20", "title": "佛說阿彌陀經·六方段"},
+        ],
+    )
+    assert res.verdicts["20"] is True, res.reasons
+
+
+def test_without_citations_online_verification_only_checks_resolution(monkeypatch):
+    _fake_requests(monkeypatch, lambda url: _FakeResponse(200, {"cbeta_id": "T0366"}))
+    assert verify_citations.verify_online(["20"]).verdicts["20"] is True
+

@@ -243,3 +243,60 @@ def test_api_error_rows_do_not_pollute_reaudit_totals(mod):
     out = mod.reaudit(report)
     assert out["suites"][0]["recomputed"]["checked"] == 1
     assert out["suites"][0]["recomputed"]["unparsed"] == 0
+
+
+# --------------------------------------------------------------------------
+# `--online`: a live citation passes offline on its FoJin link alone, so the
+# stored run's live citations are exactly the ones nobody has checked.
+# --------------------------------------------------------------------------
+
+
+def test_reaudit_keeps_each_live_citation_with_its_link_and_title(mod):
+    out = mod.reaudit(
+        _report("master-huineng", "【《伪经》卷一，T99n9999】→ https://fojin.app/texts/13013")
+    )
+    assert out["suites"][0]["live"] == [
+        {"cited_id": "T99n9999", "text_id": "13013", "title": "伪经"}
+    ]
+
+
+def _write(tmp_path, report) -> str:
+    path = tmp_path / "run.json"
+    path.write_text(json.dumps(report, ensure_ascii=False), encoding="utf-8")
+    return str(path)
+
+
+def test_online_verifies_the_stored_live_citations(mod, tmp_path, monkeypatch, capsys):
+    from verify_citations import OnlineVerification
+
+    seen = {}
+
+    def fake_verify_online(text_ids, citations=None, **_):
+        seen["ids"], seen["citations"] = sorted(text_ids), citations
+        return OnlineVerification(
+            {"13013": False}, {"13013": "texts/13013 是 T0366,不是引文写的 T99n9999"}
+        )
+
+    monkeypatch.setattr(mod, "verify_online", fake_verify_online)
+    path = _write(
+        tmp_path,
+        _report("master-huineng", "【《伪经》卷一，T99n9999】→ https://fojin.app/texts/13013"),
+    )
+    assert mod.main(["reaudit-report.py", path, "--online"]) == 0
+    printed = capsys.readouterr().out
+    assert seen["ids"] == ["13013"]
+    assert seen["citations"] == [{"cited_id": "T99n9999", "text_id": "13013", "title": "伪经"}]
+    assert "master-huineng" in printed and "texts/13013 是 T0366" in printed
+
+
+def test_without_online_nothing_touches_the_network(mod, tmp_path, monkeypatch):
+    def refuse(*_, **__):
+        raise AssertionError("verify_online called without --online")
+
+    monkeypatch.setattr(mod, "verify_online", refuse)
+    path = _write(
+        tmp_path,
+        _report("master-huineng", "【《伪经》卷一，T99n9999】→ https://fojin.app/texts/13013"),
+    )
+    assert mod.main(["reaudit-report.py", path]) == 0
+
