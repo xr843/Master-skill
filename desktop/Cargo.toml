@@ -25,7 +25,15 @@ anyhow = "1"
 # accesskit versions, two epaint versions, and a green CI because nothing in
 # this crate actually imported the newer one. Removed: one version of egui,
 # chosen by eframe.
-eframe = "0.36"
+# glow, explicitly, not eframe's defaults. eframe 0.31's default features
+# enabled the glow (OpenGL) renderer; 0.36's enable wgpu instead, so taking the
+# defaults in the 0.31 → 0.36 port silently switched this app to a GPU backend
+# it had never used. On Windows, wgpu's DirectX 12 backend then failed to
+# compile — `gpu-allocator` had locked `windows` 0.58 while `wgpu-hal` needed
+# 0.62 — and v0.12.0's desktop release shipped no binaries at all. This is the
+# default feature set minus `wgpu` plus `glow`: the renderer every earlier
+# release used. The stripped Linux binary also drops by more than a quarter.
+eframe = { version = "0.36", default-features = false, features = ["accesskit", "default_fonts", "glow", "links", "wayland", "web_screen_reader", "x11"] }
 fs4 = { version = "1.1", default-features = false, features = ["sync"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

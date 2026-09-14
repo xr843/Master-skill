@@ -174,6 +174,25 @@ def test_desktop_quality_gates_run_before_tests_and_build():
     assert step_names.index("Test desktop app") < step_names.index("Build desktop app")
 
 
+def test_desktop_job_type_checks_every_other_release_target():
+    """The release matrix builds Windows and macOS; nothing else compiled them.
+
+    v0.12.0 failed to build for Windows while every PR and main check was
+    green, and its release attached no desktop binaries. Each target the release
+    workflow builds on a non-Linux runner must be type-checked here.
+    """
+    steps = _job(WORKFLOW, "desktop-rust")["steps"]
+    names = [step.get("name") for step in steps]
+    assert "Type-check the other release targets" in names
+    assert names.index("Type-check the other release targets") > names.index("Build desktop app")
+    step = _step(WORKFLOW, "desktop-rust", "Type-check the other release targets")
+    run = step.get("run", "")
+    for target in ("x86_64-pc-windows-msvc", "aarch64-apple-darwin"):
+        assert f"--target {target}" in run, target
+        assert target in run.split("\n")[0], f"{target} is checked but never installed"
+    _assert_hard(step)
+
+
 def test_windows_cli_job_installs_the_generator_python_runtime():
     job = _job(WORKFLOW, "cli-windows")
     uses = [step.get("uses", "") for step in job["steps"]]

@@ -10,6 +10,26 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — v0.12.0's desktop release attached no binaries (2026-09-14)
+
+The Windows build failed, and the release workflow assembles assets only when
+all three platforms build. The cause was in the eframe 0.31 → 0.36 port:
+0.31's default features enabled the glow (OpenGL) renderer, 0.36's enable wgpu
+instead, and taking the defaults silently switched the desktop manager to a GPU
+backend it had never used. On Windows, wgpu's DirectX 12 backend did not compile
+— `gpu-allocator` had locked `windows` 0.58 while `wgpu-hal` needed 0.62. Nothing
+caught it because desktop CI ran on Ubuntu only and release builds happen after
+a release is published.
+
+- eframe now enables `glow` explicitly: its default feature set minus `wgpu`.
+  The lockfile only loses packages. The stripped Linux release binary goes from
+  21,277,616 to 15,238,672 bytes, and contains no wgpu code.
+- CI type-checks `x86_64-pc-windows-msvc` and `aarch64-apple-darwin` on every PR.
+  A type-check needs neither linker nor SDK; it does not catch link errors, so
+  the release workflow is also dispatched manually on a branch before release.
+- The glow build was launched under WSLg and driven with XTEST: a sidebar click
+  selects the skill and renders its detail.
+
 ## [0.12.0] — 2026-09-14
 
 80 commits since v0.11.0. The first half ruled by hand on every failure in the
