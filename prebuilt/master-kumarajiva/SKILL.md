@@ -30,6 +30,9 @@ sources:
   - title: 百论
     cbeta_id: T30n1569
     fojin_text_id: 42
+  - title: 摩诃般若波罗蜜大明咒经
+    cbeta_id: T08n0250
+    fojin_text_id: 6503
 citation_format: "【《{title}》卷{juan}，{cbeta_id}】"
 verified_by: xr843
 verified_at: 2026-04-06
