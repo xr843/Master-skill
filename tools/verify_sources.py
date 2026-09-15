@@ -800,6 +800,159 @@ def classify_excerpt_quotes(
     return mismatched, unknown
 
 
+BDRC_RESOURCE_URL = "https://ldspdi.bdrc.io/resource/{}.json"
+_BDRC_RESOURCE = "http://purl.bdrc.io/resource/"
+_BDRC_WORK_ID = re.compile(r"^BDRC:(W[0-9][A-Za-z0-9_]*)$")
+_LATIN_RUN = re.compile(r"[A-Za-z][A-Za-z' .+-]*[A-Za-z']")
+
+
+def _wylie_key(text: str) -> str:
+    """Wylie 题名比对用的归一：小写，`/` `_` `-` 与括号折成空格，ALA-LC 的 ʾ 当撇号。"""
+    text = text.lower().replace("\u02be", "'").replace("\u2019", "'")
+    return " ".join(re.sub(r"[/_()\-]", " ", text).split())
+
+
+def collect_bdrc_sources() -> list[tuple[str, str, str | None]]:
+    """(祖师目录, BDRC 作品号, 声明的藏文题名或 None)，取自各 meta.json 的 sources。
+
+    藏文题名先取 SKILL.md frontmatter 里同号的 `tibetan_title`，没有就取 meta.json
+    题名括注里的拉丁字母段（「密勒日巴尊者传（rNam thar）」→ rNam thar）。
+    `BDRC:Pha-chos-Bu-chos` 这种拿 Wylie 当 id 的写法不是作品号，不收。
+    """
+    import yaml
+
+    rows: list[tuple[str, str, str | None]] = []
+    for teacher in sorted(os.listdir(PREBUILT_DIR)):
+        meta_path = os.path.join(PREBUILT_DIR, teacher, "meta.json")
+        if not os.path.isfile(meta_path):
+            continue
+        with open(meta_path, encoding="utf-8") as f:
+            meta = json.load(f)
+        front_titles: dict[str, str] = {}
+        skill_path = os.path.join(PREBUILT_DIR, teacher, "SKILL.md")
+        if os.path.isfile(skill_path):
+            with open(skill_path, encoding="utf-8") as f:
+                parts = f.read().split("---", 2)
+            if len(parts) == 3 and not parts[0].strip():
+                for src in (yaml.safe_load(parts[1]) or {}).get("sources") or []:
+                    if isinstance(src, dict) and src.get("bdrc_id") and src.get("tibetan_title"):
+                        front_titles[str(src["bdrc_id"])] = str(src["tibetan_title"])
+        for src in meta.get("sources", []):
+            match = _BDRC_WORK_ID.match(str(src.get("id", "")))
+            if not match:
+                continue
+            rid = match.group(1)
+            declared = front_titles.get(rid)
+            if declared is None:
+                brackets = re.findall(r"[（(]([^）)]*)[）)]", str(src.get("title") or ""))
+                runs = [run for part in brackets for run in _LATIN_RUN.findall(part)]
+                declared = runs[-1] if runs else None
+            rows.append((teacher, rid, declared))
+    return rows
+
+
+def bdrc_titles(document: dict, rid: str) -> list[str]:
+    """ldspdi 返回的 JSON 图里 `rid` 这个节点自己的题名。
+
+    只收三处：节点的 prefLabel / altLabel，和它 hasTitle 指向的标题节点的 label。
+    备注、目录说明（catalogInfo）不收 —— 一部全集的说明里提到「rnam thar」，不等于
+    它就是那部传记。
+    """
+    def literals(props: dict, names: set[str]) -> list[str]:
+        return [
+            value["value"]
+            for key, values in props.items()
+            if key.rsplit("/", 1)[-1].split("#")[-1] in names
+            for value in values
+            if value.get("type") == "literal"
+        ]
+
+    node = document.get(_BDRC_RESOURCE + rid, {})
+    titles = literals(node, {"prefLabel", "altLabel"})
+    for key, values in node.items():
+        if key.endswith("/hasTitle"):
+            for value in values:
+                titles += literals(document.get(value.get("value", ""), {}), {"label"})
+    return titles
+
+
+def bdrc_linked_ids(document: dict, rid: str, properties: tuple[str, ...]) -> list[str]:
+    """`rid` 节点在给定属性上指向的 BDRC 资源号（`instanceOf` → `WA…`）。"""
+    node = document.get(_BDRC_RESOURCE + rid, {})
+    return [
+        value["value"].rsplit("/", 1)[-1]
+        for key, values in node.items()
+        if key.rsplit("/", 1)[-1] in properties
+        for value in values
+        if value.get("type") == "uri" and value.get("value", "").startswith(_BDRC_RESOURCE)
+    ]
+
+
+def fetch_bdrc_record(rid: str) -> tuple[bool, list[str]] | None:
+    """BDRC 作品号 → (是否存在, 题名)。题名含它复制的 MW 实例与所属 WA 作品的题名。
+
+    影像实例（W…）节点本身不带题名，题名在 MW 与 WA 上，所以顺着
+    instanceReproductionOf / instanceOf 各取一层。查无此号（404）返回
+    (False, [])；网络或服务端出错返回 None —— 未知，不算错。
+    """
+    import urllib.error
+    import urllib.request
+
+    def get(resource: str) -> dict:
+        request = urllib.request.Request(
+            BDRC_RESOURCE_URL.format(resource),
+            headers={"User-Agent": "Mozilla/5.0 (compatible; master-skill verify_sources)", "Accept": "application/json"},
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.loads(response.read().decode("utf-8"))
+
+    try:
+        document = get(rid)
+    except urllib.error.HTTPError as error:
+        return (False, []) if error.code == 404 else None
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+    titles = bdrc_titles(document, rid)
+    for other in bdrc_linked_ids(document, rid, ("instanceReproductionOf", "instanceOf")):
+        try:
+            titles += bdrc_titles(get(other), other)
+        except (urllib.error.URLError, OSError, ValueError):
+            return None
+    return True, titles
+
+
+def classify_bdrc_records(
+    sources: list[tuple[str, str, str | None]],
+    records: dict[str, tuple[bool, list[str]] | None],
+) -> tuple[list[tuple[str, str, str | None, str]], list[tuple[str, str]]]:
+    """声明的 BDRC 作品号分成「不存在或是另一部书」与「比不了」两类。
+
+    master-milarepa 把《密勒日巴尊者传》声明成 W22272（实为宗喀巴全集），把
+    《道歌集》声明成 W1KG14334（BDRC 查无此号），挂了 73 处，周检一直是绿的：
+    上面各步只核 CBETA，而 library.bdrc.io 对任何号都打开一个页面。
+
+    比法：声明的藏文题名（归一后按整音节）须出现在记录的某个题名里。已知边界：
+    声明写得太泛（只写「rNam thar」），别人的传记也对得上 —— 这一步抓得住不存在
+    的号和另一类书，抓不住同类的另一部。
+    """
+    mismatched: list[tuple[str, str, str | None, str]] = []
+    unknown: list[tuple[str, str]] = []
+    for teacher, rid, declared in sources:
+        record = records.get(rid)
+        if record is None:
+            unknown.append((f"{teacher}:BDRC:{rid}", "BDRC did not answer"))
+            continue
+        exists, titles = record
+        if not exists:
+            mismatched.append((teacher, rid, declared, "BDRC has no such record"))
+        elif not declared:
+            unknown.append((f"{teacher}:BDRC:{rid}", "no Tibetan title declared to compare"))
+        elif not any(f" {_wylie_key(declared)} " in f" {_wylie_key(title)} " for title in titles):
+            shown = " | ".join(titles[:3]) if titles else "(no title)"
+            mismatched.append((teacher, rid, declared, f"BDRC titles: {shown}"))
+    return mismatched, unknown
+
+
 def verify_ids(bridge, cbeta_map: dict[str, list[str]], titles: dict[str, str]) -> dict[str, dict]:
     """Verify all CBETA IDs and return {full_cbeta_id: {text_id, short_id, title, ...}}.
 
@@ -1105,6 +1258,20 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     if not quote_mismatched and not quote_unknown:
         print(f"  All {len(quotes)} quotations appear clause by clause in the cited fascicle")
 
+    # Step 3g: 声明的 BDRC 作品号是否存在、是否是那部书（见 classify_bdrc_records）。
+    print("\n[3g/4] Checking declared BDRC work ids against BDRC...")
+    bdrc_sources = collect_bdrc_sources()
+    bdrc_records = {rid: fetch_bdrc_record(rid) for rid in sorted({rid for _, rid, _ in bdrc_sources})}
+    bdrc_mismatched, bdrc_unknown = classify_bdrc_records(bdrc_sources, bdrc_records)
+    for teacher, rid, declared, reason in bdrc_mismatched:
+        print(f"    [WRONG] {teacher}: BDRC:{rid} declared as {declared or '(no Tibetan title)'} — {reason}")
+    if bdrc_unknown:
+        print(f"  Could not check {len(bdrc_unknown)} BDRC id(s) — unknown, not wrong:")
+        for where, reason in bdrc_unknown:
+            print(f"    {where}: {reason}")
+    if not bdrc_mismatched and not bdrc_unknown:
+        print(f"  All {len(bdrc_sources)} declared BDRC work ids resolve to a record with the declared title")
+
     # Step 4: Update URLs
     # Build replacement map: full_cbeta_id -> str(internal_text_id)
     id_replacement_map: dict[str, str] = {}
@@ -1151,6 +1318,7 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     print(f"  Frontmatter FoJin id mismatches: {len(fm_mismatched)}")
     print(f"  Doc citation links to another work: {len(doc_mismatched)}")
     print(f"  Excerpt quotes not in the cited text: {len(quote_mismatched)}")
+    print(f"  BDRC records that do not match: {len(bdrc_mismatched)}")
     if unknown_to_cbeta:
         print(f"  CBETA unreachable for:     {len(unknown_to_cbeta)} (not counted as wrong)")
     if dry_run and all_changes:

@@ -53,6 +53,9 @@ jobs:
           DOC_LINK_MISMATCHED=$(grep -oP "Doc citation links to another work:\s*\K\d+" verify_output.txt || echo "0")
           # 摘录里的「原典」引文有分句不在所引那一卷（2026-09-15 首次核查发现 19 段）。
           EXCERPT_QUOTE_MISMATCHED=$(grep -oP "Excerpt quotes not in the cited text:\s*\K\d+" verify_output.txt || echo "0")
+          # 声明的 BDRC 作品号不存在，或是另一部书（2026-09-15 首次核查：master-milarepa
+          # 的 W22272 是宗喀巴全集，W1KG14334 查无此号；library.bdrc.io 对任何号都回 200）。
+          BDRC_MISMATCHED=$(grep -oP "BDRC records that do not match:\s*\K\d+" verify_output.txt || echo "0")
           # 一组重定向而不是多条 —— shellcheck SC2129。
           {
             echo "failed=$FAILED"
@@ -62,10 +65,11 @@ jobs:
             echo "frontmatter_mismatched=$FRONTMATTER_MISMATCHED"
             echo "doc_link_mismatched=$DOC_LINK_MISMATCHED"
             echo "excerpt_quote_mismatched=$EXCERPT_QUOTE_MISMATCHED"
+            echo "bdrc_mismatched=$BDRC_MISMATCHED"
           } >> "$GITHUB_OUTPUT"
 
       - name: Create issue if links need updating
-        if: steps.verify.outputs.updates != '0' || steps.verify.outputs.failed != '0' || steps.verify.outputs.mismatched != '0' || steps.verify.outputs.title_mismatched != '0' || steps.verify.outputs.frontmatter_mismatched != '0' || steps.verify.outputs.doc_link_mismatched != '0' || steps.verify.outputs.excerpt_quote_mismatched != '0'
+        if: steps.verify.outputs.updates != '0' || steps.verify.outputs.failed != '0' || steps.verify.outputs.mismatched != '0' || steps.verify.outputs.title_mismatched != '0' || steps.verify.outputs.frontmatter_mismatched != '0' || steps.verify.outputs.doc_link_mismatched != '0' || steps.verify.outputs.excerpt_quote_mismatched != '0' || steps.verify.outputs.bdrc_mismatched != '0'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
@@ -86,6 +90,7 @@ jobs:
                   `- **Frontmatter FoJin ids that point elsewhere:** ${{ steps.verify.outputs.frontmatter_mismatched }}\n` +
                   `- **Doc citation links that open another work:** ${{ steps.verify.outputs.doc_link_mismatched }}\n` +
                   `- **Excerpt quotations not in the cited fascicle:** ${{ steps.verify.outputs.excerpt_quote_mismatched }}\n` +
+                  `- **Declared BDRC ids that are missing or another work:** ${{ steps.verify.outputs.bdrc_mismatched }}\n` +
                   `- **Last run:** ${new Date().toISOString()}\n\n` +
                   `## Full output\n\n\`\`\`\n${output}\n\`\`\`\n\n` +
                   `Run \`python3 tools/verify_sources.py --fix\` locally and commit the changes.`;

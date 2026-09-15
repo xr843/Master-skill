@@ -10,6 +10,28 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — weekly check of declared BDRC work ids (2026-09-15)
+
+`tools/verify_sources.py` has a new step, 3g. It checks each `BDRC:W…` work id
+declared in a persona's `meta.json` against the record BDRC holds.
+
+- The record comes from ldspdi.bdrc.io. An image instance carries no title, so
+  the step follows it to its MW instance and WA work.
+- An id counts as wrong when BDRC answers 404, or when none of the record's
+  titles contains the declared Tibetan title. The declared title is
+  `tibetan_title` in SKILL.md, or the Latin text in the brackets of the
+  meta.json title.
+- When BDRC does not answer, or no Tibetan title is declared, the id is
+  reported as unknown, not wrong.
+- The weekly workflow opens its tracking issue when the count is not zero.
+- CONTRIBUTING.md says how to check a BDRC id before declaring it.
+
+Run against main before the fix above, the step flagged both of
+master-milarepa's old ids, and the ids that replaced them pass. A declared
+title as generic as "rNam thar" also matches another person's biography. The
+step therefore catches ids that do not exist or that name another kind of
+work, but not every wrong id.
+
 ### Fixed — master-milarepa BDRC IDs; Xuyun and Yinguang dates (2026-09-15)
 
 master-milarepa declared two BDRC IDs that do not name its sources:

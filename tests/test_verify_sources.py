@@ -1,6 +1,8 @@
 """Tests for verify_sources.py — pure logic and offline CLI, no API calls."""
 
+import io
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -839,3 +841,137 @@ def test_every_count_the_weekly_workflow_reads_is_printed_by_the_script():
     assert len(labels) >= 7, labels
     for label in labels:
         assert f"{label}:" in source, label
+
+
+# --- Step 3g: declared BDRC work ids ------------------------------------------
+
+_BDR = "http://purl.bdrc.io/resource/"
+_CORE = "http://purl.bdrc.io/ontology/core/"
+_LABEL = "http://www.w3.org/2000/01/rdf-schema#label"
+
+
+def _lit(value, lang="bo-x-ewts"):
+    return [{"type": "literal", "value": value, "lang": lang}]
+
+
+def _uri(resource):
+    return [{"type": "uri", "value": _BDR + resource}]
+
+
+# Trimmed from what ldspdi.bdrc.io returned on 2026-09-15.
+_BDRC_DOCS = {
+    "W22272": {_BDR + "W22272": {_CORE + "instanceReproductionOf": _uri("MW22272"), _CORE + "instanceOf": _uri("WA20510")}},
+    "MW22272": {
+        _BDR + "MW22272": {_CORE + "prefLabel": _lit("gsung 'bum/_tsong kha pa/ (sku 'bum par ma/)"), _CORE + "hasTitle": _uri("TT3EACEA29CEB78723")},
+        _BDR + "TT3EACEA29CEB78723": {_LABEL: _lit("gsung 'bum/_tsong kha pa/ (sku 'bum par ma/)")},
+    },
+    "WA20510": {_BDR + "WA20510": {_CORE + "prefLabel": _lit("gsung 'bum/_tsong kha pa/"), _CORE + "altLabel": _lit("rje tsong kha pa chen po'i gsung 'bum/")}},
+    "W1GS56158": {_BDR + "W1GS56158": {_CORE + "instanceReproductionOf": _uri("MW1GS56158"), _CORE + "instanceOf": _uri("WA4CZ301813")}},
+    "MW1GS56158": {
+        _BDR + "MW1GS56158": {
+            _CORE + "prefLabel": _lit("rnal 'byor gyi dbang phyug chen po rje btsun mi la ras pa'i rnam thar thar pa dang thams cad mkhyen pa'i lam ston/"),
+            _CORE + "hasTitle": _uri("TT34F540008D200BF6"),
+            _CORE + "note": _uri("NT25411A147FE3E8AA"),
+        },
+        _BDR + "TT34F540008D200BF6": {_LABEL: _lit("the biography of milarepa", "en")},
+        _BDR + "NT25411A147FE3E8AA": {_CORE + "noteText": _lit("print from a recent lithographic print from varanasi", "en")},
+    },
+    "WA4CZ301813": {_BDR + "WA4CZ301813": {_CORE + "catalogInfo": _lit("The Life of Milarepa", "en")}},
+}
+
+
+class _FakeResponse(io.BytesIO):
+    pass
+
+
+def _serve_bdrc(monkeypatch, docs, fail=None):
+    import urllib.error
+    import urllib.request
+
+    def fake_urlopen(request, timeout=None):
+        rid = request.full_url.rsplit("/", 1)[-1].removesuffix(".json")
+        if fail and rid in fail:
+            raise fail[rid]
+        if rid not in docs:
+            raise urllib.error.HTTPError(request.full_url, 404, "Not Found", None, None)
+        return _FakeResponse(json.dumps(docs[rid]).encode("utf-8"))
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+
+def test_a_bdrc_id_that_names_another_work_is_flagged(monkeypatch):
+    """master-milarepa declared Tsongkhapa's collected works as the Life of Milarepa."""
+    _serve_bdrc(monkeypatch, _BDRC_DOCS)
+    record = verify_sources.fetch_bdrc_record("W22272")
+    mismatched, unknown = verify_sources.classify_bdrc_records([("master-milarepa", "W22272", "rNam thar")], {"W22272": record})
+    assert [(m[0], m[1]) for m in mismatched] == [("master-milarepa", "W22272")]
+    assert "tsong kha pa" in mismatched[0][3]
+    assert unknown == []
+
+
+def test_a_bdrc_id_bdrc_does_not_have_is_flagged(monkeypatch):
+    """master-milarepa declared W1KG14334, which BDRC answers with 404."""
+    _serve_bdrc(monkeypatch, _BDRC_DOCS)
+    assert verify_sources.fetch_bdrc_record("W1KG14334") == (False, [])
+    mismatched, _ = verify_sources.classify_bdrc_records([("master-milarepa", "W1KG14334", "mGur 'bum")], {"W1KG14334": (False, [])})
+    assert mismatched[0][3] == "BDRC has no such record"
+
+
+def test_the_record_that_is_the_declared_work_passes(monkeypatch):
+    _serve_bdrc(monkeypatch, _BDRC_DOCS)
+    record = verify_sources.fetch_bdrc_record("W1GS56158")
+    assert record[0] is True
+    assert verify_sources.classify_bdrc_records([("master-milarepa", "W1GS56158", "rNam thar")], {"W1GS56158": record}) == ([], [])
+
+
+def test_titles_come_from_the_node_and_its_title_nodes_not_from_notes_or_catalogue_text():
+    """A collected works whose note mentions a rnam thar is not that rnam thar."""
+    doc = _BDRC_DOCS["MW1GS56158"]
+    titles = verify_sources.bdrc_titles(doc, "MW1GS56158")
+    assert "the biography of milarepa" in titles
+    assert not any("lithographic" in t for t in titles)
+    assert verify_sources.bdrc_titles(_BDRC_DOCS["WA4CZ301813"], "WA4CZ301813") == []
+
+
+def test_the_declared_title_must_match_whole_syllables():
+    records = {"W1": (True, ["mi la ras pa'i mgur 'bum/"])}
+    assert verify_sources.classify_bdrc_records([("t", "W1", "mGur 'bum")], records) == ([], [])
+    mismatched, _ = verify_sources.classify_bdrc_records([("t", "W1", "gur 'bum")], records)
+    assert len(mismatched) == 1
+
+
+def test_bdrc_not_answering_is_unknown_not_wrong(monkeypatch):
+    import urllib.error
+
+    _serve_bdrc(monkeypatch, _BDRC_DOCS, fail={"W22272": urllib.error.URLError("timed out"), "MW1GS56158": urllib.error.HTTPError("u", 500, "err", None, None)})
+    assert verify_sources.fetch_bdrc_record("W22272") is None
+    assert verify_sources.fetch_bdrc_record("W1GS56158") is None
+    mismatched, unknown = verify_sources.classify_bdrc_records([("t", "W22272", "rNam thar")], {"W22272": None})
+    assert mismatched == []
+    assert unknown == [("t:BDRC:W22272", "BDRC did not answer")]
+
+
+def test_a_source_without_a_tibetan_title_is_unknown_not_wrong():
+    mismatched, unknown = verify_sources.classify_bdrc_records([("t", "W1", None)], {"W1": (True, ["anything/"])})
+    assert mismatched == []
+    assert unknown == [("t:BDRC:W1", "no Tibetan title declared to compare")]
+
+
+def test_the_meta_title_supplies_the_tibetan_title_when_frontmatter_has_none(tmp_path, monkeypatch):
+    persona = tmp_path / "master-example"
+    persona.mkdir()
+    (persona / "meta.json").write_text(json.dumps({"sources": [
+        {"type": "tibetan_canon", "id": "BDRC:W1KG1252", "title": "米拉日巴道歌集（十万歌集，mGur 'bum）"},
+        {"type": "kadam_corpus", "id": "BDRC:Pha-chos-Bu-chos", "title": "父法（Pha chos）"},
+        {"type": "tibetan_canon", "id": "Toh:4465", "title": "菩提道灯论"},
+    ]}, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(verify_sources, "PREBUILT_DIR", str(tmp_path))
+    assert verify_sources.collect_bdrc_sources() == [("master-example", "W1KG1252", "mGur 'bum")]
+
+
+def test_the_bdrc_collector_reads_the_real_repo():
+    rows = verify_sources.collect_bdrc_sources()
+    milarepa = [row for row in rows if row[0] == "master-milarepa"]
+    assert len(milarepa) == 2
+    assert {row[2] for row in milarepa} == {"mGur 'bum", "rNam thar"}
+    assert all(re.match(r"^W[0-9]", rid) for _, rid, _ in rows)
