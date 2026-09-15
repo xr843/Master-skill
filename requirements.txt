@@ -4,3 +4,5 @@ requests>=2.32.5,<2.33; python_version < "3.10"
 requests>=2.34.2; python_version >= "3.10"
 pypinyin>=0.55.0
 pyyaml>=6.0.3
+# 3h 把人设引文转成繁体再查 CBETA：检索只认繁体，简体一律 0 条。
+opencc-python-reimplemented>=0.1.7
