@@ -10,6 +10,15 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.6] — 2026-09-15
+
+This release checks the remaining persona biographies and the non-CBETA source
+ids against their sources. master-milarepa's two BDRC ids named the wrong
+works: one is Tsongkhapa's collected works, and the other does not exist. The
+weekly source check now looks up every declared BDRC work id. Xuyun's,
+Yinguang's, Kumārajīva's and Zhiyi's biographies, and those of four Tibetan
+and Pali personas, are corrected, and the docs now match.
+
 ### Fixed — Atiśa's Lamp is Toh 3947 as well as Toh 4465 (2026-09-15)
 
 docs/masters.md called Toh 4465 the standard Derge number for the
@@ -1843,7 +1852,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.5...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.6...HEAD
+[0.12.6]: https://github.com/xr843/Master-skill/compare/v0.12.5...v0.12.6
 [0.12.5]: https://github.com/xr843/Master-skill/compare/v0.12.4...v0.12.5
 [0.12.4]: https://github.com/xr843/Master-skill/compare/v0.12.3...v0.12.4
 [0.12.3]: https://github.com/xr843/Master-skill/compare/v0.12.2...v0.12.3
