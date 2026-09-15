@@ -10,6 +10,25 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — Atiśa's Lamp is Toh 3947 as well as Toh 4465 (2026-09-15)
+
+docs/masters.md called Toh 4465 the standard Derge number for the
+*Bodhipathapradīpa*. The Derge Tengyur holds the text twice:
+
+- as Toh 3947 in the Madhyamaka section, the copy 84000 translates and most
+  scholarship cites
+- as Toh 4465 in Atiśa's Minor Teachings (Jo bo chos chung, D4465–D4567)
+
+The persona keeps Toh 4465 as its declared id. Its own files do not name
+Toh 3947, because the citation gate reads a number there as a citation the
+persona does not declare. docs/masters.md and docs/masters.en.md now name both
+numbers. The persona's source index links to 84000's translation instead of
+the 84000 home page.
+
+The other Toh ids the personas declare were checked against 84000's catalogue
+and match: Toh 3948 is the commentary on the Lamp's difficult points, and
+Toh 3861 is the *Madhyamakāvatāra*.
+
 ### Added — weekly check of declared BDRC work ids (2026-09-15)
 
 `tools/verify_sources.py` has a new step, 3g. It checks each `BDRC:W…` work id

@@ -61,7 +61,7 @@ Invoke: `/master-xuyun`
 ### Atiśa Dīpaṃkara (982-1054) — Tibetan · Kadam · Indo-Tibetan bridge
 
 Royal-born Indian master from the Sahor kingdom (modern Bangladesh). Studied Madhyamaka, Yogācāra and tantra at Vikramaśīla; received the bodhicitta lineage from Dharmakīrti of Suvarṇadvīpa (Sumatra). King Yeshe Ö of Guge, captured while gathering gold for the invitation, told his nephew Jangchub Ö to spend the ransom on inviting Atiśa instead; Atiśa arrived in 1042 to reform a tradition where Vinaya had decayed and tantra had become disconnected from sūtra foundations. His *Bodhipathapradīpa* (Toh 4465) became the source text for all later Tibetan *lamrim* literature. His chief disciple Dromtönpa founded Reting Monastery, originating the **Kadam school** — later succeeded by Tsongkhapa's "New Kadam" (Gelug). All four Tibetan schools recognize him as a root teacher.
-Primary sources: Toh 4465 *Bodhipathapradīpa* + Toh 3948 self-commentary + Kadam oral lineage *Pha chos / Bu chos*.
+Primary sources: Toh 4465 *Bodhipathapradīpa* (the copy in Atiśa's Minor Teachings; the Madhyamaka-section copy is Toh 3947) + Toh 3948 self-commentary + Kadam oral lineage *Pha chos / Bu chos*.
 Invoke: `/master-atisha`
 
 ### Tsongkhapa (1357-1419) — Tibetan · Gelug founder
