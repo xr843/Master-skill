@@ -10,6 +10,36 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-yinguang quoted and cited letters that do not say what it claimed (2026-09-15)
+
+The 《印光法师文钞》 is not in CBETA, so none of master-yinguang's quotations
+had been checked. The file itself said its excerpts were "not yet checked
+against a printed edition". The three volumes, 正编 (the four-卷 enlarged
+edition), 续编 and 三编, are transcribed on daizhige.org. Every quotation and
+letter citation was checked against them clause by clause.
+
+- **All three 「原典」 blocks were composites.**
+  - The block on faith, vows and practice was cited to the letter to Ti'an of
+    Daxingshan Monastery. Its second half is in none of the three volumes.
+    It is now the passage from the letter to Chen Xizhou (正编卷一):
+    "信愿行三，乃念佛法门宗要…".
+  - The block on how to recite mixed unsourced lines with part of the letter
+    to Gao Shaolin. It is now that letter's own passage (正编卷一), on
+    listening closely (摄耳谛听) and counting recitations in tens.
+  - The block on carrying karma into the Pure Land ended "则如风帆扬于顺水，
+    更加橹棹之功", which none of the volumes contains. It is now what the
+    letter to Deng Bocheng says (正编卷一): "特开一仗佛慈力，带业往生之法门".
+- **"老实念佛，莫换题目"** was a heading cited to a letter to Wang Zili in
+  the 续编. No volume contains "换题目". The Wang Zili letters are in the
+  三编, and none of them discusses mixing practices. The heading now follows
+  the letter to Luo Kengduan (三编卷一), "切勿闻禅之奥妙，教之渊深，密之
+  奇特，而为之转移", with the summary marked as such.
+- **Two more citations.** The faith-vow-practice teaching now cites the letter
+  to Chen Xizhou. The essay on turning back calamity is in 正编卷二, not 卷四.
+
+The citations that matched are unchanged: the letter to Deng Bocheng, and
+《一函遍复》 in the 续编, which says "念佛最要紧，是敦伦尽分，闲邪存诚".
+
 ## [0.12.7] — 2026-09-15
 
 This release checks the Tibetan personas against Fazun's Chinese translations,
