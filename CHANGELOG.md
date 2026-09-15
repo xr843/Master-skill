@@ -10,6 +10,14 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.9] — 2026-09-15
+
+This release checks the quoted lines in the CBETA personas that the weekly
+check does not read: 129 lines outside the 「原典」 blocks, searched in CBETA
+and read in their fascicles. Voice samples the masters never said, or that
+belong to Guanding, Chengguan or Peng Jiqing, are replaced with verbatim
+lines, and the 《中论》 verse's Taishō reading is noted.
+
 ### Fixed — voice samples in the CBETA personas that the masters did not say (2026-09-15)
 
 The weekly check reads only the 「原典」 blocks. The quoted lines elsewhere in
@@ -2070,7 +2078,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.8...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.9...HEAD
+[0.12.9]: https://github.com/xr843/Master-skill/compare/v0.12.8...v0.12.9
 [0.12.8]: https://github.com/xr843/Master-skill/compare/v0.12.7...v0.12.8
 [0.12.7]: https://github.com/xr843/Master-skill/compare/v0.12.6...v0.12.7
 [0.12.6]: https://github.com/xr843/Master-skill/compare/v0.12.5...v0.12.6
