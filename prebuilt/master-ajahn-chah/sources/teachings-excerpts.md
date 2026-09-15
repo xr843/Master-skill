@@ -1,192 +1,136 @@
 # 阿姜查公开开示集选段
 
-> ⚠️ **重要说明（引用规范）**：本文件中所有 `>` blockquote 块**均为开示主旨之中文转述**，非阿姜查本人话语的逐字翻译重排。引用本文件内容时必须冠以"（主旨）"或"（开示要旨）"，不得作为直接引语呈现。原文请参阅 SuttaCentral / Forest Sangha 官方译本。本规则由 SKILL.md HARD-GATE `NO FABRICATED QUOTES` 强制。
+> ⚠️ **重要说明（引用规范）**：本文件中的中文段落**均为开示主旨之中文转述**，非阿姜查本人话语的逐字翻译。引用本文件内容时必须冠以"（主旨）"或"（开示要旨）"，不得加引号作为直接引语呈现。本规则由 SKILL.md HARD-GATE `NO FABRICATED QUOTES` 强制。
+>
+> 篇名核对：2026-09-15 依巴蓬寺免费流通版《The Teachings of Ajahn Chah》（ajahnchah.org 提供全文 PDF）逐篇核对。该合集收 Bodhinyana、A Taste of Freedom、Living Dhamma、Food for the Heart、Clarity of Insight 等十集；`§` 后是篇名。在该合集中找不到原文的教导已经删去，或在段内注明。
 
-> 来源：Wisdom Publications《Food for the Heart》(2002)、Shambhala《A Still Forest Pool》(1985)、Aruna Publications《Stillness Flowing》(2017) 等正式授权英译开示集，及巴蓬寺（Wat Pah Pong）官方译丛。
-> 引用格式：`【《<书名>》§<章节标题>】（开示要旨）`
+> 来源：巴蓬寺《The Teachings of Ajahn Chah》；Jack Kornfield 与 Paul Breiter 编《A Still Forest Pool》。
+> 引用格式：`【《<书名>》§<篇名>】（开示要旨）`
 > 中文参考：《阿姜查的禅修世界》（法园出版社）、《以法为赠礼》（嘉义新雨）等正式授权译本。
 
 ---
 
 ## §正念（Sati）与觉知
 
-### 正念不是控制 (《Food for the Heart》§Right Practice 主旨)
+### 行住坐卧都是修行（《Food for the Heart》§Right Practice – Steady Practice 主旨）
 
-阿姜查反复强调：正念不是要把心控制成某种特殊状态。正念是**清楚地知道当下发生什么**——不评判、不抓取、不排斥。
+阿姜查教导：不要以为只有闭眼打坐才是修行。持续的修行，是在站、行、坐、卧中都保持修行的心态；出坐时只当是换了个姿势，觉知不断。
 
-修行人常犯一个错误：把"打坐时心很平静"当做正念，把"心散乱"当做没正念。其实——
+**主旨**：正念贵在持续，不在某一种坐姿或特殊状态。
 
-- 心平静时，知道心平静——这是正念
-- 心散乱时，知道心散乱——这也是正念
-- 想消灭散乱、刻意制造平静——这反而**不是**正念，是欲爱（taṇhā）的另一种表现
+> 出处：【《Food for the Heart》§Right Practice – Steady Practice】
 
-**主旨**：正念是镜子，不是过滤器。
+### 苦生起时，看清它（《Living Dhamma》§The Four Noble Truths 主旨）
 
-> 出处：【《Food for the Heart》§Right Practice】
+苦生起时，人们往往只是为它哭泣，却不从中学习。阿姜查要人好好看清这些现象，培养"佛陀"（Buddho）——那个"知道者"。
 
-### 看那个想要的心 (《Living Dhamma》§The Mind 主旨)
+**主旨**：不被苦卷走，而是清楚地知道它、从中学习。
 
-修行中遇到困难时，阿姜查常引导：
-
-> "不要解决那个困难。看那个**想要解决困难**的心。"
-
-把焦点从"问题"转到"观察问题的心"——这是上座部内观（vipassanā）的核心动作。问题本身常是幻象，问题的执取者才是苦的根源。
-
-> 出处：【《Living Dhamma》§The Mind】
+> 出处：【《Living Dhamma》§The Four Noble Truths】
 
 ---
 
-## §放下（Letting Go / nekkhamma）
+## §放下（Letting Go）
 
-### 阿姜查放下三句 (《Food for the Heart》§Letting Go 主旨)
+### 放下多少，平静多少（《A Still Forest Pool》主旨）
 
-阿姜查最广为人知的开示之一：
-
-> "如果你少放下一点，你就少一点苦；如果你多放下一点，你就多一点平静；如果你完全放下，你就完全平静。"
-
-放下不是**抛弃**——抛弃是另一种形式的执取（"我决定不要它"）。放下是**不再用力抓**——让事物如其本然来去。
+阿姜查广为流传的教导：放下一点，得一点平静；放下很多，得很多平静；完全放下，得完全的平静与自由。此句通行出自《A Still Forest Pool》，巴蓬寺免费合集中未见，引用时只注书名，不要附篇名。
 
 **主旨**：放下是动作，不是结果；是日常练习，不是一劳永逸的状态。
 
-> 出处：【《Food for the Heart》§Letting Go】
+> 出处：【《A Still Forest Pool》】
 
-### 杯子的譬喻 (《Food for the Heart》§Letting Go 主旨)
+### 会碎的杯子（《Living Dhamma》§Still, Flowing Water 主旨）
 
-举起一杯水：
+有人说"别打碎我的杯子"——可是会碎的东西，你挡得住它不碎吗？现在不碎，以后也会碎；你不打碎，别人会打碎；别人不打碎，鸡也会把它碰碎。佛陀教我们接受这一点。
 
-> "杯本身没问题。水也没问题。问题在你抓着它说'这是我的'，并且永远不愿放下。手累了，水洒了，你哭了。"
+**主旨**：放下不是丢掉杯子，而是看清有为法无常，不再执著它"不能坏"。
 
-放下不是把杯子摔了——是**手不再用力**。
-
-> 出处：【《Food for the Heart》§Letting Go】
+> 出处：【《Living Dhamma》§Still, Flowing Water】
 
 ---
 
 ## §禅修与出入息念（Meditation / Ānāpānasati）
 
-### 阿姜查的呼吸观察 (《A Still Forest Pool》§Meditation 主旨)
+### 观察呼吸（《Living Dhamma》§Meditation 主旨）
 
-最简单：知道吸气、知道呼气。仅此而已。
+先把注意从头顶往下扫过全身到脚尖、再回到头顶，初步了解身体；然后开始禅修，这时唯一的任务是观察入息与出息。不要强求呼吸比平常长或短，让它轻松平顺地进出，每一次入息出息都随之放下，但觉知要保持。
 
-不需要：
-- 追求"特殊状态"
-- 控制呼吸的长短
-- 制造禅悦
-- 消灭妄念
+**主旨**：不控制呼吸，只保持觉知。
 
-需要：
-- 持续——不只在打坐时
-- 不评判——散乱时知道散乱
-- 不抓取——出现禅悦或异象时只继续观察
+⚠️ **本目录仅介绍方法框架**，具体修法导引须依止具格禅师面对面学习。
 
-> "在森林里坐一坐，不是为了变成另一个人——是为了清楚地认识你已经是什么人。"
+> 出处：【《Living Dhamma》§Meditation】
 
-> 出处：【《A Still Forest Pool》§Meditation】
+### 妄念多怎么办（《Living Dhamma》§Meditation 主旨）
 
-### 妄念多怎么办 (《Living Dhamma》§Training the Mind 主旨)
+阿姜查区分两种"想"：漫无目的的妄想只是心的游荡，只会带来躁动，不是智慧，所以禅修时不需要多想。心以正念平静下来之后，就像关在鸡笼里的鸡——出不了笼，却仍能在笼里走动；平静中生起的念头与感受并不造成伤害。有人想要完全没有念头和感受，那就过头了。
 
-学人常为打坐时妄念太多而苦恼。阿姜查教导的要旨是：妄念多不是问题，**想消灭妄念**才是问题。
+**主旨**：不追随妄想；平静中生起的念头不是问题，想消灭一切念头反而过头。
 
-让妄念来——只看，不参与；只观察，不评判。久之心自然安定，不是因为你压制了妄念，是因为你**停止了与妄念的战争**。
+> 出处：【《Living Dhamma》§Meditation】
 
-> 出处：【《Living Dhamma》§Training the Mind】
+### 禅悦也要观无常（《The Teachings of Ajahn Chah》§Reading the Natural Mind 主旨）
 
-### 禅悦不是目的 (《Food for the Heart》§Beyond Concentration 主旨)
+心逐渐平静时，会生起很大的平静与快乐，而我们可能执著这份快乐。应当观察快乐是不确定的，也观察不快乐是不确定、无常的，明白种种感受都不长久、不可执取。
 
-禅修中可能生起乐受、明境、轻安——这些是禅修的**副产品**，不是目的。执著禅悦如执著任何其他乐受——都是渴爱（taṇhā），都会感生苦。
-
-> "禅悦也是无常的。如果你抓住它，下一次坐下时它不来，你就苦了。让它来，让它走。"
-
-> 出处：【《Food for the Heart》§Beyond Concentration】
+> 出处：【《The Teachings of Ajahn Chah》§Reading the Natural Mind（Bodhinyana）】
 
 ---
 
 ## §心的训练（Training the Mind）
 
-### 静止的池塘 (《A Still Forest Pool》主题)
+### 清澈的林中水塘（《The Teachings of Ajahn Chah》§Questions and Answers 主旨）
 
-最广为人知的譬喻。心不是要变成"没有念头"——那是死水。心是**池塘**，念头与情绪是水面的波浪。
+保持正念，让事物依其自然而行，心在任何环境中都会越来越安静，静得像一泓清澈的林中水塘。种种奇妙罕见的动物会来水边饮水，你会清楚看见世间诸行的本质，看见许多奇妙的事物来来去去——而你安住不动。
 
-让波浪自己平息——只观察，不搅动。最终池塘自然清澈，**不是因为你努力把它变清，是因为你停止搅动**。
+**主旨**：现象照常来去，心随正念安住，不随之动摇。
 
-**主旨**：心的清明不靠造作，靠停止造作。
+> 出处：【《The Teachings of Ajahn Chah》§Questions and Answers（Bodhinyana）】
 
-> 出处：【《A Still Forest Pool》§The Forest Path】（书名同名主题）
+### 屋主与访客（《Living Dhamma》§Still, Flowing Water 主旨）
 
-### 客人来了又走 (《Living Dhamma》§The Mind 主旨)
+心没有形状。那个领受好坏种种印象的，就叫作"心"。心就像屋主：屋主待在家里，访客来看他，是他在接待访客。
 
-念头与情绪是客人，不是主人。
+**主旨**：种种感受与印象如访客来去，心是知道它们的屋主。
 
-- 客人来了——知道客人来了。不必款待（不抓取）
-- 客人走了——知道客人走了。不必追挽（不依恋）
-- 不必赶走（不排斥）
-
-家——觉知本身——始终在那里。不会因为客人来去而消失。
-
-> 出处：【《Living Dhamma》§The Mind】
+> 出处：【《Living Dhamma》§Still, Flowing Water】
 
 ---
 
 ## §日常生活与中道（Daily Life / Middle Way）
 
-### 路上的石头 (《Food for the Heart》§Obstacles 主旨)
+### 路上的障碍（《The Teachings of Ajahn Chah》§Questions and Answers 主旨）
 
-修行路上的障碍——身体的疼痛、心的烦躁、外界的干扰——不是路外的东西。
+修行像走一条路，时不时会遇到障碍。遇到烦恼时，看清它、放下它，就越过去了。不要去想已经走过的障碍，也不要担忧还没遇到的，安住当下；不要挂念路有多长、终点在哪里。一切都在变化，走过的不要执著。
 
-> "**障碍即是路本身**。绕过障碍寻找无障碍的路，是不存在的修行。"
+> 出处：【《The Teachings of Ajahn Chah》§Questions and Answers（Bodhinyana）】
 
-在障碍中保持正念，即是修行。没有障碍的"完美修行环境"是头脑想象的，现实中只有"在这个具体的不完美中保持觉知"。
+### 戒律如篱笆（《Food for the Heart》§Understanding Vinaya 主旨）
 
-> 出处：【《Food for the Heart》§Obstacles】
+戒律（Vinaya）就像一道篱笆，护着我们不犯过失，所以要认真持守；若自己看不到戒律的真实价值，就很难做到。
 
-### 持戒不是束缚 (《Food for the Heart》§Sīla 主旨)
+**主旨**：戒不是束缚，是防护。
 
-戒律（Vinaya / Sīla）常被现代人误解为束缚自由。阿姜查教导：
+> 出处：【《Food for the Heart》§Understanding Vinaya】
 
-> "戒律不是束缚你的绳子。是托住你不让你掉下去的栏杆。"
+### 中道（《Food for the Heart》§Right Practice – Steady Practice 主旨）
 
-当心被贪嗔痴牵引时，戒律是最后的防线。持戒不是为了上天堂——是为了**当下心的平静**。一个常说妄语的人，他的心永远在算计中，无法平静；一个不饮酒的人，他的觉知不被打断。
+总是苛责自己，过不久就会放弃修行；可是一味放松、图舒服，也不是修行的方法。修行依中道，而中道难行，因为不能依着自己的情绪和欲望走。
 
-> 出处：【《Food for the Heart》§Sīla】
-
-### 中道不是固定规则 (《Living Dhamma》§The Middle Way 主旨)
-
-中道（majjhima paṭipadā）不是"避免极端"的中庸之道。中道是**对当下情境最适当的回应**——
-
-- 该精进时精进，该休息时休息
-- 该说时说，该默时默
-- 该独处时独处，该共住时共住
-
-没有一个固定公式说"中道就是这样这样"。中道是**清醒的当下抉择**。
-
-> 出处：【《Living Dhamma》§The Middle Way】
+> 出处：【《Food for the Heart》§Right Practice – Steady Practice】
 
 ---
 
 ## §对在家学人的开示
 
-### 在家也能修 (《Food for the Heart》§The Path in Daily Life 主旨)
+### 在家也能修（《Living Dhamma》§Living in the World with Dhamma 主旨）
 
-不必出家才能修行。在家学人之要：
+有人说在家人不可能修法。阿姜查反问：出家人多还是在家人多？在家人远远多于出家人，若只有出家人修、在家人不修，世间就会一片混乱。这是错误的理解——重点不在是否出家。
 
-1. **持五戒**——不杀、不偷、不邪淫、不妄语、不饮酒
-2. **每日观呼吸 15–30 分钟**——以正念为日常基础
-3. **饭前一念观无常**——食物来自一切因缘，进入身体也将变化
-4. **烦恼起时知道"这是烦恼"**——不要做分析，只要知道
-5. **每月听法 / 静修一日**——保持与僧团（Saṅgha）的连结
-6. **依止具格戒师**——不在网络与文字中孤独自学
+**主旨**：在家同样能修行；关键在于修，不在于身份。
 
-> 出处：【《Food for the Heart》§The Path in Daily Life】
-
-### 工作中的修行 (《A Still Forest Pool》§Work as Practice 主旨)
-
-阿姜查对在家弟子的教导：
-
-> "你不必把工作放下才能修行。把正念带到工作里。打字时知道打字，写报告时知道写报告，与同事说话时知道说话。"
-
-修行不是逃离生活——是**在生活中学会不被生活淹没**。
-
-> 出处：【《A Still Forest Pool》§Work as Practice】
+> 出处：【《Living Dhamma》§Living in the World with Dhamma】
 
 ---
 
@@ -194,7 +138,7 @@
 
 - 本目录所收录皆为阿姜查公开开示集**主旨摘要**，非逐字英译重排
 - 引用时应注明"开示主旨"或"集本主旨"，避免逐字伪造
-- 凡引"阿姜查曾说"必须可追溯至 Food for the Heart / A Still Forest Pool / Living Dhamma / Stillness Flowing 等正式授权出版物
+- 凡引"阿姜查曾说"必须可追溯至《The Teachings of Ajahn Chah》/ Food for the Heart / Living Dhamma / A Still Forest Pool 等正式出版物的具体篇名
 - 不可将其他南传禅师（阿姜苏美多、阿姜帕沙诺、佛使比丘、马哈希尊者）的话归于阿姜查
 - **不可代笔虚构"阿姜查问答"**——可叙述其风格，不可生成假对话
-- 深入研究请查阅上述出版物原本，或访问 [forestsangha.org](https://forestsangha.org)、[ajahnchah.org](https://ajahnchah.org)
+- 深入研究请查阅上述出版物原本，或访问 [ajahnchah.org](https://www.ajahnchah.org)、[forestsangha.org](https://forestsangha.org)

@@ -10,6 +10,41 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-ajahn-chah cited talks that do not exist and retold his similes wrongly (2026-09-15)
+
+The Ajahn Chah excerpts were checked against *The Teachings of Ajahn Chah*,
+Wat Nong Pah Pong's free collection of his talks (ajahnchah.org), and *A Tree
+in a Forest*. Most section locators did not exist. 《Food for the Heart》
+§Letting Go, §Obstacles, §Sīla, §Beyond Concentration and §The Path in Daily
+Life are not talk titles, and neither are 《Living Dhamma》 §The Mind,
+§Training the Mind and §The Middle Way. Several similes had a different
+meaning from the talks:
+
+- **The glass.** Ajahn Chah says a breakable glass will break sooner or
+  later, and the Buddha teaches us to accept that (Still, Flowing Water). The
+  persona told a story about holding a glass of water until your hand tires.
+- **The forest pool.** The mind becomes still like a clear forest pool where
+  rare animals come to drink while you stay still (Questions and Answers,
+  Bodhinyana). It is not a pond whose waves you stop stirring.
+- **Obstacles on the road.** See each defilement and let it go, without
+  dwelling on obstacles already passed or still ahead. The persona said "the
+  obstacle is the path".
+- **The chicken coop.** A calm mind holds its thoughts the way a coop holds a
+  chicken (Meditation, Living Dhamma). The voice guide gave the coop the
+  opposite meaning, habit mistaken for freedom.
+- **The roots.** Virtue, concentration and wisdom are "essential roots that
+  support the whole" (Suffering on the Road). The tree with roots, trunk and
+  leaves is not his image.
+
+Each passage now summarizes a talk that exists and cites its title, and the
+collection is declared as a source. Three passages that could not be found
+were removed: a quoted line about sitting in the forest, a quote about
+practice at work, and a lay routine with minutes per day. The "let go a
+little" saying stays, cited to *A Still Forest Pool* without a chapter. The
+biography *Stillness Flowing* is by Ajahn Jayasaro, not Ajahn Pasanno.
+Fixture #6 now requires *Living Dhamma* for the glass teaching, and fixture
+#7 no longer requires 「树」.
+
 ## [0.12.4] — 2026-09-15
 
 This release corrects the six personas whose sources are not in CBETA.

@@ -32,13 +32,13 @@
 
 | 比喻 | 含义 | 出处倾向 |
 |------|------|----------|
-| 静止的池塘 | 心的本然平静（不在压制念头，而在不搅动它） | 《A Still Forest Pool》主题 |
-| 一杯水 | 杯本身没问题；问题在你抓着它说"这是我的" | 《Food for the Heart》§Letting Go |
-| 客人来了又走 | 念头与情绪如客人，不必款待也不必赶走 | 《Living Dhamma》§The Mind |
-| 树的根、干、叶 | 戒为根、定为干、慧为叶——一体不可分 | 《Food for the Heart》§Sila Samadhi Panna |
-| 毒蛇 | 五欲八风如毒蛇，不抓即不被咬 | 《Still Forest Pool》§Sense Restraint |
-| 鸡笼 | 关在习气的笼子里却以为是自由 | 《Living Dhamma》§Freedom |
-| 路上的石头 | 障碍即是路本身 | 《Food for the Heart》§Obstacles |
+| 清澈的林中水塘 | 心随正念平静，现象来去而心安住不动 | 《The Teachings of Ajahn Chah》§Questions and Answers |
+| 会碎的杯子 | 会碎的东西终会碎，接受无常便不为它苦 | 《Living Dhamma》§Still, Flowing Water |
+| 屋主与访客 | 心如屋主，种种印象如访客来去 | 《Living Dhamma》§Still, Flowing Water |
+| 支撑整体的根 | 戒、定、慧各是根本，相互支持 | 《The Teachings of Ajahn Chah》§Suffering on the Road |
+| 眼镜蛇 | 喜欢与不喜欢的心念都像毒蛇，都会毒害心 | 《The Teachings of Ajahn Chah》§Living With the Cobra |
+| 鸡笼里的鸡 | 心被平静约束，念头在其中走动也不出乱子 | 《Living Dhamma》§Meditation |
+| 路上的障碍 | 遇到烦恼就看清、放下，不想过去的也不忧未来的 | 《The Teachings of Ajahn Chah》§Questions and Answers |
 
 ### 开场方式
 
@@ -91,7 +91,8 @@
 ### 推荐进一步学习
 
 - "巴利经典可在 SuttaCentral (suttacentral.net) 查阅，免费、附多语言对照"
-- "《Food for the Heart》（《心灵的资粮》）是阿姜查英译开示集最完整版本，Wisdom Publications 出版"
+- "巴蓬寺的《The Teachings of Ajahn Chah》开示全集可在 ajahnchah.org 免费下载"
+- "《Food for the Heart》（《心灵的资粮》）是阿姜查的英译开示集之一"
 - "《A Still Forest Pool》（《静止的流水》）是较早的英译选集，Jack Kornfield 与 Paul Breiter 编"
 - "《Living Dhamma》（《活生生的法》）是巴蓬寺(Wat Pah Pong)正式英译"
 - "中文译本可参《阿姜查的禅修世界》(法园出版社) 系列"

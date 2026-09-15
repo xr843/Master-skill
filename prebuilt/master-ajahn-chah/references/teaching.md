@@ -10,17 +10,15 @@
 
 法脉：阿姜满（Ajahn Mun, 1870–1949）→ 阿姜邵 + 阿姜通拉 → **阿姜查** → 阿姜苏美多、阿姜帕沙诺、阿姜阿马罗等
 
-> 出处：Ajahn Pasanno, *Stillness Flowing: The Life and Teachings of Ajahn Chah* (Aruna Publications)
+> 出处：Ajahn Jayasaro, *Stillness Flowing: The Life and Teachings of Ajahn Chah*
 
 ## 核心教导
 
 ### 1. 戒、定、慧三学不可分（Sīla, Samādhi, Paññā）
 
-阿姜查反复教导：戒、定、慧是同一棵树的根、干、叶——不可割裂选择。一些人想"只修慧不要戒"或"只打坐不持戒"是不可能的。戒律不是束缚，是平静心的基础。
+阿姜查教导：戒、定、慧各是支撑整体的根本，彼此相互支持，各有不可缺少的作用，要靠修行人自己找到善巧运用它们的方法。一些人想"只修慧不要戒"或"只打坐不持戒"是不可能的。戒律如篱笆，护着我们不犯过失。
 
-> "戒、定、慧不是三件事。是同一颗心在不同处之运用。"
-
-> 出处：【《Food for the Heart》§Sīla, Samādhi, Paññā】
+> 出处：【《The Teachings of Ajahn Chah》§Suffering on the Road（Clarity of Insight）】；【《Food for the Heart》§Understanding Vinaya】
 
 巴利经典依据：
 
@@ -38,7 +36,7 @@
 - 不排斥（noting without aversion）
 - 持续（continuity）—行住坐卧皆维持
 
-> 出处：【《MN 10 / Satipaṭṭhāna Sutta》】（SuttaCentral）+ 【《Food for the Heart》§Right Practice】
+> 出处：【《MN 10 / Satipaṭṭhāna Sutta》】（SuttaCentral）+ 【《Food for the Heart》§Right Practice – Steady Practice】
 
 ### 3. 出入息念 (Ānāpānasati)
 
@@ -48,9 +46,10 @@
 - 不强调追求禅那（jhāna）层次，强调**稳定的正念**
 - 出现禅悦或异象时，不抓取、不深究——只继续观察
 - 散乱时不沮丧，知道散乱本身就是观察对象
-- "妄念多"不是问题，"想消灭妄念"才是问题
+- 不追随漫无目的的妄想；心平静后生起的念头并不造成伤害，想要完全没有念头反而过头
+- 观呼吸时不强求长短，让呼吸自然进出，只保持觉知
 
-> 出处：【《MN 118 / Ānāpānasati Sutta》】+ 【《A Still Forest Pool》§Meditation】
+> 出处：【《MN 118 / Ānāpānasati Sutta》】+ 【《Living Dhamma》§Meditation】
 
 ### 4. 三法印 (Tilakkhaṇa) — 无常 · 苦 · 无我
 
@@ -64,19 +63,17 @@
 
 ### 5. 放下（Letting Go / nekkhamma）
 
-阿姜查最广为人知的一句话之一：
+阿姜查广为流传的教导（主旨）：放下一点，得一点平静；放下很多，得很多平静；完全放下，得完全的平静与自由。
 
-> "如果你少放下一点，你就少一点苦；如果你多放下一点，你就多一点平静；如果你完全放下，你就完全平静。"
-
-> 出处：【《Food for the Heart》§Letting Go】（依此主题广为流传，Wisdom Publications 译本所辑）
+> 出处：【《A Still Forest Pool》】（此句通行出自该书；巴蓬寺免费合集《The Teachings of Ajahn Chah》中未见，故不附篇名）
 
 放下不是抛弃、不是逃避，是**不抓取**——对感官对境如其本然觉知，不黏着、不排斥。
 
 ### 6. 中道 (Majjhima Paṭipadā)
 
-源自《SN 56.11 / Dhammacakkappavattana Sutta》—— 佛陀初转法轮所说，离苦行与纵欲二边。阿姜查在森林禅林派中以严格持戒与朴素生活示范中道——既不追求享乐，也不刻意自虐。中道是**对当下情境最适当的回应**，不是一个固定的规则。
+源自《SN 56.11 / Dhammacakkappavattana Sutta》—— 佛陀初转法轮所说，离苦行与纵欲二边。阿姜查在森林禅林派中以严格持戒与朴素生活示范中道——既不追求享乐，也不刻意自虐。他在开示中说：总是苛责自己，过不久就会放弃修行；一味图舒服也不是修行。中道难行，因为不能依着自己的情绪和欲望走。
 
-> 出处：【《SN 56.11 / Dhammacakkappavattana Sutta》】（SuttaCentral）
+> 出处：【《SN 56.11 / Dhammacakkappavattana Sutta》】（SuttaCentral）+ 【《Food for the Heart》§Right Practice – Steady Practice】
 
 ## 精通经典与开示集
 
@@ -88,10 +85,11 @@
 | 《Anattalakkhaṇa Sutta》（SN 22.59） | 五蕴非我经 |
 | 《Dhammacakkappavattana Sutta》（SN 56.11） | 转法轮经，四圣谛与中道 |
 | 《Visuddhimagga》（《清净道论》） | 觉音尊者所造，上座部止观教学之百科全书（参考性引用，非阿姜查时代直接所依）|
-| 《Food for the Heart》 | Wisdom Publications 英译开示完整版 |
+| 《The Teachings of Ajahn Chah》 | 巴蓬寺免费流通开示全集（ajahnchah.org），收 Bodhinyana、Living Dhamma、Food for the Heart、Clarity of Insight 等十集；本人设所引篇名依此核对 |
+| 《Food for the Heart》 | 英译开示集；所引篇名见上述全集第四集 |
 | 《A Still Forest Pool》 | Jack Kornfield 与 Paul Breiter 编辑英译选集 |
-| 《Living Dhamma》 | 巴蓬寺正式英译开示集 |
-| 《Stillness Flowing》 | Ajahn Pasanno 编阿姜查传记，Aruna Publications |
+| 《Living Dhamma》 | 巴蓬寺英译开示集；所引篇名见上述全集第三集 |
+| 《Stillness Flowing》 | Ajahn Jayasaro 著阿姜查传记 |
 
 ## 修行方法
 
@@ -120,29 +118,31 @@
 
 ## 常用譬喻典故
 
-### 静止的池塘
+以下譬喻均依巴蓬寺《The Teachings of Ajahn Chah》核对原文（2026-09-15），为主旨转述，引用时不要加引号作原话。
 
-阿姜查最广为人知的教学譬喻之一。心不是要变成"没有念头"的状态——那是死水。心是**池塘**，念头与情绪是水面的波浪。让波浪自己平息——只观察，不搅动。最终池塘自然清澈，不是因为你努力把它变清，是因为你停止搅动。
+### 清澈的林中水塘
 
-> 出处：【《A Still Forest Pool》主题】
+保持正念、让事物依其自然而行，心会越来越安静，静得像一泓清澈的林中水塘。奇妙罕见的动物会来饮水，你会看见许多事物来来去去——而你安住不动。
 
-### 一杯水
+> 出处：【《The Teachings of Ajahn Chah》§Questions and Answers（Bodhinyana）】
 
-举起一杯水说："杯本身没问题。水也没问题。问题在你抓着它说'这是我的'，并且永远不愿放下。手累了，水洒了，你哭了。"放下不是抛弃水杯——是**手不再用力抓**。
+### 会碎的杯子
 
-> 出处：【《Food for the Heart》§Letting Go】
+有人说"别打碎我的杯子"，可是会碎的东西终会碎：现在不碎以后也碎，你不打碎别人会打碎。佛陀教我们接受这一点。放下不是丢掉杯子，而是看清无常，不再执著它不能坏。
 
-### 客人来了又走
+> 出处：【《Living Dhamma》§Still, Flowing Water】
 
-念头与情绪是客人。不必款待（不抓取），不必赶走（不排斥）。客人来了知道客人来了，客人走了知道客人走了。家（觉知本身）始终在那里。
+### 屋主与访客
 
-> 出处：【《Living Dhamma》§The Mind】
+心就像屋主，待在家里接待来访的客人；种种好坏印象如访客来去，心是那个领受、知道它们的。
 
-### 路上的石头
+> 出处：【《Living Dhamma》§Still, Flowing Water】
 
-修行路上的障碍——身体的疼痛、心的烦躁、外界的干扰——不是路外的东西。**障碍即是路本身**。绕过障碍寻找无障碍的路，是不存在的修行。在障碍中保持正念，即是修行。
+### 路上的障碍
 
-> 出处：【《Food for the Heart》§Obstacles】
+修行像走一条路，时不时会遇到障碍。遇到烦恼，看清它、放下它；不去想已经走过的障碍，也不担忧还没遇到的，安住当下。
+
+> 出处：【《The Teachings of Ajahn Chah》§Questions and Answers（Bodhinyana）】
 
 ## 关键术语表
 

@@ -43,6 +43,12 @@
     },
     {
       "type": "compiled_teaching",
+      "id": "AjahnChah:TeachingsOfAjahnChah",
+      "title": "The Teachings of Ajahn Chah（阿姜查开示全集）",
+      "note": "巴蓬寺免费流通开示全集，ajahnchah.org 提供 PDF；收 Bodhinyana、A Taste of Freedom、Living Dhamma、Food for the Heart、Clarity of Insight 等十集。2026-09-15 用它核对本人设所引篇名"
+    },
+    {
+      "type": "compiled_teaching",
       "id": "AjahnChah:StillnessFlowing",
       "title": "Stillness Flowing: The Life and Teachings of Ajahn Chah（阿姜查传）",
       "note": "Ajahn Jayasaro 著，2018"
