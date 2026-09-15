@@ -10,6 +10,29 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-kumarajiva and master-zhiyi biographies (2026-09-15)
+
+The biography sections of the CBETA personas were checked against the
+biographies CBETA holds. Two claims did not match:
+
+- **master-kumarajiva** said he turned to the Mahāyāna in Yarkand (莎车国).
+  The Gaoseng zhuan (T2059 卷2) says he met Sūryasoma, a prince of Yarkand,
+  while he was in Kashgar (沙勒国). Sūryasoma taught him that the aggregates
+  and sense bases are empty, and he then took up the 中论, 百论 and 十二门论.
+- **master-zhiyi** placed his birthplace, Huarong in Jingzhou, in modern
+  Hunan. The Xu gaoseng zhuan (T2060 卷17) says the family came from
+  Yingchuan and settled in Huarong in Jingzhou. That Huarong lies in modern
+  Hubei, around Qianjiang and Jianli. It is not Huarong County in Hunan.
+
+The other details checked matched their sources:
+
+- Huineng's fifteen years among hunters and eight months at the mill (T2008)
+- Xuanzang's departure in the eighth month of Zhenguan 3 (T2053)
+- Ouyi reading Lianchi at seventeen, and his tonsure under Xueling at
+  twenty-four (J36nB348)
+- Fazang's Sogdian family, his lectures to Empress Wu with the golden lion,
+  and his title "national teacher" (T2061 卷5)
+
 ### Fixed — biographies of Atiśa, Buddhaghosa, Milarepa and Tsongkhapa (2026-09-15)
 
 The biography sections of four more personas were checked against the
