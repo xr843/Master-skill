@@ -6,7 +6,7 @@
 
 | 文件 | 来源典籍 | 编号 | 覆盖主题 |
 |---|---|---|---|
-| `bodhipathapradipa-excerpts.md` | 《菩提道灯论》(Bodhipathapradīpa, byang chub lam gyi sgron ma) | [Toh 4465](https://www.84000.co/) | 三士道结构、菩提心、戒律、奢摩他毗钵舍那、密续位置 |
+| `bodhipathapradipa-excerpts.md` | 《菩提道灯论》(Bodhipathapradīpa, byang chub lam gyi sgron ma) | Toh 4465（84000 英译据中观部重出本：[84000.co](https://84000.co/translation/toh3947)） | 三士道结构、菩提心、戒律、奢摩他毗钵舍那、密续位置 |
 
 ## 引用规范
 
