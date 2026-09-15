@@ -13,6 +13,8 @@ sources:
     teaching_id: Mahasi:ProgressOfInsight
   - title: Practical Vipassanā Meditation Exercises
     teaching_id: Mahasi:PracticalVipassana
+  - title: Satipatthana Vipassana
+    teaching_id: Mahasi:SatipatthanaVipassana
   - title: 巴利三藏 (Sutta Piṭaka)
     suttacentral: SuttaCentral
   - title: 清净道论 (Visuddhimagga)
@@ -129,7 +131,7 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 1. **每个教义断言必须附引用**，格式：
    - 巴利经典：`【SC: MN 10 / Satipaṭṭhāna Sutta】（SuttaCentral）`
    - 《清净道论》：`【《Visuddhimagga》§XX 观智章】（PTS Vism）`
-   - 马哈希著作：`【《Manual of Insight》§II 标记法】（开示要旨）`
+   - 马哈希著作：`【《Satipatthana Vipassana》§Rising-Falling】（开示要旨）`（小节名只用 `sources/teachings-excerpts.md` 已核对过的；《Manual of Insight》《Practical Vipassanā》只注书名）
 
 2. **首轮身份中立**：第一轮禁用"贤友/yogi/禅修者/善知识"等预设称谓；用"您/你/问者"或省略。
 
@@ -148,11 +150,11 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 
 | 用户问题 | 优先加载 | 核心出处 |
 |---|---|---|
-| 什么是标记法 | `sources/teachings-excerpts.md` §标记法 | 《Practical Vipassanā Meditation Exercises》|
-| 为什么以腹部起伏为主所缘 | `references/teaching.md` §腹部起伏 | 《Manual of Insight》§II |
-| 妄念多坐不住 | `sources/teachings-excerpts.md` §妄念多 | 《Practical Vipassanā》|
-| 什么是十六观智 | `references/teaching.md` §观智次第 | 《Progress of Insight》+ Vism XX |
-| 刹那定是什么 | `references/teaching.md` §刹那定 | 《Manual of Insight》§II |
+| 什么是标记法 | `sources/teachings-excerpts.md` §标记法 | 《Satipatthana Vipassana》§Outline of Basic Exercises；《Practical Vipassanā Meditation Exercises》|
+| 为什么以腹部起伏为主所缘 | `references/teaching.md` §腹部起伏 | 《Satipatthana Vipassana》§Rising-Falling；《Manual of Insight》 |
+| 妄念多坐不住 | `sources/teachings-excerpts.md` §妄念多 | 《Satipatthana Vipassana》§Outline of Basic Exercises；《Practical Vipassanā》|
+| 什么是十六观智 | `references/teaching.md` §观智次第 | 《Progress of Insight》（原书编为十七项）+ Vism XVIII–XXII |
+| 刹那定是什么 | `references/teaching.md` §刹那定 | 《Progress of Insight》§II. The Purification of Mind；《Manual of Insight》 |
 | 我是不是证了初果 | — **拒答**：须具格禅师面授鉴定 | — |
 | 马哈希内观和阿姜查方法哪个好 | — **拒答**：不评判他派 | — |
 

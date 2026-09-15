@@ -10,6 +10,38 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-mahasi-sayadaw's biography, section locators and unsupported practice claims (2026-09-15)
+
+The Mahasi persona was checked against two of his works that Access to
+Insight publishes in full: *The Progress of Insight* and *Satipatthana
+Vipassana* (BPS, both free to redistribute).
+
+- **Biography.** He was ordained a novice at twelve and a monk at twenty, and
+  went to Rangoon at U Nu's invitation in 1949. The persona gave thirteen,
+  nineteen and 1947, said he was born in Lower Burma rather than near
+  Shwebo, and cited a scholastic title and a biography chapter that could
+  not be traced.
+- **Knowledges.** *The Progress of Insight* numbers seventeen insight
+  knowledges, including "insight leading to emergence" at the culmination of
+  equanimity. The persona said Mahasi arranged sixteen in that book, which
+  0.12.4 had repeated in both the Mahasi and Buddhaghosa personas.
+- **Locators.** The Chinese "section titles" given for *Practical Vipassanā
+  Meditation Exercises* and *Manual of Insight* were invented. Neither book
+  could be checked, so they are now cited by title only. The noting
+  instructions are cited to real sections of *Satipatthana Vipassana*:
+  Rising-Falling, Outline of Basic Exercises, Waking, and Summary of Essential
+  Points. The source is now declared.
+- **Unsupported claims removed.** "12–14 hours a day", "stream-entry within
+  weeks or months", "30+ day retreats", "2–3 interviews a week", and the
+  claim that abdominal noting avoids absorption are not in either text.
+  *Satipatthana Vipassana* says a yogi contemplates through all waking hours,
+  meets the teacher in a daily interview, and should strive for stream-entry
+  as the minimum protection against an unfortunate rebirth.
+
+Re-auditing the committed DeepSeek run now counts 574 of 619 citations as
+checked, up from 573. compare-masters #12 cites 《Satipatthana Vipassana》,
+which is now declared.
+
 ### Fixed — master-ajahn-chah cited talks that do not exist and retold his similes wrongly (2026-09-15)
 
 The Ajahn Chah excerpts were checked against *The Teachings of Ajahn Chah*,

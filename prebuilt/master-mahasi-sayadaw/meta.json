@@ -41,6 +41,12 @@
     },
     {
       "type": "compiled_teaching",
+      "id": "Mahasi:SatipatthanaVipassana",
+      "title": "Satipatthana Vipassana",
+      "note": "BPS 英译小册，Access to Insight 全文可免费阅读；标记法、腹部起伏、行住坐卧各项练习与作者介绍。2026-09-15 用它核对本人设的方法说明与传记"
+    },
+    {
+      "type": "compiled_teaching",
       "id": "Mahasi:DiscoursesOnSuttas",
       "title": "Mahasi Sayadaw 单经讲解集",
       "note": "Mālukyaputta Sutta / Dhammacakka Sutta / Sallekha Sutta 等开示集，BPS Sri Lanka"
