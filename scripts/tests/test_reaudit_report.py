@@ -163,7 +163,10 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
     # 7 → 11 on 2026-09-14: four blocks cite 《印光法师文钞》 by collection name,
     # which resolves once the Wenchao is declared as compiled teachings with its
     # Chinese titles. It had been declared as X62n1182–1184, three other Qing works.
-    assert compare["recomputed"] == {"checked": 11, "unparsed": 31}
+    # 11 → 12 on 2026-09-15: #12 cites 《Satipatthana Vipassana》, Mahasi's BPS
+    # booklet, which master-mahasi-sayadaw declares since its noting instructions
+    # were checked against that text.
+    assert compare["recomputed"] == {"checked": 12, "unparsed": 30}
     # 5 个块是人格拿【…】当小标题或复述问题，不是引文。
     assert len(compare["noncitation"]) == 5
     assert compare["fabricated"] == []
@@ -224,7 +227,9 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
     # 569 → 573 on 2026-09-14: compare-masters' four 《印光法师文钞》 citations
     # (see above). The three curriculum ids were already counted as checked;
     # they moved from declared to fabricated, which does not change the total.
-    assert out["totals"]["recomputed"]["checked"] == 573
+    # 573 → 574 on 2026-09-15: compare-masters #12 cites 《Satipatthana Vipassana》
+    # (see above).
+    assert out["totals"]["recomputed"]["checked"] == 574
 
 
 def test_api_error_rows_do_not_pollute_reaudit_totals(mod):

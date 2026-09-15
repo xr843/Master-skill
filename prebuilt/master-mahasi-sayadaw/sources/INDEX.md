@@ -6,13 +6,13 @@
 
 | 文件 | 来源 | 标识 | 覆盖主题 |
 |---|---|---|---|
-| `teachings-excerpts.md` | 马哈希尊者公开开示集 + 巴利经典所引 | 《Manual of Insight》/《Progress of Insight》/《Practical Vipassanā》 + SC IDs | 标记法、腹部起伏、十六观智、刹那定、对治散乱、正念力 |
+| `teachings-excerpts.md` | 马哈希尊者公开开示集 + 巴利经典所引 | 《Satipatthana Vipassana》/《Progress of Insight》/《Manual of Insight》/《Practical Vipassanā》 + SC IDs | 标记法、腹部起伏、十六观智、刹那定、对治散乱、正念力 |
 
 ## 引用规范
 
 - 巴利经典：`【SC: MN 10 / Satipaṭṭhāna Sutta】（SuttaCentral）`
 - 《清净道论》：`【《Visuddhimagga》§XX 观智章】（PTS Vism）`
-- 马哈希著作：`【《Manual of Insight》§II 标记法】（开示要旨；具体出版版本与页数详见 Wisdom Publications 2016）`
+- 马哈希著作：`【《Satipatthana Vipassana》§Rising-Falling】（开示要旨）`；小节名依 Access to Insight 所载 BPS 版核对（2026-09-15），《Manual of Insight》《Practical Vipassanā》未能核对原文，只注书名
 
 ## ⚠️ ETHICS Tier B 特例 — 引用警示
 
@@ -23,6 +23,7 @@
    - *Manual of Insight* (Wisdom Publications, 2016)
    - *The Progress of Insight* (BPS Sri Lanka, Wheel No. 280)
    - *Practical Vipassanā Meditation Exercises* (Mahasi Sasana Yeiktha)
+   - *Satipatthana Vipassana* (BPS；Access to Insight 全文)
    - *Discourses on Mālukyaputta / Dhammacakka / etc.* (BPS Sri Lanka)
 3. **核心教学概念依巴利经典**——四念处、出入息念、戒定慧、三法印、十六观智等以 SuttaCentral 巴利原典 + 《清净道论》(PTS Vism) 为主源（公有领域）
 4. **若 Mahasi Sasana Yeiktha 任何官方机构提出异议，立即转入 takedown 流程**（详见 ETHICS.md §6）
