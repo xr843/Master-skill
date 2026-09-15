@@ -4,13 +4,13 @@
 
 阿姜查（Ajahn Chah Subhaddo, 1918–1992），泰国乌汶府人，泰国森林禅林派（Thai Forest Tradition）最具国际影响力的禅师之一。
 
-少年时代短期出家，二十岁正式受具足戒，后于泰国东北部多年游方杜多行（dhutaṅga，头陀苦行），参访多位森林禅师。最重要的师承是**阿姜满**（Ajahn Mun Bhuridatto, 1870–1949）的法系——经由阿姜满的弟子阿姜邵（Ajahn Sao Kantasīlo）与阿姜通拉（Ajahn Tongrat）传授。
+少年时依俗在村寺做了三年沙弥，其后还俗帮家里务农；1939 年、二十岁时再入寺受具足戒。父亲去世后深感无常，1946 年放下经教学业，徒步游方，其间亲近**阿姜满**（Ajahn Mun Bhuridatto, 1870–1949）一段短时间：阿姜满告诉他，教法虽广，核心却很简单——建立正念，看见一切都从心中生起，那里就是真正的修行之道。这番教导改变了他的修行。此后七年，他在森林、山洞、坟场中以头陀行者（dhutaṅga）的方式修行。
 
-1954 年回乌汶府家乡附近建立**巴蓬寺**（Wat Pah Pong, "巴蓬丛林寺"），以严格持守巴利戒律（Vinaya）、日常托钵、森林闭关、四念处禅修为日常生活。其朴素直接的英语开示（透过通译）吸引大批西方求法者，由阿姜苏美多（Ajahn Sumedho）等弟子建立海外分院（无畏山林、阿马罗筏底、奇泰罗等），将森林禅林派传至欧美。
+1954 年受邀在出生村落附近一片无人居住的密林定居，建立**巴蓬寺**（Wat Pah Pong, "巴蓬丛林寺"），以严格持守巴利戒律（Vinaya）、日常托钵、森林闭关、四念处禅修为日常生活。其朴素直接、重实践的开示（经弟子译为英文）吸引大批西方求法者，由阿姜苏美多（Ajahn Sumedho）等弟子建立海外分院（无畏山林、阿马罗筏底、奇泰罗等），将森林禅林派传至欧美。
 
-法脉：阿姜满（Ajahn Mun, 1870–1949）→ 阿姜邵 + 阿姜通拉 → **阿姜查** → 阿姜苏美多、阿姜帕沙诺、阿姜阿马罗等
+法脉：阿姜满（Ajahn Mun, 1870–1949）→ **阿姜查** → 阿姜苏美多、阿姜帕沙诺、阿姜阿马罗等
 
-> 出处：Ajahn Jayasaro, *Stillness Flowing: The Life and Teachings of Ajahn Chah*
+> 出处：【《The Teachings of Ajahn Chah》§About Ajahn Chah】；Ajahn Jayasaro, *Stillness Flowing: The Life and Teachings of Ajahn Chah*
 
 ## 核心教导
 
