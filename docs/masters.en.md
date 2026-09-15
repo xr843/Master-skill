@@ -36,7 +36,7 @@ Invoke: `/master-zhiyi`
 
 ### Master Fazang (643-712)
 
-Third Patriarch and true systematizer of the Huayan school. National Preceptor under Empress Wu Zetian. Used the Golden Lion treatise to explain Huayan philosophy. Core teachings: dharmadhatu dependent origination, four dharma-realms, ten mysterious gates, six characteristics in perfect harmony.
+Third Patriarch and true systematizer of the Huayan school. National Preceptor under Empress Wu Zetian. Used the Golden Lion treatise to explain Huayan philosophy. Core teachings: dharmadhatu dependent origination, the ten mysterious gates, and the six characteristics in perfect harmony. (The four dharma-realms scheme was set out later by Chengguan and Zongmi; it is not in Fazang's own works.)
 Primary sources: CBETA — Huayan Jing Tanxuan Ji (T35n1733), Huayan Wujiao Zhang (T45n1866).
 Invoke: `/master-fazang`
 
@@ -60,13 +60,13 @@ Invoke: `/master-xuyun`
 
 ### Atiśa Dīpaṃkara (982-1054) — Tibetan · Kadam · Indo-Tibetan bridge
 
-Royal-born Indian master from the Sahor kingdom (modern Bangladesh). Studied Madhyamaka, Yogācāra and tantra at Vikramaśīla; received the bodhicitta lineage from Dharmakīrti of Suvarṇadvīpa (Sumatra). Invited to Tibet in 1042 by King Yeshe Ö to reform a tradition where Vinaya had decayed and tantra had become disconnected from sūtra foundations. His *Bodhipathapradīpa* (Toh 4465) became the source text for all later Tibetan *lamrim* literature. His chief disciple Dromtönpa founded Reting Monastery, originating the **Kadam school** — later succeeded by Tsongkhapa's "New Kadam" (Gelug). All four Tibetan schools recognize him as a root teacher.
+Royal-born Indian master from the Sahor kingdom (modern Bangladesh). Studied Madhyamaka, Yogācāra and tantra at Vikramaśīla; received the bodhicitta lineage from Dharmakīrti of Suvarṇadvīpa (Sumatra). King Yeshe Ö of Guge, captured while gathering gold for the invitation, told his nephew Jangchub Ö to spend the ransom on inviting Atiśa instead; Atiśa arrived in 1042 to reform a tradition where Vinaya had decayed and tantra had become disconnected from sūtra foundations. His *Bodhipathapradīpa* (Toh 4465) became the source text for all later Tibetan *lamrim* literature. His chief disciple Dromtönpa founded Reting Monastery, originating the **Kadam school** — later succeeded by Tsongkhapa's "New Kadam" (Gelug). All four Tibetan schools recognize him as a root teacher.
 Primary sources: Toh 4465 *Bodhipathapradīpa* + Toh 3948 self-commentary + Kadam oral lineage *Pha chos / Bu chos*.
 Invoke: `/master-atisha`
 
 ### Tsongkhapa (1357-1419) — Tibetan · Gelug founder
 
-Founder of the **Gelug school** (dGe lugs pa, "the way of virtue"; popularly known as the "Yellow Hat school") — basis of the Dalai Lama and Panchen Lama lineages. Born in Tsongkha (Qinghai). Studied with masters across all major schools, particularly the Sakya scholar Rendawa for prasaṅgika Madhyamaka. Reformed lax monastic discipline, integrated sūtra and tantra into a strict graduated path, and produced the great triology: *Lamrim Chenmo* (Great Treatise on the Stages of the Path), *sNgags rim chen mo* (Great Treatise on Tantra), and *Drang nges legs bshad snying po* (Essence of True Eloquence — definitive vs interpretable meaning). Founded Ganden Monastery (1409) — the seat of the school.
+Founder of the **Gelug school** (dGe lugs pa, "the way of virtue"; popularly known as the "Yellow Hat school") — basis of the Dalai Lama and Panchen Lama lineages. Born in Tsongkha (Qinghai). Studied with masters across all major schools, particularly the Sakya scholar Rendawa for prasaṅgika Madhyamaka. Reformed lax monastic discipline, integrated sūtra and tantra into a strict graduated path, and produced the great trilogy: *Lamrim Chenmo* (Great Treatise on the Stages of the Path), *sNgags rim chen mo* (Great Treatise on Tantra), and *Drang nges legs bshad snying po* (Essence of True Eloquence — definitive vs interpretable meaning). Founded Ganden Monastery (1409) — the seat of the school.
 Primary sources: Tsongkhapa's collected works (*gsung 'bum*, searchable on BDRC.io). Chinese translation by Dharma-master Faxun is the standard Sinophone reference.
 Invoke: `/master-tsongkhapa`
 
@@ -82,14 +82,14 @@ Invoke: `/master-milarepa`
 
 ### Buddhaghosa (5th century) — Theravāda · commentarial summit
 
-The most influential commentator and śāstra master in Theravāda history. Born a brahmin scholar in southern India, he travelled to the Mahāvihāra in Anurādhapura (Sri Lanka) to translate the old Sinhala commentaries (*Sīhaḷa-aṭṭhakathā*) into Pali. To prove his competence, he first composed the *Visuddhimagga* — a 23-chapter encyclopedia of Theravāda meditation and doctrine organized around the threefold training of **sīla, samādhi, paññā**. He then translated the four Nikāya commentaries, the Vinaya commentary *Samantapāsādikā*, and the Abhidhamma commentaries. His framework defines orthodox Theravāda exegesis to this day across Sri Lanka, Burma, Thailand, Cambodia, and Laos.
+The most influential commentator and śāstra master in Theravāda history. The Mahāvaṃsa says he was born a brahmin near the Bodhi Tree (some scholars argue for south India). He travelled to the Mahāvihāra in Anurādhapura (Sri Lanka) to translate the old Sinhala commentaries (*Sīhaḷa-aṭṭhakathā*) into Pali. Tested by the monks with two stanzas, he composed on them the *Visuddhimagga* — a 23-chapter encyclopedia of Theravāda meditation and doctrine organized around the threefold training of **sīla, samādhi, paññā**. He then translated the four Nikāya commentaries, the Vinaya commentary *Samantapāsādikā*, and the Abhidhamma commentaries. His framework defines orthodox Theravāda exegesis to this day across Sri Lanka, Burma, Thailand, Cambodia, and Laos.
 Primary sources: PTS edition *Visuddhimagga* + four Nikāya *aṭṭhakathā* (Sumaṅgalavilāsinī, Papañcasūdanī, Sāratthappakāsinī, Manorathapūraṇī) + *Samantapāsādikā* (Vinaya) + *Atthasālinī* (Abhidhamma).
 Invoke: `/master-buddhaghosa`
 
 ### Mahāsi Sayādaw U Sobhana (1904-1982) — Theravāda · Burmese vipassanā
 
-One of the most internationally influential meditation masters of modern Burma. Recognized as a *Pariyatti Sāsanahita* — the highest scriptural qualification in Burmese monasticism — by age 27. Studied four-foundations vipassanā with U Nārada (Mingun Sayadaw) from 1932. Established the **Mahasi Sasana Yeiktha** retreat center in Yangon in 1947, formalizing the **noting method** (rising-falling at the abdomen as primary object) tied to Visuddhimagga's seven purifications and sixteen insight knowledges. Served as *Final Editor* of the Sixth Buddhist Council (1954-1956) — the largest modern revision of the Pali Canon. His lineage profoundly shaped the founders of America's Insight Meditation Society (Goldstein, Salzberg, Kornfield).
-Primary sources: *Manual of Insight* (Wisdom Publications, 2016 English ed.), *The Progress of Insight* (BPS Sri Lanka Wheel No. 280), *Practical Vipassanā Meditation Exercises* (Mahasi Sasana Yeiktha).
+One of the most internationally influential meditation masters of modern Burma. Ordained a novice at twelve and a monk at twenty, he trained in vipassanā under U Nārada (the Mingun Jetawun Sayadaw). In 1949, at the invitation of Prime Minister U Nu, he began teaching at the Thathana Yeiktha centre in Yangon. There the **noting method**, which takes rising-falling at the abdomen as the beginner's primary object, develops insight through the seven purifications. At the Sixth Buddhist Council (1954-1956) he served on the committee with final authority over the texts. His lineage profoundly shaped the founders of America's Insight Meditation Society (Goldstein, Salzberg, Kornfield).
+Primary sources: *The Progress of Insight* and *Satipatthana Vipassana* (BPS), *Manual of Insight* (Wisdom Publications, 2016 English ed.), *Practical Vipassanā Meditation Exercises* (Mahasi Sasana Yeiktha).
 Invoke: `/master-mahasi-sayadaw`
 
 > ⚠️ **The AI must never confirm any individual's stage of insight or attainment of fruition.** Verification requires face-to-face interview with a qualified teacher. This is the strictest guardrail in this skill — the Mahasi tradition's "fruition is attainable" framing is famous for inducing self-attainment delusions, and the AI is forbidden from playing that role.
@@ -97,7 +97,7 @@ Invoke: `/master-mahasi-sayadaw`
 ### Ajahn Chah Subhaddo (1918-1992) — Theravāda · Thai Forest
 
 One of the most internationally influential masters of the Thai Forest Tradition. Renowned for strict Vinaya observance, four-foundations-of-mindfulness practice, and plain, life-grounded teaching style. His Western disciples (Ajahn Sumedho, Ajahn Pasanno, Ajahn Amaro and others) established Abhayagiri (California), Amaravati (UK), Cittaviveka (UK) and other branch monasteries, carrying the forest tradition to the West. Most-quoted line: *"If you let go a little, you have a little peace; if you let go completely, you have complete peace."*
-Primary sources: Pali Canon (SuttaCentral) + authorized English collections — *Food for the Heart*, *A Still Forest Pool*, *Living Dhamma*.
+Primary sources: Pali Canon (SuttaCentral) + Wat Nong Pah Pong's collected talks *The Teachings of Ajahn Chah* + English collections — *Food for the Heart*, *A Still Forest Pool*, *Living Dhamma*.
 Invoke: `/master-ajahn-chah`
 
 ---

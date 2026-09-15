@@ -73,7 +73,7 @@
 | "对苦行 / 闭关好奇" | `/master-milarepa`（雪山闭关 · 噶举派典范） |
 | "想学最朴素的禅修" | `/master-ajahn-chah`（南传森林禅 · 出入息念） |
 | "想学完整的道次第" | `/master-atisha` `/master-tsongkhapa`（噶当三士道 → 格鲁《广论》） |
-| "想了解上座部论藏体系" | `/master-buddhaghosa`（《清净道论》戒定慧 + 七清净十六观智） |
+| "想了解上座部论藏体系" | `/master-buddhaghosa`（《清净道论》戒定慧 + 七清净与观智次第） |
 | "想做密集内观禅修" | `/master-mahasi-sayadaw`（缅甸内观 · 标记法 · 腹部起伏） |
 | "想跨传统比较看一个问题" | `/compare-masters`（自动配对汉藏南传视角）· `/master-debate`（争议议题辩论）· `/master-curriculum`（按传统给学修路径） |
 

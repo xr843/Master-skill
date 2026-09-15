@@ -75,7 +75,7 @@ On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bo
 | "I'm curious about ascetic practice / retreat" | `/master-milarepa` (snow-mountain retreat · Kagyu paradigm) |
 | "I want the simplest meditation instructions" | `/master-ajahn-chah` (Thai Forest · ānāpānasati) |
 | "I want a complete graduated path of practice" | `/master-atisha` `/master-tsongkhapa` (Kadam three scopes → Gelug Lamrim) |
-| "I want the systematic Theravāda commentarial framework" | `/master-buddhaghosa` (*Visuddhimagga* — sīla / samādhi / paññā + 7 purifications · 16 insight knowledges) |
+| "I want the systematic Theravāda commentarial framework" | `/master-buddhaghosa` (*Visuddhimagga* — sīla / samādhi / paññā + 7 purifications · stages of insight knowledge) |
 | "I want intensive vipassanā with the noting method" | `/master-mahasi-sayadaw` (Burmese · noting · rising-falling) |
 | "I want a cross-tradition perspective" | `/compare-masters` (auto-pairs 汉/藏/南 voices) · `/master-debate` (adversarial dialectic) · `/master-curriculum` (study path by tradition) |
 

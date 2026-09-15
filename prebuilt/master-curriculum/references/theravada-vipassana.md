@@ -13,8 +13,8 @@
 
 **路 A — 缅甸内观（马哈希系统）：标记法 + 腹部起伏**
 - **推荐 master**：`/master-mahasi-sayadaw`
-- **主用论**：《Manual of Insight》【Mahasi:ManualOfInsight】+《Practical Vipassanā Meditation Exercises》【Mahasi:PracticalVipassana】
-- **关键议题**：刹那定 / 近行定的差异、十六观智路径、行舍智、标记的细致度
+- **主用论**：《Satipatthana Vipassana》【Mahasi:SatipatthanaVipassana】+《Manual of Insight》【Mahasi:ManualOfInsight】+《Practical Vipassanā Meditation Exercises》【Mahasi:PracticalVipassana】
+- **关键议题**：刹那定 / 近行定的差异、观智路径（《观智之阶》编为十七项，通行说"十六观智"）、行舍智、标记的细致度
 
 **路 B — 泰国森林（阿姜查系统）：戒律 + 自然观察**
 - **推荐 master**：`/master-ajahn-chah`
@@ -26,7 +26,7 @@
 - **辅论**：四部尼柯耶注释（《长部注》【PTS:DN-Comm】《中部注》【PTS:MN-Comm】《相应部注》【PTS:SN-Comm】《增支部注》【PTS:AN-Comm】）+《律藏注》【PTS:Vinaya-Comm】
 - **辅读**：《The Progress of Insight》【Mahasi:ProgressOfInsight】（修证经验上下文）
 - **推荐 master**：`/master-buddhaghosa`（主，《清净道论》注释体系）
-- **关键议题**：七清净 → 十六观智、四十种业处（kammaṭṭhāna）、刹那定与安止定差异、行舍智后入流
+- **关键议题**：七清净 → 观智次第（《清净道论》第 XXI 章自称"八种智"，"十六观智"是后世编目）、四十种业处（kammaṭṭhāna）、刹那定与安止定差异、行舍智后入流
 - **验收**：能列七清净次第；能识别"刹那定"与"近行定"的差异；能用《清净道论》【PTS:Vism】印证当下心的执取
 
 ## 四、可能的盲点
