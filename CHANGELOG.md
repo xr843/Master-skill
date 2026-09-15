@@ -10,6 +10,39 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-tsongkhapa and master-atisha quoted lines no source contains (2026-09-15)
+
+CBETA's supplementary canon holds Fazun's Chinese translations of the works
+these personas cite: 《菩提道次第广论》, 《辨了不了义善说藏论》,
+《密宗道次第广论》, 《菩萨戒品释》 and 《菩提道灯论》. These had been assumed
+unavailable. The quoted lines in both personas were checked clause by clause
+against them and against the rest of CBETA.
+
+- **"破戒而修密，犹如有漏器盛甘露"** stood word for word in both personas.
+  The Atiśa persona cited it to a 《戒论摄要》. Neither the saying nor that
+  title is in CBETA. The simile is removed. master-atisha's section on
+  discipline now cites what the *Lamp* says: vows of individual liberation
+  come before bodhisattva vows (v. 20), and a celibate should not take the
+  secret and wisdom empowerments (vv. 64–66).
+- **"初依善知识，中由教授引，后由实证证"** was presented as a quotation from
+  the Kadam *Pha chos / Bu chos*. No source was found, and it is replaced with
+  what the *Lamp* says about the teacher.
+- **master-atisha's voice samples** included "欲求成佛者，发菩提心而已", given
+  as the *Lamp*'s main point. The *Lamp* asks for vows, calm abiding and
+  wisdom joined with method, not bodhicitta alone. The three samples are now
+  lines of Fazun's translation.
+- **"缘起即是空性义，空性即是缘起义"** was quoted as Tsongkhapa's words. The
+  Essence of Eloquence (卷三) says "性空义即缘起义", and the persona now
+  quotes that. A voice sample on renunciation given as the Three Principal
+  Aspects' main point is now marked as a paraphrase of verse 6.
+- **The insight chapter of the Lamrim** was described as its "second half" and
+  its "last two fascicles". In Fazun's 24-fascicle translation it runs from
+  卷十七 to 卷二十四. The unattributed praise "道次第之精华" is removed.
+- **The tantric and bodhisattva vow counts** were cited to Tsongkhapa's
+  commentaries on the Fifty Verses and the Guhyasamāja. The fourteen root
+  downfalls and eight gross offences are in 《密宗道次第广论》卷十三, and the
+  forty-six secondary bodhisattva offences in 《菩萨戒品释》卷四.
+
 ### Changed — master-atisha accepts Toh 3947 for the *Lamp for the Path* (2026-09-15)
 
 master-atisha declared the *Bodhipathapradīpa* only as Toh 4465, the copy in
