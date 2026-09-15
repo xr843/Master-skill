@@ -10,6 +10,14 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.5] — 2026-09-15
+
+This release checks the Ajahn Chah and Mahasi Sayadaw personas against freely
+published texts of their teachings. Ajahn Chah's excerpts cited talk titles
+that do not exist, retold several similes with a different meaning, and named
+his teacher's teacher as a disciple. The Mahasi persona had wrong biographical
+dates, invented section titles, and practice figures not found in his works.
+
 ### Fixed — master-ajahn-chah's lineage named Ajahn Sao as a disciple of Ajahn Mun (2026-09-15)
 
 `references/teaching.md` said Ajahn Chah received Ajahn Mun's lineage
@@ -1690,7 +1698,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.4...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.5...HEAD
+[0.12.5]: https://github.com/xr843/Master-skill/compare/v0.12.4...v0.12.5
 [0.12.4]: https://github.com/xr843/Master-skill/compare/v0.12.3...v0.12.4
 [0.12.3]: https://github.com/xr843/Master-skill/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/xr843/Master-skill/compare/v0.12.1...v0.12.2
