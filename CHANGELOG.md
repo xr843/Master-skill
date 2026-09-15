@@ -10,6 +10,14 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.4] — 2026-09-15
+
+This release corrects the six personas whose sources are not in CBETA.
+Their excerpts put paraphrases in quotation marks as a master's own words.
+They credited teachings to texts that do not contain them, and one persona
+repeated another teacher's sentences word for word. master-fazang's voice
+samples now use the 《金师子章》's own clauses.
+
 ### Fixed — master-fazang's voice samples still used the paraphrased 《金师子章》 (2026-09-15)
 
 The 《金师子章》 excerpt was corrected to the text's own clauses in 0.12.3,
@@ -1598,7 +1606,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.3...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.4...HEAD
+[0.12.4]: https://github.com/xr843/Master-skill/compare/v0.12.3...v0.12.4
 [0.12.3]: https://github.com/xr843/Master-skill/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/xr843/Master-skill/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/xr843/Master-skill/compare/v0.12.0...v0.12.1
