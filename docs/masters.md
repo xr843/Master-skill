@@ -36,7 +36,7 @@
 
 ### 法藏大师（643-712）
 
-华严宗三祖，华严哲学体系的实际创立者。武则天国师，以"金师子章"为武后说华严义。核心思想：法界缘起、四法界、十玄门、六相圆融——一切现象互含互摄，事事无碍。
+华严宗三祖，华严哲学体系的实际创立者。武则天国师，以"金师子章"为武后说华严义。核心思想：法界缘起、十玄门、六相圆融——一切现象互含互摄，事事无碍（"四法界"名目为后世澄观、宗密所归纳，不出法藏本人著作）。
 主要来源：CBETA《华严经探玄记》T35n1733、《华严五教章》T45n1866 等。
 调用命令：`/master-fazang`
 
@@ -61,7 +61,7 @@
 
 ### 阿底峡尊者（Atiśa Dīpaṃkara, 982-1054） — 藏传 · 噶当派 · 印藏桥梁
 
-印度孟加拉萨霍尔国王子出身，超戒寺住持。1042 年应藏王智光邀请入藏，著《菩提道灯论》(Bodhipathapradīpa)——藏地后弘期道次第之祖。首座弟子仲敦巴建热振寺，开**噶当派**（佛语教授派）。后被宗喀巴新噶当派（即格鲁派）继承。藏传四派（宁玛、萨迦、噶举、格鲁）皆视其为根本师之一。
+印度孟加拉王族出身，超戒寺上首学者。古格王智光为迎请他不惜舍身，其侄菩提光继志，1042 年入藏，著《菩提道灯论》(Bodhipathapradīpa)——藏地后弘期道次第之祖。首座弟子仲敦巴建热振寺，开**噶当派**（佛语教授派）。后被宗喀巴新噶当派（即格鲁派）继承。藏传四派（宁玛、萨迦、噶举、格鲁）皆视其为根本师之一。
 主要来源：Toh 4465《菩提道灯论》（sDe dge bsTan 'gyur 标准编号）+ 噶当口耳传承《父法·子法》。
 调用命令：`/master-atisha`
 
@@ -83,22 +83,22 @@
 
 ### 觉音尊者（Buddhaghosa, 5世纪） — 南传 · 上座部论师
 
-上座部佛教史上最具影响力的注释家与论师。原为印度南部婆罗门学者，赴斯里兰卡大寺（Mahāvihāra），将古僧伽罗注释翻译为巴利语。著《清净道论》(Visuddhimagga)——以**戒（sīla）、定（samādhi）、慧（paññā）三学**为骨架，系统组织上座部禅修与教理之百科全书（23 章）。其著作奠定南传上座部正统教理体系——东南亚一切论师皆依其判摄。
+上座部佛教史上最具影响力的注释家与论师。《大史》说他生于菩提树附近的婆罗门家庭（学界另有南印度之说），赴斯里兰卡大寺（Mahāvihāra），将古僧伽罗注释翻译为巴利语。僧团以两首偈试其学力，他据此写成《清净道论》(Visuddhimagga)——以**戒（sīla）、定（samādhi）、慧（paññā）三学**为骨架，系统组织上座部禅修与教理之百科全书（23 章）。其著作奠定南传上座部正统教理体系——东南亚一切论师皆依其判摄。
 主要来源：PTS edition《清净道论》(Visuddhimagga) + 四部尼柯耶注释（aṭṭhakathā）+ Samantapāsādikā 律藏注释 + Atthasālinī 阿毗达摩注释。
 调用命令：`/master-buddhaghosa`
 
 ### 马哈希尊者（Mahāsi Sayādaw U Sobhana, 1904-1982） — 南传 · 缅甸内观传统
 
-缅甸现代最具国际影响力的内观禅修大师之一。1947 年起主持仰光 Mahasi Sasana Yeiktha，形成**'马哈希内观法'**（标记法 / Noting Method）——以观察腹部起伏为主所缘，系统培育七清净十六观智。1954-1956 年第六次结集（Chaṭṭha Saṅgāyana）任**'最终编辑长老'**，审定整个巴利三藏。其法系深刻影响美国 Insight Meditation Society 三位创办人（Goldstein、Kornfield、Salzberg）。
-主要来源：《Manual of Insight》(Wisdom Publications, 2016)、《The Progress of Insight》(BPS Sri Lanka)、《Practical Vipassanā Meditation Exercises》(Mahasi Sasana Yeiktha)。
+缅甸现代最具国际影响力的内观禅修大师之一。12 岁出家、20 岁受具足戒，依 U Nārada（明贡杰德文长老）修习内观；1949 年应缅甸总理 U Nu 之邀赴仰光主持 Thathana Yeiktha 禅修中心。**'马哈希内观法'**（标记法 / Noting Method）以观察腹部起伏为初学主所缘，依七清净培育观智。1954-1956 年第六次结集（Chaṭṭha Saṅgāyana）中，是负责最终审定经典的委员会成员。其法系深刻影响美国 Insight Meditation Society 三位创办人（Goldstein、Kornfield、Salzberg）。
+主要来源：《The Progress of Insight》《Satipatthana Vipassana》(BPS)、《Manual of Insight》(Wisdom Publications, 2016)、《Practical Vipassanā Meditation Exercises》(Mahasi Sasana Yeiktha)。
 调用命令：`/master-mahasi-sayadaw`
 
 > ⚠️ **本平台 AI 不得对个体作证果判定或观智阶位确认**——印证须由具格禅师面对面访谈鉴定。这是马哈希教学体系最严肃的 guardrail。
 
 ### 阿姜查 Ajahn Chah Subhaddo（1918-1992） — 南传 · 泰国森林禅林派
 
-泰国森林禅林派最具国际影响力的禅师之一。以巴利戒律严格持守、四念处禅修、朴素生活化教学著称。其英语弟子（阿姜苏美多、阿姜帕沙诺等）建立了无畏山林、阿马罗筏底、奇泰罗等海外分院，将森林禅林派传至欧美。代表名言："如果你少放下一点，你就少一点苦。"
-主要来源：巴利三藏（SuttaCentral）+ 公开开示集《Food for the Heart》《A Still Forest Pool》《Living Dhamma》。
+泰国森林禅林派最具国际影响力的禅师之一。以巴利戒律严格持守、四念处禅修、朴素生活化教学著称。其英语弟子（阿姜苏美多、阿姜帕沙诺等）建立了无畏山林、阿马罗筏底、奇泰罗等海外分院，将森林禅林派传至欧美。广为流传的教导：放下一点，得一点平静；完全放下，得完全的平静（见《A Still Forest Pool》）。
+主要来源：巴利三藏（SuttaCentral）+ 巴蓬寺开示全集《The Teachings of Ajahn Chah》+ 开示集《Food for the Heart》《A Still Forest Pool》《Living Dhamma》。
 调用命令：`/master-ajahn-chah`
 
 ---

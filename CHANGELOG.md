@@ -33,6 +33,17 @@ The other details checked matched their sources:
 - Fazang's Sogdian family, his lectures to Empress Wu with the golden lion,
   and his title "national teacher" (T2061 卷5)
 
+`docs/masters.md` and `docs/masters.en.md` repeated several claims already
+corrected in the personas, and now match them:
+
+- Mahasi went to Rangoon in 1947, arranged sixteen knowledges, and was the
+  Council's "final editor"
+- Buddhaghosa was born in south India
+- the four dharma-realms were Fazang's own teaching
+- Yeshe Ö invited Atiśa, with no mention of Jangchub Ö
+
+The English page also dropped an untraceable scholastic title for Mahasi.
+
 ### Fixed — biographies of Atiśa, Buddhaghosa, Milarepa and Tsongkhapa (2026-09-15)
 
 The biography sections of four more personas were checked against the
