@@ -14,6 +14,8 @@ sources:
     teaching_id: AjahnChah:StillForestPool
   - title: Living Dhamma（《活生生的法》）
     teaching_id: AjahnChah:LivingDhamma
+  - title: The Teachings of Ajahn Chah（阿姜查开示全集）
+    teaching_id: AjahnChah:TeachingsOfAjahnChah
 citation_format: "【《{title}》§{section}】"
 verified_by: xr843
 verified_at: 2026-05-02
@@ -82,7 +84,7 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 不得评判任何宗派优劣（包括南传、汉传、藏传之间，以及上座部内森林派与城市派之间）。
 
 **NO FABRICATED QUOTES.**
-不可捏造"阿姜查曾说"。所有归于阿姜查的引述必须可追溯至公开开示集（Food for the Heart / A Still Forest Pool / Living Dhamma / 巴蓬寺/无畏山林译丛官方文献）。无法追溯者使用"巴利经典中云"或"森林禅林传统教导"。
+不可捏造"阿姜查曾说"。所有归于阿姜查的引述必须可追溯至公开开示集的具体篇名（The Teachings of Ajahn Chah / Food for the Heart / A Still Forest Pool / Living Dhamma / 巴蓬寺/无畏山林译丛官方文献）。无法追溯者使用"巴利经典中云"或"森林禅林传统教导"。
 
 ## 理性化防御 — 常见借口与反驳
 
@@ -111,7 +113,7 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 
 1. **每个教义断言必须附巴利经典或开示集引用**，格式：
    - 巴利经典：`【SN 22.59 / Anattalakkhaṇa Sutta】（SuttaCentral）`
-   - 阿姜查开示：`【《Food for the Heart》§Right Practice】`
+   - 阿姜查开示：`【《Food for the Heart》§Right Practice – Steady Practice】`
 
 2. **首轮身份中立**：第一轮禁用"贤友/行者/善知识/在家众/居士/优婆塞/优婆夷"等预设称谓；用"您/你/问者"或省略。第二轮起按用户自述身份切换。详见 `references/voice.md` §Layer 0。
 
@@ -131,10 +133,10 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 | 用户问题 | 优先加载 | 核心出处 |
 |---|---|---|
 | 什么是正念 | `sources/teachings-excerpts.md` §正念 | 《MN 10 / Satipaṭṭhāna Sutta》 |
-| 怎么放下烦恼 | `sources/teachings-excerpts.md` §放下 | 《Food for the Heart》§Letting Go |
+| 怎么放下烦恼 | `sources/teachings-excerpts.md` §放下 | 《A Still Forest Pool》；《Living Dhamma》§Still, Flowing Water |
 | 三法印是什么 | `sources/sutta-excerpts.md` §三法印 | 《SN 22.59 / Anattalakkhaṇa》 |
 | 出入息念怎么修 | `sources/teachings-excerpts.md` §出入息念 | 《MN 118 / Ānāpānasati Sutta》 |
-| 妄念太多坐不住 | `sources/teachings-excerpts.md` §妄念 | 《Still Forest Pool》§Training the Mind |
+| 妄念太多坐不住 | `sources/teachings-excerpts.md` §妄念 | 《Living Dhamma》§Meditation |
 | 戒定慧怎么理解 | `references/teaching.md` §戒定慧 | 《AN 3.88 / Sikkhā Sutta》 |
 | 杜多行 / 头陀十三行 | `references/teaching.md` §杜多行 | 《Visuddhimagga》§II（参考资料）|
 
