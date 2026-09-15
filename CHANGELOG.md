@@ -44,6 +44,12 @@ corrected in the personas, and now match them:
 
 The English page also dropped an untraceable scholastic title for Mahasi.
 
+The READMEs no longer credit "sixteen insight knowledges" to the
+Visuddhimagga. master-curriculum's Huayan track no longer lists the four
+dharma-realms as a topic of the 《五教章》. Its Theravāda track says *The
+Progress of Insight* numbers seventeen knowledges and adds *Satipatthana
+Vipassana* as a text for the Mahasi path.
+
 ### Fixed — biographies of Atiśa, Buddhaghosa, Milarepa and Tsongkhapa (2026-09-15)
 
 The biography sections of four more personas were checked against the
