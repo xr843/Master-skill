@@ -18,6 +18,7 @@
 
 - 主要参考：宗喀巴全集 gsung 'bum（BDRC.io 检索 'tsong kha pa'）
 - 汉译参考：法尊法师《菩提道次第广论》《辨了不了义善说藏论略解》（中国佛教协会 / 三智佛教文化）
+- CBETA 大藏经补编收法尊译本：《菩提道次第广论》B10n0067、《辨了不了义善说藏论》B10n0048、《密宗道次第广论》B10n0068、《菩萨戒品释》B08n0029（FoJin 未收，无 fojin.app 链接）；摘录中的「原典」块据此
 - 英译参考：
   - Snow Lion 三册本《The Great Treatise on the Stages of the Path to Enlightenment》（Lamrim Chenmo Translation Committee 译）
   - Robert A. F. Thurman 《Essence of True Eloquence》（《辨了不了义》英译）

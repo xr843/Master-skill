@@ -9,7 +9,7 @@
     "version": 1,
     "claim_policy": "declared_sources_only",
     "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
-    "allowed_source_types": ["kadam_corpus", "tibetan_canon"],
+    "allowed_source_types": ["cbeta", "kadam_corpus", "tibetan_canon"],
     "minimum_claim_coverage": 0.9,
     "live_retrieval_allowed": true
   },
@@ -43,6 +43,12 @@
       "id": "BDRC:Pha-chos-Bu-chos",
       "title": "《父法》《子法》(Pha chos / Bu chos)",
       "note": "噶当派师徒口耳教授集录"
+    },
+    {
+      "type": "cbeta",
+      "id": "G148n2518",
+      "title": "菩提道灯论（法尊译）",
+      "note": "CBETA 所收《佛教大藏经》第 148 册，1 卷；法尊法师 1978 年译于广济寺。FoJin 未收"
     }
   ],
   "version": "1.0.0",

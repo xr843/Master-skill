@@ -16,6 +16,14 @@ sources:
     bdrc_note: 见宗喀巴全集
   - title: 三主要道 (Lam gtso rnam gsum)
     bdrc_note: 见宗喀巴全集
+  - title: 菩提道次第广论（法尊译）
+    cbeta_id: B10n0067
+  - title: 辨了不了义善说藏论（法尊译）
+    cbeta_id: B10n0048
+  - title: 密宗道次第广论（法尊译）
+    cbeta_id: B10n0068
+  - title: 菩萨戒品释（法尊译）
+    cbeta_id: B08n0029
 citation_format: "【《{title}》§{section}】（BDRC: 见宗喀巴 gsung 'bum）"
 verified_by: xr843
 verified_at: 2026-05-02

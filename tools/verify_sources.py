@@ -507,7 +507,9 @@ def classify_frontmatter_fojin_ids(
 
 _DOC_CITATION = re.compile(r"【([^】]*)】")
 _DOC_FOJIN_LINK = re.compile(r"https://fojin\.app/texts/([0-9]+)")
-_DOC_CBETA_ID = re.compile(r"(?<![0-9A-Za-z])([TXJ])(?:[0-9]{1,3}n)?(B?[0-9]{3,5})[a-z]?(?![0-9A-Za-z])")
+# B（大藏经补编）与 G（佛教大藏经）：master-tsongkhapa / master-atisha 引法尊译本。
+# 只认 T/X/J 时，这两部藏的「原典」块整块被 collect_excerpt_quotes 跳过，周检照绿。
+_DOC_CBETA_ID = re.compile(r"(?<![0-9A-Za-z])([TXJBG])(?:[0-9]{1,3}n)?(B?[0-9]{3,5})[a-z]?(?![0-9A-Za-z])")
 _DOC_TEMPLATE = re.compile(r"\{|卷N|[A-Za-z][xX]{3,}")
 
 

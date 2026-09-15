@@ -1285,3 +1285,18 @@ def test_both_derge_numbers_of_the_lamp_are_declared_for_master_atisha():
     for cite in ("见【《菩提道灯论》，Toh 3947】", "见【《菩提道灯论》，Toh 4465】"):
         r = audit_answer(declared, cite)
         assert r["fabricated"] == [], (cite, r)
+
+
+
+def test_fazun_translation_ids_are_verified_for_the_tibetan_personas():
+    """master-tsongkhapa and master-atisha declare Fazun's translations in CBETA's
+    B and G collections. Full, unpadded and G-collection ids must all resolve."""
+    tsongkhapa = load_declared_ids("master-tsongkhapa")
+    for cite in ("见【《菩提道次第广论》卷十七，B10n0067】", "见【《辨了不了义善说藏论》卷三，B10n48】"):
+        r = audit_answer(tsongkhapa, cite)
+        assert r["fabricated"] == [], (cite, r)
+    atisha = load_declared_ids("master-atisha")
+    r = audit_answer(atisha, "见【《菩提道灯论》卷一，G148n2518】")
+    assert r["fabricated"] == [], r
+    r = audit_answer(atisha, "见【《菩提道灯论》卷一，G148n9999】")
+    assert "G148n9999" in r["fabricated"], r

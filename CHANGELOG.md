@@ -10,6 +10,32 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — master-tsongkhapa and master-atisha declare Fazun's Chinese translations (2026-09-15)
+
+Both personas now declare the Chinese translations by Fazun that CBETA holds:
+
+- master-tsongkhapa: 《菩提道次第广论》 `B10n0067`, 《辨了不了义善说藏论》
+  `B10n0048`, 《密宗道次第广论》 `B10n0068` and 《菩萨戒品释》 `B08n0029`
+- master-atisha: 《菩提道灯论》 `G148n2518`
+
+Eight quotations from these translations are now 「原典」 blocks in the
+excerpt files, each with its fascicle and CBETA id. The weekly step 3f
+therefore checks them clause by clause, and every one was checked before it
+was added. Among them are the Lamp's verses on the three kinds of person and on
+method and wisdom, the Essence of Eloquence's "性空义即缘起义", and the
+Lamrim's outline of calm abiding, insight and their union.
+
+Two id patterns had to learn these collections. The weekly check read only
+T, X and J ids in excerpt citations, so a 「原典」 block citing B or G would
+have been skipped without a word. The citation audit could not match an
+unpadded id such as `B10n48` to the declared `B10n0048`, and would have judged
+a correct citation fabricated. Both now read B and G.
+
+FoJin does not hold these collections: a lookup found none of them, while
+T0235 resolved in the same request. They are listed in
+`tools/fojin-known-absent.json`, so the weekly check does not report them as
+missing every week. Citations of them carry no fojin.app link.
+
 ### Fixed — master-milarepa retold episodes its biography does not contain (2026-09-15)
 
 CBETA holds 《木纳记》 (B0073), a 1930s Chinese rendering of the *Life of

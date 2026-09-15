@@ -5,10 +5,67 @@
       "cbeta_id": "J36nB348",
       "short_cbeta_id": "JB348",
       "title": "灵峰宗论",
-      "used_by": ["master-ouyi"],
+      "used_by": [
+        "master-ouyi"
+      ],
       "reason": "嘉兴藏（J）不在 FoJin 的收录范围内。2026-09-13 以 tools/fojin_bridge.py 直接查证：lookup-cbeta 对 'JB348' 与 'J36nB348' 均返回 {}，而同一次请求里的 'T0235' 正常解析为 text_id=7 —— 是缺这部书，不是接口不通。",
       "verified_absent_on": "2026-09-13",
       "consequence": "master-ouyi 引用《灵峰宗论》时拿不到 fojin.app 活链接。离线审计不受影响：J36nB348 在 meta.json 里已声明，verify_citations.py 照常解析。"
+    },
+    {
+      "cbeta_id": "B10n0067",
+      "short_cbeta_id": "B0067",
+      "title": "菩提道次第广论（法尊译）",
+      "used_by": [
+        "master-tsongkhapa"
+      ],
+      "reason": "大藏经补编（B）与《佛教大藏经》（G）所收的法尊译本不在 FoJin 收录范围内。2026-09-15 以 tools/fojin_bridge.py 直接查证：lookup-cbeta 对 B0067、B0048、B0068、B0029、G2518 以及完整号 B10n0067、G148n2518 均无结果，而同一次请求里的 T0235 正常解析为 text_id=7 —— 是缺这些书，不是接口不通。",
+      "verified_absent_on": "2026-09-15",
+      "consequence": "master-tsongkhapa 引用《菩提道次第广论》时拿不到 fojin.app 活链接。离线审计不受影响；周检 3f 的原文取自 CBETA API，照常核对「原典」块。"
+    },
+    {
+      "cbeta_id": "B10n0048",
+      "short_cbeta_id": "B0048",
+      "title": "辨了不了义善说藏论（法尊译）",
+      "used_by": [
+        "master-tsongkhapa"
+      ],
+      "reason": "大藏经补编（B）与《佛教大藏经》（G）所收的法尊译本不在 FoJin 收录范围内。2026-09-15 以 tools/fojin_bridge.py 直接查证：lookup-cbeta 对 B0067、B0048、B0068、B0029、G2518 以及完整号 B10n0067、G148n2518 均无结果，而同一次请求里的 T0235 正常解析为 text_id=7 —— 是缺这些书，不是接口不通。",
+      "verified_absent_on": "2026-09-15",
+      "consequence": "master-tsongkhapa 引用《辨了不了义善说藏论》时拿不到 fojin.app 活链接。离线审计不受影响；周检 3f 的原文取自 CBETA API，照常核对「原典」块。"
+    },
+    {
+      "cbeta_id": "B10n0068",
+      "short_cbeta_id": "B0068",
+      "title": "密宗道次第广论（法尊译）",
+      "used_by": [
+        "master-tsongkhapa"
+      ],
+      "reason": "大藏经补编（B）与《佛教大藏经》（G）所收的法尊译本不在 FoJin 收录范围内。2026-09-15 以 tools/fojin_bridge.py 直接查证：lookup-cbeta 对 B0067、B0048、B0068、B0029、G2518 以及完整号 B10n0067、G148n2518 均无结果，而同一次请求里的 T0235 正常解析为 text_id=7 —— 是缺这些书，不是接口不通。",
+      "verified_absent_on": "2026-09-15",
+      "consequence": "master-tsongkhapa 引用《密宗道次第广论》时拿不到 fojin.app 活链接。离线审计不受影响；周检 3f 的原文取自 CBETA API，照常核对「原典」块。"
+    },
+    {
+      "cbeta_id": "B08n0029",
+      "short_cbeta_id": "B0029",
+      "title": "菩萨戒品释（法尊译）",
+      "used_by": [
+        "master-tsongkhapa"
+      ],
+      "reason": "大藏经补编（B）与《佛教大藏经》（G）所收的法尊译本不在 FoJin 收录范围内。2026-09-15 以 tools/fojin_bridge.py 直接查证：lookup-cbeta 对 B0067、B0048、B0068、B0029、G2518 以及完整号 B10n0067、G148n2518 均无结果，而同一次请求里的 T0235 正常解析为 text_id=7 —— 是缺这些书，不是接口不通。",
+      "verified_absent_on": "2026-09-15",
+      "consequence": "master-tsongkhapa 引用《菩萨戒品释》时拿不到 fojin.app 活链接。离线审计不受影响；周检 3f 的原文取自 CBETA API，照常核对「原典」块。"
+    },
+    {
+      "cbeta_id": "G148n2518",
+      "short_cbeta_id": "G2518",
+      "title": "菩提道灯论（法尊译）",
+      "used_by": [
+        "master-atisha"
+      ],
+      "reason": "大藏经补编（B）与《佛教大藏经》（G）所收的法尊译本不在 FoJin 收录范围内。2026-09-15 以 tools/fojin_bridge.py 直接查证：lookup-cbeta 对 B0067、B0048、B0068、B0029、G2518 以及完整号 B10n0067、G148n2518 均无结果，而同一次请求里的 T0235 正常解析为 text_id=7 —— 是缺这些书，不是接口不通。",
+      "verified_absent_on": "2026-09-15",
+      "consequence": "master-atisha 引用《菩提道灯论》时拿不到 fojin.app 活链接。离线审计不受影响；周检 3f 的原文取自 CBETA API，照常核对「原典」块。"
     }
   ]
 }

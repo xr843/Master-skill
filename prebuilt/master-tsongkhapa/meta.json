@@ -14,6 +14,7 @@
       "text_interpretation"
     ],
     "allowed_source_types": [
+      "cbeta",
       "tibetan_canon",
       "tibetan_treatise"
     ],
@@ -67,6 +68,30 @@
       "id": "Lam-gtso-rnam-gsum",
       "title": "三主要道 (Lam gtso rnam gsum)",
       "note": "十四颂，出离心、菩提心、清净见三要"
+    },
+    {
+      "type": "cbeta",
+      "id": "B10n0067",
+      "title": "菩提道次第广论（法尊译）",
+      "note": "CBETA 大藏经补编第 10 册，24 卷；Lam rim chen mo 的汉译本。FoJin 未收"
+    },
+    {
+      "type": "cbeta",
+      "id": "B10n0048",
+      "title": "辨了不了义善说藏论（法尊译）",
+      "note": "CBETA 大藏经补编第 10 册，5 卷；Drang nges legs bshad snying po 的汉译本。FoJin 未收"
+    },
+    {
+      "type": "cbeta",
+      "id": "B10n0068",
+      "title": "密宗道次第广论（法尊译）",
+      "note": "CBETA 大藏经补编第 10 册，22 卷；sNgags rim chen mo 的汉译本。FoJin 未收"
+    },
+    {
+      "type": "cbeta",
+      "id": "B08n0029",
+      "title": "菩萨戒品释（法尊译）",
+      "note": "CBETA 大藏经补编第 8 册，5 卷；宗喀巴释无著《菩萨地·戒品》。FoJin 未收"
     }
   ],
   "version": "1.0.0",

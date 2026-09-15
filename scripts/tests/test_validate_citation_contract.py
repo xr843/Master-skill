@@ -299,12 +299,25 @@ def test_non_cbeta_runtime_instructions_are_source_family_aware():
         "mahasi-sayadaw",
         "ajahn-chah",
     )
+    # master-atisha and master-tsongkhapa also declare Fazun's Chinese
+    # translations, which CBETA holds (2026-09-15). Their contracts therefore
+    # include cbeta next to their Tibetan families, and their frontmatter lists
+    # cbeta_id. They must still never be told that CBETA is their main source.
+    mixed = {"atisha", "tsongkhapa"}
     for slug in slugs:
         persona = repository / "prebuilt" / f"master-{slug}"
         meta = json.loads((persona / "meta.json").read_text(encoding="utf-8"))
-        assert "cbeta" not in meta["citation_contract"]["allowed_source_types"]
+        allowed = meta["citation_contract"]["allowed_source_types"]
+        if slug in mixed:
+            assert "cbeta" in allowed, f"master-{slug}: {allowed}"
+            assert any(t.startswith(("tibetan_", "kadam_")) for t in allowed), f"master-{slug}: {allowed}"
+        else:
+            assert "cbeta" not in allowed
         instructions = (persona / "SKILL.md").read_text(encoding="utf-8")
-        for stale in ("cbeta_id", "--sources cbeta", "以 CBETA 汉文为主"):
+        stale_phrases = ("--sources cbeta", "以 CBETA 汉文为主")
+        if slug not in mixed:
+            stale_phrases = ("cbeta_id",) + stale_phrases
+        for stale in stale_phrases:
             assert stale not in instructions, f"master-{slug}: stale {stale}"
         for required in (
             "source_type",

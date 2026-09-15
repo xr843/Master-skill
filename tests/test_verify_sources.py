@@ -975,3 +975,25 @@ def test_the_bdrc_collector_reads_the_real_repo():
     assert len(milarepa) == 2
     assert {row[2] for row in milarepa} == {"mGur 'bum", "rNam thar"}
     assert all(re.match(r"^W[0-9]", rid) for _, rid, _ in rows)
+
+
+def test_the_fazun_translation_quotes_reach_the_weekly_excerpt_check():
+    """master-tsongkhapa and master-atisha quote Fazun's translations, which CBETA holds
+    in the supplementary canon (B) and the Fojiao dazangjing (G), not in T or X."""
+    quotes = verify_sources.collect_excerpt_quotes()
+    works = {
+        verify_sources._cbeta_api_work(cid)
+        for where, _, cid, _ in quotes
+        if where.startswith(("master-tsongkhapa/", "master-atisha/"))
+    }
+    assert {"B0048", "B0067", "B0068", "G2518"} <= works
+
+
+def test_supplementary_canon_and_fojiao_dazangjing_ids_are_cbeta_works():
+    """B（大藏经补编）and G（佛教大藏经）ids name CBETA works; J's own B prefix is untouched."""
+    assert verify_sources._cbeta_work("B10n0067") == ("B", "67")
+    assert verify_sources._cbeta_api_work("B10n0048") == "B0048"
+    assert verify_sources._cbeta_api_work("G148n2518") == "G2518"
+    assert verify_sources._cbeta_work("J36nB348") == ("J", "B348")
+    assert verify_sources._cbeta_work("JB348") == ("J", "B348")
+    assert [m.group(0) for m in verify_sources._DOC_CBETA_ID.finditer("见 JB348 与 B10n0067")] == ["JB348", "B10n0067"]

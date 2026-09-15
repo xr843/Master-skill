@@ -132,7 +132,7 @@ def extract_citation_ids(text: str) -> list[str]:
 # `{1,8}`:`int()` 在 4300 位以上抛 ValueError,而这条路跑在 check_response 里,
 # 一条 `【x，T999…(5000个9)】` 能把整轮付费评测掀翻。经号最长四五位,8 位够宽。
 _SHORT_FORM = re.compile(r"^([TXJ])(B?[0-9]{1,8})$")
-_FULL_FORM = re.compile(r"^([TXJ])[0-9]{1,8}n(B?[0-9]{1,8})[a-z]?$")
+_FULL_FORM = re.compile(r"^([TXJBG])[0-9]{1,8}n(B?[0-9]{1,8})[a-z]?$")
 
 
 def _normalize_cbeta_work_number(number: str) -> str:
@@ -147,7 +147,9 @@ def _normalize_cbeta_work_number(number: str) -> str:
 # `_SHORT_FORM` 匹配不上,`_resolve_short_form` 直接返回 None,于是一条**正确**
 # 引用被判成**伪造**。2026-09-13 探针实测:master-debate 一条回答里 4 个引文块,
 # 3 个栽在这上面。判伪造比漏检更糟 —— 漏检只是没看,判伪造是指着真话说假话。
-_UNPADDED_FULL_FORM = re.compile(r"^([TXJ])([0-9]{1,8})n(B?[0-9]{1,8})([a-z]?)$")
+# B / G：大藏经补编与佛教大藏经（法尊译本，master-tsongkhapa / master-atisha）。
+# 只认 T/X/J 时，`B10n67` 这种未补零的正确引用对不回声明的 `B10n0067`，被判伪造。
+_UNPADDED_FULL_FORM = re.compile(r"^([TXJBG])([0-9]{1,8})n(B?[0-9]{1,8})([a-z]?)$")
 
 
 def _resolve_short_form(cid: str, declared_ids: set[str]) -> str | None:

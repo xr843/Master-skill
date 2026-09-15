@@ -14,6 +14,8 @@ sources:
     toh_id: Toh 3948
   - title: 父法·子法 (Pha chos / Bu chos)
     bdrc_note: 噶当派师徒口耳教授集录，BDRC.io 可检索
+  - title: 菩提道灯论（法尊译）
+    cbeta_id: G148n2518
 citation_format: "【《{title}》§{section}】（Toh {toh_id} / 见 BDRC.io 'a ti sha'）"
 verified_by: xr843
 verified_at: 2026-05-02
