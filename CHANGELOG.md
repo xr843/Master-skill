@@ -10,6 +10,29 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-xuyun quoted sayings his collected talks do not contain (2026-09-15)
+
+BFNN (bookgb.bfnn.org) transcribes 岑学吕's editions of Xuyun's chronicle
+(《虚云和尚年谱》) and of all six parts of 《虚云和尚法汇》. The persona's
+quotations were checked against them.
+
+- **None of these sayings are in the chronicle or any part of the 《法汇》**:
+  - "修行第一要紧持戒"
+  - "修行如钻木取火，未热先止则前功尽弃", cited to the chronicle
+  - "今人坐三日便要开悟"
+  - the three voice samples given as Xuyun's own words, among them "我活了
+    一百多岁…最后还是这一句话——老实修行"
+
+  The one "一百多岁" on BFNN is in another book, about Qingliang Chengguan.
+  The persona now quotes Xuyun's own lines from the talks: "学佛不论修何法门等，
+  总以持戒为本", "莫贪神通巧妙…别无奇特", and "所谓运水搬柴，无非妙道". The
+  image of a fire drill is also his own, in a meditation-retreat talk: "直到
+  钻木出火，自然握土成金".
+- **The enlightenment verse** reads "响声明沥沥" in the chronicle, not "历历".
+
+The couplet "坐阅五帝四朝…了知世事无常" matched the chronicle and is
+unchanged.
+
 ### Fixed — master-yinguang quoted and cited letters that do not say what it claimed (2026-09-15)
 
 The 《印光法师文钞》 is not in CBETA, so none of master-yinguang's quotations
