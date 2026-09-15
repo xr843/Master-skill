@@ -997,3 +997,97 @@ def test_supplementary_canon_and_fojiao_dazangjing_ids_are_cbeta_works():
     assert verify_sources._cbeta_work("J36nB348") == ("J", "B348")
     assert verify_sources._cbeta_work("JB348") == ("J", "B348")
     assert [m.group(0) for m in verify_sources._DOC_CBETA_ID.finditer("见 JB348 与 B10n0067")] == ["JB348", "B10n0067"]
+
+
+# --- Step 3h: quoted lines in persona docs ------------------------------------
+
+
+def _quote_search(mode="found"):
+    """Fake CBETA search by outcome, so a test never has to guess which clause is searched.
+
+    "found" — the clause is in CBETA and in the work asked about.
+    "missing" — CBETA has it nowhere.
+    "elsewhere" — CBETA has it, but not in the work asked about.
+    "unreachable" — the search failed.
+    """
+
+    def search(clause, work=None):
+        if mode == "unreachable":
+            return None
+        if mode == "missing":
+            return 0
+        if work is None:
+            return 3
+        return 0 if mode == "elsewhere" else 3
+
+    return search
+
+
+def test_a_quoted_line_no_cbeta_text_has_is_flagged_for_a_cbeta_only_persona():
+    """master-zhiyi's "功在渐次，证在圆融" was in no text; it is the kind this step catches."""
+    quotes = [("master-zhiyi/references/voice.md:30", "master-zhiyi", "功在渐次，证在圆融。")]
+    mismatched, unknown = verify_sources.classify_persona_quotes(
+        quotes, {"master-zhiyi": {"cbeta"}}, {"master-zhiyi": ["T1911"]},
+        _quote_search("missing"),
+    )
+    assert [m[0] for m in mismatched] == ["master-zhiyi/references/voice.md:30"]
+    assert unknown == []
+
+
+def test_the_same_line_is_only_unknown_when_the_persona_also_declares_other_sources():
+    """master-xuyun quotes 《虚云和尚法汇》, which CBETA does not hold. Not finding it proves nothing."""
+    quotes = [("master-xuyun/references/voice.md:29", "master-xuyun", "凡学佛贵真实不虚，尽除浮奢。")]
+    mismatched, unknown = verify_sources.classify_persona_quotes(
+        quotes, {"master-xuyun": {"cbeta", "compiled_teaching"}}, {"master-xuyun": ["T2008"]},
+        _quote_search("missing"),
+    )
+    assert mismatched == []
+    assert [u[0] for u in unknown] == ["master-xuyun/references/voice.md:29"]
+
+
+def test_a_line_only_in_a_work_the_persona_does_not_declare_is_unknown_not_wrong():
+    """master-xuanzang's syllogism survives in Kuiji's commentary, which he does not declare."""
+    quotes = [("master-xuanzang/references/voice.md:33", "master-xuanzang", "真故极成色，不离于眼识宗。")]
+    mismatched, unknown = verify_sources.classify_persona_quotes(
+        quotes, {"master-xuanzang": {"cbeta"}}, {"master-xuanzang": ["T1585"]},
+        _quote_search("elsewhere"),
+    )
+    assert mismatched == []
+    assert unknown[0][1] == "only in works this persona does not declare"
+
+
+def test_a_line_in_a_declared_work_passes():
+    quotes = [("master-huineng/references/voice.md:29", "master-huineng", "不是风动，不是幡动，仁者心动。")]
+    assert verify_sources.classify_persona_quotes(
+        quotes, {"master-huineng": {"cbeta"}}, {"master-huineng": ["T2008"]}, _quote_search()
+    ) == ([], [])
+
+
+def test_cbeta_not_answering_is_unknown_not_wrong():
+    quotes = [("master-huineng/references/voice.md:29", "master-huineng", "不是风动，不是幡动，仁者心动。")]
+    mismatched, unknown = verify_sources.classify_persona_quotes(
+        quotes, {"master-huineng": {"cbeta"}}, {"master-huineng": ["T2008"]}, _quote_search("unreachable")
+    )
+    assert mismatched == []
+    assert unknown[0][1] == "CBETA did not answer"
+
+
+def test_the_converter_uses_the_variants_cbeta_prints():
+    """opencc's s2t gives 爲 and 衆; CBETA has 為 and 眾, and searching the others finds nothing."""
+    assert verify_sources.to_traditional("一切有为法") == "一切有為法"
+    assert verify_sources.to_traditional("众因缘生法") == "眾因緣生法"
+
+
+def test_the_quote_collector_reads_the_real_repo_and_skips_what_is_not_a_quotation():
+    quotes = verify_sources.collect_persona_quotes()
+    assert len(quotes) >= 30
+    where = {w for w, _, _ in quotes}
+    text = {t for _, _, t in quotes}
+    # 示例句与引用块都收
+    assert any(w.startswith("master-huineng/references/voice.md") for w in where)
+    assert any("菩提自性，本来清净" in t for t in text)
+    # 模板句、拒答话术、自述为转述的行都不收
+    assert not any("……" in t or "/" in t for t in text)
+    assert not any("具格上师" in t for t in text)
+    assert not any(t.startswith("见空性而不坏因果") for t in text)
+    assert all(w.startswith("master-") and ("/references/" in w or "/sources/" in w) for w in where)

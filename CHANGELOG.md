@@ -10,6 +10,33 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — weekly check of the quoted lines in persona docs (2026-09-16)
+
+`tools/verify_sources.py` has a new step, 3h. Until now the weekly check read
+only the 「原典」 blocks, and every fabricated saying found so far was
+somewhere else: in the voice samples.
+
+- **What it reads.** Three shapes in `references/` and `sources/`: numbered
+  voice samples, blockquoted lines, and a quotation after 云/曰 on a line that
+  names a work. Templates, the standard refusal wording, and any line the
+  persona itself marks as 转述 / 非原文 / 主旨 are skipped.
+- **What it does.** The longest clause is converted to traditional characters
+  and searched in CBETA's full text, then in each work the persona declares.
+- **What counts as wrong.** CBETA has the line nowhere, and the persona
+  declares CBETA sources only. For a persona that also declares compiled
+  teachings or Tibetan works, not finding the line proves nothing, so it is
+  reported as unknown: 《虚云和尚法汇》 and 《印光法师文钞》 are not in CBETA.
+  A line CBETA has, but not in a declared work, is also unknown.
+- **The conversion matters.** CBETA's search takes traditional characters only:
+  the simplified 「应无所住而生其心」 returns nothing while the traditional form
+  returns 343 hits, and no parameter relaxes that. opencc's `s2t` produces 爲
+  and 衆 where CBETA prints 為 and 眾, so the step uses `s2tw` and normalises
+  those; without it the genuine 坛经 and 中论 quotations report as missing.
+- `requirements.txt` gains `opencc-python-reimplemented`.
+
+Run over the repository, the step reports nothing wrong: the lines fixed in
+#219 are the ones it would have caught.
+
 ## [0.12.9] — 2026-09-15
 
 This release checks the quoted lines in the CBETA personas that the weekly

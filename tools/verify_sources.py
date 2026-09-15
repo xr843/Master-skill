@@ -955,6 +955,152 @@ def classify_bdrc_records(
     return mismatched, unknown
 
 
+CBETA_SEARCH_URL = "https://cbdata.dila.edu.tw/stable/search"
+
+# 「当原话呈现」的三种写法：voice.md 的编号示例句、teaching.md 的引用块、
+# 行内带书名号的「云/曰」。模板句（含「……」或「/」选项）、统一拒答话术、
+# 以及人设自己标了「转述/非原文/主旨」的行都不是引文，不收。
+_QUOTE_SAMPLE = re.compile(r'^\s*\d+\.\s*[“"「『]([^”"」』\n]{8,200})')
+_QUOTE_BLOCK = re.compile(r'^\s*>\s*[“"「『]([^”"」』\n]{8,200})')
+_QUOTE_SAID = re.compile(r'(?:云|曰|偈云|经云|论云)\s*[：:]?\s*[“"「『]([^”"」』\n]{8,200})')
+_QUOTE_BOILER = re.compile(
+    r"具格上师|亲近善知识|不可由文字|网络传授|须依止|本平台|不得对个体|面对面访谈"
+    r"|如需深入学习|SuttaCentral|BDRC|fojin"
+)
+_QUOTE_PARAPHRASE = re.compile(r"转述|非原文|主旨|整理|概括|要旨|讲解")
+_QUOTE_HAN = re.compile(r"[\u3400-\u9fff]")
+
+
+def collect_persona_quotes() -> list[tuple[str, str, str]]:
+    """(位置, 祖师目录, 引文)：人设 references / sources 里当原话呈现的句子。
+
+    3f 只看摘录里的「原典」块，而编造的语录恰恰长在别处 —— 2026-09-15 一次手工
+    核查在 voice.md 的「示例句」里查出玄奘「因明立量，非为诤胜」、智顗「功在渐次，
+    证在圆融」等五条查无出处，还有三条是灌顶、澄观、彭际清的话挂在祖师名下。
+    """
+    base = Path(PREBUILT_DIR)
+    quotes: list[tuple[str, str, str]] = []
+    for meta_path in sorted(base.glob("*/meta.json")):
+        master = meta_path.parent.name
+        for path in sorted((meta_path.parent / "references").glob("*.md")) + sorted(
+            (meta_path.parent / "sources").glob("*.md")
+        ):
+            where_base = path.relative_to(base).as_posix()
+            for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                if "出处" in line or "引用格式" in line or _QUOTE_PARAPHRASE.search(line):
+                    continue
+                for pattern, needs_title in ((_QUOTE_SAMPLE, False), (_QUOTE_BLOCK, False), (_QUOTE_SAID, True)):
+                    match = pattern.search(line)
+                    if not match:
+                        continue
+                    if needs_title and "《" not in line:
+                        break
+                    quote = match.group(1).split("——", 1)[0]
+                    if (
+                        len(_QUOTE_HAN.findall(quote)) >= 8
+                        and "……" not in quote
+                        and "/" not in quote
+                        and not _QUOTE_BOILER.search(quote)
+                    ):
+                        quotes.append((f"{where_base}:{number}", master, quote))
+                    break
+    return quotes
+
+
+def persona_source_families() -> dict[str, set[str]]:
+    """{祖师目录: 声明来源的家族集合}。只声明 CBETA 的人设，引文必须在 CBETA 里。"""
+    families: dict[str, set[str]] = {}
+    for meta_path in sorted(Path(PREBUILT_DIR).glob("*/meta.json")):
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        kinds = {str(src.get("type")) for src in meta.get("sources") or [] if src.get("type")}
+        if kinds:
+            families[meta_path.parent.name] = kinds
+    return families
+
+
+def declared_cbeta_works() -> dict[str, list[str]]:
+    """{祖师目录: [CBETA API 的 work 参数]}，取自各 meta.json 声明的 cbeta 来源。"""
+    works: dict[str, list[str]] = {}
+    for meta_path in sorted(Path(PREBUILT_DIR).glob("*/meta.json")):
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        found = {
+            _cbeta_api_work(str(src.get("id")))
+            for src in meta.get("sources") or []
+            if src.get("type") == "cbeta" and _cbeta_api_work(str(src.get("id")))
+        }
+        if found:
+            works[meta_path.parent.name] = sorted(found)
+    return works
+
+
+# CBETA 全文检索只认繁体：简体「应无所住而生其心」查 0 条，繁体 343 条（2026-09-16
+# 实测，另试过 lang/variants/simplified 等七种参数，都不会放宽）。opencc 的 `s2t`
+# 会出「爲」「衆」这类异体，CBETA 用「為」「眾」，照样查不到，所以用 `s2tw` 再补一层
+# 归一 —— 少了这一层，《坛经》《中论》的真引文都会被报成查无此句。
+_TRADITIONAL_FIX = str.maketrans({"爲": "為", "衆": "眾", "眞": "真", "僞": "偽"})
+
+
+def to_traditional(text: str) -> str:
+    import opencc
+
+    for config in ("s2tw", "s2tw.json"):
+        try:
+            return opencc.OpenCC(config).convert(text).translate(_TRADITIONAL_FIX)
+        except Exception:  # noqa: BLE001 — 配置名在不同发行包里写法不同
+            continue
+    raise RuntimeError("opencc has no s2tw config")
+
+
+def cbeta_search_hits(clause: str, work: str | None = None) -> int | None:
+    """CBETA 全文检索命中数；`work` 限定在一部书里。接口出错返回 None（未知）。"""
+    import urllib.error
+    import urllib.request
+
+    params = {"q": clause, "rows": 1}
+    if work:
+        params["work"] = work
+    url = f"{CBETA_SEARCH_URL}?{urllib.parse.urlencode(params)}"
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            return json.loads(response.read().decode("utf-8")).get("num_found") or 0
+    except (urllib.error.URLError, OSError, ValueError, TypeError):
+        return None
+
+
+def classify_persona_quotes(
+    quotes: list[tuple[str, str, str]],
+    families: dict[str, set[str]],
+    works: dict[str, list[str]],
+    search,
+) -> tuple[list[tuple[str, str, str]], list[tuple[str, str]]]:
+    """把人设里当原话引的句子分成「CBETA 没有这句」与「比不了」两类。
+
+    判「没有」只对**声明来源全是 CBETA** 的人设成立。master-xuyun 的语录出自
+    《虚云和尚法汇》、master-yinguang 的出自《文钞》，两部都不在 CBETA —— 对它们，
+    查不到只说明这一步够不着，不是伪造。查得到却不在声明作品里的（玄奘引窥基所记
+    的唯识比量、蕅益《要解》在净土十要本），同样记为未知：行文里往往已注明他书。
+    """
+    mismatched: list[tuple[str, str, str]] = []
+    unknown: list[tuple[str, str]] = []
+    for where, master, quote in quotes:
+        clauses = sorted((c for c in quote_clauses(quote) if len(c) >= 4), key=len, reverse=True)
+        if not clauses:
+            unknown.append((where, "no clause long enough to search"))
+            continue
+        clause = to_traditional(clauses[0])
+        anywhere = search(clause, None)
+        if anywhere is None:
+            unknown.append((where, "CBETA did not answer"))
+        elif not anywhere:
+            if families.get(master) == {"cbeta"}:
+                mismatched.append((where, quote, clause))
+            else:
+                unknown.append((where, f"{master} also declares non-CBETA sources"))
+        elif not any(search(clause, work) for work in works.get(master, [])):
+            unknown.append((where, "only in works this persona does not declare"))
+    return mismatched, unknown
+
+
 def verify_ids(bridge, cbeta_map: dict[str, list[str]], titles: dict[str, str]) -> dict[str, dict]:
     """Verify all CBETA IDs and return {full_cbeta_id: {text_id, short_id, title, ...}}.
 
@@ -1274,6 +1420,21 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     if not bdrc_mismatched and not bdrc_unknown:
         print(f"  All {len(bdrc_sources)} declared BDRC work ids resolve to a record with the declared title")
 
+    # Step 3h: 人设里当原话引的句子，CBETA 里有没有（见 classify_persona_quotes）。
+    print("\n[3h/4] Checking quoted lines in persona docs against CBETA...")
+    persona_quotes = collect_persona_quotes()
+    quote_line_mismatched, quote_line_unknown = classify_persona_quotes(
+        persona_quotes, persona_source_families(), declared_cbeta_works(), cbeta_search_hits
+    )
+    for where, quote, clause in quote_line_mismatched:
+        print(f"    [WRONG] {where}: CBETA has no 「{clause}」 — 「{quote[:40]}」")
+    if quote_line_unknown:
+        print(f"  Could not check {len(quote_line_unknown)} quoted line(s) — unknown, not wrong:")
+        for where, reason in quote_line_unknown:
+            print(f"    {where}: {reason}")
+    if not quote_line_mismatched and not quote_line_unknown:
+        print(f"  All {len(persona_quotes)} quoted lines are in CBETA, in a work the persona declares")
+
     # Step 4: Update URLs
     # Build replacement map: full_cbeta_id -> str(internal_text_id)
     id_replacement_map: dict[str, str] = {}
@@ -1321,6 +1482,7 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     print(f"  Doc citation links to another work: {len(doc_mismatched)}")
     print(f"  Excerpt quotes not in the cited text: {len(quote_mismatched)}")
     print(f"  BDRC records that do not match: {len(bdrc_mismatched)}")
+    print(f"  Quoted lines CBETA does not have: {len(quote_line_mismatched)}")
     if unknown_to_cbeta:
         print(f"  CBETA unreachable for:     {len(unknown_to_cbeta)} (not counted as wrong)")
     if dry_run and all_changes:
