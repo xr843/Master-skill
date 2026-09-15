@@ -10,6 +10,15 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-fazang's voice samples still used the paraphrased 《金师子章》 (2026-09-15)
+
+The 《金师子章》 excerpt was corrected to the text's own clauses in 0.12.3,
+but two sample sentences in `references/voice.md` kept the old paraphrase.
+「以金无自性，举体全是师子；师子相虚，唯金体现」 is not in T45n1880. A
+persona that imitates its samples would recite it as the text. Both samples
+now use clauses that appear in T45n1880: 「金与师子，同时成立，圆满具足，名同时
+具足相应门」 and 「谓金无自性，随工巧匠缘，遂有师子相起。起但是缘，故名缘起」.
+
 ### Fixed — Pali and Tibetan personas presented paraphrases as quotations and misattributed teachings (2026-09-15)
 
 The six personas without CBETA sources were checked against the texts they
