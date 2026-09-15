@@ -10,6 +10,14 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.10] — 2026-09-16
+
+This release adds the weekly check that would have caught the fabricated
+sayings fixed over the last two days: step 3h reads the quoted lines outside
+the 「原典」 blocks, where every one of them was found. It also corrects the
+quotations in master-milarepa and master-yinguang, whose own writings are not
+in CBETA and had to be checked by hand.
+
 ### Fixed — master-milarepa's and master-yinguang's quoted lines (2026-09-16)
 
 The new step 3h reports both personas as unknown, not wrong: their sources are
@@ -2132,7 +2140,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.9...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.10...HEAD
+[0.12.10]: https://github.com/xr843/Master-skill/compare/v0.12.9...v0.12.10
 [0.12.9]: https://github.com/xr843/Master-skill/compare/v0.12.8...v0.12.9
 [0.12.8]: https://github.com/xr843/Master-skill/compare/v0.12.7...v0.12.8
 [0.12.7]: https://github.com/xr843/Master-skill/compare/v0.12.6...v0.12.7
