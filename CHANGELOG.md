@@ -10,6 +10,31 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-milarepa retold episodes its biography does not contain (2026-09-15)
+
+CBETA holds 《木纳记》 (B0073), a 1930s Chinese rendering of the *Life of
+Milarepa*, in 29 chapters. Its episodes were compared with the persona's
+retellings.
+
+- **"Twelve demonesses of the snow mountains"** do not appear. The *Life* has
+  Milarepa say that the first to trouble him were the five long-life sisters
+  (Tshe ring mched lnga). He took them as disciples, and later tradition
+  counts them as protectors.
+- **A contest of magic with "a Nepali sage"** was in fact with the Bön
+  practitioner Naro Bönchung, at the snow mountain (Kailash). A teaching the
+  persona had Milarepa give afterwards has no source and is removed.
+- **"More than thirty"** people killed by his curse: the *Life* says
+  thirty-five.
+- **The Kagyu branches.** The persona listed Drikung, Taklung and Drukpa among
+  the "four great and eight lesser" branches founded after Gampopa. The four
+  great branches are Karma, Tshalpa, Barom and Phagdru. Drikung, Taklung and
+  Drukpa are among the eight lesser branches that came from Phagdru's
+  students.
+- **The *Life*'s compiler.** The *Life* is written as Rechungpa's record of
+  Milarepa telling his own story, and older translations such as 《木纳记》
+  credit Rechungpa. The source note now says so, next to Tsangnyön Heruka's
+  compilation of 1488.
+
 ### Fixed — master-tsongkhapa and master-atisha quoted lines no source contains (2026-09-15)
 
 CBETA's supplementary canon holds Fazun's Chinese translations of the works
