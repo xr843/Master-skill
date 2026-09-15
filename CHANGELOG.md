@@ -10,6 +10,18 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-kumarajiva quoted Xuanzang's Heart Sutra as its own (2026-09-15)
+
+`references/teaching.md` gave 「色不异空，空不异色」 as the wording of
+《摩诃般若波罗蜜大明咒经》, Kumārajīva's translation of the Heart Sutra. Those
+words, and 「五蕴皆空」, are from Xuanzang's translation (T08n0251).
+Kumārajīva's (T08n0250) reads 「非色异空，非空异色」 and 「照见五阴空」. The
+passage now quotes T08n0250 and says the familiar wording is Xuanzang's, and
+the voice sample uses Kumārajīva's wording. The quotation had also sat under
+the Diamond Sutra's 出处 line; each sutra now has its own. T08n0250 is
+declared in the frontmatter and `meta.json` (FoJin text 6503, checked against
+CBETA and FoJin).
+
 ### Added — the weekly source check reads the quotations in the excerpt files (2026-09-15)
 
 The 19 excerpt quotations fixed below had passed every existing check. The
