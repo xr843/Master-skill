@@ -24,7 +24,13 @@
       "type": "tibetan_canon",
       "id": "Toh:4465",
       "title": "菩提道灯论 (Bodhipathapradīpa, byang chub lam gyi sgron ma)",
-      "note": "sDe dge bsTan 'gyur Tohoku 标准编号；藏地后弘期道次第之祖"
+      "note": "德格丹珠尔阿底峡小法集（Jo bo chos chung）所收；同论在中观部重出为 Toh 3947；藏地后弘期道次第之祖"
+    },
+    {
+      "type": "tibetan_canon",
+      "id": "Toh:3947",
+      "title": "菩提道灯论 (Bodhipathapradīpa, byang chub lam gyi sgron ma)",
+      "note": "德格丹珠尔中观部所收，与 Toh 4465 为同一论；84000 英译据此号"
     },
     {
       "type": "tibetan_canon",
@@ -46,6 +52,7 @@
   "search_scope": {
     "primary_source_ids": [
       "Toh:4465",
+      "Toh:3947",
       "Toh:3948"
     ],
     "traditions": [

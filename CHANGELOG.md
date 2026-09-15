@@ -10,6 +10,15 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Changed — master-atisha accepts Toh 3947 for the *Lamp for the Path* (2026-09-15)
+
+master-atisha declared the *Bodhipathapradīpa* only as Toh 4465, the copy in
+Atiśa's Minor Teachings. The same text is Toh 3947 in the Madhyamaka section of
+the Derge Tengyur, the number 84000 translates and most scholarship cites. An
+answer citing Toh 3947 was judged a fabricated citation. The persona now
+declares both numbers. Its source index and excerpt header name both, and the
+note that called Toh 4465 the standard Derge number is corrected.
+
 ## [0.12.6] — 2026-09-15
 
 This release checks the remaining persona biographies and the non-CBETA source

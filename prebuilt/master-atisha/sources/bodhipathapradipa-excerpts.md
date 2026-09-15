@@ -1,6 +1,6 @@
 # 《菩提道灯论》(Bodhipathapradīpa) 选段
 
-> 来源：sDe dge bsTan 'gyur **Toh 4465**（藏文版 byang chub lam gyi sgron ma）+ Toh 3948（自释《菩提道灯难处释》）。
+> 来源：sDe dge bsTan 'gyur **Toh 4465**（藏文版 byang chub lam gyi sgron ma；阿底峡小法集所收，中观部重出为 Toh 3947，两号引用皆可）+ Toh 3948（自释《菩提道灯难处释》）。
 > 引用格式：`【《菩提道灯论》§{章节主题}】（Toh 4465）`
 > 颂号依 Lotsawa House 英译本 *The Lamp for the Path to Enlightenment*（共 68 颂）核对，2026-09-15。84000 项目对部分相关论著有权威英译，可对照 [84000.co](https://84000.co) 检索 'Atiśa' 或 'Bodhipathapradīpa'。
 
