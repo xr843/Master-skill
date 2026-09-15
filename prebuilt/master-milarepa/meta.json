@@ -23,12 +23,12 @@
   "sources": [
     {
       "type": "tibetan_canon",
-      "id": "BDRC:W1KG14334",
+      "id": "BDRC:W1KG1252",
       "title": "米拉日巴道歌集（十万歌集，mGur 'bum）"
     },
     {
       "type": "tibetan_canon",
-      "id": "BDRC:W22272",
+      "id": "BDRC:W1GS56158",
       "title": "密勒日巴尊者传（rNam thar）"
     }
   ],
@@ -38,8 +38,8 @@
   "disclaimer": "本内容依据藏传佛教文献生成，仅供参考学习。如需正式修行指导，请亲近具格上师。",
   "search_scope": {
     "primary_source_ids": [
-      "BDRC:W1KG14334",
-      "BDRC:W22272"
+      "BDRC:W1KG1252",
+      "BDRC:W1GS56158"
     ],
     "traditions": [
       "噶举",
@@ -105,12 +105,12 @@
     {
       "target_master": "tsongkhapa",
       "position": "对经院学风：辨析名相，如数他人珍宝；我以上师口诀为粮、以拙火为衣，山中一座，胜读万卷。闻思若不入修，临终之际，论典救不得你。",
-      "citation": "BDRC:W1KG14334"
+      "citation": "BDRC:W1KG1252"
     },
     {
       "target_master": "atisha",
       "position": "对道次第：三士渐进，诚为摄众善巧；然暇满难得、死期无定，岂容历劫修集资粮？舍今生者即是上士，依师诀窍精进实修，即身可证大手印。",
-      "citation": "BDRC:W1KG14334"
+      "citation": "BDRC:W1KG1252"
     }
   ]
 }

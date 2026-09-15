@@ -160,12 +160,12 @@ def test_load_declared_ids_rejects_traversal():
 # 全部藏传与南传祖师的伪造引用一律漏检(见 eval/reports/BASELINE.md 的撤回段)。
 #
 # 关键陷阱:meta.json 声明的 id 与回答里实际写法**不是同一个字符串**。
-# meta 写 `Toh:4465`,行文写 `Toh 4465`;meta 写 `BDRC:W22272`,夹具 must_cite
-# 写裸 `W22272`。只加正则不做归一化,会把**正确**引用判成伪造 —— 比漏检更糟。
+# meta 写 `Toh:4465`,行文写 `Toh 4465`;meta 写 `BDRC:W1GS56158`,夹具 must_cite
+# 写裸 `W1GS56158`。只加正则不做归一化,会把**正确**引用判成伪造 —— 比漏检更糟。
 # ---------------------------------------------------------------------------
 
 ATISHA = {"Toh:4465", "Toh:3948", "BDRC:Pha-chos-Bu-chos"}
-MILAREPA = {"BDRC:W1KG14334", "BDRC:W22272"}
+MILAREPA = {"BDRC:W1KG1252", "BDRC:W1GS56158"}
 BUDDHAGHOSA = {"PTS:Vism", "PTS:DN-Comm", "SuttaCentral"}
 
 
@@ -188,10 +188,10 @@ def test_fabricated_bdrc_work_id_flagged():
 
 
 def test_bare_bdrc_work_id_matches_declared_prefixed_form():
-    """夹具 must_cite 写裸 `W22272`,meta 写 `BDRC:W22272`。"""
-    r = audit_answer(MILAREPA, "见【《密勒日巴尊者传》，W22272】")
+    """夹具 must_cite 写裸 `W1GS56158`,meta 写 `BDRC:W1GS56158`。"""
+    r = audit_answer(MILAREPA, "见【《密勒日巴尊者传》，W1GS56158】")
     assert r["fabricated"] == []
-    assert "BDRC:W22272" in r["offline"]
+    assert "BDRC:W1GS56158" in r["offline"]
 
 
 def test_fabricated_pts_work_flagged():

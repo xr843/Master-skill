@@ -40,7 +40,7 @@ Third Patriarch and true systematizer of the Huayan school. National Preceptor u
 Primary sources: CBETA — Huayan Jing Tanxuan Ji (T35n1733), Huayan Wujiao Zhang (T45n1866).
 Invoke: `/master-fazang`
 
-### Master Yinguang (1861-1940)
+### Master Yinguang (1862-1940)
 
 13th Patriarch of the Chinese Pure Land school. Central figure in the modern Pure Land revival. His writing is sincere and straightforward; he guided countless practitioners through correspondence, collected in the three volumes of the Yinguang Fashi Wenchao.
 Primary sources: the three volumes of the Wenchao (not in CBETA; declared as compiled teachings) and the three Pure Land sutras (CBETA).
@@ -54,7 +54,7 @@ Invoke: `/master-ouyi`
 
 ### Master Xuyun (1840-1959)
 
-Modern Chan patriarch who lived to 119 years. Unprecedented in Buddhist history for holding dharma transmission in all five houses of Chan (Linji, Caodong, Guiyang, Yunmen, Fayan). Restored six major ancestral monasteries. Advocated hua-tou investigation, honest practice, and harmonizing Chan with Pure Land.
+Modern Chan patriarch. The chronicle compiled by Cen Xuelü dates his birth to 1840, which makes him 120 at death by Chinese reckoning; early documents give later years, and scholars such as Daniela Campo argue the chronicle's date was altered. Unprecedented in Buddhist history for holding dharma transmission in all five houses of Chan (Linji, Caodong, Guiyang, Yunmen, Fayan). Restored six major ancestral monasteries. Advocated hua-tou investigation, honest practice, and harmonizing Chan with Pure Land.
 Primary sources: CBETA — Shurangama Sutra, Diamond Sutra, Platform Sutra.
 Invoke: `/master-xuyun`
 
@@ -67,7 +67,7 @@ Invoke: `/master-atisha`
 ### Tsongkhapa (1357-1419) — Tibetan · Gelug founder
 
 Founder of the **Gelug school** (dGe lugs pa, "the way of virtue"; popularly known as the "Yellow Hat school") — basis of the Dalai Lama and Panchen Lama lineages. Born in Tsongkha (Qinghai). Studied with masters across all major schools, particularly the Sakya scholar Rendawa for prasaṅgika Madhyamaka. Reformed lax monastic discipline, integrated sūtra and tantra into a strict graduated path, and produced the great trilogy: *Lamrim Chenmo* (Great Treatise on the Stages of the Path), *sNgags rim chen mo* (Great Treatise on Tantra), and *Drang nges legs bshad snying po* (Essence of True Eloquence — definitive vs interpretable meaning). Founded Ganden Monastery (1409) — the seat of the school.
-Primary sources: Tsongkhapa's collected works (*gsung 'bum*, searchable on BDRC.io). Chinese translation by Dharma-master Faxun is the standard Sinophone reference.
+Primary sources: Tsongkhapa's collected works (*gsung 'bum*, searchable on BDRC.io). Master Fazun's (法尊) Chinese translation is the standard Sinophone reference.
 Invoke: `/master-tsongkhapa`
 
 > ⚠️ Tantric practice steps, empowerment liturgy, generation- and completion-stage details, deity mantras, and channels-and-drops practice are introduced **only at the level of name and historical context — concrete practice instructions are never given**.
@@ -75,7 +75,7 @@ Invoke: `/master-tsongkhapa`
 ### Milarepa (1052-1135) — Tibetan · Kagyu
 
 Spiritual ancestor of the Tibetan Kagyu lineage and the paradigm of the "yogi tradition" (no monastery, mountain retreat, teaching through song). After committing serious harm in his youth through black magic, he sought purification under Marpa the Translator, who put him through severe trials before transmitting the complete Mahāmudrā and Naro Chodruk lineages. He spent decades in Himalayan retreat, surviving on nettles, and taught through extemporaneous **mGur** (songs of realization) — shaping the entire later Tibetan tradition.
-Primary sources: BDRC — *The Hundred Thousand Songs of Milarepa* (mGur 'bum, W1KG14334) and *The Life of Milarepa* (rNam thar, W22272).
+Primary sources: BDRC — *The Hundred Thousand Songs of Milarepa* (mGur 'bum, W1KG1252) and *The Life of Milarepa* (rNam thar, W1GS56158), both compiled by Tsangnyön Heruka.
 Invoke: `/master-milarepa`
 
 > ⚠️ Naro Chodruk (Six Yogas), tummo, generation/completion stages and other esoteric practices are introduced **only at the level of name and historical context — concrete practice instructions are never given**. Authentic transmission requires direct empowerment from a qualified teacher.

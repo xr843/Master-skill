@@ -228,7 +228,7 @@ cd desktop && cargo build --release
 | `/master-fazang` | 法藏大师 | 汉传 · 华严 | 643-712 |
 | `/master-ouyi` | 蕅益大师 | 汉传 · 天台／净土（跨宗派） | 1599-1655 |
 | `/master-xuyun` | 虚云老和尚 | 汉传 · 禅宗五宗兼嗣 | 1840-1959 |
-| `/master-yinguang` | 印光大师 | 汉传 · 净土 | 1861-1940 |
+| `/master-yinguang` | 印光大师 | 汉传 · 净土 | 1862-1940 |
 | `/master-atisha` | 阿底峡尊者 | 藏传 · 噶当（三士道） | 982-1054 |
 | `/master-milarepa` | 米拉日巴尊者 | 藏传 · 噶举（大手印） | 1052-1135 |
 | `/master-tsongkhapa` | 宗喀巴大师 | 藏传 · 格鲁（应成中观） | 1357-1419 |

@@ -55,7 +55,7 @@ _CBETA_ID = re.compile(
 # 南传祖师的伪造引用一律漏检(见 eval/reports/BASELINE.md 的撤回段)。
 #
 # 关键在归一化,不在正则:meta.json 声明 `Toh:4465`,行文写 `Toh 4465`;声明
-# `BDRC:W22272`,夹具 must_cite 写裸 `W22272`。只加正则不归一,会把**正确**引用
+# `BDRC:W1GS56158`,夹具 must_cite 写裸 `W1GS56158`。只加正则不归一,会把**正确**引用
 # 判成伪造 —— 那比漏检更糟。统一收敛到 `Family:Work` 再与声明集比对。
 _FAMILY_ID = re.compile(
     r"(?<![0-9A-Za-z])(?:"
@@ -64,7 +64,7 @@ _FAMILY_ID = re.compile(
     # 真 PTS id 的作品名首字母大写(`PTS:Vism` / `PTS:DN-Comm`)。要求大写,
     # 「（PTS edition）」这类散文说明才不会被读成 id。
     r"|(?P<pts>PTS)[:\s]\s*(?P<pts_w>[A-Z][0-9A-Za-z-]*)"
-    # 裸 W 号:BDRC 的 work id 常单独出现(W22272 / W1KG14334)。要求 W 后紧跟数字,
+    # 裸 W 号:BDRC 的 work id 常单独出现(W1GS56158 / W1KG1252)。要求 W 后紧跟数字,
     # 否则 "Wisdom Publications" 这类普通词会被误读成 id。
     r"|(?P<bare_w>W\d[0-9A-Z-]{3,})"
     r")(?![0-9A-Za-z])"

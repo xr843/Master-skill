@@ -56,8 +56,8 @@ def _covered(declared_id: str, listed: list[str]) -> bool:
     """Does some frontmatter identifier name `declared_id`, in a spelling the audit accepts?
 
     The resolution is the auditor's own. master-zhiyi's frontmatter writes
-    `T1716` for the declared `T33n1716`; master-milarepa writes `W22272` for
-    `BDRC:W22272`. A model citing either passes the audit, so the list covers
+    `T1716` for the declared `T33n1716`; master-milarepa writes `W1GS56158` for
+    `BDRC:W1GS56158`. A model citing either passes the audit, so the list covers
     the source. Reimplementing those rules here would drift from them.
     """
     return any(

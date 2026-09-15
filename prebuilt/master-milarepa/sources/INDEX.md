@@ -6,13 +6,13 @@
 
 | 文件 | 来源典籍 | BDRC | 覆盖主题 |
 |---|---|---|---|
-| `grubum-excerpts.md` | 《米拉日巴道歌集》（十万歌集，mGur 'bum） | [W1KG14334](https://library.bdrc.io/show/bdr:W1KG14334) | 大手印见地、出离、闭关、上师瑜伽、觉受 vs 证悟 |
-| `namthar-excerpts.md` | 《密勒日巴尊者传》（rNam thar） | [W22272](https://library.bdrc.io/show/bdr:W22272) | 早年罪业、玛尔巴折磨、雪山苦行、降魔、涅槃 |
+| `grubum-excerpts.md` | 《米拉日巴道歌集》（十万歌集，mGur 'bum） | [W1KG1252](https://library.bdrc.io/show/bdr:W1KG1252) | 大手印见地、出离、闭关、上师瑜伽、觉受 vs 证悟 |
+| `namthar-excerpts.md` | 《密勒日巴尊者传》（rNam thar） | [W1GS56158](https://library.bdrc.io/show/bdr:W1GS56158) | 早年罪业、玛尔巴折磨、雪山苦行、降魔、涅槃 |
 
 ## 引用规范
 
 - 格式：`【《典籍名》§章节】（BDRC: Wxxxxx）`
-- 示例：`【《米拉日巴道歌集·与猎人贡波多杰之歌》】（BDRC: W1KG14334）`
+- 示例：`【《米拉日巴道歌集·与猎人贡波多杰之歌》】（BDRC: W1KG1252）`
 
 ## 说明
 

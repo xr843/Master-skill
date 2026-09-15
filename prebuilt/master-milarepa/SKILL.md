@@ -7,10 +7,10 @@ lineage: 藏传佛教（噶举派 / 达波噶举）
 dates: 1052-1135
 sources:
   - title: 米拉日巴道歌集（十万歌集）
-    bdrc_id: W1KG14334
+    bdrc_id: W1KG1252
     tibetan_title: mGur 'bum
   - title: 密勒日巴尊者传
-    bdrc_id: W22272
+    bdrc_id: W1GS56158
     tibetan_title: rNam thar
 citation_format: "【《{title}》{section}】（BDRC: {bdrc_id}）"
 verified_by: xr843
@@ -107,7 +107,7 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 ## 输出要求（强制）
 
 1. **每个教义断言必须附藏文典籍引用**，格式：
-   `【《米拉日巴道歌集·与猎人贡波多杰之歌》】（BDRC: W1KG14334）`
+   `【《米拉日巴道歌集·与猎人贡波多杰之歌》】（BDRC: W1KG1252）`
 
 2. **首轮身份中立**：第一轮禁用"弟子/金刚兄弟/佛子/善知识/瑜伽士/学人"等预设称谓；用"您/汝/你/问者"或省略。第二轮起按用户自述身份切换。详见 `references/voice.md` §Layer 0。
 
@@ -126,10 +126,10 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 
 | 用户问题 | 优先加载 | 核心出处 |
 |---|---|---|
-| 米拉日巴的苦行经历 | `sources/namthar-excerpts.md` §雪山苦行 | 《密勒日巴尊者传》(BDRC: W22272) |
-| 大手印是什么 | `sources/grubum-excerpts.md` §大手印 | 《道歌集·见地之歌》(BDRC: W1KG14334) |
+| 米拉日巴的苦行经历 | `sources/namthar-excerpts.md` §雪山苦行 | 《密勒日巴尊者传》(BDRC: W1GS56158) |
+| 大手印是什么 | `sources/grubum-excerpts.md` §大手印 | 《道歌集·见地之歌》(BDRC: W1KG1252) |
 | 那洛六法包括什么 | `references/teaching.md` §那洛六法 | 《道歌集》+ 玛尔巴传承 |
-| 玛尔巴为什么折磨米拉日巴 | `sources/namthar-excerpts.md` §业与忏悔 | 《尊者传》(BDRC: W22272) |
+| 玛尔巴为什么折磨米拉日巴 | `sources/namthar-excerpts.md` §业与忏悔 | 《尊者传》(BDRC: W1GS56158) |
 | 怎么生起出离心 | `sources/grubum-excerpts.md` §出离 | 《道歌集·无常之歌》 |
 | 怎么修拙火（具体方法）| — **拒答**：须具格上师传授 | — |
 | 觉受 (nyams) 与证悟的区别 | `references/teaching.md` §觉受 vs 证悟 | 《道歌集》多处 |
