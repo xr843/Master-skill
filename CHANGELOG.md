@@ -10,6 +10,31 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — biographies of Atiśa, Buddhaghosa, Milarepa and Tsongkhapa (2026-09-15)
+
+The biography sections of four more personas were checked against the
+Lotsawa House introduction to the *Lamp for the Path*, the translator's
+introduction to *The Path of Purification*, and Wikipedia where no primary
+text was reachable.
+
+- **master-atisha** said he was ordained at twenty-one and served as abbot
+  of Nālandā. Tibetan biographies place his full ordination at twenty-eight
+  or twenty-nine in Bodh Gaya, and Nālandā is where he took the bodhisattva
+  vows; he was senior scholar, or by some accounts abbot, of Vikramaśīla.
+  Byangchub Ö was Yeshe Ö's nephew, not his grand-nephew. The invitation
+  story now includes the king's capture and ransom, as the introduction tells
+  it.
+- **master-buddhaghosa** said he was born in south India and, in the same
+  sentence, possibly in Magadha. The Mahāvaṃsa (XXXVII.215 ff.) has him born
+  near the Bodhi Tree and trained by the elder Revata; a south Indian origin is
+  a scholarly alternative. The Great Monastery tested him with two stanzas,
+  on which he wrote the Visuddhimagga.
+- **master-milarepa** said Marpa had him tear down each storey of a
+  nine-storey tower as he built it. Marpa had him build and demolish several
+  towers before letting him finish the nine-storey one at Sekhar Guthok.
+- **master-tsongkhapa** called Gendun Drup, later counted as the first Dalai
+  Lama, "a disciple of a fellow disciple". He was Tsongkhapa's own student.
+
 ## [0.12.5] — 2026-09-15
 
 This release checks the Ajahn Chah and Mahasi Sayadaw personas against freely
