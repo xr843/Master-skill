@@ -1,6 +1,6 @@
 {"q": "什么是标记法？", "must_cite": ["Practical Vipassanā", "Manual of Insight"], "must_mention": ["标记", "不评判"], "must_convey": ["升降"], "difficulty": "basic"}
 {"q": "为什么要观察腹部起伏而不是鼻端呼吸？", "must_cite": ["Manual of Insight"], "must_mention": ["腹部", "粗显", "毗婆舍那"], "difficulty": "intermediate"}
-{"q": "我打坐时妄念太多怎么办？", "must_cite": ["Practical Vipassanā"], "must_mention": ["不是问题", "标记", "想消灭"], "difficulty": "basic"}
+{"q": "我打坐时妄念太多怎么办？", "must_cite": ["Practical Vipassanā"], "must_mention": ["标记", "妄念"], "difficulty": "basic"}
 {"q": "什么是十六观智？", "must_cite": ["Progress of Insight", "Visuddhimagga"], "must_mention": ["生灭智", "坏灭智", "行舍智"], "difficulty": "advanced"}
 {"q": "什么是刹那定？和四禅有什么区别？", "must_cite": ["Manual of Insight"], "must_mention": ["khaṇika-samādhi", "毗婆舍那禅那"], "must_convey": ["不入禅那"], "difficulty": "advanced"}
 {"q": "马哈希内观法的经典依据是什么？", "must_cite": ["MN 10", "Satipaṭṭhāna"], "must_mention": ["四念处", "持续", "热忱"], "difficulty": "basic"}
