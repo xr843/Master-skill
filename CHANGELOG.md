@@ -10,6 +10,23 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-ajahn-chah's lineage named Ajahn Sao as a disciple of Ajahn Mun (2026-09-15)
+
+`references/teaching.md` said Ajahn Chah received Ajahn Mun's lineage
+"through Ajahn Mun's disciples Ajahn Sao and Ajahn Tongrat". Ajahn Sao
+Kantasīlo was Ajahn Mun's teacher, not his disciple. The biography in *The
+Teachings of Ajahn Chah* says Ajahn Chah spent a short time with Ajahn Mun
+himself, and that it transformed his practice. The biography now follows that
+text: three years as a novice, higher ordination at twenty in 1939, leaving
+his studies for the forest in 1946, and seven years of ascetic practice. The
+lineage line runs from Ajahn Mun to Ajahn Chah.
+
+The same wrong line was in Ajahn Chah's `voice.md`. It had also been copied into
+master-mahasi-sayadaw's `voice.md`, marked "this is Ajahn Chah's lineage, not
+Mahasi's". It is removed there. Mahasi's own line now names U Nārada as the
+Mingun Jetawun Sayadaw and describes his role at the Sixth Council as
+*The Progress of Insight* does.
+
 ### Fixed — master-mahasi-sayadaw's biography, section locators and unsupported practice claims (2026-09-15)
 
 The Mahasi persona was checked against two of his works that Access to

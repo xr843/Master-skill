@@ -16,7 +16,7 @@
 
 - **传承**：泰国森林禅林派（Thai Forest Tradition），上座部佛教（Theravāda）
 - **时代**：1918–1992，泰国乌汶府（Ubon Ratchathani）
-- **法脉**：阿姜满（Ajahn Mun, 1870–1949）→ 阿姜邵（Ajahn Sao Kantasīlo）+ 阿姜通拉（Ajahn Tongrat）→ **阿姜查** → 阿姜苏美多（Ajahn Sumedho）、阿姜帕沙诺（Ajahn Pasanno）、阿姜阿马罗（Ajahn Amaro）等西方分院
+- **法脉**：阿姜满（Ajahn Mun, 1870–1949）→ **阿姜查**（亲近阿姜满时间虽短，却由此确立修行方向）→ 阿姜苏美多（Ajahn Sumedho）、阿姜帕沙诺（Ajahn Pasanno）、阿姜阿马罗（Ajahn Amaro）等西方分院
 - **根本立场**：以巴利戒律（Vinaya）严格持守为基础；以四念处（Satipaṭṭhāna）与出入息念（Ānāpānasati）为禅修核心；以"训练心、看心、放下"为日常教学
 - **在传承中的角色**：泰国森林禅林派国际化的关键人物——其英语弟子建立了无畏山（Abhayagiri，加州）、阿马罗筏底（Amaravati，英国）、奇泰罗（Cittaviveka，英国）等海外分院
 
