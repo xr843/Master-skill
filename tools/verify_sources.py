@@ -578,6 +578,228 @@ def classify_doc_citation_links(
     return mismatched, unknown
 
 
+# Step 3f：摘录里的「原典」引文是不是所引那一卷的原文。
+#
+# 前面几步核经号、卷号、题名和链接，都看不见引文本身。2026-09-15 逐句比对
+# `sources/*-excerpts.md` 与 lore_triggers：63 段里 19 段有分句不在所引的那一卷，
+# 其中「宁起有见如须弥山」挂在《大智度论》名下、四法界挂在《五教章》名下、
+# 《摩诃止观》序文写错了讲经的寺名，而人设把这些当原文引给用户。
+
+CBETA_JUANS_URL = "https://cbdata.dila.edu.tw/stable/juans"
+# 引文没标卷次时，卷数不超过此数的书整部读；更长的记为未知，请补卷次。
+EXCERPT_WHOLE_WORK_MAX_JUANS = 30
+# 短于此数的分句（「第七」「华严经」）哪里都可能出现，不拿来判对错。
+EXCERPT_MIN_CLAUSE = 4
+
+_HAN = re.compile(r"[㐀-鿿豈-﫿]")
+_HAN_RUN = re.compile(r"[㐀-鿿豈-﫿]+")
+_CN_DIGITS = {"〇": 0, "零": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+_READINGS: dict[str, frozenset[str]] = {}
+
+
+def _chinese_number(text: str) -> int | None:
+    """「五」「二十一」「一百零八」「一一二」「31」→ 整数；认不出 → None。"""
+    if text.isdigit():
+        return int(text)
+    if text and all(ch in _CN_DIGITS for ch in text):
+        return int("".join(str(_CN_DIGITS[ch]) for ch in text))
+    total, digit = 0, 0
+    for ch in text:
+        if ch in _CN_DIGITS:
+            digit = _CN_DIGITS[ch]
+        elif ch in "十百":
+            total += (digit or 1) * (10 if ch == "十" else 100)
+            digit = 0
+        else:
+            return None
+    return total + digit or None
+
+
+def cited_juan(detail: str) -> int | None:
+    """引文里「卷五上」「卷31」「卷5·易行品」的卷次；没写或是区间（卷五至卷十、卷3-4）→ None。"""
+    match = re.search(r"卷([〇零一二三四五六七八九十百0-9]+)", detail)
+    if not match or re.match(r"[上中下]?\s*(?:至|[-–~～、])", detail[match.end():]):
+        return None
+    return _chinese_number(match.group(1))
+
+
+def _cbeta_api_work(cid: str) -> str | None:
+    """CBETA API 的 work 参数：`T46n1911` / `T1911` → `T1911`，`J36nB348` → `JB348`。"""
+    parts = _cbeta_work(cid)
+    if not parts:
+        return None
+    canon, number = parts
+    return canon + (number if number.startswith("B") else number.zfill(4))
+
+
+def collect_excerpt_quotes() -> list[tuple[str, str, str, int | None]]:
+    """(位置, 引文, CBETA 号, 卷次)：摘录文件里每个「原典」块，与每条 source_ref
+    是 CBETA 号的 lore_triggers。
+
+    块的形状是一行以「原典」开头的标签、若干 `>` 行、再一行带【《书名》卷N，经号】
+    的「引用格式」。标成「要义」之类的整理文字不是引文，不收。lore 条目只取「——」
+    之前的部分：CONTRIBUTING §6 允许在原文后用「——」接一句浅释。
+    """
+    base = Path(PREBUILT_DIR)
+    quotes: list[tuple[str, str, str, int | None]] = []
+    for path in sorted(base.glob("*/sources/*-excerpts.md")):
+        where = path.relative_to(base).as_posix()
+        label_line, lines = 0, []
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if line.startswith("原典"):
+                label_line, lines = number, []
+            elif not label_line:
+                continue
+            elif line.startswith(">"):
+                lines.append(line[1:].strip())
+            elif line.startswith("#"):
+                label_line, lines = 0, []
+            elif "引用格式" in line:
+                citation = _DOC_CITATION.search(line)
+                cid = _DOC_CBETA_ID.search(citation.group(1)) if citation else None
+                if cid and any(lines):
+                    quotes.append((f"{where}:{label_line}", "\n".join(lines), cid.group(0), cited_juan(citation.group(1))))
+                label_line, lines = 0, []
+    for path in sorted(base.glob("*/meta.json")):
+        where = path.relative_to(base).as_posix()
+        entries = json.loads(path.read_text(encoding="utf-8")).get("lore_triggers") or []
+        for index, entry in enumerate(entries):
+            cid, _, anchor = str(entry.get("source_ref") or "").partition("#")
+            if _cbeta_api_work(cid):
+                quote = str(entry.get("content") or "").split("——", 1)[0]
+                quotes.append((f"{where}:lore_triggers[{index}]", quote, cid, cited_juan(anchor)))
+    return quotes
+
+
+def cbeta_juan_plain_text(html: str) -> str:
+    """`/stable/juans` 返回的 HTML → 正文。
+
+    校勘注在末尾的 footnote 区，先切掉：注里的异读（如「含【甲】」）不是这一卷
+    的正文，不能让一段改写的引文靠它对上。
+    """
+    body = re.split(r"<div[^>]*class=['\"][^'\"]*footnote", html, maxsplit=1)[0]
+    return re.sub(r"<[^>]+>", "", body)
+
+
+def fetch_cbeta_juan_count(work: str) -> int | None:
+    """CBETA 记这部书有几卷；问不到记 None（未知，不是不符）。"""
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    url = f"{CBETA_WORKS_URL}?{urllib.parse.urlencode({'work': work})}"
+    try:
+        with urllib.request.urlopen(url, timeout=CBETA_TIMEOUT) as resp:
+            results = json.loads(resp.read().decode("utf-8")).get("results") or []
+        return int(results[0]["juan"]) if results else None
+    except (urllib.error.URLError, OSError, ValueError, KeyError, TypeError, AttributeError):
+        return None
+
+
+def fetch_cbeta_juan_text(work: str, juan: int) -> str | None:
+    """CBETA 某部某卷的正文；问不到记 None（未知，不是不符）。"""
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    url = f"{CBETA_JUANS_URL}?{urllib.parse.urlencode({'work': work, 'juan': juan})}"
+    try:
+        with urllib.request.urlopen(url, timeout=CBETA_TIMEOUT) as resp:
+            results = json.loads(resp.read().decode("utf-8")).get("results") or []
+    except (urllib.error.URLError, OSError, ValueError, AttributeError):
+        return None
+    html = "".join(r for r in results if isinstance(r, str))
+    return cbeta_juan_plain_text(html) if html else None
+
+
+def quote_clauses(quote: str) -> list[str]:
+    """按标点、省略号切成分句；不足 EXCERPT_MIN_CLAUSE 个汉字的不收。"""
+    return [run for run in _HAN_RUN.findall(quote) if len(run) >= EXCERPT_MIN_CLAUSE]
+
+
+def _readings(text: str) -> list[frozenset[str]]:
+    """逐个汉字的全部读音，不看上下文：繁简同音即对得上，与 titles_agree 同理。"""
+    from pypinyin import Style, pinyin
+
+    out: list[frozenset[str]] = []
+    for ch in _HAN.findall(text):
+        if ch not in _READINGS:
+            _READINGS[ch] = frozenset(pinyin(ch, style=Style.NORMAL, heteronym=True)[0])
+        out.append(_READINGS[ch])
+    return out
+
+
+def _reading_index(text: str) -> tuple[list[frozenset[str]], dict[str, list[int]]]:
+    sequence = _readings(text)
+    positions: dict[str, list[int]] = {}
+    for i, readings in enumerate(sequence):
+        for reading in readings:
+            positions.setdefault(reading, []).append(i)
+    return sequence, positions
+
+
+def _clause_found(clause: str, index: tuple[list[frozenset[str]], dict[str, list[int]]]) -> bool:
+    wanted = _readings(clause)
+    sequence, positions = index
+    starts: set[int] = set()
+    for reading in wanted[0]:
+        starts.update(positions.get(reading, ()))
+    return any(
+        i + len(wanted) <= len(sequence) and all(w & sequence[i + k] for k, w in enumerate(wanted))
+        for i in starts
+    )
+
+
+def excerpt_fascicles(juan: int | None, total: int | None) -> list[int] | None:
+    """该读哪几卷。标了卷读那一卷；没标而书不长读整部；否则 None（没法核）。
+
+    标的卷超出全书卷数时返回 []：那是卷次写错了，不是没法核。
+    """
+    if not total:
+        return None
+    if juan is not None:
+        return [juan] if 1 <= juan <= total else []
+    return list(range(1, total + 1)) if total <= EXCERPT_WHOLE_WORK_MAX_JUANS else None
+
+
+def classify_excerpt_quotes(
+    quotes: list[tuple[str, str, str, int | None]],
+    juan_counts: dict[str, int | None],
+    juan_texts: dict[tuple[str, int], str | None],
+) -> tuple[list[tuple[str, str, list[str]]], list[tuple[str, str]]]:
+    """哪些引文有分句不在所引的卷里；没法核的记为未知，不算错。
+
+    逐分句找，不要求整段连续：《金师子章》本文在 T45n1880 里与净源注文逐句交错，
+    照抄本文整段是找不到的。按读音比，繁简同音即对得上。已知边界：同音字替换
+    看不出来（「不妄不愚」对得上「不忘不愚」）；这道检查抓的是改写、增字、换序
+    与张冠李戴，不是错别字。
+    """
+    mismatched: list[tuple[str, str, list[str]]] = []
+    unknown: list[tuple[str, str]] = []
+    indexes: dict[tuple[str, tuple[int, ...]], tuple[list[frozenset[str]], dict[str, list[int]]]] = {}
+    for where, quote, cid, juan in quotes:
+        work = _cbeta_api_work(cid)
+        total = juan_counts.get(work) if work else None
+        fascicles = excerpt_fascicles(juan, total)
+        if fascicles is None:
+            unknown.append((where, f"没标卷次，{work} 共 {total} 卷" if total else f"CBETA 没有返回 {cid} 的卷数"))
+            continue
+        if not fascicles:
+            mismatched.append((where, f"{work} 只有 {total} 卷，引文标的是卷{juan}", []))
+            continue
+        texts = [juan_texts.get((work, j)) for j in fascicles]
+        if any(text is None for text in texts):
+            unknown.append((where, f"CBETA 没有返回 {work} 的卷文"))
+            continue
+        key = (work, tuple(fascicles))
+        if key not in indexes:
+            indexes[key] = _reading_index("\n".join(texts))
+        missing = [clause for clause in quote_clauses(quote) if not _clause_found(clause, indexes[key])]
+        if missing:
+            mismatched.append((where, f"{work} 卷{juan}" if juan is not None else work, missing))
+    return mismatched, unknown
+
+
 def verify_ids(bridge, cbeta_map: dict[str, list[str]], titles: dict[str, str]) -> dict[str, dict]:
     """Verify all CBETA IDs and return {full_cbeta_id: {text_id, short_id, title, ...}}.
 
@@ -860,6 +1082,29 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     if not doc_mismatched and not doc_unknown:
         print(f"  All {len(doc_pairs)} citation links in persona docs open the cited work")
 
+    # Step 3f: 摘录里的「原典」引文是否真在所引那一卷（见 classify_excerpt_quotes）。
+    print("\n[3f/4] Checking excerpt quotations against the cited CBETA fascicle...")
+    quotes = collect_excerpt_quotes()
+    quote_works = sorted({work for work in (_cbeta_api_work(cid) for _, _, cid, _ in quotes) if work})
+    juan_counts = {work: fetch_cbeta_juan_count(work) for work in quote_works}
+    wanted_juans = sorted({
+        (work, fascicle)
+        for _, _, cid, juan in quotes
+        for work in [_cbeta_api_work(cid)]
+        if work
+        for fascicle in (excerpt_fascicles(juan, juan_counts.get(work)) or [])
+    })
+    juan_texts = {key: fetch_cbeta_juan_text(*key) for key in wanted_juans}
+    quote_mismatched, quote_unknown = classify_excerpt_quotes(quotes, juan_counts, juan_texts)
+    for where, cited, missing in quote_mismatched:
+        print(f"    [WRONG] {where}: {cited}" + (f" has no 「{'」「'.join(missing)}」" if missing else ""))
+    if quote_unknown:
+        print(f"  Could not check {len(quote_unknown)} quotation(s) — unknown, not wrong:")
+        for where, reason in quote_unknown:
+            print(f"    {where}: {reason}")
+    if not quote_mismatched and not quote_unknown:
+        print(f"  All {len(quotes)} quotations appear clause by clause in the cited fascicle")
+
     # Step 4: Update URLs
     # Build replacement map: full_cbeta_id -> str(internal_text_id)
     id_replacement_map: dict[str, str] = {}
@@ -905,6 +1150,7 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     print(f"  CBETA title mismatches:    {len(title_mismatched)}")
     print(f"  Frontmatter FoJin id mismatches: {len(fm_mismatched)}")
     print(f"  Doc citation links to another work: {len(doc_mismatched)}")
+    print(f"  Excerpt quotes not in the cited text: {len(quote_mismatched)}")
     if unknown_to_cbeta:
         print(f"  CBETA unreachable for:     {len(unknown_to_cbeta)} (not counted as wrong)")
     if dry_run and all_changes:
