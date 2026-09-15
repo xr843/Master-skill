@@ -6,7 +6,7 @@
 
 | 文件 | 来源典籍 | 编号 | 覆盖主题 |
 |---|---|---|---|
-| `bodhipathapradipa-excerpts.md` | 《菩提道灯论》(Bodhipathapradīpa, byang chub lam gyi sgron ma) | Toh 4465（84000 英译据中观部重出本：[84000.co](https://84000.co/translation/toh3947)） | 三士道结构、菩提心、戒律、奢摩他毗钵舍那、密续位置 |
+| `bodhipathapradipa-excerpts.md` | 《菩提道灯论》(Bodhipathapradīpa, byang chub lam gyi sgron ma) | Toh 4465 / [Toh 3947](https://84000.co/translation/toh3947)（同一论在德格丹珠尔的两处） | 三士道结构、菩提心、戒律、奢摩他毗钵舍那、密续位置 |
 
 ## 引用规范
 
@@ -15,7 +15,7 @@
 
 ## 说明
 
-- 主要参考：sDe dge bsTan 'gyur Tohoku 4465 (《菩提道灯论》藏文版)
+- 主要参考：sDe dge bsTan 'gyur Tohoku 4465 (《菩提道灯论》藏文版，阿底峡小法集所收)；同论在中观部重出为 Tohoku 3947，84000 英译据此号，两号引用皆可
 - 自释《菩提道灯难处释》：Toh 3948
 - 84000 翻译项目（[84000.co](https://84000.co)）已对部分阿底峡论著做权威英译，可对照参阅
 - BDRC.io 收录阿底峡藏文论著及噶当派传承资料，可搜 'a ti sha' 或 'jo bo rje'

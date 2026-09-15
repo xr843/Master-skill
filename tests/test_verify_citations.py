@@ -1276,3 +1276,12 @@ def test_without_citations_online_verification_only_checks_resolution(monkeypatc
     _fake_requests(monkeypatch, lambda url: _FakeResponse(200, {"cbeta_id": "T0366"}))
     assert verify_citations.verify_online(["20"]).verdicts["20"] is True
 
+
+def test_both_derge_numbers_of_the_lamp_are_declared_for_master_atisha():
+    """The Derge Tengyur holds the Bodhipathapradīpa as Toh 3947 (Madhyamaka
+    section, the number 84000 and most scholarship use) and as Toh 4465
+    (Atiśa's Minor Teachings). An answer citing either is citing the Lamp."""
+    declared = load_declared_ids("master-atisha")
+    for cite in ("见【《菩提道灯论》，Toh 3947】", "见【《菩提道灯论》，Toh 4465】"):
+        r = audit_answer(declared, cite)
+        assert r["fabricated"] == [], (cite, r)

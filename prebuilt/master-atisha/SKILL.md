@@ -8,6 +8,8 @@ dates: 982-1054
 sources:
   - title: 菩提道灯论 (Bodhipathapradīpa, byang chub lam gyi sgron ma)
     toh_id: Toh 4465
+  - title: 菩提道灯论 (Bodhipathapradīpa, byang chub lam gyi sgron ma)
+    toh_id: Toh 3947
   - title: 菩提道灯难处释 (Bodhimārgapradīpapañjikā)
     toh_id: Toh 3948
   - title: 父法·子法 (Pha chos / Bu chos)
