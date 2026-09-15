@@ -192,6 +192,22 @@ CI 一直单独跑 `pytest`，直到 2026-09-03 本地 `npm test` 才补上这�
 4. `meta.json` 的 `lore_triggers` 同样受查：`——` 之前必须是原文。
 
 比对按读音，繁简写法不影响结果；同音错字查不出来，抄完仍要自己对一遍。
+
+### 声明的 BDRC 作品号
+
+`meta.json` 里 `BDRC:W…` 形式的作品号，周检会去 BDRC（ldspdi.bdrc.io）取记录。
+查无此号，或记录的题名里找不到声明的藏文题名，就计入 `BDRC records that do not match`
+并开 issue（2026-09-15 首次核查：master-milarepa 的两个号一个是宗喀巴全集、一个
+BDRC 根本没有，挂了 73 处）。所以：
+
+1. **号要在 BDRC 上核过**：打开 `https://ldspdi.bdrc.io/resource/<号>.json`，顺着
+   `instanceReproductionOf` / `instanceOf` 看 MW 实例与 WA 作品的题名和作者。
+   `library.bdrc.io/show/bdr:<号>` 对任何号都打开一个页面，不能拿它当证据。
+2. **用影像实例号**（`W` 后紧跟数字，如 `W1GS56158`）：引文门禁只认这种写法，
+   `MW…` / `WA…` 会被当成字段名略过。
+3. **写藏文题名**：SKILL.md frontmatter 同号条目的 `tibetan_title`，或 `meta.json`
+   题名括注里的 Wylie。没写题名，周检只能记为「未知」。题名写得越全越好——只写
+   「rNam thar」，别人的传记也对得上。
 - 提 PR
 
 ### 3.3 选项 B：手工编写
