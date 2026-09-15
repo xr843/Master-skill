@@ -63,6 +63,10 @@ letter citation was checked against them clause by clause.
 The citations that matched are unchanged: the letter to Deng Bocheng, and
 《一函遍复》 in the 续编, which says "念佛最要紧，是敦伦尽分，闲邪存诚".
 
+`prompts/correction_handler.md` used "老实念佛，莫换题目" in its sample
+correction record, so a host following the sample would write the saying
+back into a persona. The sample now quotes the letter to Luo Kengduan.
+
 ## [0.12.7] — 2026-09-15
 
 This release checks the Tibetan personas against Fazun's Chinese translations,
