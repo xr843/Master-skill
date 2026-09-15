@@ -10,6 +10,14 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.8] — 2026-09-15
+
+This release checks the Yinguang and Xuyun personas against full texts of
+their own writings, which are not in CBETA: the three volumes of Yinguang's
+《文钞》, and Xuyun's chronicle and 《法汇》. Composite quotations, sayings
+neither man wrote, and wrong letter citations are replaced with verbatim
+passages.
+
 ### Fixed — master-xuyun quoted sayings his collected talks do not contain (2026-09-15)
 
 BFNN (bookgb.bfnn.org) transcribes 岑学吕's editions of Xuyun's chronicle
@@ -2019,7 +2027,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.7...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.8...HEAD
+[0.12.8]: https://github.com/xr843/Master-skill/compare/v0.12.7...v0.12.8
 [0.12.7]: https://github.com/xr843/Master-skill/compare/v0.12.6...v0.12.7
 [0.12.6]: https://github.com/xr843/Master-skill/compare/v0.12.5...v0.12.6
 [0.12.5]: https://github.com/xr843/Master-skill/compare/v0.12.4...v0.12.5
