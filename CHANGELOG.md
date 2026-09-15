@@ -10,6 +10,49 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — voice samples in the CBETA personas that the masters did not say (2026-09-15)
+
+The weekly check reads only the 「原典」 blocks. The quoted lines elsewhere in
+the seven CBETA personas had never been checked: 129 of them across SKILL.md,
+teaching.md and voice.md. Each was converted to traditional characters and
+searched in CBETA. Every line that searched to nothing, or turned up in
+someone else's work, was then read in the fascicle it would come from.
+
+- **master-xuanzang's voice samples**:
+  - Sample 1 paraphrased the 《成唯识论》 卷二 passage on the three
+    transforming consciousnesses. It now quotes that passage.
+  - Sample 2's four-character formulas for the three natures are not in any
+    work Xuanzang is declared for; they are a later Faxiang summary. It now
+    quotes the verses of the Thirty Verses on the three natures, from
+    《成唯识论》 卷八.
+  - Sample 3, "因明立量，非为诤胜…", is in no text. It is now the syllogism
+    Xuanzang set up at Kanyakubja, as Kuiji records it in
+    《因明入正理论疏》 卷二: "真故极成色，不离于眼识…".
+- **master-zhiyi's voice samples**:
+  - "止观明静，前代未闻" is from Guanding's introduction to the
+    《摩诃止观》 (卷一), not from Zhiyi. The words after it, "功在渐次，证在
+    圆融", are in no text.
+  - "一念心中三谛具足" is also in no text.
+  - The three samples are now Zhiyi's own words from 《摩诃止观》 卷五: the
+    three thousand realms in one thought, "介尔有心，即具三千", and the
+    threefold contemplation "一空一切空…". The first sample had also
+    misquoted "一法界又具十法界".
+- **master-fazang's third sample**, "若以理望事…", is Chengguan's analysis in
+  《华严法界玄镜》. It is now the 《金师子章》: "谓师子相虚，唯是真金…".
+- **master-ouyi's samples**:
+  - "诸佛别无所证，全证众生自性" is from 《乐邦文类》 and Peng Jiqing, not
+    from Ouyi. It is now the 《要解》: "信则信自、信他…行则执持名号一心不乱".
+  - Another sample had added a 是 to the 《要解》 line "一声阿弥陀佛，即释迦
+    本师…".
+- **master-nagarjuna**:
+  - Two voice samples ran the 《中论》 verse and the persona's own gloss
+    together inside one pair of quotation marks. The gloss is now outside the
+    quotation and marked as a gloss.
+  - The teaching page, a voice template and docs/masters.md quoted the
+    verse as "我说即是空". The Taishō verse reads 「无」; 青目's commentary
+    and the common quotation read 「空」. Both are now noted, and the template
+    no longer calls the treatise a sutra.
+
 ## [0.12.8] — 2026-09-15
 
 This release checks the Yinguang and Xuyun personas against full texts of
