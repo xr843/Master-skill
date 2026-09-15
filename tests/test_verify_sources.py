@@ -678,3 +678,164 @@ def test_the_collector_pairs_a_citation_only_with_a_link_on_its_own_line(tmp_pat
         ("master-example/references/teaching.md:6", "52", ["T1718"], "法華文句"),
     ]
 
+
+
+# Step 3f。摘录里的「原典」块被当作 CBETA 原文引给用户；2026-09-15 逐句比对，63 段
+# 里 19 段有分句不在所引那一卷（「宁起有见如须弥山」挂在《大智度论》名下等）。
+
+_T1911_JUAN1 = "止觀明靜，前代未聞。智者，大隋開皇十四年四月二十六日，於荊州玉泉寺，一夏敷揚、二時慈霔"
+
+
+def _quote_verdict(quote, text):
+    return verify_sources.classify_excerpt_quotes(
+        [("x.md:1", quote, "T46n1911", 1)], {"T1911": 10}, {("T1911", 1): text}
+    )
+
+
+def test_a_verbatim_simplified_quote_is_found_in_the_traditional_fascicle():
+    assert _quote_verdict("止观明静，前代未闻。智者，大隋开皇十四年四月二十六日，于荆州玉泉寺", _T1911_JUAN1) == ([], [])
+
+
+def test_a_clause_that_is_not_in_the_fascicle_is_named():
+    """The old master-zhiyi preface: the temple was 玉泉寺, not 瓦官寺."""
+    mismatched, unknown = _quote_verdict("止觀明靜，前代未聞。智者大師，承南岳之教，在瓦官寺說圓頓止觀。", _T1911_JUAN1)
+    assert mismatched == [("x.md:1", "T1911 卷1", ["智者大師", "承南岳之教", "在瓦官寺說圓頓止觀"])]
+    assert unknown == []
+
+
+def test_a_quote_is_checked_clause_by_clause_so_left_out_commentary_does_not_matter():
+    """The 《金师子章》 in T45n1880 alternates its text with 净源's notes."""
+    text = "謂金無自性，隨工巧匠緣。金喻真如不守自性，匠況生滅隨順妄緣。遂有師子相起。喻真妄和合"
+    assert _quote_verdict("谓金无自性，随工巧匠缘，遂有师子相起。", text) == ([], [])
+
+
+def test_an_added_character_is_caught():
+    """master-zhiyi's 一心三观 trigger read 「无假无中而不空」 for 「无假中而不空」."""
+    mismatched, _ = _quote_verdict("一空一切空，无假无中而不空", "一空一切空，無假中而不空，總空觀也。")
+    assert mismatched[0][2] == ["无假无中而不空"]
+
+
+def test_swapped_words_are_caught():
+    mismatched, _ = _quote_verdict("若人欲疾至不退转地者", "若人疾欲至，不退轉地者，應以恭敬心")
+    assert mismatched[0][2] == ["若人欲疾至不退转地者"]
+
+
+def test_variant_characters_that_share_a_reading_still_match():
+    assert _quote_verdict("唯心回转善成门", "九者、唯心迴轉善成門。") == ([], [])
+
+
+def test_short_clauses_are_not_judged():
+    assert verify_sources.quote_clauses("第七、诸藏纯杂具德门。……依《华严经》中") == ["诸藏纯杂具德门"]
+
+
+def test_a_fascicle_cbeta_did_not_return_is_unknown_not_wrong():
+    mismatched, unknown = verify_sources.classify_excerpt_quotes(
+        [("x.md:1", "止观明静，前代未闻", "T46n1911", 1)], {"T1911": 10}, {("T1911", 1): None}
+    )
+    assert mismatched == []
+    assert [u[0] for u in unknown] == ["x.md:1"]
+
+
+def test_a_long_work_quoted_without_a_fascicle_is_unknown_not_wrong():
+    mismatched, unknown = verify_sources.classify_excerpt_quotes(
+        [("x.md:1", "毕竟空者破一切法", "T25n1509", None)], {"T1509": 100}, {}
+    )
+    assert mismatched == []
+    assert "100" in unknown[0][1]
+
+
+def test_a_short_work_quoted_without_a_fascicle_is_read_whole():
+    assert verify_sources.excerpt_fascicles(None, 3) == [1, 2, 3]
+    mismatched, unknown = verify_sources.classify_excerpt_quotes(
+        [("x.md:1", "若人疾欲至不退转地者", "T26n1521", None)],
+        {"T1521": 2},
+        {("T1521", 1): "佛法有無量門", ("T1521", 2): "若人疾欲至，不退轉地者"},
+    )
+    assert mismatched == [] and unknown == []
+
+
+def test_a_fascicle_past_the_end_of_the_work_is_wrong():
+    mismatched, unknown = verify_sources.classify_excerpt_quotes(
+        [("x.md:1", "止观明静前代未闻", "T46n1911", 31)], {"T1911": 10}, {}
+    )
+    assert [m[0] for m in mismatched] == ["x.md:1"]
+    assert unknown == []
+
+
+@pytest.mark.parametrize(
+    "detail, juan",
+    [
+        ("《摩訶止觀》卷五上，T1911", 5),
+        ("《法華玄義》卷十，T1716", 10),
+        ("《大智度论》卷31，T25n1509", 31),
+        ("《大宝积经》卷一一二，T0310", 112),
+        ("《某论》卷二十一，T0001", 21),
+        ("《十住毗婆沙论》卷5·易行品，T26n1521", 5),
+        ("《摩訶止觀》卷五至卷十，T1911", None),
+        ("《中论》卷3-4，T30n1564", None),
+        ("《教觀綱宗》，T46n1939", None),
+    ],
+)
+def test_the_cited_fascicle_is_read_from_the_citation(detail, juan):
+    assert verify_sources.cited_juan(detail) == juan
+
+
+def test_footnotes_are_not_part_of_the_fascicle_text():
+    html = (
+        "<div id='body'><span class=\"lb\" id=\"T45n1866_p0507c06\">T45n1866_p0507c06</span>"
+        "<span class='t'>總相者，一舍多德故</span></div>"
+        "<div class='footnotes'><span>舍【大】，含【甲】</span></div>"
+    )
+    text = verify_sources.cbeta_juan_plain_text(html)
+    assert "總相者" in text
+    assert "含" not in text
+
+
+def test_the_quote_collector_reads_quote_blocks_and_lore_triggers(tmp_path, monkeypatch):
+    persona = tmp_path / "master-example"
+    (persona / "sources").mkdir(parents=True)
+    (persona / "sources" / "demo-excerpts.md").write_text(
+        "## 一\n\n原典（节选）：\n\n> 止观明静，\n>\n> 前代未闻。\n\n注：不是引文。\n\n"
+        "**引用格式：**【《摩訶止觀》卷一上，T1911】→ https://fojin.app/texts/53\n\n"
+        "## 二\n\n要义（整理，非原文）：\n\n五时：华严时。\n\n**引用格式：**【《法華玄義》卷十上，T1716】\n\n"
+        "## 三\n\n原典（节选）：\n\n> 某文钞一段话。\n\n**引用格式：**【《某文钞》卷上】\n",
+        encoding="utf-8",
+    )
+    (persona / "meta.json").write_text(
+        json.dumps(
+            {
+                "lore_triggers": [
+                    {"content": "一空一切空，无假中而不空。——浅释不算原文。", "source_ref": "T46n1911#卷五上"},
+                    {"content": "开示录里的话", "source_ref": "Xuyun:Kaishilu"},
+                ]
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(verify_sources, "PREBUILT_DIR", str(tmp_path))
+    assert verify_sources.collect_excerpt_quotes() == [
+        ("master-example/sources/demo-excerpts.md:3", "止观明静，\n\n前代未闻。", "T1911", 1),
+        ("master-example/meta.json:lore_triggers[0]", "一空一切空，无假中而不空。", "T46n1911", 5),
+    ]
+
+
+def test_the_quote_collector_reads_the_real_repo():
+    quotes = verify_sources.collect_excerpt_quotes()
+    where = {q[0] for q in quotes}
+    assert len(quotes) >= 60
+    assert "master-fazang/sources/jinshizi-excerpts.md:8" in where
+    assert any(w.startswith("master-zhiyi/meta.json:lore_triggers[") for w in where)
+    assert all(verify_sources._cbeta_api_work(q[2]) for q in quotes)
+
+
+def test_every_count_the_weekly_workflow_reads_is_printed_by_the_script():
+    """A summary line renamed in the script would leave the workflow's grep at 0, and the issue closed, every week."""
+    import re
+
+    workflow = (TOOLS.parent / ".github" / "workflows" / "verify-links.yml").read_text(encoding="utf-8")
+    source = (TOOLS / "verify_sources.py").read_text(encoding="utf-8")
+    labels = re.findall(r'grep -oP "([^"]+?):\\s\*\\K\\d\+"', workflow)
+    assert len(labels) >= 7, labels
+    for label in labels:
+        assert f"{label}:" in source, label

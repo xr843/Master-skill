@@ -10,6 +10,30 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — the weekly source check reads the quotations in the excerpt files (2026-09-15)
+
+The 19 excerpt quotations fixed below had passed every existing check. The
+weekly check looked at ids, titles and links, never at the quoted words.
+`tools/verify_sources.py` now collects each `原典` block in
+`prebuilt/*/sources/*-excerpts.md`, and each lore trigger whose source is a
+CBETA id. It fetches the cited fascicle from CBETA and looks up every clause of
+four or more characters. A quotation that names no fascicle is read against the
+whole work when the work has at most 30 fascicles. Otherwise it counts as
+unknown, not wrong, as does a fascicle CBETA does not return.
+
+Clauses are compared by pinyin, character by character, as titles already
+are, so simplified and traditional forms match. A quotation is checked clause
+by clause, not as one passage, because T45n1880 interleaves the
+《金师子章》 with 净源's notes. The check cannot see a homophone standing in
+for the right character (「不妄不愚」 matches 「不忘不愚」). It catches rewording,
+added or reordered characters, and quotations attributed to the wrong work.
+
+Run against main before the excerpt fixes, it reported the same 19
+quotations, plus 2 that name no fascicle of the 100-fascicle 《大智度论》.
+After the fixes it reports 0 and 0. The weekly workflow opens its issue when
+the count is not zero, and a new test fails if a summary line the workflow
+reads is renamed.
+
 ### Fixed — persona excerpts quoted text that is not in the cited work (2026-09-15)
 
 The `原典（节选）` blocks in `prebuilt/*/sources/*-excerpts.md` are presented as
