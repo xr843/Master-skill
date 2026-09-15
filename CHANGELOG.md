@@ -66,9 +66,11 @@ letter citation was checked against them clause by clause.
 The citations that matched are unchanged: the letter to Deng Bocheng, and
 《一函遍复》 in the 续编, which says "念佛最要紧，是敦伦尽分，闲邪存诚".
 
-`docs/masters.md` gave Yinguang's praise of Ouyi's commentary on the Amitābha
-Sutra as modern prose, "即使古佛再来，也不能超过其上". It now quotes the
-letter to Xu Fuxian: "纵令古佛再出于世，重注此经，亦不能高出其上矣".
+`docs/masters.md` and master-ouyi (its teaching page and the reason given for
+one of its questions in meta.json) gave Yinguang's praise of Ouyi's commentary
+on the Amitābha Sutra as modern prose, "即使古佛再来，也不能超过其上". They
+now quote the letter to Xu Fuxian: "纵令古佛再出于世，重注此经，亦不能高出
+其上矣".
 
 `prompts/correction_handler.md` used "老实念佛，莫换题目" in its sample
 correction record, so a host following the sample would write the saying
