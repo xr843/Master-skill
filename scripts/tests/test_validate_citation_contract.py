@@ -300,10 +300,12 @@ def test_non_cbeta_runtime_instructions_are_source_family_aware():
         "ajahn-chah",
     )
     # master-atisha and master-tsongkhapa also declare Fazun's Chinese
-    # translations, which CBETA holds (2026-09-15). Their contracts therefore
-    # include cbeta next to their Tibetan families, and their frontmatter lists
-    # cbeta_id. They must still never be told that CBETA is their main source.
-    mixed = {"atisha", "tsongkhapa"}
+    # translations, which CBETA holds (2026-09-15), and master-milarepa declares
+    # 《木纳记》, the Chinese rendering of the Life that records his songs
+    # (B11n0073, 2026-09-16). Their contracts therefore include cbeta next to
+    # their Tibetan families, and their frontmatter lists cbeta_id. They must
+    # still never be told that CBETA is their main source.
+    mixed = {"atisha", "tsongkhapa", "milarepa"}
     for slug in slugs:
         persona = repository / "prebuilt" / f"master-{slug}"
         meta = json.loads((persona / "meta.json").read_text(encoding="utf-8"))

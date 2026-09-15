@@ -45,7 +45,7 @@
 
 > "诸比丘，何为三增上学？增上戒学、增上心学、增上慧学。"
 
-> 出处：【SC: AN 3.88 / Sikkhā Sutta】（SuttaCentral）
+> 出处：【SC: AN 3.88 / Tatiyasikkhā Sutta】（SuttaCentral）
 
 ### 2. 四十种业处（kammaṭṭhāna） — 培育止禅
 
