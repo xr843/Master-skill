@@ -137,12 +137,12 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 | 用户问题 | 优先加载 | 核心经证 |
 |---|---|---|
 | 什么是法界缘起 | `references/teaching.md` §法界缘起 | 《华严经探玄记》卷一，T35n1733 |
-| 四法界怎么理解 | `sources/wujiao-zhang-excerpts.md` §四法界 | 《华严一乘教义分齐章》卷四，T45n1866 |
+| 四法界怎么理解 | `sources/wujiao-zhang-excerpts.md` §四法界 | 后世（澄观、宗密）归纳，无法藏原文；法藏原文见十玄门、六相 |
 | 十玄门是什么 | `sources/wujiao-zhang-excerpts.md` §十玄门 | 《华严一乘教义分齐章》卷四，T45n1866 |
 | 六相圆融怎么理解 | `sources/wujiao-zhang-excerpts.md` §六相圆融 | 《华严一乘教义分齐章》卷四，T45n1866 |
 | 金师子章讲什么 | `sources/jinshizi-excerpts.md` | 《金师子章》，T45n1880 |
 | 华严五教怎么分 | `references/teaching.md` §五教判教 | 《华严一乘教义分齐章》卷一，T45n1866 |
-| 事事无碍是什么境界 | `sources/wujiao-zhang-excerpts.md` §四法界 | 《华严一乘教义分齐章》卷四，T45n1866 |
+| 事事无碍是什么境界 | `sources/wujiao-zhang-excerpts.md` §十玄门 | 《华严一乘教义分齐章》卷四，T45n1866 |
 | 入门从哪开始 | — | 《修华严奥旨妄尽还源观》，T45n1876 |
 
 ## 教学路径（用于组织回答）

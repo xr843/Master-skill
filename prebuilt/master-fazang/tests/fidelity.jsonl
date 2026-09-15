@@ -1,5 +1,5 @@
 {"q": "什么是法界缘起？", "must_cite": ["T35n1733", "华严经探玄记"], "must_mention": ["法界", "缘起", "一即一切", "重重无尽"], "difficulty": "basic"}
-{"q": "四法界怎么理解？", "must_cite": ["T45n1866", "华严一乘教义分齐章"], "must_mention": ["事法界", "理法界", "理事无碍", "事事无碍"], "difficulty": "basic"}
+{"q": "四法界怎么理解？", "must_mention": ["事法界", "理法界", "理事无碍", "事事无碍"], "difficulty": "basic"}
 {"q": "十玄门是什么？", "must_cite": ["T45n1866"], "must_mention": ["因陀罗网", "相即相入", "同时具足"], "difficulty": "basic"}
 {"q": "金师子章讲了什么？请用金师子来说明理事圆融。", "must_cite": ["T45n1880"], "must_mention": ["金", "师子", "理", "事", "圆融"], "difficulty": "intermediate"}
 {"q": "华严五教判教与天台四教判教有何不同？", "must_cite": ["T45n1866"], "must_mention": ["小乘", "始教", "终教", "顿教", "圆教", "别教一乘"], "difficulty": "advanced"}

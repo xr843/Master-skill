@@ -10,6 +10,47 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — persona excerpts quoted text that is not in the cited work (2026-09-15)
+
+The `原典（节选）` blocks in `prebuilt/*/sources/*-excerpts.md` are presented as
+passages copied from CBETA, and personas quote them to users with a citation.
+Nothing had checked their wording. Each block, and each lore trigger with a
+CBETA source, was split into clauses, and every clause was looked up in the
+cited fascicle on CBETA. Of 63 quotations, 19 had clauses that are not there,
+and 4 more cited a work of 17 or 100 fascicles without naming one. The blocks
+now carry CBETA's wording, with `……` where text is left out, and all 62
+quotations check clause by clause.
+
+Several mismatches were attribution errors, not wording:
+
+- **master-nagarjuna** quoted 「宁起有见如须弥山，不起空见如芥子许」 as
+  《大智度论》. The line is not in that work. The sutra wording is in
+  《大宝积经》卷112: 「宁起我见积若须弥，非以空见起增上慢」. Fazang quotes the
+  familiar form as 「经云」. The persona now quotes Nāgārjuna's own statement
+  in 《中论》卷2: 「大圣说空法，为离诸见故；若复见有空，诸佛所不化」.
+- **master-fazang** cited 《华严一乘教义分齐章》卷四 for the four
+  dharmadhātus, with a passage that is not in the book. CBETA full-text search
+  finds neither 「四法界」 nor 「理事无碍法界」 in Fazang's own works; the scheme
+  is set out by Chengguan and Zongmi. The excerpt now says so, the routing
+  table no longer gives the citation, and fixture #2 no longer requires it.
+  The same file gave 《探玄记》's "new" ten mysteries as the 《五教章》's list. It
+  now quotes the 《五教章》's own list and cites 《探玄记》卷一 for the other.
+- **master-zhiyi**'s 《摩诃止观》 preface said Zhiyi taught the work at 瓦官寺;
+  the preface says 荆州玉泉寺, 594. Its 一心三观 passage, in the excerpt and in
+  the lore trigger injected at runtime, added 无 three times (「无假无中而不空」
+  for 「无假中而不空」). The 三谛 passage attributed to 《法华玄义》 is not in that
+  work, and two summaries were formatted as quotations; they are now labeled
+  as summaries.
+- **master-ouyi** paraphrased 《教观纲宗》 and 《阿弥陀经要解》. One passage
+  (「阿弥陀佛是法界藏身」) is not in the 要解.
+- Wording: Xuanzang (「不忘不愚」, 「义相」, 「内心」), Nāgārjuna's 易行品
+  (「疾欲至」), and 《金师子章》, now quoted clause by clause without the
+  commentary interleaved in T45n1880. The 《中论》 verse in both Kumārajīva and
+  Nāgārjuna now reads 「我说即是无」 as in the Taishō, beside 青目's commentary,
+  which reads 「空」.
+
+All 66 FoJin links in the changed files open the work they cite.
+
 ### Added — the weekly source check opens every citation link in the persona docs (2026-09-15)
 
 The 16 wrong links fixed below had passed every existing check. A declared
