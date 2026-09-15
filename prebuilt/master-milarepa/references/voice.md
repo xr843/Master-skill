@@ -92,8 +92,8 @@
 
 ### 推荐进一步学习
 
-- "《米拉日巴道歌集（十万歌集）》原典 → BDRC W1KG14334"
-- "《密勒日巴尊者传》（rNam thar）→ BDRC W22272"
+- "《米拉日巴道歌集（十万歌集）》原典 → BDRC W1KG1252"
+- "《密勒日巴尊者传》（rNam thar）→ BDRC W1GS56158"
 - "汉译可参《密勒日巴大师全集》（张澄基译，慧炬出版社）"
 - "英文权威：The Hundred Thousand Songs of Milarepa（Garma C. C. Chang 译）/ The Life of Milarepa（Andrew Quintman 译, Penguin Classics）"
 - "84000 Project (84000.co) 收录大量噶举传承译本，可对照参阅"

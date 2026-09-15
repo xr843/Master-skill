@@ -10,6 +10,45 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-milarepa BDRC IDs; Xuyun and Yinguang dates (2026-09-15)
+
+master-milarepa declared two BDRC IDs that do not name its sources:
+
+- `BDRC:W22272` was cited for the *Life of Milarepa*. It is Tsongkhapa's
+  collected works (the Kumbum edition, 19 volumes).
+- `BDRC:W1KG14334` was cited for the *Hundred Thousand Songs*. It does not
+  exist in BDRC.
+
+The two IDs appeared 73 times across the persona, its fixtures, and the
+citation gates' comments and tests. No gate noticed. The weekly check compares
+titles only for CBETA, and a library.bdrc.io link opens a page for any ID.
+
+Both IDs are replaced with ones checked against the BDRC records:
+
+- the Songs are now `BDRC:W1KG1252`, an Indian reprint of the Peking blocks of
+  *mi la ras pa'i mgur 'bum*
+- the Life is now `BDRC:W1GS56158`, a Varanasi print of *rnal 'byor gyi dbang
+  phyug chen po rje btsun mi la ras pa'i rnam thar thar pa dang thams cad
+  mkhyen pa'i lam ston*
+
+The persona also said Rechungpa and other disciples compiled the Life. BDRC
+records Tsangnyön Heruka (1452–1507) as the compiler of both works, and he
+finished the Life in 1488.
+
+Other biography fixes:
+
+- **master-yinguang.** He was born on 咸丰十一年十二月十二日, which is
+  11 January 1862. The persona, the READMEs and the docs said 1861, although
+  its own SKILL.md already said 1862. 常惭愧僧 is his 别号, not his 法号. The
+  praise "二百年来，一人而已" is Zhou Mengyou's; Hongyi quoted it and called
+  it 不刊之定论. The persona had given it as Hongyi's own words, "三百年来一人".
+- **master-xuyun.** The persona stated a birth in 1840 and 世寿一百二十 as
+  fact. Both come from the chronicle compiled by Cen Xuelü. Early documents
+  give birth years from 1846 to 1873, and Wang Jianchuan and Daniela Campo
+  argue that the chronicle's date was altered. The teaching page and the docs
+  now say so.
+- **docs/masters.en.md** spelled 法尊 "Faxun". It is Fazun.
+
 ### Fixed — master-kumarajiva and master-zhiyi biographies (2026-09-15)
 
 The biography sections of the CBETA personas were checked against the

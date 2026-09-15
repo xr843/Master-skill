@@ -246,7 +246,7 @@ Fifteen masters across four traditions. The command *is* the skill name — invo
 | `/master-fazang` | Fazang | Chinese · Huayan | 643-712 |
 | `/master-ouyi` | Ouyi | Chinese · Tiantai / Pure Land | 1599-1655 |
 | `/master-xuyun` | Xuyun | Chinese · Chan (all five houses) | 1840-1959 |
-| `/master-yinguang` | Yinguang | Chinese · Pure Land | 1861-1940 |
+| `/master-yinguang` | Yinguang | Chinese · Pure Land | 1862-1940 |
 | `/master-atisha` | Atiśa Dīpaṃkara | Tibetan · Kadam (lamrim) | 982-1054 |
 | `/master-milarepa` | Milarepa | Tibetan · Kagyu (Mahāmudrā) | 1052-1135 |
 | `/master-tsongkhapa` | Tsongkhapa | Tibetan · Gelug (Prāsaṅgika) | 1357-1419 |

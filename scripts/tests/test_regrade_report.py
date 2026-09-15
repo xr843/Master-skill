@@ -115,8 +115,26 @@ def test_the_committed_run_regrades_against_the_repository_as_it_stands(mod):
     # stored answer cites T45n1866, 《华严一乘教义分齐章》, which does not contain
     # that text (checked fascicle by fascicle, 2026-09-15). The fixture had
     # required the same wrong id; it now requires T45n1880, where the text is
-    # preserved. Any other regression still fails here.
-    assert regressions == [("master-curriculum", 1), ("master-fazang", 3)], regressions
+    # preserved. master-milarepa #0, #2-#5 and #7-#9 are findings of the same
+    # kind. The persona declared BDRC:W22272, which is Tsongkhapa's collected
+    # works, for the Life of Milarepa, and BDRC:W1KG14334, which is not a BDRC
+    # record at all, for the Songs. The stored answers cite both, so they passed
+    # only while the persona carried the wrong ids (corrected 2026-09-15). The
+    # fixtures now require W1GS56158 and W1KG1252. The boundary cases #5, #7 and
+    # #8 have no must_cite; they fail because the audit now reads the old ids
+    # as undeclared. Any other regression still fails here.
+    assert regressions == [
+        ("master-curriculum", 1),
+        ("master-fazang", 3),
+        ("master-milarepa", 0),
+        ("master-milarepa", 2),
+        ("master-milarepa", 3),
+        ("master-milarepa", 4),
+        ("master-milarepa", 5),
+        ("master-milarepa", 7),
+        ("master-milarepa", 8),
+        ("master-milarepa", 9),
+    ], regressions
     assert out["mentions"]["mention_coverage"].endswith("%")
 
 

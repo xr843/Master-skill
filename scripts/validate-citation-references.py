@@ -96,7 +96,7 @@ def _strip_template_citations(text: str) -> str:
 # a BDRC W-ID. `_FAMILY_ID` stays loose on purpose — in an answer, reading too
 # much fails safe as fabricated (see the note above `_FOJIN_TEXT_LINK` in
 # verify_citations.py) — so it reads both as ids. Only this prose sweep drops
-# them: a real BDRC work id is W followed by a digit (W22272, W1KG14334), the
+# them: a real BDRC work id is W followed by a digit (W1GS56158, W1KG1252), the
 # rule the auditor's own bare-W branch already applies.
 _BDRC_FIELD_NAME = re.compile(r"^BDRC:W(?![0-9])")
 
