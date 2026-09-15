@@ -50,8 +50,11 @@ letter citation was checked against them clause by clause.
     to Gao Shaolin. It is now that letter's own passage (正编卷一), on
     listening closely (摄耳谛听) and counting recitations in tens.
   - The block on carrying karma into the Pure Land ended "则如风帆扬于顺水，
-    更加橹棹之功", which none of the volumes contains. It is now what the
-    letter to Deng Bocheng says (正编卷一): "特开一仗佛慈力，带业往生之法门".
+    更加橹棹之功，不离当念即登彼岸". The Wenchao has only the simile, as a
+    saying Yinguang quotes from earlier writers in the letter to Xu Fuxian
+    (正编卷一): "念佛往生，如风帆扬于顺水". The rest is in no volume. The
+    block is now what the letter to Deng Bocheng says (正编卷一):
+    "特开一仗佛慈力，带业往生之法门".
 - **"老实念佛，莫换题目"** was a heading cited to a letter to Wang Zili in
   the 续编. No volume contains "换题目". The Wang Zili letters are in the
   三编, and none of them discusses mixing practices. The heading now follows
@@ -62,6 +65,10 @@ letter citation was checked against them clause by clause.
 
 The citations that matched are unchanged: the letter to Deng Bocheng, and
 《一函遍复》 in the 续编, which says "念佛最要紧，是敦伦尽分，闲邪存诚".
+
+`docs/masters.md` gave Yinguang's praise of Ouyi's commentary on the Amitābha
+Sutra as modern prose, "即使古佛再来，也不能超过其上". It now quotes the
+letter to Xu Fuxian: "纵令古佛再出于世，重注此经，亦不能高出其上矣".
 
 `prompts/correction_handler.md` used "老实念佛，莫换题目" in its sample
 correction record, so a host following the sample would write the saying
