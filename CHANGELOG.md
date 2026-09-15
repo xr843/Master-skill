@@ -10,6 +10,17 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.3] — 2026-09-15
+
+This release corrects the words several installed personas quote as
+scripture. Nineteen passages presented as copied from CBETA were not in the
+fascicle they cite. Among them were a saying attributed to the wrong treatise,
+a later Huayan scheme attributed to Fazang, and a lore trigger that the runtime
+injects with three added characters. master-kumarajiva gave Xuanzang's Heart
+Sutra wording as its own, and sixteen citation links in the persona docs
+opened other books. The weekly source check now opens every citation link and
+looks up every quoted clause in the cited fascicle.
+
 ### Fixed — master-kumarajiva quoted Xuanzang's Heart Sutra as its own (2026-09-15)
 
 `references/teaching.md` gave 「色不异空，空不异色」 as the wording of
@@ -1542,7 +1553,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.2...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.3...HEAD
+[0.12.3]: https://github.com/xr843/Master-skill/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/xr843/Master-skill/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/xr843/Master-skill/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/xr843/Master-skill/compare/v0.11.0...v0.12.0
