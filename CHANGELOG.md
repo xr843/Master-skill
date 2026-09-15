@@ -10,6 +10,42 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — Pali and Tibetan personas presented paraphrases as quotations and misattributed teachings (2026-09-15)
+
+The six personas without CBETA sources were checked against the texts they
+cite: SuttaCentral for the suttas, Bhikkhu Ñāṇamoli's *Path of Purification*
+for the Visuddhimagga, and Lotsawa House translations of the *Lamp for the
+Path* and the *Three Principal Aspects*. Their excerpt files already say they
+hold summaries, but several passages were still set in quotation marks as a
+master's own words, and some teachings were credited to the wrong text.
+
+- **master-tsongkhapa** said the *Three Principal Aspects* sums up the path in
+  「三句偈」; it has fourteen verses. Two quoted "sayings" were not in the text.
+  They are now summaries tied to verses 6, 9 and 10–13, including
+  Tsongkhapa's own reversal: appearances dispel the extreme of existence.
+- **master-atisha** credited the seven-point cause and effect instruction and
+  breath-based sending and taking to the *Lamp for the Path*. The *Lamp*
+  (verses 10–11) says only to begin with love and generate bodhicitta. Those
+  methods are lineage instructions, and sending and taking on the breath is
+  from the *Seven-Point Mind Training*. The excerpt now cites verse numbers
+  for the three persons, the vows, calm abiding, wisdom and tantra. It also
+  corrects the verse count from 67 to 68 and the bodhisattva-vow source to
+  the *Bodhisattva Levels* (verse 22).
+- **master-buddhaghosa** listed the blue and yellow kasiṇas as suitable for
+  every temperament. Vism III.121 assigns the four colour kasiṇas to the
+  hating temperament. The 52 mental factors and the four ultimate realities
+  come from the later *Abhidhammatthasaṅgaha*, and the Visuddhimagga never
+  numbers "sixteen insight knowledges" (its chapter XXI speaks of eight).
+- **master-mahasi-sayadaw** repeated nine sentences word for word from Ajahn
+  Chah's excerpts as its own. It now describes Mahasi's noting instructions,
+  and fixture #3 no longer requires the copied phrases 「不是问题」 and 「想消灭」.
+- **master-ajahn-chah** dated MN 118 to the Pavāraṇā day; the Buddha taught it
+  on the Komudī full moon of the fourth month. It also framed a teaching as a
+  quoted dialogue, which its own rules forbid.
+- **master-milarepa** put invented last words in quotation marks, in its excerpt
+  and in `references/teaching.md`, and placed Gampopa and Rechungpa at a
+  deathbed scene. These are now summaries.
+
 ## [0.12.3] — 2026-09-15
 
 This release corrects the words several installed personas quote as
