@@ -10,6 +10,14 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.7] — 2026-09-15
+
+This release checks the Tibetan personas against Fazun's Chinese translations,
+which CBETA holds in collections the checks could not read before. Quotations
+in master-tsongkhapa and master-atisha that no source contains are replaced,
+master-milarepa's retold episodes now match the *Life*, and both personas now
+declare the translations, which the weekly check verifies.
+
 ### Added — master-tsongkhapa and master-atisha declare Fazun's Chinese translations (2026-09-15)
 
 Both personas now declare the Chinese translations by Fazun that CBETA holds:
@@ -1945,7 +1953,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.6...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.7...HEAD
+[0.12.7]: https://github.com/xr843/Master-skill/compare/v0.12.6...v0.12.7
 [0.12.6]: https://github.com/xr843/Master-skill/compare/v0.12.5...v0.12.6
 [0.12.5]: https://github.com/xr843/Master-skill/compare/v0.12.4...v0.12.5
 [0.12.4]: https://github.com/xr843/Master-skill/compare/v0.12.3...v0.12.4
