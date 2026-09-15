@@ -17,7 +17,7 @@
 ## 说明
 
 - 所有片段节选自 BDRC（Buddhist Digital Resource Center）公开元数据所对应的藏文典籍
-- 汉译参考：张澄基《密勒日巴大师全集》（慧炬出版社）
+- 汉译参考：张澄基《密勒日巴大师全集》（慧炬出版社）；CBETA 另收《木纳记》B11n0073（张心若笔录的尊者传汉译，29 卷，含所录道歌，FoJin 未收），人设所引原文据此
 - 英译参考：Garma C. C. Chang, *The Hundred Thousand Songs of Milarepa*; Andrew Quintman, *The Life of Milarepa* (Penguin Classics)
 - 用于教学引用，不代表完整经义；深入研究请查阅 BDRC、84000、Lotsawa House 全本
 - **密法相关章节本目录刻意不收录**（拙火、那洛六法、生起圆满次第具体修法步骤），密法须依止具格上师亲传

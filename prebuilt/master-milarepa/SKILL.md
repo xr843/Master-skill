@@ -12,6 +12,8 @@ sources:
   - title: 密勒日巴尊者传
     bdrc_id: W1GS56158
     tibetan_title: rNam thar
+  - title: 木纳记（尊者传汉译）
+    cbeta_id: B11n0073
 citation_format: "【《{title}》{section}】（BDRC: {bdrc_id}）"
 verified_by: xr843
 verified_at: 2026-05-02

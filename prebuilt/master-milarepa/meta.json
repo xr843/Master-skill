@@ -7,7 +7,7 @@
     "version": 1,
     "claim_policy": "declared_sources_only",
     "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
-    "allowed_source_types": ["tibetan_canon"],
+    "allowed_source_types": ["cbeta", "tibetan_canon"],
     "minimum_claim_coverage": 0.9,
     "live_retrieval_allowed": true
   },
@@ -30,6 +30,12 @@
       "type": "tibetan_canon",
       "id": "BDRC:W1GS56158",
       "title": "密勒日巴尊者传（rNam thar）"
+    },
+    {
+      "type": "cbeta",
+      "id": "B11n0073",
+      "title": "木纳记（尊者传汉译，惹穹多杰札把著、张心若笔录）",
+      "note": "CBETA 大藏经补编第 11 册，29 卷；《密勒日巴尊者传》的 1930 年代汉译，含所录道歌。FoJin 未收"
     }
   ],
   "version": "1.0.0",

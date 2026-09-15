@@ -10,6 +10,33 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-milarepa's and master-yinguang's quoted lines (2026-09-16)
+
+The new step 3h reports both personas as unknown, not wrong: their sources are
+not in CBETA, so it cannot judge their quotations. They were checked by hand
+instead, against CBETA's 《木纳记》 (B11n0073, the 1930s Chinese rendering of
+the Life, which records his songs) and the 《印光法师文钞》 on daizhige.
+
+- **master-milarepa.** None of the four quoted songs is in 《木纳记》.
+  - The verses on the precious human birth, on the guru and on the nature of
+    mind are replaced with what it has: 卷十一 "人身难得无暇我亦知", 卷十四
+    "上师不动慈悲口…上师恩德最无上", and 卷二十三 "此心犹如虚空遍…本来清净
+    如虚空".
+  - The lines on retreat have no counterpart there and are now stated as a
+    paraphrase: Zhang Chengji's translation of the Songs is under copyright,
+    so this repository cannot check them word by word.
+  - The three voice samples are those same passages, with a note that the
+    fourfold view-meditation-conduct-fruit scheme is a later Kagyu summary.
+  - 《木纳记》 is declared as a source and listed in
+    `tools/fojin-known-absent.json`; FoJin holds neither `B0073` nor
+    `B11n0073`, while T0235 resolved in the same lookup.
+- **master-yinguang.** The three voice samples were near-quotations, one of
+  them with a clause in no volume. They are now verbatim, from the letters to
+  Xu Fuxian and to Ding Fubao, and from 《文钞》续编's answer to Zeng Yizhi.
+- **master-buddhaghosa.** The sutta cited for the three trainings is AN 3.88,
+  whose Pali title is Tatiyasikkhāsutta, not Sikkhā Sutta. That discourse does
+  list the three trainings, so the number is unchanged.
+
 ### Added — weekly check of the quoted lines in persona docs (2026-09-16)
 
 `tools/verify_sources.py` has a new step, 3h. Until now the weekly check read
