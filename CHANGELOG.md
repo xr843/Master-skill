@@ -10,6 +10,18 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.12] — 2026-09-17
+
+Most of the path from installing this to asking a master a question did not work as
+documented. Installed as a Claude Code plugin, the repository registered one skill while
+its session-start hook announced twenty. Installed as the docs said on Codex CLI,
+OpenCode and Gemini CLI, it registered none. A master generated with `/create-master` was
+written two levels below where Claude Code looks, and `master-skill doctor` reported "ok"
+for every broken install it was given. Each was found the same way: install into an
+isolated home and ask the host what it actually loaded. This release also carries two
+persona corrections — sutta summaries framed as the Buddha's direct speech, and 18
+routing pointers that named sections their files do not have.
+
 ### Fixed — `master-skill doctor` reported "ok" for broken installs, and the desktop could not have shown otherwise (2026-09-17)
 
 The README introduces `npx master-skill doctor` as the check for "本地安装与运行路径". Its
@@ -2638,7 +2650,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.11...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.12...HEAD
+[0.12.12]: https://github.com/xr843/Master-skill/compare/v0.12.11...v0.12.12
 [0.12.11]: https://github.com/xr843/Master-skill/compare/v0.12.10...v0.12.11
 [0.12.10]: https://github.com/xr843/Master-skill/compare/v0.12.9...v0.12.10
 [0.12.9]: https://github.com/xr843/Master-skill/compare/v0.12.8...v0.12.9
