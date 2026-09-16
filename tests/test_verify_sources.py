@@ -1236,3 +1236,66 @@ def test_the_coverage_flag_is_checkable_in_both_directions():
             assert compiled <= covered, f"{master} 标 complete，却有声明的编集语录没有全文：{compiled - covered}"
         else:
             assert compiled - covered, f"{master} 标 partial，但每部声明的编集语录都有全文，应改为 complete"
+
+
+# --- 采集器认得的引文形状 ------------------------------------------------------
+
+
+def test_a_named_speaker_needs_a_colon_before_the_quotation():
+    """「佛说：""」是引原典，「常说"…"」是人设自己的话 —— 冒号是两者的判别式。"""
+    said = verify_sources._QUOTE_ATTRIBUTED
+    assert said.search('佛说："诸比丘，此一行道，能令众生清净、超越愁悲。"')
+    assert said.search('神秀偈："身是菩提树，心如明镜台，时时勤拂拭。"')
+    assert said.search('慧能曰："不是风动，不是幡动，仁者心动。"')
+    assert said.search('达摩祖师偈："吾本来兹土，传法救迷情。"')
+    assert not said.search('常说"看看那个想要解决问题的心"——把焦点从问题移开')
+    assert not said.search('先问"为什么想读？心里有什么？"')
+
+
+def test_a_title_on_the_same_line_needs_no_verb():
+    """原先只认「云/曰」，《金刚经》"一切有为法…" 这类一条都进不来。"""
+    titled = verify_sources._QUOTE_TITLED
+    assert titled.search('其译文之美，如《金刚经》"一切有为法，如梦幻泡影，如露亦如电"')
+    assert titled.search('闻客诵《金刚经》至"应无所住而生其心"，豁然有省')
+
+
+def test_lines_about_how_to_cite_are_not_quotations():
+    """纠错说明与禁用示例里的引号片段不是引文。
+
+    2026-09-16 实测：收进来的那两行并没有立刻报错 —— master-nagarjuna 那句
+    「宁起我见积若须弥」恰好在《大宝积经》里查得到，于是落进「未判定」。
+    但这只是侥幸：纠错说明写的本就是「某句常被当作某祖师的话，原书中没有」，
+    一旦所纠正的是一句 CBETA 确实没有的伪托语，而该人设又只声明 CBETA 来源
+    （龙树正是如此），周检就会把这条**纠错记录本身**判成伪造引文。
+    """
+    meta = verify_sources._QUOTE_META
+    assert meta.search("这句话常被当作龙树的话引用，但《大智度论》中没有（已核对）")
+    assert meta.search('⚠️ 重要 disclaimer：凡引"阿底峡的中观见"应保守表述')
+    assert meta.search("引用这层意思时请引《中论》，不要把上面那句话标成《大智度论》")
+
+
+def test_the_citation_meta_filter_does_not_eat_real_quotations():
+    """用「勿」「不可用」这类泛词做排除会误伤真引文 —— 2026-09-16 实测撞出三处。"""
+    meta = verify_sources._QUOTE_META
+    assert not meta.search('神秀偈："身是菩提树，心如明镜台，时时勤拂拭，勿使惹尘埃。"')
+    assert not meta.search('先以譬喻化解紧张——"且勿急，此如暗室求灯，灯来暗去"')
+    assert not meta.search('参"念佛是谁"，将此疑情抱定不放，不可用意识思量卜度')
+
+
+def test_the_collector_gained_the_quotations_it_used_to_walk_past():
+    """扩容前 49 条里没有慧能的风幡偈、罗什所引《金刚经》、佛说的巴利经文、虚云的开示。"""
+    where = {w for w, _, _ in verify_sources.collect_persona_quotes()}
+    for gained in (
+        "master-huineng/references/teaching.md:93",
+        "master-huineng/references/teaching.md:107",
+        "master-kumarajiva/references/teaching.md:55",
+        "master-ajahn-chah/sources/sutta-excerpts.md:38",
+        "master-atisha/references/teaching.md:83",
+        "master-xuyun/references/teaching.md:21",
+    ):
+        assert gained in where, f"{gained} 是真引文，应当被收"
+    for meta_line in (
+        "master-nagarjuna/sources/dazhidulun-excerpts.md:41",
+        "master-atisha/sources/bodhipathapradipa-excerpts.md:134",
+    ):
+        assert meta_line not in where, f"{meta_line} 是讲引用规范的行，不该被当引文送检"
