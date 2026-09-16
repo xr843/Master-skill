@@ -143,3 +143,96 @@ def test_analysis_prompt_includes_manual_sources_when_no_text_results_exist():
     assert "title=Teaching One" in prompt
     assert "source_type=compiled_teaching" in prompt
     assert "source_id=ManualArchive:TeachingOne" in prompt
+
+
+# ---------------------------------------------------------------------------
+# register_teacher — a generated persona must end up somewhere Claude Code looks
+# ---------------------------------------------------------------------------
+
+import os  # noqa: E402
+
+import pytest  # noqa: E402
+
+
+def _built(tmp_path: Path) -> Path:
+    summary = master_builder.build_from_spec(master_builder._offline_smoke_spec(), str(tmp_path / "masters"))
+    return Path(summary["teacher_dir"])
+
+
+def test_register_links_the_persona_one_level_below_the_skills_dir(tmp_path):
+    """Claude Code loads <skills>/<name>/SKILL.md only; masters/ is two levels too deep."""
+    teacher = _built(tmp_path)
+    skills = tmp_path / "skills"
+
+    result = master_builder.register_teacher(str(teacher), str(skills))
+
+    link = skills / teacher.name
+    assert (link / "SKILL.md").is_file()
+    assert link.resolve() == teacher.resolve()
+    assert result["invoke"] == f"/{teacher.name}"
+    assert result["already_registered"] is False
+    assert result["restart_required"] is True  # the skills dir did not exist
+
+
+def test_register_is_idempotent(tmp_path):
+    teacher = _built(tmp_path)
+    skills = tmp_path / "skills"
+    master_builder.register_teacher(str(teacher), str(skills))
+
+    again = master_builder.register_teacher(str(teacher), str(skills))
+
+    assert again["already_registered"] is True
+    assert again["restart_required"] is False
+
+
+def test_register_never_replaces_an_existing_skill(tmp_path):
+    """Regenerating a prebuilt master must not overwrite the installed one."""
+    teacher = _built(tmp_path)
+    skills = tmp_path / "skills"
+    installed = skills / teacher.name
+    installed.mkdir(parents=True)
+    (installed / "SKILL.md").write_text("---\nname: installed\n---\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="not replacing"):
+        master_builder.register_teacher(str(teacher), str(skills))
+    assert (installed / "SKILL.md").read_text(encoding="utf-8").startswith("---\nname: installed")
+
+
+def test_register_refuses_a_name_that_is_not_the_directory(tmp_path):
+    teacher = _built(tmp_path)
+    skill_md = teacher / "SKILL.md"
+    skill_md.write_text(skill_md.read_text(encoding="utf-8").replace(f"name: {teacher.name}", "name: other", 1), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="directory name"):
+        master_builder.register_teacher(str(teacher), str(tmp_path / "skills"))
+
+
+def test_register_cli_reports_and_fails_closed(tmp_path, capsys):
+    teacher = _built(tmp_path)
+    skills = tmp_path / "skills"
+
+    assert master_builder.main(["--register", str(teacher), "--skills-dir", str(skills)]) == 0
+    assert json.loads(capsys.readouterr().out)["invoke"] == f"/{teacher.name}"
+
+    other = tmp_path / "skills2" / teacher.name
+    other.mkdir(parents=True)
+    assert master_builder.main(["--register", str(teacher), "--skills-dir", str(other.parent)]) == 1
+
+
+@pytest.mark.skipif(os.name == "nt", reason="exercises the POSIX symlink path")
+def test_register_uses_a_directory_symlink_on_posix(tmp_path):
+    teacher = _built(tmp_path)
+    skills = tmp_path / "skills"
+    master_builder.register_teacher(str(teacher), str(skills))
+    assert (skills / teacher.name).is_symlink()
+
+
+def test_the_generator_instructions_run_the_register_step():
+    """Step 5 used to promise `/master-{slug}` right after writing to masters/,
+    and pointed at a `skillDirs` setting Claude Code does not have."""
+    root = Path(master_builder.__file__).resolve().parent.parent
+    skill = (root / "SKILL.md").read_text(encoding="utf-8")
+    details = (root / "references" / "workflow-details.md").read_text(encoding="utf-8")
+    assert 'master_builder.py --register "${CLAUDE_SKILL_DIR}/masters/master-{slug}"' in skill
+    assert "--register" in details
+    assert "skillDirs" not in details.replace("没有 `skillDirs`", "")

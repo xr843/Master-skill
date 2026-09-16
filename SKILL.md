@@ -94,7 +94,7 @@ API 故障 / 超时 / 数据阈值 / 引用规则细节 → `references/workflow
 
 将审查通过的名称、传承、宗派、时代、语言、`teaching_content`、`voice_content`、`sources` 与同一 `citation_contract` 写入 `generated-master.json`，再运行 `${CLAUDE_SKILL_DIR}/tools/master_builder.py --spec generated-master.json --output "${CLAUDE_SKILL_DIR}/masters/"`。生成器统一写入 `masters/master-{slug}/`，且 `SKILL.md` 的 name 为 `master-{slug}`；随后运行 `${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check "${CLAUDE_SKILL_DIR}/masters/master-{slug}/"`。该终验离线检查四个必需文件、目录/name 一致性，以及 `meta.json` 的来源清单、家族 ID、声明归属和 contract；它不解析 `teaching.md` 自由文本，也不保证外部站点可达。
 
-OpenClaw / Claude Code 注册路径 → `references/workflow-details.md` §Step 5。
+终验通过后运行 `${CLAUDE_SKILL_DIR}/tools/master_builder.py --register "${CLAUDE_SKILL_DIR}/masters/master-{slug}"`：Claude Code 只加载 `~/.claude/skills/<名字>/SKILL.md`，不扫 `masters/`，不注册就无法用 `/master-{slug}` 调用。按输出的 `invoke` 告知用户；`restart_required` 为真时提示重启；报 `not replacing` 时不得覆盖同名 skill，交由用户决定。细节与 OpenClaw 注册 → `references/workflow-details.md` §角色注册（按运行环境）。
 
 ## 追加材料、纠正、管理命令
 

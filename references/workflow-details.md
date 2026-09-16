@@ -235,7 +235,7 @@ FAIL → 自动修复后重审。
 ## Step 5：写入文件细则
 
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/tools/master_builder.py --spec generated-master.json --output masters/
+python3 "${CLAUDE_SKILL_DIR}/tools/master_builder.py" --spec generated-master.json --output "${CLAUDE_SKILL_DIR}/masters/"
 ```
 
 `generated-master.json` 是审查通过后的生成规格，必含 `name`、`tradition`、`school`、`era`、
@@ -245,7 +245,7 @@ python3 ${CLAUDE_SKILL_DIR}/tools/master_builder.py --spec generated-master.json
 ### 生成后终验
 
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check masters/master-{slug}/
+python3 "${CLAUDE_SKILL_DIR}/tools/verify_sources.py" --final-check "${CLAUDE_SKILL_DIR}/masters/master-{slug}/"
 ```
 
 `--final-check` 离线验证 persona 目录包含 `SKILL.md`、`teaching.md`、`voice.md`、`meta.json`，
@@ -255,8 +255,8 @@ python3 ${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check masters/master
 ### 生成目录结构
 
 ```
-masters/master-{slug}/
-├── SKILL.md          # /master-{slug} 触发（完整角色定义）
+${CLAUDE_SKILL_DIR}/masters/master-{slug}/
+├── SKILL.md          # 注册后由 /master-{slug} 触发（完整角色定义）
 ├── teaching.md       # 教义体系（可单独使用）
 ├── voice.md          # 说法风格（可单独使用）
 └── meta.json         # 元数据（版本、生成时间、数据来源）
@@ -265,9 +265,27 @@ masters/master-{slug}/
 ### 角色注册（按运行环境）
 
 **Claude Code 用户**
-1. 生成的 SKILL.md 已放置在 `masters/master-{slug}/`
-2. 确保 `masters/` 在 Claude Code skill 搜索路径中（检查 `.claude/settings.json` 的 `skillDirs` 配置）
-3. 完成后自动可通过 `/master-{slug}` 触发
+
+终验通过后注册：
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/tools/master_builder.py" --register "${CLAUDE_SKILL_DIR}/masters/master-{slug}"
+```
+
+它在 `~/.claude/skills/master-{slug}` 建一个指向生成目录的链接（Windows 上建 junction），输出 JSON：
+
+- `invoke`：调用命令，照此告知用户；
+- `restart_required: true`：`~/.claude/skills/` 是这次才建的，需重启 Claude Code 才会被发现；否则当前会话内即可调用；
+- 退出码 1 且提示 `not replacing`：同名 skill 已存在（例如重新生成了一位预置祖师）。**不要删除或覆盖它**，把情况告诉用户，由用户决定改名或自行移除。
+
+为什么需要这一步：Claude Code 只加载 `<skills 目录>/<名字>/SKILL.md`，不往下扫，也没有 `skillDirs` 之类的设置。
+2026-09-16 用 Claude Code 2.1.273 在隔离配置中实测：放在 `~/.claude/skills/create-master/masters/` 下的 persona
+不出现在 `/skills` 里；注册出链接后，同一会话内即出现。生成目录留在 `masters/` 是为了让
+`master-skill update` 更新运行时的时候不丢失用户生成的 persona。
+
+以插件方式安装时，`${CLAUDE_SKILL_DIR}` 是按版本号区分的插件缓存目录：`claude plugin update` 之后
+它换到新版本目录，新目录下的 `masters/` 是空的（实测 0.12.11 → 0.12.12）。要长期保留自己生成的 persona，
+请用 `npx master-skill install create-master` 或 git clone 方式安装生成器。
 
 **OpenClaw 用户**
 1. 将 `masters/master-{slug}/` 复制到 OpenClaw 的 skills 目录
@@ -278,8 +296,8 @@ masters/master-{slug}/
 
 ```
 已生成「{master_name}」教学角色
-  目录：masters/master-{slug}/
-  调用命令：/master-{slug}
+  目录：${CLAUDE_SKILL_DIR}/masters/master-{slug}/
+  调用命令：/master-{slug}（已注册到 ~/.claude/skills/master-{slug}）
   包含文件：SKILL.md, teaching.md, voice.md, meta.json
   数据来源：{n} 条经文，{m} 个知识图谱实体
 ```
