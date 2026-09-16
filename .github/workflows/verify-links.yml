@@ -33,9 +33,21 @@ jobs:
 
       - name: Run verify_sources.py (dry run)
         id: verify
+        # `shell: bash` is what buys `-o pipefail`. The implicit default is
+        # `bash -e {0}` with no pipefail, so `python3 … | tee` returned tee's 0 and a
+        # crashed run passed the step. Every counter below then fell back to "0"
+        # through `|| echo "0"`, the issue condition read all-clear, and the week
+        # looked clean. A crash must not be indistinguishable from nothing to report.
+        shell: bash
         run: |
           cd "${{ github.workspace }}"
           python3 tools/verify_sources.py 2>&1 | tee verify_output.txt
+          # pipefail catches a non-zero exit; this catches the other half — a run that
+          # returns 0 but stopped before printing what the greps below read.
+          if ! grep -q '^Summary$' verify_output.txt; then
+            echo "::error::verify_sources.py printed no Summary block — it did not finish, so the counts below would all read 0."
+            exit 1
+          fi
           # Extract key stats for the issue body
           FAILED=$(grep -oP "Not found in FoJin:\s*\K\d+" verify_output.txt || echo "0")
           UPDATES=$(grep -oP "URL replacements:\s*\K\d+" verify_output.txt || echo "0")

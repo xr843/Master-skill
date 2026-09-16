@@ -10,6 +10,38 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — a crashed weekly check read as a clean week (2026-09-16)
+
+`verify-links.yml` ran the weekly source check as
+
+```
+python3 tools/verify_sources.py 2>&1 | tee verify_output.txt
+```
+
+under GitHub's implicit shell for `run:` steps, which is `bash -e {0}` — **no
+pipefail**. A pipeline's status is its last stage, so `tee` returned 0 however the
+script ended. Every counter below it is read with `grep … || echo "0"`, so a
+truncated output made all twelve read zero, the issue condition saw all-clear, and
+the run went green. A crash was indistinguishable from a week with nothing to
+report — on the same counters added two days earlier to make quotation problems
+visible.
+
+Both halves are now closed:
+
+- the step sets `shell: bash`, which is what selects
+  `bash --noprofile --norc -eo pipefail {0}`, so a non-zero exit fails it;
+- it then requires the `Summary` block the script prints last, so a run that exits
+  0 after stopping early also fails rather than falling through to counters that
+  read zero.
+
+`test_every_step_that_pipes_selects_a_shell_with_pipefail` keeps this from coming
+back anywhere: every `run:` body containing a `|` must set `shell: bash`. Three
+other steps did not and now do — `Pick smoke target`, `Lint GitHub Actions
+workflows`, and clawhub's publish step. None of the three was broken: the first
+two already check their fallible commands explicitly, and the third's `|` is inside
+a Python heredoc writing a markdown table. They comply because one uniform rule is
+worth more than three judgement calls about which pipeline is safe.
+
 ### Fixed — version pruning deleted more than it was pruning (2026-09-16)
 
 `tools/version_manager.py` lists, restores and prunes the archives

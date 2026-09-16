@@ -497,3 +497,78 @@ def test_the_eval_sdk_smoke_runs_both_ways_after_the_sdks_are_installed():
         r"if python scripts/smoke-eval-sdk\.py --break; then\s+echo[^\n]*\n\s+exit 1",
         run,
     ), "`--break` exiting 0 must fail the job"
+
+
+# --------------------------------------------------------------------------
+# A pipeline must not hide the failure of everything but its last stage.
+#
+# GitHub's implicit shell for `run:` on Linux is `bash -e {0}` — no pipefail.
+# Writing `shell: bash` is what selects `bash --noprofile --norc -eo pipefail {0}`.
+# verify-links.yml ran `python3 tools/verify_sources.py 2>&1 | tee verify_output.txt`
+# under the implicit shell, so the pipeline returned tee's 0 however the script
+# ended. Every counter downstream falls back to "0" through `|| echo "0"`, the
+# issue condition then reads all-clear, and a crashed weekly check is
+# indistinguishable from a clean week.
+# --------------------------------------------------------------------------
+
+
+WORKFLOW_DIR = ROOT / ".github" / "workflows"
+
+
+def _pipes(run: str) -> bool:
+    """Whether a run body pipes — `||` is a logical or, not a pipeline."""
+    for line in run.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if "|" in stripped.replace("||", ""):
+            return True
+    return False
+
+
+def _steps_with_shell(path: Path):
+    workflow = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    file_default = ((workflow.get("defaults") or {}).get("run") or {}).get("shell")
+    for job_id, job in (workflow.get("jobs") or {}).items():
+        if not isinstance(job, dict):
+            continue
+        job_default = ((job.get("defaults") or {}).get("run") or {}).get("shell")
+        for step in job.get("steps") or []:
+            if isinstance(step, dict) and "run" in step:
+                shell = step.get("shell") or job_default or file_default
+                yield job_id, step.get("name", job_id), str(step["run"]), shell
+
+
+def test_every_step_that_pipes_selects_a_shell_with_pipefail():
+    offenders = [
+        f"{path.name}: {name!r}"
+        for path in sorted(WORKFLOW_DIR.glob("*.yml"))
+        for _job, name, run, shell in _steps_with_shell(path)
+        if _pipes(run) and shell != "bash"
+    ]
+    assert offenders == [], (
+        "these steps pipe under the implicit `bash -e` shell, which has no pipefail, "
+        "so a failure in any stage but the last is swallowed: " + "; ".join(offenders)
+    )
+
+
+def test_the_weekly_check_fails_when_the_script_does_not_finish():
+    """pipefail catches a crash; the Summary guard catches an early return that exits 0.
+
+    Both halves are needed. Without the first, `| tee` reports success whatever the
+    script did. Without the second, a run that stops after printing part of its output
+    still satisfies every `grep … || echo "0"` with a zero.
+    """
+    import re
+
+    steps = dict(
+        (name, (run, shell))
+        for _job, name, run, shell in _steps_with_shell(VERIFY_LINKS_PATH)
+    )
+    run, shell = steps["Run verify_sources.py (dry run)"]
+
+    assert shell == "bash", "the step pipes into tee; without pipefail a crash reads as success"
+    assert "grep -q '^Summary$' verify_output.txt" in run
+    assert re.search(r"if ! grep -q '\^Summary\$' verify_output\.txt; then[\s\S]*?exit 1", run), (
+        "a missing Summary block must fail the step, not fall through to counters that read 0"
+    )
