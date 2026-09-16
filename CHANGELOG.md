@@ -10,6 +10,31 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — version pruning deleted more than it was pruning (2026-09-16)
+
+`tools/version_manager.py` lists, restores and prunes the archives
+`skill_writer.update_teacher` writes to `prebuilt/master-*/versions/`. It had no
+test of any kind, including `cleanup_old_versions`, which calls `shutil.rmtree`.
+
+Two defects, both now covered by tests that fail against the shipped version:
+
+- **It pruned directories it does not manage.** `list_versions` reports only `v…`
+  directories; `cleanup_old_versions` selected *every* directory under `versions/`,
+  so anything else kept there was deleted once the archive passed MAX_VERSIONS.
+- **It deleted the backup `rollback` makes.** `rollback` copies the current state to
+  `v{version}_before_rollback` precisely so a wrong rollback can be undone, and
+  cleanup evicted that copy by age like an ordinary version.
+
+Pruning is now limited to what `list_versions` reports, and never touches a
+`_before_rollback` copy — the change deletes strictly less than before.
+
+Scope, stated plainly: no `prebuilt/master-*/versions/` directory exists in this
+repository and none ever has, in the working tree or in git history, so the defect
+was latent here. It is not latent for anyone who has generated a master — the
+archive is created by `skill_writer`, and `prompts/correction_handler.md` and
+`prompts/merger.md` both instruct the agent to archive before a correction or a
+merge.
+
 ### Fixed — `npm test` was running a weaker set than CI (2026-09-16)
 
 CONTRIBUTING tells a contributor to run `npm test` before touching `scripts/`, in
