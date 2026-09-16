@@ -10,6 +10,38 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — masters generated with `/create-master` could not be invoked (2026-09-16)
+
+The generator writes a new persona to `${CLAUDE_SKILL_DIR}/masters/master-{slug}/` and
+then told the model the persona was "自动可通过 `/master-{slug}` 触发", after "检查
+`.claude/settings.json` 的 `skillDirs` 配置". Claude Code has no `skillDirs` setting and
+loads skills only from `<skills dir>/<name>/SKILL.md`, one level deep. For an npx install
+that directory is `~/.claude/skills/create-master/masters/master-{slug}/` — two levels too
+deep.
+
+Measured with Claude Code 2.1.273 in an isolated config (sandboxed HOME and
+`CLAUDE_CONFIG_DIR`, `/skills`): a probe persona placed where the generator writes did
+not appear; a control at `~/.claude/skills/master-control/` did; a directory symlink
+`~/.claude/skills/master-probe` made the probe appear in the same session. Every persona
+a user generated was unreachable by the command the generator announced.
+
+`tools/master_builder.py --register <persona dir>` now links the persona into
+`~/.claude/skills/` (a junction on Windows, where symlinks need a privilege) and reports
+the command to use. It never replaces an existing skill of the same name — regenerating a
+prebuilt master must not overwrite the installed one — and says when Claude Code needs a
+restart because the skills directory did not exist before. `SKILL.md` Step 5 and
+`references/workflow-details.md` run it after the final check. End to end, an
+offline-built persona registered this way was listed by `/skills` in a real session.
+
+The workflow reference also told the model to build into a relative `masters/`, i.e.
+into whatever directory the user's session was in, while `SKILL.md` used
+`${CLAUDE_SKILL_DIR}/masters/`; both now use the latter.
+
+Under a plugin install, `${CLAUDE_SKILL_DIR}` is a per-version cache directory, and after
+`claude plugin update` the generator's `masters/` starts empty (measured 0.12.11 →
+0.12.12). The reference now says so and recommends the npx or clone install for keeping
+generated personas.
+
 ### Fixed — the Claude Code plugin registered one skill and announced twenty (2026-09-16)
 
 Installed as a plugin (`claude plugin marketplace add xr843/Master-skill`, then

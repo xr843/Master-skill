@@ -309,6 +309,76 @@ def build_from_spec(spec: dict, output_dir: str) -> dict:
     }
 
 
+_SKILL_NAME = re.compile(r"^name:[ \t]*(\S+)[ \t]*$", re.MULTILINE)
+
+
+def register_teacher(teacher_dir: str, skills_dir: str) -> dict:
+    """Make a generated persona invocable by linking it into a skills directory.
+
+    The generator writes to `${CLAUDE_SKILL_DIR}/masters/master-{slug}/`, so that
+    `master-skill update` can carry generated personas across runtime updates.
+    Claude Code does not look there: it loads `<skills dir>/<name>/SKILL.md` and
+    scans no deeper. Measured 2026-09-16 with Claude Code 2.1.273 in an isolated
+    config, `/skills` listed a probe skill at `~/.claude/skills/master-control/`
+    and not one at `~/.claude/skills/create-master/masters/master-probe/`; a
+    directory symlink `~/.claude/skills/master-probe` made it appear in the same
+    session, without a restart.
+
+    An existing entry of the same name is never replaced: a user regenerating a
+    prebuilt master (`master-huineng`) must not overwrite the installed one.
+    """
+    teacher = Path(teacher_dir).resolve()
+    skill_md = teacher / "SKILL.md"
+    if not skill_md.is_file():
+        raise ValueError(f"{teacher} has no SKILL.md")
+    text = skill_md.read_text(encoding="utf-8")
+    frontmatter = text.split("---", 2)[1] if text.startswith("---") else ""
+    match = _SKILL_NAME.search(frontmatter)
+    if not match or match.group(1) != teacher.name:
+        raise ValueError(
+            f"SKILL.md name must equal the directory name {teacher.name!r} — "
+            "Claude Code invokes the skill by that name"
+        )
+
+    skills = Path(skills_dir).expanduser()
+    created_skills_dir = not skills.is_dir()
+    skills.mkdir(parents=True, exist_ok=True)
+    link = skills / teacher.name
+
+    if link.exists() or link.is_symlink():
+        if link.exists() and link.resolve() == teacher:
+            return {
+                "registered": str(link),
+                "target": str(teacher),
+                "invoke": f"/{teacher.name}",
+                "already_registered": True,
+                "restart_required": False,
+            }
+        raise ValueError(
+            f"{link} already exists and is not this persona; not replacing it. "
+            f"Rename the generated persona, or remove {link} yourself."
+        )
+
+    try:
+        os.symlink(teacher, link, target_is_directory=True)
+    except OSError:
+        if os.name != "nt":
+            raise
+        import _winapi  # symlinks need a privilege on Windows; junctions do not
+
+        _winapi.CreateJunction(str(teacher), str(link))
+
+    return {
+        "registered": str(link),
+        "target": str(teacher),
+        "invoke": f"/{teacher.name}",
+        "already_registered": False,
+        # Claude Code watches skill directories that existed when the session
+        # started; a skills directory created now is seen after a restart.
+        "restart_required": created_skills_dir,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Build a create-master persona from an explicit generation spec"
@@ -320,15 +390,29 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="run a deterministic no-network generation smoke",
     )
-    parser.add_argument("--output", required=True, help="master output directory")
+    modes.add_argument(
+        "--register",
+        metavar="TEACHER_DIR",
+        help="link a generated persona into --skills-dir so it can be invoked",
+    )
+    parser.add_argument("--output", help="master output directory (with --spec / --offline-smoke)")
+    parser.add_argument(
+        "--skills-dir",
+        default=os.path.join("~", ".claude", "skills"),
+        help="skills directory to register into (with --register; default ~/.claude/skills)",
+    )
     args = parser.parse_args(argv)
+    if not args.register and not args.output:
+        parser.error("--output is required with --spec / --offline-smoke")
 
     try:
-        if args.offline_smoke:
-            spec = _offline_smoke_spec()
+        if args.register:
+            summary = register_teacher(args.register, args.skills_dir)
+        elif args.offline_smoke:
+            summary = build_from_spec(_offline_smoke_spec(), args.output)
         else:
             spec = json.loads(Path(args.spec).read_text(encoding="utf-8"))
-        summary = build_from_spec(spec, args.output)
+            summary = build_from_spec(spec, args.output)
     except (OSError, json.JSONDecodeError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
