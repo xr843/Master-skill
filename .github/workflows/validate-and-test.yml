@@ -96,6 +96,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Lint GitHub Actions workflows
+        # `printf … | sha256sum --check -` — the checking stage is last, so its
+        # failure already propagates; pipefail makes the earlier stage count too.
+        shell: bash
         env:
           ACTIONLINT_VERSION: '1.7.12'
           ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
@@ -391,6 +394,11 @@ jobs:
 
       - name: Pick smoke target
         id: pick
+        # Both fallible commands here are already checked with `if ! VAR=$(…)`, so this
+        # is hardening rather than a fix — but it keeps one rule for the whole repo:
+        # a step that pipes sets `shell: bash`, because the implicit default omits
+        # pipefail and hides a failure in every stage but the last.
+        shell: bash
         run: |
           # If the PR touches a specific prebuilt master, smoke-test that one.
           # The selector ignores meta-skills and incomplete directories, then

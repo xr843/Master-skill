@@ -87,6 +87,10 @@ jobs:
           echo "Authenticated as: $(clawhub whoami)"
 
       - name: Publish every skill in prebuilt/
+        # No shell pipeline here — the `|` this satisfies is inside the Python
+        # heredoc, writing a markdown table. Set anyway so the repo keeps one rule:
+        # a run body containing `|` selects the shell that has pipefail.
+        shell: bash
         env:
           DRY_RUN: ${{ inputs.dry_run }}
           OWNER: ${{ inputs.owner }}
