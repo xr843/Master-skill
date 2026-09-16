@@ -10,6 +10,33 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — the Claude Code plugin registered one skill and announced twenty (2026-09-16)
+
+Installed as a plugin (`claude plugin marketplace add xr843/Master-skill`, then
+`claude plugin install master-skill@master-skill`), the repository gave Claude Code
+exactly one skill. Measured in an isolated config dir with Claude Code 2.1.273, from
+GitHub as published: `claude plugin details master-skill` reported `Skills (1)
+create-master` and `Hooks (1) SessionStart`. That hook injects "Available Buddhist
+masters:" and nineteen `/master-*` and mode commands — the model was told about
+commands the plugin had never registered.
+
+`.claude-plugin/plugin.json` declared no `skills` path. Claude Code scans `skills/`,
+which this repository does not have, and falls back to a root `SKILL.md` only when no
+`skills` field exists. `.cursor-plugin/plugin.json` had always declared
+`"./prebuilt/"`; the Claude manifest never did. Declaring `"./prebuilt/"` alone was
+measured as well: 19 skills, with `create-master` gone, because the field switches the
+root fallback off. `["./", "./prebuilt/"]` registers all 20, the same set as
+`skill-catalog.json`.
+
+`scripts/tests/test_claude_plugin_manifest.py` encodes those discovery rules, pins them
+to the measurements (no field → `create-master` only; `./prebuilt/` alone → 19), and
+requires the manifest to expose every catalog skill and every command the hook
+announces. Against the old manifest it fails naming all nineteen.
+
+Plugins update by version: an existing install gets this with `claude plugin update`
+after the next release. At an unchanged version, update reports "already at the
+latest version". Cursor was not measured.
+
 ### Fixed — install instructions for three of the five platforms installed nothing (2026-09-16)
 
 The docs promised that Claude Code, Cursor, Codex CLI, OpenCode and Gemini CLI all run

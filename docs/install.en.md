@@ -73,6 +73,19 @@ npm update -g master-skill             # Pull next minor / patch
 
 **Claude Code**
 
+As a plugin (also installs the session-start hook):
+
+```bash
+claude plugin marketplace add xr843/Master-skill
+claude plugin install master-skill@master-skill
+```
+
+`claude plugin details master-skill` should show `Skills (20)`. Through v0.12.11 the plugin registered only
+`create-master` while its hook announced every `/master-*` command. Plugins update by version number, so an existing install picks up the fix
+with `claude plugin update master-skill` once the next version is released (at the same version, update reports "already at the latest version").
+
+From a clone, by linking:
+
 ```bash
 git clone https://github.com/xr843/Master-skill ~/Master-skill
 cd ~/Master-skill && pip install -r requirements.txt

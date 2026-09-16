@@ -9,6 +9,10 @@
   "homepage": "https://github.com/xr843/Master-skill",
   "repository": "https://github.com/xr843/Master-skill",
   "license": "MIT",
+  "skills": [
+    "./",
+    "./prebuilt/"
+  ],
   "keywords": [
     "buddhism",
     "chinese-buddhism",
