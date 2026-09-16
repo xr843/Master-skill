@@ -10,6 +10,38 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — sutta summaries were presented as the Buddha's words (2026-09-16)
+
+`master-ajahn-chah/sources/sutta-excerpts.md` ends by declaring that everything in it
+is 「经典主旨摘要，非巴利原文逐字翻译」, yet three blocks read `佛说："…"`.
+`master-mahasi-sayadaw/sources/teachings-excerpts.md` opens by forbidding quotation
+marks — 「不得加引号作为直接引语呈现」 — yet held a `> "…"` block. Both personas carry
+the `NO FABRICATED QUOTES` hard gate.
+
+One block was not even an accurate summary. SN 22.59 is what master-ajahn-chah reads
+when asked 「三法印是什么」, and against the Pāli it added a 「何以故」 the sutta does not
+contain, then fused two sections into a sentence the Buddha never says: 「无常、苦、变易」
+is from §6, a question and answer — the Buddha asks, the five monks reply — while the
+triple negation is §7's declarative conclusion, which does not mention impermanence.
+The questioning is the point of this discourse: the monks were freed *while it was being
+spoken*.
+
+All four blocks are now labelled 「经文要旨（非逐字译文）」 without direct-speech framing,
+matching what their own files say they are. SN 22.59's content is corrected — the
+dialogue restored, the stray question removed, the negations in the sutta's order — and
+SN 35.23 gets back the half of §1.9 that had been cut without an ellipsis. The two MN 10
+renderings were faithful and only lose the quotation marks.
+
+Two renderings of the same shape are left alone: master-mahasi-sayadaw's `teaching.md`
+(MN 10) and master-buddhaghosa's `teaching.md` (AN 3.88) were verified faithful, and
+neither file claims to hold only summaries.
+
+A new test requires any file declaring itself a summary in its **header or footer** to
+yield no quotations to the collector. Section-scoped notes are excluded on purpose:
+master-milarepa's `teaching.md` has one at line 124, while lines 25 and 43 of the same
+file are songs verified verbatim against 《木纳记》 — a file-wide reading would have
+flagged two genuine quotations.
+
 ### Fixed — the weekly issue's title said nothing was wrong (2026-09-16)
 
 The weekly source check opens its tracking issue for any of twelve reasons, and the

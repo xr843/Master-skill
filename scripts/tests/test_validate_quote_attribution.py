@@ -88,7 +88,10 @@ def test_an_empty_collector_fails_instead_of_passing(gate, monkeypatch, capsys):
 def test_the_real_repo_passes(gate):
     """每条被 3h/3i 判定的引文，读者都能查到它出自哪部书。"""
     quotes = gate.collect_persona_quotes()
-    assert len(quotes) >= 60, "采集器收的条数骤降，先查采集器"
+    # 62 → 58 on 2026-09-16 was deliberate: four sutta renderings in files that
+    # declare themselves gist summaries stopped being dressed as the Buddha's direct
+    # speech, so the collector rightly stopped treating them as quotations.
+    assert len(quotes) >= 55, "采集器收的条数骤降，先查采集器"
 
     def read(rel):
         return Path(gate.PREBUILT_DIR, rel).read_text(encoding="utf-8").splitlines()
