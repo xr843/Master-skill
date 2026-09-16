@@ -10,6 +10,27 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — the session-start hook altered five of fifteen lineages (2026-09-16)
+
+The hook sanitizes each master's `lineage:` before splicing it into the model's context,
+through a character whitelist. The whitelist had no Latin letters with diacritics and
+deleted `/`. Run over the shipped personas, five lineages reached the model changed:
+`南传上座部·斯里兰卡大寺派 (Mahāvihāra)` as `(Mahvihra)`; `三论宗/中观` as `三论宗中观`
+and `天台宗/净土宗` as `天台宗净土宗` — each read as one term that does not exist; and the
+separators in master-ajahn-chah's and master-milarepa's lineages.
+
+Diacritic letters are now allowed — letters only: Latin-1 without `×`/`÷`, Latin
+Extended-A, Latin Extended Additional — after NFC normalization, so a decomposed `ā`
+keeps its macron. `/` becomes the fullwidth `／` rather than being allowed as ASCII, since
+the hook's lines are slash commands and a lineage should not be able to look like one.
+Bidi overrides, zero-width characters and every other non-whitelisted character are still
+removed; a new case asserts that.
+
+A new case in `hooks/tests/test_session_start.sh` runs every shipped lineage through the
+sanitizer and requires it to come out unchanged (apart from `／`), so a lineage needing a
+character outside the whitelist fails CI instead of being silently rewritten. Against the
+previous sanitizer, four of the new cases fail.
+
 ### Fixed — masters generated with `/create-master` could not be invoked (2026-09-16)
 
 The generator writes a new persona to `${CLAUDE_SKILL_DIR}/masters/master-{slug}/` and

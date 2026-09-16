@@ -25,13 +25,24 @@ import json
 import os
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
-# Whitelist: CJK Unified, ASCII alphanumerics, fullwidth parens, space, · _ ( ) -
-# Everything else — backticks, dollars, quotes, slashes, control characters —
-# is dropped. An attacker who lands a malicious SKILL.md (or a contributor with
-# a typo) must not be able to reach the system prompt through it.
-_ALLOWED = re.compile(r"[^一-鿿0-9A-Za-z _\-·（）()]", re.UNICODE)
+# Whitelist: CJK Unified, ASCII alphanumerics, Latin letters with diacritics,
+# fullwidth parens and solidus, space, · _ ( ) -
+# Everything else — backticks, dollars, quotes, ASCII slashes, control, format
+# and bidi characters — is dropped. An attacker who lands a malicious SKILL.md
+# (or a contributor with a typo) must not be able to reach the system prompt
+# through it.
+#
+# The Latin ranges are letters only: À-Ö Ø-ö ø-ÿ (Latin-1 without × and ÷),
+# Latin Extended-A, and Latin Extended Additional. Until 2026-09-16 they were
+# absent, and five of fifteen shipped lineages reached the model altered:
+# "(Mahāvihāra)" as "(Mahvihra)", and "三论宗/中观" as the single made-up term
+# "三论宗中观" because the slash was deleted rather than kept. An ASCII slash is
+# still never emitted — it could read as a slash command — so it becomes the
+# fullwidth "／", which keeps the "A or B" meaning.
+_ALLOWED = re.compile(r"[^一-鿿0-9A-Za-zÀ-ÖØ-öø-ſḀ-ỿ _\-·（）()／]", re.UNICODE)
 _CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f]")
 _WHITESPACE = re.compile(r"\s+")
 
@@ -61,8 +72,10 @@ _LINEAGE_LINE = re.compile(r"^lineage:[ \t]*(.*)$", re.MULTILINE)
 
 def sanitize_lineage(raw: str) -> str:
     """Normalize one raw `lineage:` frontmatter value for prompt splicing."""
-    text = _CONTROL.sub("", raw or "")
-    text = _ALLOWED.sub("", text)
+    # NFC first: a decomposed "ā" (a + U+0304) would otherwise lose its
+    # combining macron and silently become "a".
+    text = _CONTROL.sub("", unicodedata.normalize("NFC", raw or ""))
+    text = _ALLOWED.sub("", text.replace("/", "／"))
     text = _WHITESPACE.sub(" ", text).strip()
     return text[:MAX_LINEAGE_CHARS]
 
