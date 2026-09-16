@@ -27,6 +27,21 @@
 `validate-curriculum-sources.py` 曾"没接进任何 workflow、任何 npm 脚本、任何子检查，
 只有自己的单元测试"。两次都不是代码写错，是**没接线**，而绿灯看起来一模一样。
 
+**反过来也一样：CI 在 PR 上跑什么，`npm test` 就得跑什么。** 它是本文档叫你推送前跑的
+那条命令，存在的意义就是「避免在 CI 才发现」；一旦它比 CI 弱，本地绿、CI 红。要么写进
+`npm test`，要么登记进 `NOT_IN_NPM_TEST` 并写明理由（目前四条：三个评测工具链辅助脚本
+需要 `requirements-eval.txt`，以及 `check-audit-ignores.py` 要拿 cargo-audit 的 JSON 当
+参数、没有 Rust 工具链时裸跑只会以 usage 退出 2）。同样双向校验。
+
+注意它比的是**命令**而非可达性：`npm test` 跑的是命令，所以 `verify_citations.py` 这类
+"被每个 PR 跑的脚本 import、但从不作为命令出现"的模块不该被拉进来。
+
+还有一条连带规矩：**往 `npm test` 里加门禁，就得同时在
+`scripts/tests/test_gates_actually_fire.py` 里给它写一个破坏性用例**，证明它真会红；
+`test_every_gate_in_npm_test_has_a_case_here` 会卡住漏写的。变异要瞄准该门禁自己声明的
+契约——写之前先在真实树上跑一遍，确认它把退出码从 0 变成非零，否则你添的是一个"因错误
+原因而通过"的测试。
+
 ### ② 文档 / README / 脚本注释 / 翻译
 
 `README.md`, `README_EN.md`, `docs/**`, `CHANGELOG.md`, 其它非 `prebuilt/**` 的 markdown

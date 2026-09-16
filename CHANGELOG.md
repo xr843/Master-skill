@@ -10,6 +10,38 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — `npm test` was running a weaker set than CI (2026-09-16)
+
+CONTRIBUTING tells a contributor to run `npm test` before touching `scripts/`, in
+its own words 「避免在 CI 才发现」. It was missing five of the checks the per-PR job
+runs: `validate-citation-contract`, `validate-cross-critique`,
+`validate-lore-triggers-content`, `validate-quote-attribution` and
+`validate-promptfoo-configs`. Local green, CI red — for a command whose whole
+purpose is to prevent exactly that.
+
+That is the third time this drift has been recorded: `pytest` was missing from
+`npm test` until 2026-09-03, and the previous entry here is two gates that ran only
+at release. All five now run in `npm test`; together they cost under a second.
+
+`check-gate-liveness.py` gains `check_npm_test_covers_pr_gates`: whatever a
+`pull_request` workflow names, `npm test` must name too, or it goes in
+`NOT_IN_NPM_TEST` with a reason. Four are — three eval-harness helpers that need
+`requirements-eval.txt`, and `check-audit-ignores.py`, which takes the cargo-audit
+JSON as an argument and exits 2 on usage without a Rust toolchain to produce it.
+Checked in both directions, like the tables beside it.
+
+It compares **commands**, not reachability: `npm test` runs commands, so
+`verify_citations.py` — imported by scripts a PR runs but never invoked as one —
+must not be dragged in. A test pins that distinction.
+
+Writing this surfaced two things the repo's own checks caught before I did. The new
+check immediately reported two more scripts than my own survey had found, because I
+had looked only at `validate-and-test.yml` while `security-scan.yml` and
+`persona-fidelity.yml` also trigger on `pull_request`. And adding five gates to
+`npm test` failed `test_every_gate_in_npm_test_has_a_case_here`, which requires each
+one to have a break-test proving it can go red — so each now does, every mutation
+confirmed against the real tree first.
+
 ### Fixed — two gates ran nowhere on a pull request (2026-09-16)
 
 `validate-citation-templates.py` and `validate-self-audit-sources.py` appeared in
