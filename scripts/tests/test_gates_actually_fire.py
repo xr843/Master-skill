@@ -191,6 +191,57 @@ CASES = [
             for path in (r / "eval/reports").glob("adjudication-*.json")
         ],
     ),
+    # The five below joined `npm test` on 2026-09-16, when it was found to be running
+    # a weaker set than CI: a contributor could go green locally and still be failed
+    # by the PR job. Each mutation was run against the real tree first and confirmed
+    # to take its gate from 0 to non-zero.
+    (
+        "validate-citation-contract.py", (),
+        "a persona must declare a non-empty sources list",
+        lambda r: _edit_json(
+            r / "prebuilt/master-huineng/meta.json",
+            lambda d: d.__setitem__("sources", []),
+        ),
+    ),
+    (
+        "validate-cross-critique.py", (),
+        "every cross_critique entry must carry target_master, position and citation",
+        lambda r: _edit_json(
+            r / "prebuilt/master-ajahn-chah/meta.json",
+            lambda d: d["cross_critique"][0].pop("citation"),
+        ),
+    ),
+    (
+        "validate-lore-triggers-content.py", ("--strict",),
+        "a lore_trigger quote must be locatable in that master's own excerpts",
+        lambda r: _edit_json(
+            r / "prebuilt/master-huineng/meta.json",
+            lambda d: d["lore_triggers"][0].__setitem__(
+                "content", "这句话任何典籍里都没有，专为证明门禁会红而写。"
+            ),
+        ),
+    ),
+    (
+        "validate-promptfoo-configs.py", (),
+        "a promptfoo config must be a mapping, not a list",
+        lambda r: (r / "tests/persona/huineng.promptfooconfig.yaml").write_text(
+            "- not a mapping\n", encoding="utf-8"
+        ),
+    ),
+    (
+        "validate-quote-attribution.py", (),
+        "a quoted line must name the work it came from",
+        # Aimed away from the numbered voice.md samples on purpose: those are a list,
+        # and the gate accepts a source named on a sibling item, so stripping one of
+        # three would prove nothing. teaching.md's 神秀/慧能 verse pair stands alone —
+        # no 出处 line under it, and the heading above names no work.
+        lambda r: (r / "prebuilt/master-huineng/references/teaching.md").write_text(
+            (r / "prebuilt/master-huineng/references/teaching.md")
+            .read_text(encoding="utf-8")
+            .replace("（两偈并见《六祖大师法宝坛经·行由品》）", ""),
+            encoding="utf-8",
+        ),
+    ),
 ]
 
 

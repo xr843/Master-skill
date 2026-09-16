@@ -205,6 +205,39 @@ NOT_A_PR_GATE = {
 }
 
 
+# `npm test` is what CONTRIBUTING tells a contributor to run before touching
+# scripts/, in its own words 「避免在 CI 才发现」. A command that exists to pre-empt CI
+# has to cover what CI checks. It has fallen behind twice: pytest was missing from it
+# until 2026-09-03, and on 2026-09-16 four content gates the PR job runs —
+# validate-citation-contract, validate-cross-critique, validate-lore-triggers-content
+# and validate-quote-attribution — were absent, so a contributor could go green
+# locally and still be failed by CI.
+#
+# Anything the per-PR job runs must therefore appear in `npm test` too, or be
+# declared here. `check_npm_test_covers_pr_gates` keeps this true in both directions.
+NOT_IN_NPM_TEST = {
+    "check-eval-sdk-surface.py": (
+        "asserts the pinned eval SDKs still expose what test-fidelity.py calls — it "
+        "needs requirements-eval.txt installed, which a content contributor has no "
+        "reason to have"
+    ),
+    "smoke-eval-sdk.py": (
+        "stands up a local server for a keyless end-to-end SDK smoke; same eval-only "
+        "dependency, and far slower than the content gates around it"
+    ),
+    "select-fidelity-smoke.py": (
+        "picks which persona the CI smoke grades from job metadata — a CI scheduling "
+        "helper, not a check over repository content"
+    ),
+    "check-audit-ignores.py": (
+        "takes the cargo-audit JSON as an argument — security-scan.yml runs "
+        "`cargo audit --file desktop/Cargo.lock --json > audit.json` first. Without a "
+        "Rust toolchain and the advisory database there is nothing for it to read; "
+        "run bare it exits 2 on argparse usage"
+    ),
+}
+
+
 # The shape of a silent skip: a step that exits 0 because a secret is missing.
 _SKIP_ON_MISSING_SECRET = re.compile(r'\[\s+-z\s+"\$\{[A-Z_]+:-\}"\s+\]')
 
@@ -390,6 +423,59 @@ def check_every_gate_runs_on_a_pr(root: Path, workflow_docs: dict[str, dict]) ->
     return problems
 
 
+def npm_test_scripts(root: Path) -> set[str]:
+    """The scripts the documented pre-push command actually runs."""
+    package = root / "package.json"
+    if not package.exists():
+        return set()
+    data = json.loads(package.read_text(encoding="utf-8"))
+    command = str((data.get("scripts") or {}).get("test") or "")
+    return set(re.findall(r"scripts/([a-z0-9_-]+\.py)", command))
+
+
+def pr_workflow_scripts(root: Path, workflow_docs: dict[str, dict]) -> set[str]:
+    """Scripts named outright by a workflow that triggers on `pull_request`.
+
+    Direct mentions only, unlike `pr_reachable_scripts`: `npm test` runs commands, so
+    what it has to match is the commands CI runs, not everything those import.
+    """
+    named: set[str] = set()
+    for path, doc in workflow_docs.items():
+        triggers = doc.get("on", doc.get(True))
+        keys = set(triggers) if isinstance(triggers, (dict, list)) else set()
+        if "pull_request" not in keys:
+            continue
+        named |= set(re.findall(r"scripts/([a-z0-9_-]+\.py)", (root / path).read_text(encoding="utf-8")))
+    return named
+
+
+def check_npm_test_covers_pr_gates(root: Path, workflow_docs: dict[str, dict]) -> list[str]:
+    """What CI runs on a PR, `npm test` must run too — or say why it does not."""
+    if not (root / "package.json").exists():
+        return []
+    in_ci = pr_workflow_scripts(root, workflow_docs)
+    in_npm = npm_test_scripts(root)
+
+    problems = [
+        f"scripts/{name} runs on every PR in CI but is not in `npm test` and not in "
+        "NOT_IN_NPM_TEST — the command that exists to pre-empt CI does not cover it"
+        for name in sorted(in_ci - in_npm)
+        if name not in NOT_IN_NPM_TEST
+    ]
+    problems += [
+        f"NOT_IN_NPM_TEST declares {name!r}, but `npm test` runs it now — drop the "
+        "entry rather than leave a false caveat standing"
+        for name in sorted(NOT_IN_NPM_TEST)
+        if name in in_npm
+    ]
+    problems += [
+        f"NOT_IN_NPM_TEST declares {name!r}, but no PR workflow runs it — stale entry"
+        for name in sorted(NOT_IN_NPM_TEST)
+        if name not in in_ci
+    ]
+    return problems
+
+
 def discover_test_files(root: Path) -> list[str]:
     return sorted(
         str(p.relative_to(root))
@@ -496,6 +582,7 @@ def run_all(root: Path, fidelity_report: Path | None = None) -> list[str]:
     problems += check_advisory_gates_declared(workflows)
     problems += check_declared_gates_still_exist(workflows)
     problems += check_every_gate_runs_on_a_pr(root, workflows)
+    problems += check_npm_test_covers_pr_gates(root, workflows)
 
     # check_graded_suites_graded_something shipped fully written and unit-tested
     # but unreferenced by run_all — the anti-fake-green script had a check that

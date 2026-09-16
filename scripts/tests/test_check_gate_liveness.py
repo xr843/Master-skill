@@ -513,3 +513,49 @@ def test_naming_a_script_in_the_declaration_table_is_not_calling_it(liveness):
     reachable = liveness.pr_reachable_scripts(ROOT, liveness.read_workflows(ROOT))
     for declared in liveness.NOT_A_PR_GATE:
         assert declared not in reachable, f"{declared} 被自己的申报表拖成了可达"
+
+
+# --------------------------------------------------------------------------
+# `npm test` must cover what CI runs on a PR.
+#
+# CONTRIBUTING tells contributors to run it before touching scripts/, 「避免在 CI
+# 才发现」. It has fallen behind twice: pytest was missing until 2026-09-03, and on
+# 2026-09-16 four content gates the PR job runs were absent, so a contributor could
+# be green locally and still be failed by CI.
+# --------------------------------------------------------------------------
+
+
+def test_npm_test_covers_every_pr_gate(liveness):
+    problems = liveness.check_npm_test_covers_pr_gates(ROOT, liveness.read_workflows(ROOT))
+    assert problems == [], "; ".join(problems)
+
+
+def test_a_pr_gate_absent_from_npm_test_is_reported(liveness, monkeypatch):
+    """把一道门禁从 npm test 里拿掉，就必须报出来 —— 否则本地绿、CI 红。"""
+    monkeypatch.setattr(liveness, "npm_test_scripts", lambda root: set())
+    problems = liveness.check_npm_test_covers_pr_gates(ROOT, liveness.read_workflows(ROOT))
+    assert any("is not in `npm test`" in p for p in problems)
+
+
+def test_a_declaration_for_a_script_npm_test_does_run_is_stale(liveness, monkeypatch):
+    """借口留着、脚本其实已经在 npm test 里跑了 —— 假警告比没有警告更糟。"""
+    monkeypatch.setitem(liveness.NOT_IN_NPM_TEST, "validate-routing.py", "过期借口")
+    problems = liveness.check_npm_test_covers_pr_gates(ROOT, liveness.read_workflows(ROOT))
+    assert any("`npm test` runs it now" in p for p in problems)
+
+
+def test_a_declaration_for_a_script_no_pr_workflow_runs_is_stale(liveness, monkeypatch):
+    monkeypatch.setitem(liveness.NOT_IN_NPM_TEST, "no-such-gate.py", "编造的条目")
+    problems = liveness.check_npm_test_covers_pr_gates(ROOT, liveness.read_workflows(ROOT))
+    assert any("no PR workflow runs it" in p for p in problems)
+
+
+def test_npm_test_coverage_counts_commands_not_imports(liveness):
+    """npm test 跑的是命令，所以比的是 CI 直接写出的脚本，不是它们 import 到的东西。
+
+    verify_citations.py 被每个 PR 跑的脚本 import，却从不作为命令出现 —— 若按
+    可达性去比，它会被要求写进 npm test，那是错的。
+    """
+    named = liveness.pr_workflow_scripts(ROOT, liveness.read_workflows(ROOT))
+    assert "verify_citations.py" not in named
+    assert "validate-quote-attribution.py" in named
