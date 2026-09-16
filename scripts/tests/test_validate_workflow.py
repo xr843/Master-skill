@@ -572,3 +572,35 @@ def test_the_weekly_check_fails_when_the_script_does_not_finish():
     assert re.search(r"if ! grep -q '\^Summary\$' verify_output\.txt; then[\s\S]*?exit 1", run), (
         "a missing Summary block must fail the step, not fall through to counters that read 0"
     )
+
+
+def test_the_weekly_issue_title_names_whatever_opened_it():
+    """An alert whose headline says nothing is wrong is not an alert.
+
+    The title named only `updates` and `failed`, so an issue opened because 19
+    excerpt quotations were not in the cited fascicle read "0 URLs, 0 missing" —
+    ten of the twelve conditions that can open it were invisible in the issue list,
+    which is the only place a maintainer looks first.
+    """
+    import re
+
+    text = VERIFY_LINKS_PATH.read_text(encoding="utf-8")
+    condition = re.search(r"if: (steps\.verify[^\n]+)", text).group(1)
+    triggers = set(re.findall(r"steps\.verify\.outputs\.([a-z_]+)", condition))
+
+    counts_block = text.split("const counts = [")[1].split("const title")[0]
+    in_title = set(re.findall(r"steps\.verify\.outputs\.([a-z_]+)", counts_block))
+    # `updates` and `failed` reach the array through the consts declared above it.
+    in_title |= {
+        name for name in ("updates", "failed")
+        if re.search(rf"\['[^']+', {name}\]", counts_block)
+    }
+
+    assert triggers - in_title == set(), (
+        "these can open the weekly issue but never appear in its title: "
+        + ", ".join(sorted(triggers - in_title))
+    )
+    assert in_title - triggers == set(), (
+        "these are named in the title but cannot open the issue: "
+        + ", ".join(sorted(in_title - triggers))
+    )

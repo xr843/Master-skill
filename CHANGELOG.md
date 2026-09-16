@@ -10,6 +10,27 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — the weekly issue's title said nothing was wrong (2026-09-16)
+
+The weekly source check opens its tracking issue for any of twelve reasons, and the
+title named two: `[Weekly] FoJin links need update — ${updates} URLs, ${failed}
+missing`. An issue opened because 19 excerpt quotations were not in the cited
+fascicle therefore arrived in the issue list reading **0 URLs, 0 missing**. The body
+listed every counter correctly, but the list is where a maintainer looks first, and
+there the alert's own headline said nothing was wrong.
+
+The title is now built from whichever counters are non-zero — capped at three with
+`and N more` after that, so a bad week cannot produce a title GitHub truncates.
+`test_the_weekly_issue_title_names_whatever_opened_it` asserts the counters that can
+open the issue and those named in the title are the same set in both directions, so
+a counter wired into the condition and forgotten in the title fails the build. That
+is how this one arose: every counter added over the last two days went into the
+condition and the body, and none into the title.
+
+Dedup is unaffected. It matches on the marker in the issue body, which every issue
+this workflow creates carries; the legacy title-prefix clause exists for issues
+predating the marker, and their titles do not change.
+
 ## [0.12.11] — 2026-09-16
 
 Two of master-yinguang's 「原典」 blocks were not source text. They read as
