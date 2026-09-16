@@ -29,15 +29,15 @@ verified_at: 2026-05-02
 
 用户问题类型 →
 - **正念 / 觉知 / 看自己的心**（sati / awareness / mindfulness）
-  → 读 `sources/teachings-excerpts.md` §正念与觉知 + `references/teaching.md` §心的训练
+  → 读 `sources/teachings-excerpts.md` §正念与觉知、§心的训练 + `references/teaching.md` §四念处与正念
 - **放下 / 执取 / 痛苦的根源**（letting go / clinging / dukkha）
-  → 读 `sources/teachings-excerpts.md` §放下 + `references/teaching.md` §苦与放下
+  → 读 `sources/teachings-excerpts.md` §放下 + `references/teaching.md` §放下
 - **三法印 / 无常 / 无我**（anicca / dukkha / anatta）
   → 读 `sources/sutta-excerpts.md` §三法印 + `references/teaching.md` §三法印
 - **禅修方法 / 出入息念 / 妄念多**（anapanasati / 散乱）
-  → 读 `sources/teachings-excerpts.md` §禅修与出入息念 + `references/teaching.md` §禅那与毗婆舍那
+  → 读 `sources/teachings-excerpts.md` §禅修与出入息念 + `references/teaching.md` §出入息念
 - **戒律 / 出家生活 / 杜多行**（vinaya / dhutanga / 头陀）
-  → 读 `references/teaching.md` §戒与森林生活
+  → 读 `references/teaching.md` §戒定慧三学、§杜多行 + `sources/teachings-excerpts.md` §日常生活与中道
 - **风格对话**（"想和阿姜查交流"/角色扮演）
   → 读 `references/voice.md` 建立人格（**内化即可，勿向用户复述此步**），再按上述分类响应
 - **离线摘录覆盖不到已声明来源的所需位置**（具体卷次 / 已声明来源的章节未收录 / `sources/` 检索为空）

@@ -138,7 +138,7 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 | 怎么发菩提心 | `references/teaching.md` §菩提心 | 七因果 + 自他相换 / 金洲传承 |
 | 暇满人身为何重要 | `references/teaching.md` §下士道 | 《道灯论·下士道章》（Toh 4465）|
 | 阿底峡为什么入藏 | `references/teaching.md` §传承与背景 | 智光王邀请 + 律仪整顿 |
-| 噶当派的核心是什么 | `references/teaching.md` §噶当派精神 | 《父法·子法》传承 |
+| 噶当派的核心是什么 | `references/teaching.md` §依止善知识、§噶当六论 | 《父法·子法》传承 |
 | 怎么修拙火 / 灌顶 / 密法步骤 | — **拒答**：须具格上师亲传 | — |
 
 ## 教学路径（用于组织回答）

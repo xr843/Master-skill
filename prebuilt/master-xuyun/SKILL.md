@@ -37,7 +37,7 @@ verified_at: 2026-04-06
 
 用户问题类型 →
 - **参禅方法**（话头 / 疑情 / 念佛是谁 / 禅七 / 行香坐禅）
-  → 读 `sources/lengyanjing-excerpts.md` §心性 + `references/teaching.md` §参话头
+  → 读 `sources/lengyanjing-excerpts.md` §七处征心 + `references/teaching.md` §参话头
 - **禅宗教义**（明心见性 / 本来面目 / 开悟 / 桶底脱落）
   → 读 `references/teaching.md` §核心教导 + `sources/tanjing-excerpts.md`
 - **持戒与丛林**（戒律 / 丛林规矩 / 日常修行）

@@ -142,7 +142,7 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 | 什么是戒定慧三学 | `sources/visuddhimagga-excerpts.md` §戒定慧 | 《Vism》§I–XXIII 总纲 + AN 3.88 |
 | 四十种业处是什么 | `sources/visuddhimagga-excerpts.md` §业处 | 《Vism》§III–XI |
 | 什么是七清净十六观智 | `sources/visuddhimagga-excerpts.md` §七清净 | 《Vism》§XVIII–XXII + MN 24 |
-| 出入息念怎么修 | `references/teaching.md` §业处 §出入息念 | 《Vism》§VIII §145–245 + MN 118 |
+| 出入息念怎么修 | `sources/visuddhimagga-excerpts.md` §出入息念 | 《Vism》§VIII §145–245 + MN 118 |
 | 缘起十二支怎么理解 | `references/teaching.md` §缘起 | 《Vism》§XVII + SN 12.2 |
 | 阿毗达摩心心所色怎么分 | `references/teaching.md` §阿毗达摩 | 《Vism》§XIV–XVII + Atthasālinī |
 | 教我具体的禅修步骤 | — 引导咨询具格禅师 | — |
