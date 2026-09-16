@@ -10,6 +10,35 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — two gates ran nowhere on a pull request (2026-09-16)
+
+`validate-citation-templates.py` and `validate-self-audit-sources.py` appeared in
+exactly one place: the `test` string in `package.json`. `npm test` is run by one
+workflow, `npm-publish.yml`, which triggers on `release: published`. Both gates were
+written, unit-tested, and asserted by `test_gates_actually_fire.py` to fail on the
+defect each exists to catch — and neither had ever guarded a change, because their
+first real execution would be the release itself. Both pass today, so nothing
+surfaced it; the defect was latent, which is the whole difficulty.
+
+This repo had already shipped the same shape once: `validate-curriculum-sources.py`
+was "wired into no workflow, no npm script and no sub-check — only its own unit
+tests", in the words of the sub-check that now runs it from `validate.py`.
+
+Both gates now run in the per-PR `validate` job. They cost 0.0s and 0.1s.
+
+`check-gate-liveness.py` gains `check_every_gate_runs_on_a_pr`: every script under
+`scripts/` with a `main` must be reachable from a workflow that triggers on
+`pull_request`, or be listed in `NOT_A_PR_GATE` with the reason it is not — five
+are, and each says why (two reader-facing offline tools, a PE inspector that needs
+a built binary, and two report tools that need an eval report a PR does not
+produce). The declaration is checked in both directions: a stale entry for a script
+that no longer exists, or for one a PR does run now, is itself a failure.
+
+Reachability follows indirect calls, because two spellings are in use —
+`validate.py` loads five siblings through `spec_from_file_location`, and
+`verify_citations.py` is imported by name. Counting only workflow text would have
+reported both as unreachable and invented a defect where there is none.
+
 ### Fixed — two 「原典」 blocks no check could see were paraphrase, not source text (2026-09-16)
 
 Step 3f collects an 「原典」 block only when its 引用格式 carries a CBETA id. 《文钞》

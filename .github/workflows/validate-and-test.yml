@@ -165,6 +165,17 @@ jobs:
       - name: Validate quote attribution (every quoted line names its work)
         run: python scripts/validate-quote-attribution.py
 
+      # Both of these existed, were unit-tested, and ran nowhere on a PR: they
+      # appeared only inside `npm test`, which only npm-publish.yml runs, and that
+      # fires on `release: published`. A gate whose first real execution is the
+      # release itself has never guarded a change. Measured 2026-09-16; they cost
+      # 0.0s and 0.1s.
+      - name: Validate citation templates
+        run: python scripts/validate-citation-templates.py
+
+      - name: Validate self-audit sources
+        run: python scripts/validate-self-audit-sources.py
+
       # A requirement may only be declared undecidable (`must_convey`) if a
       # committed adjudication ruled it an instrument artifact on real evidence.
       # Otherwise moving an inconvenient check there turns a red build green.

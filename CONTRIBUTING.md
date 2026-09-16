@@ -14,6 +14,19 @@
 
 流程：**普通 GitHub PR**。满足 Python 3.9+、现有测试通过、`python scripts/validate.py --strict` 绿色即可。
 
+**新加一道门禁，必须让它在 PR 上真的跑起来。** `scripts/` 下每个带 `main` 的脚本，
+要么能从某个 `on: pull_request` 的 workflow 到达（直接写进 `run:`，或被已可达的脚本
+`import` / `spec_from_file_location` 加载），要么登记进 `check-gate-liveness.py` 的
+`NOT_A_PR_GATE` 并写明为什么不跑。登记是**双向**校验的：脚本已删、或它其实已经在 PR 上
+跑了，那条申报同样报错——一个过期的借口比没有申报更糟，它是个假的警告。
+
+这条规矩是有来历的：2026-09-16 查出 `validate-citation-templates.py` 与
+`validate-self-audit-sources.py` 只出现在 `package.json` 的 `test` 串里，而 `npm test`
+只由 `npm-publish.yml` 在**发版时**运行——两道门禁写好了、有单测、也被
+`test_gates_actually_fire.py` 证明过会红，却从未守过任何一次改动。更早还有一次同样的：
+`validate-curriculum-sources.py` 曾"没接进任何 workflow、任何 npm 脚本、任何子检查，
+只有自己的单元测试"。两次都不是代码写错，是**没接线**，而绿灯看起来一模一样。
+
 ### ② 文档 / README / 脚本注释 / 翻译
 
 `README.md`, `README_EN.md`, `docs/**`, `CHANGELOG.md`, 其它非 `prebuilt/**` 的 markdown
