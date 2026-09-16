@@ -67,7 +67,14 @@ def rollback(teacher_dir: str, target_version: str) -> bool:
 
 
 def cleanup_old_versions(teacher_dir: str) -> int:
-    """Remove old versions beyond MAX_VERSIONS limit."""
+    """Remove archived versions beyond MAX_VERSIONS, oldest first.
+
+    Prunes only what `list_versions` reports — directories named `v…` — and never a
+    `_before_rollback` copy. The first version selected *every* directory under
+    `versions/`, so anything else a maintainer kept there was deleted once the
+    archive passed the limit, and the backup `rollback` writes so that a bad
+    rollback can be undone was evicted by age like an ordinary version.
+    """
     versions_dir = os.path.join(teacher_dir, "versions")
     if not os.path.exists(versions_dir):
         return 0
@@ -75,8 +82,11 @@ def cleanup_old_versions(teacher_dir: str) -> int:
     entries = []
     for entry in os.listdir(versions_dir):
         entry_path = os.path.join(versions_dir, entry)
-        if os.path.isdir(entry_path):
-            entries.append((entry_path, os.path.getmtime(entry_path)))
+        if not os.path.isdir(entry_path):
+            continue
+        if not entry.startswith("v") or entry.endswith("_before_rollback"):
+            continue
+        entries.append((entry_path, os.path.getmtime(entry_path)))
 
     entries.sort(key=lambda x: x[1], reverse=True)
 
