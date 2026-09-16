@@ -673,6 +673,80 @@ def collect_excerpt_quotes() -> list[tuple[str, str, str, int | None]]:
     return quotes
 
 
+def collect_compiled_excerpt_blocks() -> list[tuple[str, str, str]]:
+    """(位置, 引文, 所引篇名)：「原典」块中引用格式指向 CBETA 之外编集语录的那些。
+
+    `collect_excerpt_quotes` 只收引用格式带 CBETA 经号的块，而《文钞》没有经号，
+    于是 master-yinguang 的五个「原典」块对 3f 不可见；它们的 `>` 行又是裸行文、
+    不带引号，`collect_persona_quotes` 同样收不到。2026-09-16 核出其中两块是用
+    真语拼接的改写，却一直以「原典」示人 —— 没有任何一步检查看得见它们。
+    """
+    base = Path(PREBUILT_DIR)
+    blocks: list[tuple[str, str, str]] = []
+    for path in sorted(base.glob("*/sources/*-excerpts.md")):
+        where = path.relative_to(base).as_posix()
+        label_line, lines = 0, []
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if line.startswith("原典"):
+                label_line, lines = number, []
+            elif not label_line:
+                continue
+            elif line.startswith(">"):
+                lines.append(line[1:].strip())
+            elif line.startswith("#"):
+                label_line, lines = 0, []
+            elif "引用格式" in line:
+                citation = _DOC_CITATION.search(line)
+                text = citation.group(1) if citation else ""
+                if text and not _DOC_CBETA_ID.search(text) and any(lines):
+                    blocks.append((f"{where}:{label_line}", "\n".join(lines), text))
+                label_line, lines = 0, []
+    return blocks
+
+
+def classify_compiled_excerpt_blocks(
+    blocks: list[tuple[str, str, str]],
+    corpora: dict[str, dict],
+    fetch,
+) -> tuple[list[tuple[str, str, str]], list[tuple[str, str]], list[tuple[str, str]]]:
+    """「原典」块是不是所引编集语录的原文；省略号分段，每段都要在原书里找得到。
+
+    与 3i 判引文行同理：原书取不到一律记未判定，接口不通不是证据。语料不全
+    （coverage=partial）也只能确认、不能定罪 —— 判「原书没有」需要读得到全部。
+    """
+    mismatched: list[tuple[str, str, str]] = []
+    verified: list[tuple[str, str]] = []
+    unknown: list[tuple[str, str]] = []
+    bodies: dict[str, str | None] = {}
+    for where, quote, citation in blocks:
+        master = where.split("/", 1)[0]
+        corpus = corpora.get(master)
+        if not corpus:
+            unknown.append((where, f"{master} declares no fetchable corpus"))
+            continue
+        texts = corpus.get("texts") or []
+        for text in texts:
+            url = str(text.get("url"))
+            if url not in bodies:
+                bodies[url] = fetch(url, text.get("encoding") or "utf-8")
+        readable = [bodies.get(str(t.get("url"))) for t in texts]
+        if not any(body for body in readable):
+            unknown.append((where, "could not read the declared full texts"))
+            continue
+        segments = [s for s in re.split(r"…+", quote) if len(_han_only(s)) >= EXCERPT_MIN_CLAUSE * 2]
+        if not segments:
+            unknown.append((where, "no segment long enough to search"))
+            continue
+        absent = [s for s in segments if not any(b and _han_only(s) in b for b in readable)]
+        if not absent:
+            verified.append((where, citation))
+        elif corpus.get("coverage") == "complete":
+            mismatched.append((where, absent[0].strip(), citation))
+        else:
+            unknown.append((where, f"{master}'s free full texts do not cover every declared compilation"))
+    return mismatched, verified, unknown
+
+
 def cbeta_juan_plain_text(html: str) -> str:
     """`/stable/juans` 返回的 HTML → 正文。
 
@@ -1586,6 +1660,21 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     if not compiled_corpora:
         print("  No compiled-teaching corpora are declared")
 
+    # 同一步里的第二类：「原典」块本身。3f 只认带 CBETA 经号的引用格式，《文钞》
+    # 没有经号，这些块此前对每一步检查都不可见（见 collect_compiled_excerpt_blocks）。
+    compiled_blocks = collect_compiled_excerpt_blocks()
+    block_mismatched, block_verified, block_unknown = classify_compiled_excerpt_blocks(
+        compiled_blocks, compiled_corpora, fetch_compiled_text
+    )
+    for where, segment, citation in block_mismatched:
+        print(f"    [WRONG] {where}: {citation} has no 「{segment[:40]}」")
+    if block_verified:
+        print(f"  Verified {len(block_verified)} 「原典」 block(s) word for word in the compiled teachings")
+    if block_unknown:
+        print(f"  Could not check {len(block_unknown)} 「原典」 block(s) — unknown, not wrong:")
+        for where, reason in block_unknown:
+            print(f"    {where}: {reason}")
+
     # Step 4: Update URLs
     # Build replacement map: full_cbeta_id -> str(internal_text_id)
     id_replacement_map: dict[str, str] = {}
@@ -1636,6 +1725,7 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     print(f"  Quoted lines CBETA does not have: {len(quote_line_mismatched)}")
     print(f"  Quoted lines the compiled teachings do not have: {len(compiled_mismatched)}")
     print(f"  Compiled teaching corpora that could not be read: {len(compiled_unreadable)}")
+    print(f"  Excerpt blocks the compiled teachings do not have: {len(block_mismatched)}")
     if unknown_to_cbeta:
         print(f"  CBETA unreachable for:     {len(unknown_to_cbeta)} (not counted as wrong)")
     if dry_run and all_changes:

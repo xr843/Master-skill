@@ -66,6 +66,10 @@ jobs:
           # 某位祖师的语料一篇都没取到 —— 那上面那一项对他恒为 0，不是因为引文都对，
           # 而是因为什么都没查。不单独报出来，取数坏掉的 3i 会一直绿着。
           COMPILED_UNREADABLE=$(grep -oP "Compiled teaching corpora that could not be read:\s*\K\d+" verify_output.txt || echo "0")
+          # 「原典」块本身。3f 只认引用格式带 CBETA 经号的块，《文钞》没有经号，
+          # 于是 master-yinguang 的五个块对每一步检查都不可见 —— 2026-09-16 核出
+          # 其中两块是真语拼接的改写，却一直以「原典」示人。
+          EXCERPT_BLOCKS=$(grep -oP "Excerpt blocks the compiled teachings do not have:\s*\K\d+" verify_output.txt || echo "0")
           # 一组重定向而不是多条 —— shellcheck SC2129。
           {
             echo "failed=$FAILED"
@@ -79,10 +83,11 @@ jobs:
             echo "quoted_lines=$QUOTED_LINES"
             echo "compiled_quoted_lines=$COMPILED_QUOTED_LINES"
             echo "compiled_unreadable=$COMPILED_UNREADABLE"
+            echo "excerpt_blocks=$EXCERPT_BLOCKS"
           } >> "$GITHUB_OUTPUT"
 
       - name: Create issue if links need updating
-        if: steps.verify.outputs.updates != '0' || steps.verify.outputs.failed != '0' || steps.verify.outputs.mismatched != '0' || steps.verify.outputs.title_mismatched != '0' || steps.verify.outputs.frontmatter_mismatched != '0' || steps.verify.outputs.doc_link_mismatched != '0' || steps.verify.outputs.excerpt_quote_mismatched != '0' || steps.verify.outputs.bdrc_mismatched != '0' || steps.verify.outputs.quoted_lines != '0' || steps.verify.outputs.compiled_quoted_lines != '0' || steps.verify.outputs.compiled_unreadable != '0'
+        if: steps.verify.outputs.updates != '0' || steps.verify.outputs.failed != '0' || steps.verify.outputs.mismatched != '0' || steps.verify.outputs.title_mismatched != '0' || steps.verify.outputs.frontmatter_mismatched != '0' || steps.verify.outputs.doc_link_mismatched != '0' || steps.verify.outputs.excerpt_quote_mismatched != '0' || steps.verify.outputs.bdrc_mismatched != '0' || steps.verify.outputs.quoted_lines != '0' || steps.verify.outputs.compiled_quoted_lines != '0' || steps.verify.outputs.compiled_unreadable != '0' || steps.verify.outputs.excerpt_blocks != '0'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
@@ -107,6 +112,7 @@ jobs:
                   `- **Quoted lines CBETA does not have:** ${{ steps.verify.outputs.quoted_lines }}\n` +
                   `- **Quoted lines the compiled teachings do not have:** ${{ steps.verify.outputs.compiled_quoted_lines }}\n` +
                   `- **Compiled teaching corpora that could not be read at all:** ${{ steps.verify.outputs.compiled_unreadable }}\n` +
+                  `- **「原典」 blocks the compiled teachings do not have:** ${{ steps.verify.outputs.excerpt_blocks }}\n` +
                   `- **Last run:** ${new Date().toISOString()}\n\n` +
                   `## Full output\n\n\`\`\`\n${output}\n\`\`\`\n\n` +
                   `Run \`python3 tools/verify_sources.py --fix\` locally and commit the changes.`;
