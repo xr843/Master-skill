@@ -64,3 +64,27 @@ fn runs_single_skill_fidelity_dry_run_from_repo_root() {
     assert_eq!(suites[0]["master"], "master-huineng");
     assert!(suites[0]["results"].as_array().unwrap().len() > 1);
 }
+
+#[test]
+fn doctor_report_with_problems_is_returned_not_treated_as_a_failed_command() {
+    // `doctor --json` exits 1 when it finds problems, and the desktop's JSON
+    // runner treated every non-zero exit as a failed command. load_snapshot calls
+    // doctor(), so the first real problem doctor reported would have left the
+    // whole console unable to load — the one report meant to explain what is
+    // wrong would never be shown.
+    let home = temp_home();
+    fs::create_dir_all(&home).unwrap();
+    let client = CliClient::new(repo_root()).with_home(&home);
+
+    client.install("huineng").unwrap();
+    fs::remove_file(home.join(".claude/skills/master-huineng/SKILL.md")).unwrap();
+
+    let report = client.doctor().unwrap();
+    assert_eq!(report.status, "problems");
+    assert!(report
+        .problems
+        .iter()
+        .any(|problem| problem.code == "installed-missing-skill-md"));
+
+    fs::remove_dir_all(home).unwrap();
+}

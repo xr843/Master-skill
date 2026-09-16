@@ -10,6 +10,42 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — `master-skill doctor` reported "ok" for broken installs, and the desktop could not have shown otherwise (2026-09-17)
+
+The README introduces `npx master-skill doctor` as the check for "本地安装与运行路径". Its
+problem list only looked at the package's own sources. Run against deliberately broken
+installs in a sandboxed HOME, it printed `Status: ok` and exited 0 for every one: an
+installed persona with `SKILL.md` deleted, with `references/` deleted, the generator with
+`tools/` deleted, an installed copy from an older version, and a skills directory with
+nothing in it.
+
+doctor now compares what is under `~/.claude/skills/` with what this package installs:
+
+- `installed-missing-skill-md` — an installed skill without `SKILL.md`;
+- `installed-incomplete` — files `install` copies are missing;
+- `installed-outdated` — installed files differ from this package version (suggests
+  `master-skill update --all`);
+- `dangling-link` — a link in the skills directory whose target is gone, which is what a
+  persona registered by `create-master` becomes after the generator is uninstalled.
+
+The compared set mirrors `install`: a persona's or mode's whole source directory, the
+generator's `bundle_paths`. The user's generated personas under `masters/` and the tools'
+`__pycache__` are not compared. A skill that is not installed is not a problem —
+installing one master is a normal choice.
+
+The desktop manager would have turned this fix into an outage. `doctor --json` exits 1
+when it finds problems, and the desktop's JSON runner treated any non-zero exit as a
+failed command; `load_snapshot` calls `doctor()`, so the first real problem would have
+left the whole console unable to load, with the report that explains it never shown.
+`CliClient::doctor` now returns the report when the exit is 1 and stdout is a report whose
+status is `problems`; crashes, timeouts and unparseable output are still errors. A desktop
+integration test reproduces it: before the client change, a valid report with
+`installed-missing-skill-md` came back as `Err`.
+
+Six new CLI tests cover the checks; four of them fail against the previous doctor, and the
+two that assert "still ok" (a healthy partial install; generated personas and bytecode)
+pass on both.
+
 ### Fixed — the session-start hook altered five of fifteen lineages (2026-09-16)
 
 The hook sanitizes each master's `lineage:` before splicing it into the model's context,
