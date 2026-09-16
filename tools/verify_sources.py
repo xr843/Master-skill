@@ -963,11 +963,35 @@ CBETA_SEARCH_URL = "https://cbdata.dila.edu.tw/stable/search"
 _QUOTE_SAMPLE = re.compile(r'^\s*\d+\.\s*[“"「『]([^”"」』\n]{8,200})')
 _QUOTE_BLOCK = re.compile(r'^\s*>\s*[“"「『]([^”"」』\n]{8,200})')
 _QUOTE_SAID = re.compile(r'(?:云|曰|偈云|经云|论云)\s*[：:]?\s*[“"「『]([^”"」』\n]{8,200})')
+# 具名引出 + **冒号**：「佛说：""」「神秀偈：""」「慧能曰：""」「达摩祖师偈：""」。
+# 冒号是把「引原典」与「人设自己的话」分开的判别式 —— 后者写作「常说"看看那个想要
+# 解决问题的心"」「先问"为什么想读？"」，一律没有冒号。2026-09-16 量过：这一条能收进
+# 慧能的风幡、神秀与达摩的偈、阿姜查所引三段巴利经文，而不碰任何一句话术示例。
+_QUOTE_ATTRIBUTED = re.compile(
+    r"(?:佛|世尊|[㐀-鿿]{2,6}(?:祖师|大师|尊者|菩萨|长老|禅师|居士)?)"
+    r'\s*(?:偈曰|偈云|偈|曰|说)\s*[：:]\s*[“"「『]([^”"」』\n]{8,200})'
+)
+# 《书名》同行引文，不需要动词：「《金刚经》"一切有为法…"」「闻《金刚经》至"应无所住
+# 而生其心"」。原先只认「云/曰」，这类引文一条都进不来。
+_QUOTE_TITLED = re.compile(r'《[^》\n]{2,30}》[^“"「『\n]{0,10}[“"「『]([^”"」』\n]{8,200})')
 _QUOTE_BOILER = re.compile(
     r"具格上师|亲近善知识|不可由文字|网络传授|须依止|本平台|不得对个体|面对面访谈"
     r"|如需深入学习|SuttaCentral|BDRC|fojin"
+    # 书单与指引句：「汉译可参《菩提道灯论》（任杰译）」「《清净道论》汉译：叶均居士
+    # 译本」「…可在 ajahnchah.org 免费下载」。它们写在引号里，却不是谁说过的话，
+    # 送去全文检索只会变成查无此句。2026-09-16 量出 22 条这样的行。
+    r"|可参|可详参|可阅|可查|查阅|译本|出版社|下载|开示全集|不可不读|逐句观照"
 )
 _QUOTE_PARAPHRASE = re.compile(r"转述|非原文|主旨|整理|概括|要旨|讲解")
+# 讲「这句话该不该引、该怎么标」的行，本身不是引文：纠错说明（「常被当作龙树的话
+# 引用，但《大智度论》中没有」）、禁用示例（「不可用宗喀巴的精确分判作为阿底峡立场」）。
+# 收了它们，周检会对一条文档已经查明并改正的记录拉响假警报。
+# 标记必须是关于**引用行为**的成句短语：试过「勿」「不可用」这类泛词，会误伤《坛经》
+# 「勿使惹尘埃」、罗什「且勿急」、虚云「不可用意识思量卜度」这些真引文（2026-09-16 实测）。
+# 「中没有」同样要紧跟书名号，否则撞上「心中没有」之类的寻常行文。
+_QUOTE_META = re.compile(
+    r"常被当作|误传|讹传|应保守表述|不要把|不得加引号|引用规范|disclaimer|》中没有|》中查无"
+)
 _QUOTE_HAN = re.compile(r"[\u3400-\u9fff]")
 
 
@@ -987,9 +1011,20 @@ def collect_persona_quotes() -> list[tuple[str, str, str]]:
         ):
             where_base = path.relative_to(base).as_posix()
             for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-                if "出处" in line or "引用格式" in line or _QUOTE_PARAPHRASE.search(line):
+                if (
+                    "出处" in line
+                    or "引用格式" in line
+                    or _QUOTE_PARAPHRASE.search(line)
+                    or _QUOTE_META.search(line)
+                ):
                     continue
-                for pattern, needs_title in ((_QUOTE_SAMPLE, False), (_QUOTE_BLOCK, False), (_QUOTE_SAID, True)):
+                for pattern, needs_title in (
+                    (_QUOTE_SAMPLE, False),
+                    (_QUOTE_BLOCK, False),
+                    (_QUOTE_SAID, True),
+                    (_QUOTE_ATTRIBUTED, False),
+                    (_QUOTE_TITLED, False),
+                ):
                     match = pattern.search(line)
                     if not match:
                         continue

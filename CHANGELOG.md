@@ -10,6 +10,43 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — the quote collector was walking past a fifth of the quotations (2026-09-16)
+
+3h and 3i can only judge what the collector hands them, and it recognised three
+shapes: a numbered sample line, a `>` block, and 云/曰 with a book title on the
+same line. Measured against every quotation-looking line in the personas, it was
+walking past real ones — 慧能's 风幡 and 神秀's and 达摩's verses (introduced by
+偈： and 曰：, no title on the line), 罗什 quoting 《金刚经》 (a title, no verb),
+the three suttas 阿姜查's excerpts introduce with 佛说：, and four of 虚云's
+discourses. 49 lines were being checked; 13 were not.
+
+Two narrow patterns now cover them:
+
+- a named speaker followed by **a colon** — 佛说：, 神秀偈：, 慧能曰：. The colon
+  is what separates quoting a text from the persona's own speech, which is
+  written 常说"看看那个想要解决问题的心" with no colon at all.
+- a 《title》 and a quoted span on the same line, with no verb required.
+
+Widening also swept in two lines that are *about* citation rather than
+quotations: master-nagarjuna's note that 「宁起我见积若须弥」 is commonly
+attributed to him but is not in 《大智度论》, and master-atisha's disclaimer
+against phrasing his view in 宗喀巴's terms. The live run reported neither as
+wrong — nagarjuna's line happens to exist elsewhere in CBETA — but a correction
+note about a saying CBETA really lacks would have convicted the note itself, and
+correction notes are written about exactly those sayings. Lines about how to
+cite are now skipped.
+
+The first attempt at that filter matched 「勿」 and 「不可用」, and would have
+dropped three genuine quotations that merely contain those words (勿使惹尘埃;
+且勿急，此如暗室求灯; 不可用意识思量卜度). It now matches only phrases about
+citation practice, and a test locks it in both directions.
+
+Of 62 quoted lines: 45 are in CBETA in a work the persona declares, 10 are word
+for word in the compiled teachings (3i verifies 10 now, not 6), and 8 remain
+unknown — every one of them quoted from a book the persona does not declare,
+with that book named on the line or in the section heading above it. Nothing is
+reported wrong.
+
 ### Added — the weekly check now reads the books CBETA does not hold (2026-09-16)
 
 Step 3h can only search CBETA, so for a master whose own sayings were never
