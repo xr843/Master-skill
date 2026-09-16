@@ -110,7 +110,29 @@ jobs:
             const { owner, repo } = context.repo;
             const marker = '<!-- verify-fojin-links -->';
 
-            const title = `[Weekly] FoJin links need update — ${updates} URLs, ${failed} missing`;
+            // The title used to name only `updates` and `failed`, so an issue opened
+            // because 19 excerpt quotations were not in the cited fascicle read
+            // "0 URLs, 0 missing" — an alert whose own headline says nothing is wrong.
+            // Ten of the twelve conditions that can open this issue were invisible in
+            // the issue list. Name whatever actually fired instead.
+            const counts = [
+              ['URL replacements', updates],
+              ['not found in FoJin', failed],
+              ['CBETA ids that disagree', '${{ steps.verify.outputs.mismatched }}'],
+              ['CBETA titles that disagree', '${{ steps.verify.outputs.title_mismatched }}'],
+              ['frontmatter ids pointing elsewhere', '${{ steps.verify.outputs.frontmatter_mismatched }}'],
+              ['doc links opening another work', '${{ steps.verify.outputs.doc_link_mismatched }}'],
+              ['excerpt quotations not in the cited fascicle', '${{ steps.verify.outputs.excerpt_quote_mismatched }}'],
+              ['BDRC ids missing or another work', '${{ steps.verify.outputs.bdrc_mismatched }}'],
+              ['quoted lines CBETA does not have', '${{ steps.verify.outputs.quoted_lines }}'],
+              ['quoted lines the compiled teachings lack', '${{ steps.verify.outputs.compiled_quoted_lines }}'],
+              ['corpora that could not be read', '${{ steps.verify.outputs.compiled_unreadable }}'],
+              ['「原典」 blocks the compiled teachings lack', '${{ steps.verify.outputs.excerpt_blocks }}'],
+            ];
+            const hits = counts.filter(([, n]) => n !== '0');
+            const shown = hits.slice(0, 3).map(([what, n]) => `${n} ${what}`);
+            if (hits.length > 3) shown.push(`and ${hits.length - 3} more`);
+            const title = `[Weekly] Source check — ${shown.join(', ') || 'see body'}`;
             const body = `${marker}\n` +
                   `Automated weekly link verification found changes.\n\n` +
                   `- **URL replacements needed:** ${updates}\n` +
