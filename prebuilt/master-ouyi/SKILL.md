@@ -46,7 +46,7 @@ verified_at: 2026-04-06
 - **天台教观**（教观纲宗 / 止观 / 一念心性）
   → 读 `references/teaching.md` §教宗天台 + `sources/jiaoguan-gangzong-excerpts.md`
 - **宗派融通**（性相融会 / 禅教律净 / 跨宗派）
-  → 读 `references/teaching.md` §融通 + `sources/mituo-yaojie-excerpts.md` §现前一念
+  → 读 `references/teaching.md` §融通 + `sources/mituo-yaojie-excerpts.md` §一念心性
 - **修行方法**（持名念佛 / 持戒 / 占察忏）
   → 读 `references/teaching.md` §修行方法
 - **风格对话**（"想和蕅益大师聊聊"/角色扮演请求）

@@ -102,7 +102,7 @@ OpenClaw / Claude Code 注册路径 → `references/workflow-details.md` §Step 
 - **纠正模式**：用户说"他不会这样说话/他应该更严厉" → 加载 `prompts/correction_handler.md`；以 `## Correction` 块追加到 teaching.md / voice.md 末尾；patch 递增。
 - **管理命令**：`/list-masters`（列出所有，标 `[预置]`/`[自定义]`）、`/master-rollback <slug> <version>`（回滚，自动归档当前）、`/delete-master <slug>`（删除，预置不可删，需二次确认）。
 
-冲突处理策略、版本号细节、用户确认文案 → `references/workflow-details.md` §追加纠正管理。
+冲突处理策略、版本号细节、用户确认文案 → `references/workflow-details.md` §追加材料、纠正、管理命令细则。
 
 ## 执行优先级（运行时）
 

@@ -43,7 +43,7 @@ verified_at: 2026-05-02
 - **应成中观正见 / 空性 / 辨了不了义**
   → 读 `sources/lamrim-excerpts.md` §毗钵舍那（vipaśyanā）章 + `references/teaching.md` §应成中观
 - **戒律 / 三聚戒 / 律仪根本**
-  → 读 `references/teaching.md` §戒律根本
+  → 读 `references/teaching.md` §戒律为根本
 - **密宗 / 续部** → 仅介绍历史与原理，**不传授修法步骤**（参 HARD-GATE）
 - **格鲁派传承 / 甘丹寺 / 默朗钦摩 / 达赖班禅**
   → 读 `references/teaching.md` §传承与背景
@@ -152,8 +152,8 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 | 什么是三主要道 | `sources/lamrim-excerpts.md` §三主要道 | 《三主要道》(Lam gtso rnam gsum) |
 | 道次第怎么学 | `sources/lamrim-excerpts.md` §三士道 | 《菩提道次第广论》|
 | 应成中观和自续中观区别 | `references/teaching.md` §应成中观 | 《辨了不了义》+《入中论善显密意疏》|
-| 缘起性空怎么理解 | `references/teaching.md` §应成中观 §缘起性空 | 《辨了不了义》|
-| 戒定慧三学怎么学 | `references/teaching.md` §戒律根本 | 《广论》共下/中士道 |
+| 缘起性空怎么理解 | `references/teaching.md` §应成中观正见 | 《辨了不了义》|
+| 戒定慧三学怎么学 | `references/teaching.md` §戒律为根本 | 《广论》共下/中士道 |
 | 怎么修拙火 / 灌顶 / 生起圆满次第 | — **拒答**：须具格上师亲传 | — |
 | 格鲁派和宁玛派哪个好 | — **拒答**：不评判他派优劣 | — |
 

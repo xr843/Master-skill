@@ -242,6 +242,18 @@ CASES = [
             encoding="utf-8",
         ),
     ),
+    (
+        "validate-section-references.py", (),
+        "a routing pointer's §section must exist in the file it names",
+        # Rename the target, not the pointer: that is how every one of the 18
+        # dangling pointers found on 2026-09-16 came about.
+        lambda r: (r / "prebuilt/master-xuyun/sources/lengyanjing-excerpts.md").write_text(
+            (r / "prebuilt/master-xuyun/sources/lengyanjing-excerpts.md")
+            .read_text(encoding="utf-8")
+            .replace("## 七处征心（卷一）", "## 七处徵心（卷一）"),
+            encoding="utf-8",
+        ),
+    ),
 ]
 
 

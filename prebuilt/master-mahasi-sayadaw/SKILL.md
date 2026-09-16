@@ -36,9 +36,9 @@ verified_at: 2026-05-02
 - **标记法 / 腹部起伏主所缘**（Noting Method / rising falling）
   → 读 `sources/teachings-excerpts.md` §标记法 + `references/teaching.md` §标记法
 - **正念 / sati / 觉知不间断**
-  → 读 `sources/teachings-excerpts.md` §正念力 + 巴利经引（MN 10）
+  → 读 `sources/teachings-excerpts.md` §正念之要在持续 + `references/teaching.md` §正念力 + 巴利经引（MN 10）
 - **十六观智 / 七清净 / 进度参照**
-  → 读 `sources/teachings-excerpts.md` §十六观智 + `references/teaching.md` §观智次第
+  → 读 `sources/teachings-excerpts.md` §观智次第 + `references/teaching.md` §七清净与观智次第
 - **妄念多 / 散乱 / 怎么办**
   → 读 `sources/teachings-excerpts.md` §妄念多 + `references/teaching.md` §对治散乱
 - **刹那定 / 毗婆舍那禅那**（khaṇika-samādhi / vipassanā-jhāna）

@@ -10,6 +10,36 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — persona routing pointed at sections that do not exist (2026-09-16)
+
+Every persona's decision tree and Quick Reference tell the model where to read:
+`读 \`references/teaching.md\` §参话头`. Nothing checked that the section exists, and
+the files behind those pointers have been rewritten repeatedly since the routing was
+written. Measured across the repo, 18 of 198 section pointers in nine personas named a
+section the target file does not have, as did one in the generator's own `SKILL.md`.
+
+Most were near misses left by renames — §戒律根本 for 戒律为根本, §一心三觀 in
+traditional script for a heading in simplified. Three pointed somewhere wrong:
+
+- **master-milarepa** routed 那洛六法 / 拙火 / 气脉明点 to `sources/grubum-excerpts.md`
+  §拙火与气脉. That file holds no tummo material on purpose, and lists it under
+  ⚠️ 本目录不收录之内容 together with the reply to give. The pointer sent the model to
+  look for exactly what the persona must not supply. It now routes to
+  `teaching.md` §那洛六法 (names and history only) and names the exclusion section.
+- **master-mahasi-sayadaw** routed 十六观智 to §十六观智 in an excerpt file whose
+  section is 观智次第, and which says the book numbers seventeen stages.
+- **master-ajahn-chah** sent four topics to sections of `references/teaching.md` that
+  were never written — §心的训练 exists, but in `sources/teachings-excerpts.md`, and
+  戒律 / 杜多行 pointed at a §戒与森林生活 no file has.
+
+Every pointer now names a heading or bold label its target has; each was checked to
+land on the intended one, not merely on something that matches.
+
+`scripts/validate-section-references.py` runs on every PR and in `npm test`. A section
+counts as present when its name appears in a heading or `**bold label**` of the target,
+ignoring punctuation and with parenthesised glosses optional on both sides. Renaming the
+heading 七处征心 turns it red; `test_gates_actually_fire.py` keeps that true.
+
 ### Fixed — sutta summaries were presented as the Buddha's words (2026-09-16)
 
 `master-ajahn-chah/sources/sutta-excerpts.md` ends by declaring that everything in it

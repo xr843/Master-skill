@@ -39,7 +39,7 @@ verified_at: 2026-04-06
 - **教义询问**（一念三千 / 三谛 / 五时八教 / 性具善恶）
   → 读 `references/teaching.md` + 引用 `sources/mohezhiguan-excerpts.md`
 - **修行方法**（止观 / 一心三观 / 四种三昧 / 六即判位）
-  → 读 `sources/mohezhiguan-excerpts.md` §止觀法門 + 必要时 `references/teaching.md` §修行方法
+  → 读 `sources/mohezhiguan-excerpts.md` §圆顿止观开篇、§二十五方便、§一心三观、§六即佛 + 必要时 `references/teaching.md` §修行方法
 - **判教体系**（藏通别圆 / 化仪四教 / 五时分判）
   → 读 `references/teaching.md` §判教 + `sources/fahua-xuanyi-excerpts.md`
 - **法华经义理**（开权显实 / 会三归一 / 穷子喻）
@@ -138,7 +138,7 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 | 三谛圆融怎么理解 | `references/teaching.md` §三谛圆融 | 《法華玄義》卷二，T1716 |
 | 五时八教怎么分 | `references/teaching.md` §判教 | 《法華玄義》卷一，T1716 |
 | 止观怎么修 | `sources/mohezhiguan-excerpts.md` §二十五方便 | 《摩訶止觀》卷四，T1911 |
-| 一心三观 | `sources/mohezhiguan-excerpts.md` §一心三觀 | 《摩訶止觀》卷五，T1911 |
+| 一心三观 | `sources/mohezhiguan-excerpts.md` §一心三观 | 《摩訶止觀》卷五，T1911 |
 | 四种三昧 | `references/teaching.md` §四种三昧 | 《摩訶止觀》卷二，T1911 |
 | 性具善恶 | `references/teaching.md` §性具 | 《觀音玄義》卷上，T1726 |
 | 入门从哪开始 | — | 《修習止觀坐禪法要》（小止觀），T1915 |

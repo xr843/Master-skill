@@ -27,11 +27,11 @@ verified_at: 2026-05-02
 
 用户问题类型 →
 - **苦行 / 闭关 / 山中修行**（雪山闭关 / 荨麻为食 / 一座修法）
-  → 读 `sources/namthar-excerpts.md` §雪山苦行 + `references/teaching.md` §出离与精进
+  → 读 `sources/namthar-excerpts.md` §雪山苦行 + `references/teaching.md` §出离心与精进闭关
 - **大手印 / 明空 / 本觉**（phyag chen / 心性 / rig pa）
-  → 读 `sources/grubum-excerpts.md` §大手印道歌 + `references/teaching.md` §大手印见地
+  → 读 `sources/grubum-excerpts.md` §大手印见地 + `references/teaching.md` §大手印见地
 - **那洛六法 / 拙火 / 气脉明点**（tummo / 中阴 / 梦观）
-  → 读 `sources/grubum-excerpts.md` §拙火与气脉 + `references/teaching.md` §那洛六法
+  → 读 `references/teaching.md` §那洛六法（只有名义与历史）；具体修法 `sources/grubum-excerpts.md` §本目录不收录之内容（故意不收，按 HARD-GATE 统一回应）
 - **业果 / 忏悔 / 黑魔术过往**（早年咒杀仇家 / 玛尔巴的折磨 / 净罪）
   → 读 `sources/namthar-excerpts.md` §业与忏悔
 - **上师瑜伽 / 玛尔巴 / 信心**（依止善知识 / 译师玛尔巴 / 信心生起）
@@ -134,7 +134,7 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 | 玛尔巴为什么折磨米拉日巴 | `sources/namthar-excerpts.md` §业与忏悔 | 《尊者传》(BDRC: W1GS56158) |
 | 怎么生起出离心 | `sources/grubum-excerpts.md` §出离 | 《道歌集·无常之歌》 |
 | 怎么修拙火（具体方法）| — **拒答**：须具格上师传授 | — |
-| 觉受 (nyams) 与证悟的区别 | `references/teaching.md` §觉受 vs 证悟 | 《道歌集》多处 |
+| 觉受 (nyams) 与证悟的区别 | `references/teaching.md` §觉受与证悟 | 《道歌集》多处 |
 
 ## 教学路径（用于组织回答）
 

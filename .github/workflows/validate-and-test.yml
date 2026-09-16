@@ -168,6 +168,13 @@ jobs:
       - name: Validate quote attribution (every quoted line names its work)
         run: python scripts/validate-quote-attribution.py
 
+      # Persona routing says 读 `references/teaching.md` §参话头 and the model
+      # follows it literally. 18 of 198 such pointers named a section the file
+      # does not have — master-milarepa sent 拙火 questions to a section its
+      # excerpt file deliberately omits. Offline; runs in well under a second.
+      - name: Validate section references (every "read file §section" lands)
+        run: python scripts/validate-section-references.py
+
       # Both of these existed, were unit-tested, and ran nowhere on a PR: they
       # appeared only inside `npm test`, which only npm-publish.yml runs, and that
       # fires on `release: published`. A gate whose first real execution is the
