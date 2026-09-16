@@ -74,6 +74,7 @@ npm update -g master-skill             # 升到下一个 minor / patch
 # npx（上方）与 git clone 手动安装为正式发布渠道：
 git clone https://github.com/xr843/Master-skill ~/Master-skill
 cd ~/Master-skill && pip install -r requirements.txt
+mkdir -p ~/.claude/skills   # 目录不存在时下面的 ln 全部失败
 for d in prebuilt/master-*/; do ln -sf "$(pwd)/$d" ~/.claude/skills/"$(basename $d)"; done
 ln -sf "$(pwd)/prebuilt/compare-masters" ~/.claude/skills/compare-masters
 ln -sf "$(pwd)" ~/.claude/skills/create-master
@@ -88,25 +89,43 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 
 **OpenCode**
 
-在 `opencode.json` 中添加：
-
-```json
-{
-  "plugin": ["master-skill@git+https://github.com/xr843/Master-skill.git"]
-}
+```bash
+npx master-skill install --all
 ```
+
+OpenCode 无需配置即读取 `~/.claude/skills/`，npx 正是装到这里；`opencode debug skill` 应列出 20 个。
+已 clone 仓库的，也可在 `opencode.json` 里写
+`{"skills": {"paths": ["/仓库绝对路径/prebuilt"]}}`，得到 `prebuilt/` 下的 19 个（`create-master` 在仓库根，不在其中）。
+
+> 旧版说明让你写 `"plugin": ["master-skill@git+https://github.com/xr843/Master-skill.git"]`。
+> OpenCode 的 plugin 是 JavaScript 模块，本仓库没有提供，这样配置**一个 skill 都不会注册**。
 
 **Codex CLI**
 
-参见 [.codex/INSTALL.md](../.codex/INSTALL.md)
+参见 [.codex/INSTALL.md](../.codex/INSTALL.md)。Codex 不读 `~/.claude/skills/`，npx 装的它看不到。
 
 **Gemini CLI**
 
-本项目包含 `gemini-extension.json` 和 `GEMINI.md`，Gemini CLI 自动发现并加载。
+```bash
+gemini skills install https://github.com/xr843/Master-skill --path prebuilt
+```
+
+`gemini skills list` 应列出 19 个（15 位祖师 + 4 个教学模式）。已 clone 仓库的，用
+`gemini skills link /仓库路径/prebuilt`。
+
+> 只装扩展（`gemini extensions install`）**不带来任何祖师**：Gemini CLI 只从扩展根目录的 `skills/`
+> 找 skill，本仓库的 skill 在 `prebuilt/`，扩展只提供 `GEMINI.md`——即 `create-master` 生成器与
+> `compare-masters` 的说明。仓库的 `hooks/hooks.json` 会被 Gemini 读到并在 `/hooks` 里显示为 enabled，
+> 但它按精确字符串匹配 SessionStart 来源，`startup|clear|compact` 永远不命中，法师列表不会注入。
+> Gemini CLI 同样不读 `~/.claude/skills/`。
+
+> 以上 OpenCode / Codex / Gemini 的结论均于 2026-09-16 在 Linux 上以隔离的 HOME 实测
+> （OpenCode 1.18.13、Codex CLI 0.153.4、Gemini CLI 0.60.0）；Windows 步骤未重新验证。
 
 ### 使用预置法师
 
-在支持 AgentSkills 的环境（Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI）中直接调用：
+在支持 AgentSkills 的环境（Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI）中直接调用
+（Codex 按所链接的目录名加前缀，显示为 `master-skill:master-huineng` 等）：
 
 ```
 # 印度

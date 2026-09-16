@@ -10,6 +10,40 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — install instructions for three of the five platforms installed nothing (2026-09-16)
+
+The docs promised that Claude Code, Cursor, Codex CLI, OpenCode and Gemini CLI all run
+`/master-huineng` and friends from one `prebuilt/` tree. Each of the last three was
+installed as documented in an isolated HOME on Linux and asked what skills it sees
+(`opencode debug skill`, `codex debug prompt-input`, `gemini skills list`):
+
+| Platform | Documented step | Skills from this repo | Step that works |
+|---|---|---|---|
+| OpenCode 1.18.13 | `"plugin": ["master-skill@git+…"]` | **0** | `npx master-skill install --all` → 20 (OpenCode reads `~/.claude/skills/`) |
+| Codex CLI 0.153.4 | two `ln -sf` into `~/.agents/skills` | **0** — both fail when the directory is new | `mkdir -p` first, and link `create-master` as a directory → 20 |
+| Gemini CLI 0.60.0 | "auto-discovered via `gemini-extension.json`" | **0** | `gemini skills install <repo> --path prebuilt` → 19 |
+
+- **OpenCode** plugins are JavaScript modules; this repository ships none, so the plugin
+  entry registers nothing.
+- **Codex**: after creating the directory, the documented file symlink for
+  `create-master` is still skipped — Codex ignores symlinked files. `.codex/INSTALL.md`
+  also listed 8 masters under names like `/xuanzang`; Codex shows
+  `master-skill:master-xuanzang`.
+- **Gemini** looks for extension skills only in the extension's `skills/` directory. The
+  extension brings `GEMINI.md` (the generator and `compare-masters`) and nothing else. It
+  also loads the Claude Code `hooks/hooks.json` and shows it as enabled, but matches
+  SessionStart sources by exact string, so `startup|clear|compact` never fires.
+- Neither Codex nor Gemini reads `~/.claude/skills/`, so the README's one-line npx install
+  covers Claude Code and OpenCode only; the README now says so.
+- The Claude Code clone example had the same missing `mkdir -p ~/.claude/skills` — on a
+  machine without that directory every `ln` failed.
+- The desktop manager's install action said it installs "into the local Codex/Claude
+  skills directory"; it runs `master-skill install`, which writes to `~/.claude/skills`.
+
+`docs/install*.md`, `.codex/INSTALL.md`, `.opencode/INSTALL.md`, both READMEs and the
+architecture notes now give the steps that were measured to work, with the versions they
+were measured on. The Windows steps were not re-verified.
+
 ### Fixed — persona routing pointed at sections that do not exist (2026-09-16)
 
 Every persona's decision tree and Quick Reference tell the model where to read:

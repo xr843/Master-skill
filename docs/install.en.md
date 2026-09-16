@@ -76,6 +76,7 @@ npm update -g master-skill             # Pull next minor / patch
 ```bash
 git clone https://github.com/xr843/Master-skill ~/Master-skill
 cd ~/Master-skill && pip install -r requirements.txt
+mkdir -p ~/.claude/skills   # every ln below fails if this directory does not exist
 for d in prebuilt/master-*/; do ln -sf "$(pwd)/$d" ~/.claude/skills/"$(basename $d)"; done
 ln -sf "$(pwd)/prebuilt/compare-masters" ~/.claude/skills/compare-masters
 ln -sf "$(pwd)" ~/.claude/skills/create-master
@@ -83,19 +84,41 @@ ln -sf "$(pwd)" ~/.claude/skills/create-master
 
 **Cursor** — Clone the repo; Cursor auto-detects `.cursor-plugin/plugin.json`.
 
-**OpenCode** — Add to `opencode.json`:
+**OpenCode**
 
-```json
-{"plugin": ["master-skill@git+https://github.com/xr843/Master-skill.git"]}
+```bash
+npx master-skill install --all
 ```
 
-**Codex CLI** — See [.codex/INSTALL.md](../.codex/INSTALL.md)
+OpenCode reads `~/.claude/skills/` without configuration, which is where npx installs; `opencode debug skill` should list 20.
+From a checkout, `{"skills": {"paths": ["/absolute/path/to/Master-skill/prebuilt"]}}` in `opencode.json` gives the 19 under `prebuilt/` (`create-master` lives at the repository root, outside it).
 
-**Gemini CLI** — Auto-discovered via `gemini-extension.json` and `GEMINI.md`.
+> Earlier versions of this page said to add `"plugin": ["master-skill@git+https://github.com/xr843/Master-skill.git"]`.
+> OpenCode plugins are JavaScript modules and this repository ships none; that entry **registers no skills**.
+
+**Codex CLI** — See [.codex/INSTALL.md](../.codex/INSTALL.md). Codex does not read `~/.claude/skills/`, so an npx install is invisible to it.
+
+**Gemini CLI**
+
+```bash
+gemini skills install https://github.com/xr843/Master-skill --path prebuilt
+```
+
+`gemini skills list` should list 19 (15 personas + 4 teaching modes). From a checkout, use `gemini skills link /path/to/Master-skill/prebuilt`.
+
+> Installing only the extension (`gemini extensions install`) **brings no masters**: Gemini CLI looks for skills in the
+> extension's `skills/` directory, this repository keeps them in `prebuilt/`, and the extension supplies just `GEMINI.md` —
+> the `create-master` generator and `compare-masters`. Gemini also reads the repository's `hooks/hooks.json` and lists it as
+> enabled under `/hooks`, but it matches SessionStart sources by exact string, so `startup|clear|compact` never fires and
+> no master list is injected. Gemini CLI does not read `~/.claude/skills/` either.
+
+> The OpenCode / Codex / Gemini findings above were measured on Linux with an isolated HOME on 2026-09-16
+> (OpenCode 1.18.13, Codex CLI 0.153.4, Gemini CLI 0.60.0). The Windows steps were not re-verified.
 
 ### Use a Pre-built Master
 
-In any AgentSkills-compatible environment (Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI):
+In any AgentSkills-compatible environment (Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI)
+(Codex prefixes skills with the linked directory's name, e.g. `master-skill:master-huineng`):
 
 ```
 # 印度 (Indian)

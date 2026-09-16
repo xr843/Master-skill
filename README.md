@@ -139,7 +139,7 @@ Master-skill 是由 [FoJin](https://fojin.app) 驱动的佛教 AI 祖师人格�
 - **HARD-GATE 铁律**：`/create-master` 与预置法师内置红线——教义断言、修行指导与文本解释必须引用该 persona 声明的来源（CBETA / BDRC / Toh / SuttaCentral / PTS / 合规编纂开示），不得捏造来源 ID，不得为虚构人物建角色
 - **二阶段独立审查**：生成管线在写入前强制经过"教义准确性 → 风格一致性"两轮独立审查，FAIL 自动修复最多 2 轮
 - **自动化保真度测试**：211 条夹具（每位祖师 10+ 条，`compare-masters` 元技能 18 条）检查关键词与引用覆盖，每条评分回答另经离线引文审计；CI 在每个 PR 与 main 上做结构校验（dry-run）；实跑评分支持 Anthropic / DeepSeek / Gemini（`--provider`），需要对应的 API key，作为本地/发版前手动步骤执行——最近一次全量运行与逐条裁定见[下文](#保真度评测当前数据)
-- **多平台统一插件**：Claude Code、Cursor、Codex CLI、OpenCode、Gemini CLI 共用一份 `prebuilt/`，session-start hook 跨平台注入法师列表
+- **多平台共用一份 `prebuilt/`**：Claude Code、Cursor、Codex CLI、OpenCode、Gemini CLI 各有装法（见 [docs/install.md](docs/install.md)，Codex / OpenCode / Gemini 三端均为实测过的步骤）
 - **NPX 一键安装**：`npx master-skill install master-zhiyi` 直接部署到 Claude Code
 - **离线工具链**：`scripts/cite.py`（CBETA 引用查询）、`scripts/query.py`（离线语义检索）、`scripts/validate.py`（frontmatter linter）
 - **FoJin 数据桥**：接入 [fojin.app](https://fojin.app) 的 10K+ 篇文本、678K+ 条语义向量与 110K+ 实体的知识图谱（另登记 600+ 个数据源）
@@ -190,7 +190,7 @@ npx master-skill doctor                 # 检查本地安装与运行路径
 npx master-skill update --all           # 升级：重装全部并清掉旧文件
 ```
 
-装好后在对话里直接调 `/master-huineng`、`/compare-masters` 等。
+装好后在对话里直接调 `/master-huineng`、`/compare-masters` 等。npx 装到 `~/.claude/skills/`，Claude Code 与 OpenCode 读取这里；**Codex CLI 与 Gemini CLI 不读**，请按 docs/install.md 的对应小节安装。
 
 > 五端安装细节（Claude Code 插件 / Cursor / OpenCode / Codex CLI / Gemini CLI）、
 > 全局安装、教学模式用法、`/create-master` 自定义生成
