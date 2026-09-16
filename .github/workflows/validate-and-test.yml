@@ -158,6 +158,13 @@ jobs:
       - name: Validate citation references (SKILL.md / sources / references)
         run: python scripts/validate-citation-references.py
 
+      # 3h/3i ask whether a quoted line exists in CBETA or in the compiled
+      # teachings; neither asks whether the reader is told which book it came
+      # from. master-nagarjuna's 「宁起我见积若须弥」 is real text, findable in
+      # CBETA, and not his — it is in 《大宝积经》. Offline, so every PR runs it.
+      - name: Validate quote attribution (every quoted line names its work)
+        run: python scripts/validate-quote-attribution.py
+
       # A requirement may only be declared undecidable (`must_convey`) if a
       # committed adjudication ruled it an instrument artifact on real evidence.
       # Otherwise moving an inconvenient check there turns a red build green.

@@ -10,6 +10,31 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — a quoted line must name the book it came from (2026-09-16)
+
+3h and 3i ask whether a quoted line *exists* — in CBETA, or in the compiled
+teachings CBETA does not hold. Neither asks whether the reader is told which book
+it came from, and that is where a misattribution survives both: master-nagarjuna's
+「宁起我见积若须弥」 is real text, findable in CBETA, and not his — it is in
+《大宝积经》. "Found in the canon" and "correctly attributed" are different
+questions, and only the first was being asked.
+
+`scripts/validate-quote-attribution.py` now requires every line the collector
+treats as a quotation to name its work — on the line, in the `> 出处：` line below
+it, on a sibling numbered item (one 出处 covers a block of samples), or in the
+section heading above. It reads only local files, so it runs on **every PR**
+rather than once a week, and it reuses `collect_persona_quotes`, so a quotation
+shape the collector learns is covered the same day.
+
+Measured across the repo it found five, all master-huineng's: the 风幡 exchange,
+何期自性, 迷时师度, the 神秀/慧能 verse pair, and 达摩's 付法偈. Every one is a
+genuine 《坛经》 line, so every existing check passed them — only the reader was
+left unable to look them up. Each was verified word for word against T48n2008 and
+now carries its chapter: 行由品 for the first five, 付嘱品 for 达摩's verse.
+
+If the collector ever returns an empty set the gate exits 1 rather than printing
+OK, because a check that examined nothing must not look like one that passed.
+
 ### Fixed — the quote collector was walking past a fifth of the quotations (2026-09-16)
 
 3h and 3i can only judge what the collector hands them, and it recognised three
