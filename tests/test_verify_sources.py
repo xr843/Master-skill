@@ -1299,3 +1299,84 @@ def test_the_collector_gained_the_quotations_it_used_to_walk_past():
         "master-atisha/sources/bodhipathapradipa-excerpts.md:134",
     ):
         assert meta_line not in where, f"{meta_line} 是讲引用规范的行，不该被当引文送检"
+
+
+# --- 「原典」块：引用格式指向 CBETA 之外的编集语录 -------------------------------
+
+
+def _block_corpus(coverage, master="master-yinguang"):
+    return {
+        master: {
+            "master": master,
+            "coverage": coverage,
+            "corpus_title": "《印光法师文钞》",
+            "texts": [{"id": "a", "title": "正编", "url": "https://example/u1", "encoding": "utf-8"}],
+        }
+    }
+
+
+def _block_fetch(mode="has"):
+    def fetch(url, encoding="utf-8"):
+        if mode == "unreachable":
+            return None
+        if mode == "has":
+            return "念佛最要紧是敦伦尽分闲邪存诚诸恶莫作众善奉行"
+        return "毫不相干的另一段文字凑满字数用来占位"
+
+    return fetch
+
+
+_REAL_BLOCK = [("master-yinguang/sources/x.md:9", "念佛最要紧，是敦伦尽分，闲邪存诚，诸恶莫作，众善奉行。", "《文鈔續編》·一函遍復")]
+_FAKE_BLOCK = [("master-yinguang/sources/x.md:9", "正心诚意，以立人道之本。然后以此回向净土，求生西方。", "《文鈔續編》·一函遍復")]
+
+
+def test_an_excerpt_block_the_book_does_not_have_is_wrong():
+    """2026-09-16：这正是 master-yinguang 两块改写的形状 —— 真语拼接，却标作「原典」。"""
+    mismatched, verified, unknown = verify_sources.classify_compiled_excerpt_blocks(
+        _FAKE_BLOCK, _block_corpus("complete"), _block_fetch("missing")
+    )
+    assert [m[0] for m in mismatched] == ["master-yinguang/sources/x.md:9"]
+    assert (verified, unknown) == ([], [])
+
+
+def test_a_verbatim_excerpt_block_passes():
+    mismatched, verified, unknown = verify_sources.classify_compiled_excerpt_blocks(
+        _REAL_BLOCK, _block_corpus("complete"), _block_fetch("has")
+    )
+    assert mismatched == [] and unknown == []
+    assert [v[0] for v in verified] == ["master-yinguang/sources/x.md:9"]
+
+
+def test_a_partial_corpus_cannot_condemn_an_excerpt_block():
+    mismatched, _verified, unknown = verify_sources.classify_compiled_excerpt_blocks(
+        _FAKE_BLOCK, _block_corpus("partial"), _block_fetch("missing")
+    )
+    assert mismatched == []
+    assert [u[0] for u in unknown] == ["master-yinguang/sources/x.md:9"]
+
+
+def test_an_unreadable_corpus_cannot_condemn_an_excerpt_block():
+    """取不到不是证据 —— 网络失败不能变成伪造指控。"""
+    mismatched, verified, unknown = verify_sources.classify_compiled_excerpt_blocks(
+        _REAL_BLOCK, _block_corpus("complete"), _block_fetch("unreachable")
+    )
+    assert mismatched == [] and verified == []
+    assert "could not read" in unknown[0][1]
+
+
+def test_a_persona_without_a_corpus_leaves_its_blocks_unknown():
+    blocks = [("master-huineng/sources/x.md:9", "菩提自性，本来清净，但用此心，直了成佛。", "《坛经》")]
+    mismatched, verified, unknown = verify_sources.classify_compiled_excerpt_blocks(
+        blocks, _block_corpus("complete"), _block_fetch("missing")
+    )
+    assert mismatched == [] and verified == []
+    assert "no fetchable corpus" in unknown[0][1]
+
+
+def test_the_block_collector_takes_only_blocks_without_a_cbeta_id():
+    """带经号的块归 3f；没有经号的此前无人看管，正是这个采集器要收的。"""
+    blocks = verify_sources.collect_compiled_excerpt_blocks()
+    assert blocks, "一块都没收到 —— 采集器检查了空集合"
+    assert all(len(b) == 3 for b in blocks)
+    assert all(b[0].startswith("master-yinguang/") for b in blocks), "目前只有印光的块没有经号"
+    assert not any(verify_sources._DOC_CBETA_ID.search(b[2]) for b in blocks)

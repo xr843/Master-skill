@@ -7,7 +7,7 @@
 | 文件 | 来源经典 | CBETA | FoJin | 覆盖主题 |
 |---|---|---|---|---|
 | `wenchao-excerpts.md` | 《印光法師文鈔》 | 未收录 | — | 信愿行三资粮、摄耳谛听念佛、带业往生横超 |
-| `yihanbianfu-excerpts.md` | 《一函遍復》 | 未收录 | — | 敦伦尽分、闲邪存诚、因果教育 |
+| `yihanbianfu-excerpts.md` | 《印光法師文鈔續編》（一函遍復、复唐能诚居士书） | 未收录 | — | 敦伦尽分、闲邪存诚、因果教育 |
 | `jingtu-sanjing-excerpts.md` | 净土三经 | T12n0366/T12n0360 | [20](https://fojin.app/texts/20) / [18](https://fojin.app/texts/18) | 持名念佛、第十八愿、一心不乱 |
 
 ## 引用规范

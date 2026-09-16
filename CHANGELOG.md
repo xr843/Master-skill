@@ -10,6 +10,34 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — two 「原典」 blocks no check could see were paraphrase, not source text (2026-09-16)
+
+Step 3f collects an 「原典」 block only when its 引用格式 carries a CBETA id. 《文钞》
+has none, so master-yinguang's five blocks were invisible to it — and their `>` lines
+are bare prose rather than quoted strings, so the line collector behind 3h and 3i did
+not see them either. Five blocks the persona presents as source text, checked by
+nothing. The file said so itself: 「节选文字尚未与印本逐字核对」, written and never
+acted on.
+
+Checked against the 文钞 corpus, three were word for word. Two were not:
+
+- 「敦伦尽分，闲邪存诚，诸恶莫作，众善奉行。正心诚意，以立人道之本。然后以此回向
+  净土…」 — 敦伦尽分 and 闲邪存诚 are Yinguang's, and appear together in 一函遍復;
+  「正心诚意，以立人道之本」 appears nowhere in 正编, 续编 or 三编.
+- 「因果者，圣人治天下、佛度众生之大权也。若人人深信因果，则人心自善，风俗自淳，
+  唐虞之治不难复见。」 — the first sentence is verbatim, but from 《复唐能诚居士书》,
+  not 一函遍復 as cited; 「风俗自淳」 is in none of the three volumes, and 唐虞之治
+  appears only in 三编, in a different argument.
+
+Both were genuine phrases stitched into passages that were never written. They are
+replaced with verbatim text from the same letters, each re-verified against the
+corpus, and the second is now cited to 《复唐能诚居士书》. The file's stale disclaimer
+is replaced with what was actually done.
+
+3i now checks these blocks too, counted as `Excerpt blocks the compiled teachings do
+not have`, with the same rule as the quoted lines: only a `complete` corpus may
+convict, and a text that cannot be read is unknown rather than wrong.
+
 ### Added — a quoted line must name the book it came from (2026-09-16)
 
 3h and 3i ask whether a quoted line *exists* — in CBETA, or in the compiled
