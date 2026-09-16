@@ -68,10 +68,22 @@ master-skill list
 npm update -g master-skill             # 升到下一个 minor / patch
 ```
 
-**Claude Code（插件方式）**
+**Claude Code**
+
+插件方式（同时装上 session-start hook）：
 
 ```bash
-# npx（上方）与 git clone 手动安装为正式发布渠道：
+claude plugin marketplace add xr843/Master-skill
+claude plugin install master-skill@master-skill
+```
+
+`claude plugin details master-skill` 应显示 `Skills (20)`。v0.12.11 及更早的插件只注册了
+`create-master` 一个 skill，hook 却宣布了全部 `/master-*` 命令。插件按版本号更新，已安装的在下一个版本发布后运行
+`claude plugin update master-skill`（同版本号时 update 会报“已是最新”而不拉取修复）。
+
+git clone 手动链接：
+
+```bash
 git clone https://github.com/xr843/Master-skill ~/Master-skill
 cd ~/Master-skill && pip install -r requirements.txt
 mkdir -p ~/.claude/skills   # 目录不存在时下面的 ln 全部失败
