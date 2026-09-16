@@ -435,6 +435,101 @@ function cmdUninstall(names) {
   return failed;
 }
 
+// Every file `install` copies for this skill, relative to its install dir.
+// Mirrors cmdInstall: a persona or mode copies its whole source directory; the
+// generator copies its bundle_paths. `masters/` holds the user's generated
+// personas and `__pycache__` is written by running the tools, so neither is
+// part of what the package installed.
+function expectedInstallFiles(skill) {
+  const src = path.join(PACKAGE_ROOT, skill.source);
+  const roots =
+    skill.kind === "generator"
+      ? skill.bundle_paths.filter((bundlePath) => bundlePath !== "masters")
+      : ["."];
+  const files = [];
+  const walk = (rel) => {
+    const abs = path.join(src, rel);
+    if (!fs.existsSync(abs)) return;
+    if (fs.statSync(abs).isDirectory()) {
+      if (path.basename(abs) === "__pycache__") return;
+      for (const entry of fs.readdirSync(abs)) {
+        walk(rel === "." ? entry : path.join(rel, entry));
+      }
+    } else if (!abs.endsWith(".pyc")) {
+      files.push(rel);
+    }
+  };
+  for (const root of roots) walk(root);
+  return files;
+}
+
+// What is actually under the skills directory. Until 2026-09-17 doctor only
+// checked the package's own sources, and reported "ok" (exit 0) with an
+// installed SKILL.md deleted, a persona's references/ gone, the generator's
+// tools/ gone, an install from an older version — and with nothing installed.
+// A skill that is simply not installed is not a problem: installing one master
+// is a normal choice.
+function installedProblems() {
+  const problems = [];
+  for (const skill of catalogSkills()) {
+    const dest = path.join(SKILLS_DIR, skill.install_dir);
+    if (!fs.existsSync(dest)) continue;
+    if (!fs.existsSync(path.join(dest, "SKILL.md"))) {
+      problems.push({
+        code: "installed-missing-skill-md",
+        name: skill.name,
+        message: `${skill.name} is installed without SKILL.md — run: master-skill install ${skill.name}`,
+      });
+      continue;
+    }
+    const missing = [];
+    const changed = [];
+    for (const rel of expectedInstallFiles(skill)) {
+      const installed = path.join(dest, rel);
+      if (!fs.existsSync(installed)) {
+        missing.push(rel);
+      } else if (
+        !fs.readFileSync(installed).equals(
+          fs.readFileSync(path.join(PACKAGE_ROOT, skill.source, rel))
+        )
+      ) {
+        changed.push(rel);
+      }
+    }
+    if (missing.length) {
+      problems.push({
+        code: "installed-incomplete",
+        name: skill.name,
+        message: `${skill.name} is missing ${missing.length} installed file(s), e.g. ${missing[0]} — run: master-skill install ${skill.name}`,
+      });
+    }
+    if (changed.length) {
+      problems.push({
+        code: "installed-outdated",
+        name: skill.name,
+        message: `${skill.name} differs from package ${pkgVersion()} in ${changed.length} file(s), e.g. ${changed[0]} — run: master-skill update --all`,
+      });
+    }
+  }
+
+  // Personas registered by create-master are links into create-master/masters/;
+  // uninstalling the generator leaves them pointing at nothing.
+  if (fs.existsSync(SKILLS_DIR)) {
+    for (const entry of fs.readdirSync(SKILLS_DIR, { withFileTypes: true })) {
+      if (!entry.isSymbolicLink()) continue;
+      const link = path.join(SKILLS_DIR, entry.name);
+      if (!fs.existsSync(link)) {
+        problems.push({
+          code: "dangling-link",
+          name: entry.name,
+          message: `${entry.name} links to ${fs.readlinkSync(link)}, which no longer exists`,
+        });
+      }
+    }
+  }
+  return problems;
+}
+
 function doctorData() {
   const masters = availableMasters();
   const installed = installedSkillDirs();
@@ -453,6 +548,7 @@ function doctorData() {
     name: skill.name,
     message: `${skill.name} is missing SKILL.md`,
   }));
+  problems.push(...installedProblems());
 
   return {
     packageVersion: pkgVersion(),

@@ -217,6 +217,81 @@ test("doctor counts installed known skills", (t) => {
   assert.match(stdout, /Installed known skills: 1/);
 });
 
+// Until 2026-09-17 doctor checked only the package's own sources: it reported
+// "ok" and exited 0 with an installed SKILL.md deleted, a persona's references/
+// gone, the generator's tools/ gone, and an install from an older version.
+function installedHome(t, names) {
+  const home = tmpHome(t);
+  for (const name of names) run(["install", name], home.env);
+  return { ...home, skills: skillsDir(home.home) };
+}
+
+function doctorJson(env) {
+  const { stdout, code } = run(["doctor", "--json"], env);
+  return { code, payload: JSON.parse(stdout) };
+}
+
+test("doctor stays ok for a healthy partial install and for none at all", (t) => {
+  const { env } = installedHome(t, ["zhiyi", "create-master"]);
+  const { code, payload } = doctorJson(env);
+  assert.equal(code, 0, JSON.stringify(payload.problems));
+  assert.deepEqual(payload.problems, []);
+  assert.equal(doctorJson(tmpHome(t).env).payload.status, "ok");
+});
+
+test("doctor reports an installed skill that lost SKILL.md", (t) => {
+  const { env, skills } = installedHome(t, ["zhiyi"]);
+  fs.rmSync(path.join(skills, "master-zhiyi", "SKILL.md"));
+  const { code, payload } = doctorJson(env);
+  assert.equal(code, 1);
+  assert.deepEqual(payload.problems.map((p) => [p.code, p.name]), [["installed-missing-skill-md", "master-zhiyi"]]);
+});
+
+test("doctor reports installed files that are missing", (t) => {
+  const { env, skills } = installedHome(t, ["zhiyi", "create-master"]);
+  fs.rmSync(path.join(skills, "master-zhiyi", "references"), { recursive: true });
+  fs.rmSync(path.join(skills, "create-master", "tools"), { recursive: true });
+  const { code, payload } = doctorJson(env);
+  assert.equal(code, 1);
+  assert.deepEqual(
+    payload.problems.map((p) => [p.code, p.name]).sort(),
+    [["installed-incomplete", "create-master"], ["installed-incomplete", "master-zhiyi"]]
+  );
+});
+
+test("doctor reports an install that differs from this package version", (t) => {
+  const { env, skills } = installedHome(t, ["zhiyi"]);
+  const skillMd = path.join(skills, "master-zhiyi", "SKILL.md");
+  fs.writeFileSync(skillMd, fs.readFileSync(skillMd, "utf8").replace(/^version: .*$/m, "version: 0.0.1"));
+  const { code, payload } = doctorJson(env);
+  assert.equal(code, 1);
+  assert.equal(payload.problems[0].code, "installed-outdated");
+  assert.match(payload.problems[0].message, /master-skill update --all/);
+});
+
+test("doctor ignores the user's generated personas and the tools' bytecode", (t) => {
+  const { env, skills } = installedHome(t, ["create-master"]);
+  const generated = path.join(skills, "create-master", "masters", "master-mine");
+  fs.mkdirSync(generated, { recursive: true });
+  fs.writeFileSync(path.join(generated, "SKILL.md"), "---\nname: master-mine\n---\n");
+  const cache = path.join(skills, "create-master", "tools", "__pycache__");
+  fs.mkdirSync(cache, { recursive: true });
+  fs.writeFileSync(path.join(cache, "skill_writer.cpython-312.pyc"), "bytecode");
+  assert.deepEqual(doctorJson(env).payload.problems, []);
+});
+
+test("doctor reports a registered persona whose target is gone", { skip: process.platform === "win32" }, (t) => {
+  const { env, skills } = installedHome(t, ["create-master"]);
+  const generated = path.join(skills, "create-master", "masters", "master-mine");
+  fs.mkdirSync(generated, { recursive: true });
+  fs.symlinkSync(generated, path.join(skills, "master-mine"), "dir");
+  assert.deepEqual(doctorJson(env).payload.problems, []);
+  run(["uninstall", "create-master"], env);
+  const { code, payload } = doctorJson(env);
+  assert.equal(code, 1);
+  assert.deepEqual(payload.problems.map((p) => [p.code, p.name]), [["dangling-link", "master-mine"]]);
+});
+
 test("inspect shows master metadata, sources, and live grounding", (t) => {
   const { env } = tmpHome(t);
   const { stdout, code } = run(["inspect", "huineng"], env);

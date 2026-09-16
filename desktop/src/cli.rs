@@ -51,7 +51,28 @@ impl CliClient {
     }
 
     pub fn doctor(&self) -> Result<DoctorReport> {
-        self.json(&["doctor", "--json"])
+        // `doctor --json` exits 1 when it finds problems and still prints the
+        // whole report: the report is the answer, not a failure. Treated as a
+        // failed command, the first real problem doctor found made
+        // load_snapshot fail, so the console could never show the report
+        // written to explain it. Only that shape is accepted — exit 1, no
+        // timeout, stdout a report whose status is "problems"; a crash, a
+        // timeout or unparseable output is still an error.
+        let args = ["doctor", "--json"];
+        let context = format!("failed to run master-skill CLI with args {args:?}");
+        let output = self
+            .runner
+            .run(&mut self.cli_command(&args))
+            .with_context(|| context.clone())?;
+        if !output.timed_out && output.status.code() == Some(1) {
+            if let Ok(report) = serde_json::from_str::<DoctorReport>(&output.stdout) {
+                if report.status == "problems" {
+                    return Ok(report);
+                }
+            }
+        }
+        let stdout = self.check_output(output, &context)?;
+        serde_json::from_str(&stdout).with_context(|| format!("failed to parse JSON from {args:?}"))
     }
 
     pub fn inspect(&self, slug: &str) -> Result<MasterInspect> {
@@ -112,7 +133,7 @@ impl CliClient {
         serde_json::from_str(&stdout).with_context(|| format!("failed to parse JSON from {args:?}"))
     }
 
-    fn run(&self, args: &[&str]) -> Result<String> {
+    fn cli_command(&self, args: &[&str]) -> Command {
         let mut command = Command::new(&self.node_bin);
         command
             .arg(self.repo_root.join("bin").join("cli.mjs"))
@@ -121,9 +142,12 @@ impl CliClient {
         if let Some(home) = &self.home {
             command.env("HOME", home).env("USERPROFILE", home);
         }
+        command
+    }
 
+    fn run(&self, args: &[&str]) -> Result<String> {
         self.run_command(
-            &mut command,
+            &mut self.cli_command(args),
             &format!("failed to run master-skill CLI with args {args:?}"),
         )
     }
@@ -138,6 +162,10 @@ impl CliClient {
             .runner
             .run(command)
             .with_context(|| context.to_string())?;
+        self.check_output(output, context)
+    }
+
+    fn check_output(&self, output: crate::command::CommandOutput, context: &str) -> Result<String> {
         if !output.timed_out && output.status.success() {
             return Ok(output.stdout);
         }
