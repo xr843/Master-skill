@@ -1091,3 +1091,148 @@ def test_the_quote_collector_reads_the_real_repo_and_skips_what_is_not_a_quotati
     assert not any("具格上师" in t for t in text)
     assert not any(t.startswith("见空性而不坏因果") for t in text)
     assert all(w.startswith("master-") and ("/references/" in w or "/sources/" in w) for w in where)
+
+
+# --- Step 3i: quoted lines against compiled teachings CBETA does not hold ------
+
+
+def _corpus(coverage, master="master-yinguang", title="《印光法师文钞》"):
+    return {
+        master: {
+            "master": master,
+            "corpus_title": title,
+            "coverage": coverage,
+            "texts": [{"id": "x", "title": "正编", "url": "https://example/u1", "encoding": "utf-8"}],
+        }
+    }
+
+
+def _compiled_fetch(mode="has"):
+    """Fake full-text fetch by outcome, so a test never depends on a live site.
+
+    "has" — the book contains the quote.  "missing" — it does not.
+    "unreachable" — the text could not be read at all.
+    """
+
+    def fetch(url, encoding="utf-8"):
+        if mode == "unreachable":
+            return None
+        if mode == "has":
+            return "愿离娑婆如狱囚之冀出牢狱愿生极乐如穷子之思归故乡"
+        return "毫不相干的另一段文字凑满字数"
+
+    return fetch
+
+
+_YINGUANG_REAL = (
+    "master-yinguang/references/voice.md:29",
+    "master-yinguang",
+    "愿离娑婆，如狱囚之冀出牢狱。愿生极乐，如穷子之思归故乡。",
+)
+
+
+def test_a_line_the_complete_corpus_does_not_have_is_wrong():
+    """《文钞》正续三编就是印光语录的全部，都取得到 —— 找不到即伪造。"""
+    fake = [("master-yinguang/references/voice.md:99", "master-yinguang", "老实念佛，莫换题目，一心不乱。")]
+    mismatched, verified, unknown, unreadable = verify_sources.classify_compiled_teaching_quotes(
+        fake, _corpus("complete"), _compiled_fetch("missing")
+    )
+    assert [m[0] for m in mismatched] == ["master-yinguang/references/voice.md:99"]
+    assert (verified, unknown, unreadable) == ([], [], [])
+
+
+def test_a_partial_corpus_can_confirm_but_never_convict():
+    """净慧编的《开示录》比岑学吕的《法汇》多六十余万字，BFNN 上没有；找不到证明不了什么。"""
+    fake = [("master-xuyun/references/voice.md:99", "master-xuyun", "我活了一百多岁，只会这一句话头。")]
+    mismatched, verified, unknown, _ = verify_sources.classify_compiled_teaching_quotes(
+        fake, _corpus("partial", "master-xuyun", "《虚云和尚法汇》"), _compiled_fetch("missing")
+    )
+    assert mismatched == []
+    assert [u[0] for u in unknown] == ["master-xuyun/references/voice.md:99"]
+
+
+def test_a_line_the_book_has_is_verified():
+    mismatched, verified, unknown, unreadable = verify_sources.classify_compiled_teaching_quotes(
+        [_YINGUANG_REAL], _corpus("complete"), _compiled_fetch("has")
+    )
+    assert mismatched == [] and unknown == [] and unreadable == []
+    assert verified == [("master-yinguang/references/voice.md:29", "正编")]
+
+
+def test_a_book_that_cannot_be_read_is_unknown_not_wrong():
+    """取不到不是证据：网络失败不能变成伪造指控。"""
+    mismatched, verified, unknown, _ = verify_sources.classify_compiled_teaching_quotes(
+        [_YINGUANG_REAL], _corpus("complete"), _compiled_fetch("unreachable")
+    )
+    assert mismatched == [] and verified == []
+    assert "could not read" in unknown[0][1]
+
+
+def test_a_corpus_that_never_loads_is_reported_instead_of_quietly_passing():
+    """2026-09-16 首跑就是这样：清单 URL 预编码过，取数再编一次成了 %25，印光三部全取不到。
+
+    那天 `Quoted lines the compiled teachings do not have` 是 0 —— 不是引文都对，
+    是一条都没查。这一项必须单独响，否则取数坏掉的门禁会永远绿着。
+    """
+    _, _, _, unreadable = verify_sources.classify_compiled_teaching_quotes(
+        [_YINGUANG_REAL], _corpus("complete"), _compiled_fetch("unreachable")
+    )
+    assert unreadable == ["《印光法师文钞》"]
+
+
+def test_a_corpus_that_loads_is_not_reported_as_broken():
+    """反向：能取到就不该报 BROKEN —— 一个恒响的告警等于没有告警。"""
+    _, _, _, unreadable = verify_sources.classify_compiled_teaching_quotes(
+        [_YINGUANG_REAL], _corpus("complete"), _compiled_fetch("missing")
+    )
+    assert unreadable == []
+
+
+def test_a_persona_with_no_corpus_is_left_alone():
+    quotes = [("master-huineng/references/voice.md:1", "master-huineng", "不是风动，不是幡动，仁者心动。")]
+    assert verify_sources.classify_compiled_teaching_quotes(
+        quotes, _corpus("complete"), _compiled_fetch("missing")
+    ) == ([], [], [], [])
+
+
+def test_punctuation_differences_do_not_break_the_match():
+    """两边都只留汉字 —— 原书断句与人设断句不同，不该报成原书没有这句。"""
+    quotes = [
+        (
+            "master-yinguang/references/voice.md:29",
+            "master-yinguang",
+            "愿离娑婆。如狱囚之冀出牢狱；愿生极乐，如穷子之思归故乡！",
+        )
+    ]
+    mismatched, verified, unknown, _ = verify_sources.classify_compiled_teaching_quotes(
+        quotes, _corpus("complete"), _compiled_fetch("has")
+    )
+    assert mismatched == [] and unknown == [] and len(verified) == 1
+
+
+def test_the_coverage_flag_is_checkable_in_both_directions():
+    """complete 不能是一句断言：声明过的编集语录要么有全文，要么写明它不是一部书。
+
+    反向也卡住 —— 每部都齐了却标 partial，等于白白放弃判错能力。
+    """
+    corpora = verify_sources.compiled_teaching_corpora()
+    assert corpora, "tools/compiled-teaching-sources.json 是空的"
+    for master, entry in corpora.items():
+        meta_path = Path(verify_sources.PREBUILT_DIR) / master / "meta.json"
+        assert meta_path.exists(), f"{master} 没有 meta.json"
+        sources = json.loads(meta_path.read_text(encoding="utf-8")).get("sources") or []
+        compiled = {str(s.get("id")) for s in sources if s.get("type") == "compiled_teaching"}
+        covered = {str(t["id"]) for t in entry["texts"]} | set(entry.get("not_a_separate_book") or [])
+        assert entry["coverage"] in {"complete", "partial"}
+        assert len(entry.get("coverage_reason", "")) >= 20, f"{master} 没写清 coverage 理由"
+        assert entry.get("verified_on"), f"{master} 没写核验日期"
+        for text in entry["texts"]:
+            assert str(text["id"]) in compiled, f"{master} 登记了未声明的来源 {text['id']}"
+            assert str(text["url"]).startswith("http"), f"{master} 的 {text['id']} 地址不是 URL"
+            # 预先百分号编码过的地址会被 fetch_compiled_text 再编一次（%E4 -> %25E4），
+            # 一取就 404，而门禁只会安静地记「未判定」。2026-09-16 首跑就栽在这里。
+            assert "%" not in str(text["url"]), f"{master} 的 {text['id']} 地址预先编码了，写字面字符即可"
+        if entry["coverage"] == "complete":
+            assert compiled <= covered, f"{master} 标 complete，却有声明的编集语录没有全文：{compiled - covered}"
+        else:
+            assert compiled - covered, f"{master} 标 partial，但每部声明的编集语录都有全文，应改为 complete"

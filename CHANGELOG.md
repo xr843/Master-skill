@@ -10,6 +10,45 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — the weekly check now reads the books CBETA does not hold (2026-09-16)
+
+Step 3h can only search CBETA, so for a master whose own sayings were never
+canonised it answers "unknown" and stops. That is precisely where the
+fabricated quotations fixed in 0.12.9 and 0.12.10 had grown. Of the 49 quoted
+lines in the personas, 3h judged 38 and left 11 unjudged; six of those eleven
+belong to 印光 and 虚云, whose complete writings are online for free.
+
+New step 3i reads those books and looks for the line in them:
+
+- `tools/compiled-teaching-sources.json` declares where each corpus lives —
+  the three 《印光法师文钞》 volumes in the 殆知阁 corpus (pinned to a commit,
+  not a branch) and 岑学吕's 《虚云和尚法汇》 and 《虚云老和尚年谱》 on BFNN.
+- **`coverage` decides whether the step may convict.** `complete` means every
+  compiled source the persona declares is fetchable here, so a line that is
+  not in any of them is fabricated. 印光 is `complete`: 正编, 续编 and 三编
+  are the whole of the 文钞. 虚云 is `partial` — 净慧's 《开示录》 adds some
+  600,000 characters over 岑学吕's edition and is not on BFNN, so a genuine
+  line may well come from a page this step cannot read. A `partial` corpus can
+  confirm a quotation but never condemn one. A test asserts the flag both ways,
+  against each persona's own `meta.json`, so "complete" is checkable rather
+  than merely claimed.
+- Anything unreadable — a failed fetch, a moved file — is unknown, never wrong.
+
+All six lines were found word for word: 虚云's three in 《法汇—开示》, 印光's
+three in 正编 and 续编. Nothing is reported wrong.
+
+The first real run reported none of that. It reported nothing at all: the
+manifest held pre-encoded URLs which the fetcher encoded again (`%E4` →
+`%25E4`), so all three 文钞 volumes 404'd and the count of bad lines sat at
+zero — not because the quotations were sound but because none had been read.
+So the step now also counts corpora where **not one** declared text loaded and
+opens the weekly issue on that alone. A check that examined nothing must not
+be indistinguishable from a check that passed.
+
+Still out of reach, and recorded as unknown: 觉音 and 马哈希's Chinese
+renderings of Pali suttas, and the two lines 蕅益 and 玄奘 quote from books
+they do not declare.
+
 ## [0.12.10] — 2026-09-16
 
 This release adds the weekly check that would have caught the fabricated
