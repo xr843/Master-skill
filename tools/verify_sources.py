@@ -1101,6 +1101,100 @@ def classify_persona_quotes(
     return mismatched, unknown
 
 
+COMPILED_SOURCES_FILE = Path(__file__).parent / "compiled-teaching-sources.json"
+
+
+def compiled_teaching_corpora() -> dict[str, dict]:
+    """{祖师目录: 该祖师在 CBETA 之外、有免费全文可取的编集语录}。
+
+    3h 只能查 CBETA，所以虚云的《法汇》、印光的《文钞》一律落进「未判定」——
+    2026-09-15 修掉的那批拼接引文正是长在这个盲区里。清单把原书地址登记下来，
+    3i 就能真的进原书逐字找。
+    """
+    if not COMPILED_SOURCES_FILE.exists():
+        return {}
+    data = json.loads(COMPILED_SOURCES_FILE.read_text(encoding="utf-8"))
+    return {str(entry["master"]): entry for entry in data.get("corpora") or []}
+
+
+def _han_only(text: str) -> str:
+    """只留汉字。两边都这么归一，标点和空白的写法差异就不会造成假的对不上。"""
+    return "".join(_QUOTE_HAN.findall(re.sub(r"<[^>]+>", "\n", text)))
+
+
+def fetch_compiled_text(url: str, encoding: str = "utf-8") -> str | None:
+    """取一部编集语录的全文，归一成纯汉字；取不到返回 None（未知，不是「原书没有」）。"""
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    # urllib 不像 curl 会自己处理非 ASCII 路径，原样传中文路径会抛 UnicodeEncodeError。
+    split = urllib.parse.urlsplit(url)
+    safe = urllib.parse.urlunsplit(split._replace(path=urllib.parse.quote(split.path)))
+    try:
+        with urllib.request.urlopen(safe, timeout=90) as response:
+            raw = response.read()
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+    return _han_only(raw.decode(encoding, errors="replace"))
+
+
+def classify_compiled_teaching_quotes(
+    quotes: list[tuple[str, str, str]],
+    corpora: dict[str, dict],
+    fetch,
+) -> tuple[list[tuple[str, str, str]], list[tuple[str, str]], list[tuple[str, str]], list[str]]:
+    """到编集语录原书里逐字找人设当原话引的句子。
+
+    判「原书没有这句」只对 coverage 标 `complete` 的语料成立：正编、续编、三编就是
+    《文钞》的全部，都取得到，找不到即伪造。虚云标 `partial` —— 净慧编的《开示录》
+    比岑学吕的《法汇》多出六十余万字，BFNN 上没有，找不到只说明这一步够不着。
+    任何一部取不到，也一律记未判定：接口不通不是证据。
+
+    第四个返回值是「整部语料一篇都没取到」的祖师 —— 那说明这一步对他什么也没检查。
+    不把它单独报出来，一个取数早就坏掉的 3i 会年复一年地绿着，跟没有这道门禁一样。
+    """
+    mismatched: list[tuple[str, str, str]] = []
+    verified: list[tuple[str, str]] = []
+    unknown: list[tuple[str, str]] = []
+    bodies: dict[str, str | None] = {}
+    touched: set[str] = set()
+    for where, master, quote in quotes:
+        corpus = corpora.get(master)
+        if not corpus:
+            continue
+        touched.add(master)
+        wanted = _han_only(quote)
+        if len(wanted) < 8:
+            unknown.append((where, "quote too short to search"))
+            continue
+        found_in, unreachable = None, []
+        for text in corpus.get("texts") or []:
+            url = str(text.get("url"))
+            if url not in bodies:
+                bodies[url] = fetch(url, text.get("encoding") or "utf-8")
+            body = bodies[url]
+            if body is None:
+                unreachable.append(str(text.get("title")))
+            elif wanted in body:
+                found_in = str(text.get("title"))
+                break
+        if found_in:
+            verified.append((where, found_in))
+        elif unreachable:
+            unknown.append((where, f"could not read {', '.join(sorted(set(unreachable)))}"))
+        elif corpus.get("coverage") == "complete":
+            mismatched.append((where, quote, str(corpus.get("corpus_title") or master)))
+        else:
+            unknown.append((where, f"{master}'s free full texts do not cover every declared compilation"))
+    unreadable = sorted(
+        str(corpora[master].get("corpus_title") or master)
+        for master in touched
+        if all(bodies.get(str(t.get("url"))) is None for t in corpora[master].get("texts") or [])
+    )
+    return mismatched, verified, unknown, unreadable
+
+
 def verify_ids(bridge, cbeta_map: dict[str, list[str]], titles: dict[str, str]) -> dict[str, dict]:
     """Verify all CBETA IDs and return {full_cbeta_id: {text_id, short_id, title, ...}}.
 
@@ -1435,6 +1529,28 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     if not quote_line_mismatched and not quote_line_unknown:
         print(f"  All {len(persona_quotes)} quoted lines are in CBETA, in a work the persona declares")
 
+    # Step 3i: 3h 够不着的那些 —— 祖师自己的语录本就在 CBETA 之外，进原书逐字找
+    # （见 classify_compiled_teaching_quotes）。
+    print("\n[3i/4] Checking quoted lines against compiled teachings CBETA does not hold...")
+    compiled_corpora = compiled_teaching_corpora()
+    compiled_mismatched, compiled_verified, compiled_unknown, compiled_unreadable = (
+        classify_compiled_teaching_quotes(persona_quotes, compiled_corpora, fetch_compiled_text)
+    )
+    for where, quote, corpus_title in compiled_mismatched:
+        print(f"    [WRONG] {where}: {corpus_title} has no 「{quote[:40]}」")
+    for title in compiled_unreadable:
+        print(f"    [BROKEN] {title}: not one declared full text loaded — this step checked nothing")
+    if compiled_verified:
+        print(f"  Verified {len(compiled_verified)} quoted line(s) in the compiled teachings:")
+        for where, title in compiled_verified:
+            print(f"    {where}: {title}")
+    if compiled_unknown:
+        print(f"  Could not check {len(compiled_unknown)} quoted line(s) — unknown, not wrong:")
+        for where, reason in compiled_unknown:
+            print(f"    {where}: {reason}")
+    if not compiled_corpora:
+        print("  No compiled-teaching corpora are declared")
+
     # Step 4: Update URLs
     # Build replacement map: full_cbeta_id -> str(internal_text_id)
     id_replacement_map: dict[str, str] = {}
@@ -1483,6 +1599,8 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     print(f"  Excerpt quotes not in the cited text: {len(quote_mismatched)}")
     print(f"  BDRC records that do not match: {len(bdrc_mismatched)}")
     print(f"  Quoted lines CBETA does not have: {len(quote_line_mismatched)}")
+    print(f"  Quoted lines the compiled teachings do not have: {len(compiled_mismatched)}")
+    print(f"  Compiled teaching corpora that could not be read: {len(compiled_unreadable)}")
     if unknown_to_cbeta:
         print(f"  CBETA unreachable for:     {len(unknown_to_cbeta)} (not counted as wrong)")
     if dry_run and all_changes:
