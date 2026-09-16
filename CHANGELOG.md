@@ -10,6 +10,24 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.11] — 2026-09-16
+
+Two of master-yinguang's 「原典」 blocks were not source text. They read as
+《文钞》 and were shown to users as such, but 「正心诚意，以立人道之本」 and
+「风俗自淳」 appear in none of 正编, 续编 or 三编 — genuine phrases of his, stitched
+into passages he never wrote. Both are replaced with verbatim text from the letters
+they cite, and the second block's citation is corrected from 《一函遍復》 to
+《复唐能诚居士书》, which is where its one real sentence comes from.
+
+Nothing had been looking at those blocks. Step 3f collects an 「原典」 block only
+when its 引用格式 carries a CBETA id, and 《文钞》 has none; the line collector
+behind 3h and 3i did not see them either, because their `>` lines are bare prose
+rather than quoted strings. The rest of this release is the machinery that closed
+that gap and the ones beside it — a quote collector that was walking past a fifth
+of the quotations, a per-PR gate requiring every quoted line to name its work, two
+gates that ran only at release, an `npm test` weaker than CI, and a weekly check
+whose crash read as a clean week.
+
 ### Fixed — a crashed weekly check read as a clean week (2026-09-16)
 
 `verify-links.yml` ran the weekly source check as
@@ -2387,7 +2405,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.10...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.11...HEAD
+[0.12.11]: https://github.com/xr843/Master-skill/compare/v0.12.10...v0.12.11
 [0.12.10]: https://github.com/xr843/Master-skill/compare/v0.12.9...v0.12.10
 [0.12.9]: https://github.com/xr843/Master-skill/compare/v0.12.8...v0.12.9
 [0.12.8]: https://github.com/xr843/Master-skill/compare/v0.12.7...v0.12.8
