@@ -8,7 +8,7 @@
 User request
     |
     v
-session-start hook ──> auto-injects master list (5 platforms, unified)
+session-start hook ──> injects master list (when loaded as a Claude Code / Cursor plugin; Gemini CLI never fires it, see install.en.md)
     |
     v
 SKILL.md (AgentSkills entry: decision tree + quick reference)
@@ -45,8 +45,8 @@ Unified multi-platform manifests:
   .claude-plugin/      → Claude Code    (hooks/run-hook.cmd → session-start)
   .cursor-plugin/      → Cursor         (hooks/hooks-cursor.json)
   .codex/              → Codex CLI      (.codex/INSTALL.md)
-  .opencode/           → OpenCode       (referenced from opencode.json)
-  gemini-extension.json → Gemini CLI    (auto-loaded with GEMINI.md)
+  .opencode/           → OpenCode       (.opencode/INSTALL.md; reads ~/.claude/skills/)
+  gemini-extension.json → Gemini CLI    (GEMINI.md only; skills via gemini skills install --path prebuilt)
 ```
 
 ---

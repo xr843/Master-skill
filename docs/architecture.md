@@ -8,7 +8,7 @@
 用户请求
     |
     v
-session-start hook ──> 自动注入法师列表（5 端统一）
+session-start hook ──> 注入法师列表（以 Claude Code / Cursor 插件加载时；Gemini CLI 不执行，见 install.md）
     |
     v
 SKILL.md (AgentSkills 入口：决策树 + Quick Ref)
@@ -45,8 +45,8 @@ SKILL.md (AgentSkills 入口：决策树 + Quick Ref)
   .claude-plugin/    → Claude Code      (hooks/run-hook.cmd → session-start)
   .cursor-plugin/    → Cursor           (hooks/hooks-cursor.json)
   .codex/            → Codex CLI        (.codex/INSTALL.md)
-  .opencode/         → OpenCode         (opencode.json 引用)
-  gemini-extension.json → Gemini CLI    (GEMINI.md 自动加载)
+  .opencode/         → OpenCode         (.opencode/INSTALL.md；读 ~/.claude/skills/)
+  gemini-extension.json → Gemini CLI    (只带 GEMINI.md；skill 用 gemini skills install --path prebuilt)
 ```
 
 ---

@@ -157,7 +157,7 @@ This project is built out of respect for Buddhist traditions. All content is gen
 - **HARD-GATE discipline**: Both `/create-master` and every prebuilt master require doctrinal claims, practice guidance, and text interpretation to cite that persona's declared sources (CBETA / BDRC / Toh / SuttaCentral / PTS / compliant compiled teachings); fabricated source IDs and fictional personas are forbidden
 - **Two-stage independent review**: The generation pipeline forces a "doctrinal accuracy → voice consistency" review before write; FAIL triggers up to 2 rounds of automatic repair
 - **Automated fidelity tests**: 211 fixtures (10+ per master, 18 for the `compare-masters` meta-skill) check keyword and citation coverage, and every graded answer also goes through the offline citation audit; CI runs a structural dry-run on every PR and on `main`; graded runs support Anthropic / DeepSeek / Gemini (`--provider`) with the matching API key, as a manual local/pre-release step — the latest full run and its case-by-case adjudication are [below](#fidelity-evaluation-current-data)
-- **Unified multi-platform plugin**: Claude Code, Cursor, Codex CLI, OpenCode, and Gemini CLI share one `prebuilt/` tree, with a session-start hook injecting the master list on every platform
+- **One `prebuilt/` tree across platforms**: Claude Code, Cursor, Codex CLI, OpenCode, and Gemini CLI each install it differently (see [docs/install.en.md](docs/install.en.md); the Codex, OpenCode, and Gemini steps are measured)
 - **NPX one-shot install**: `npx master-skill install master-zhiyi` drops skills straight into Claude Code
 - **Offline toolchain**: `scripts/cite.py` (CBETA lookup), `scripts/query.py` (offline semantic search), `scripts/validate.py` (frontmatter linter)
 - **FoJin data bridge**: Connected to [fojin.app](https://fojin.app) — 10K+ texts, 678K+ semantic embeddings, a knowledge graph of 110K+ entities, and 600+ registered data sources
@@ -208,7 +208,7 @@ npx master-skill doctor                 # check the local install and runtime pa
 npx master-skill update --all           # upgrade: reinstall everything, clearing stale files
 ```
 
-Once installed, invoke `/master-huineng`, `/compare-masters`, etc. directly in chat.
+Once installed, invoke `/master-huineng`, `/compare-masters`, etc. directly in chat. npx installs to `~/.claude/skills/`, which Claude Code and OpenCode read; **Codex CLI and Gemini CLI do not**, so use their sections in docs/install.en.md.
 
 > Per-platform setup (Claude Code plugin / Cursor / OpenCode / Codex CLI / Gemini CLI),
 > global install, teaching-mode usage, and `/create-master`

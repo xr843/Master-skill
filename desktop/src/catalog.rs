@@ -318,7 +318,7 @@ impl SkillRow {
         if !self.installed {
             return vec![DiagnosticAction {
                 title: "Install skill".to_string(),
-                detail: "Install this skill into the local Codex/Claude skills directory."
+                detail: "Install this skill into ~/.claude/skills (read by Claude Code and OpenCode, not by Codex)."
                     .to_string(),
                 operation: DiagnosticOperation::InstallSkill {
                     slug: self.slug.clone(),
