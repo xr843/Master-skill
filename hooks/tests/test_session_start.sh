@@ -352,5 +352,48 @@ done
 rm -rf "$nopy"
 
 echo
+# Case 18: a lineage keeps its meaning. Until 2026-09-16 the whitelist had no
+# Latin diacritic letters and deleted "/", so "(Mahāvihāra)" reached the model
+# as "(Mahvihra)" and "三论宗/中观" as the made-up single term "三论宗中观".
+out=$(sanitize_lineage "三论宗/中观")
+assert_eq "slash kept as fullwidth solidus" "三论宗／中观" "$out"
+out=$(sanitize_lineage "南传上座部·斯里兰卡大寺派 (Mahāvihāra)")
+assert_eq "IAST letters kept" "南传上座部·斯里兰卡大寺派 (Mahāvihāra)" "$out"
+out=$(sanitize_lineage $'Mahāvihāra')
+assert_eq "decomposed diacritics composed, not dropped" "Mahāvihāra" "$out"
+
+# Case 19: widening to letters must not let format characters through —
+# bidi overrides and zero-width characters can hide or reorder text.
+out=$(sanitize_lineage $'禅宗‮evil​﻿×')
+assert_eq "bidi / zero-width / non-letter Latin-1 stripped" "禅宗evil" "$out"
+
+# Case 20: every shipped lineage reaches the model intact (a slash becomes "／").
+# A lineage that needs a character outside the whitelist fails here, so widening
+# the whitelist is a decision someone makes, not a silent mangle.
+if python3 - "$SANITIZER" "$SCRIPT_DIR/../../prebuilt" <<'PYEOF'
+import importlib.util, pathlib, sys, unicodedata
+spec = importlib.util.spec_from_file_location("ss", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+bad = []
+for skill in sorted(pathlib.Path(sys.argv[2]).glob("*/SKILL.md")):
+    found = m._LINEAGE_LINE.search(skill.read_text(encoding="utf-8"))
+    if not found:
+        continue
+    raw = found.group(1)
+    want = unicodedata.normalize("NFC", raw).replace("/", "／").strip()[: m.MAX_LINEAGE_CHARS]
+    if m.sanitize_lineage(raw) != want:
+        bad.append((skill.parent.name, raw, m.sanitize_lineage(raw)))
+for name, raw, got in bad:
+    print(f"    {name}: {raw!r} -> {got!r}")
+sys.exit(1 if bad else 0)
+PYEOF
+then
+    echo "  PASS  every shipped lineage survives sanitization"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL  a shipped lineage was altered by sanitization"
+    FAIL=$((FAIL + 1))
+fi
+
 printf "Summary: %d passed, %d failed\n" "$PASS" "$FAIL"
 exit $([ "$FAIL" -eq 0 ] && echo 0 || echo 1)
