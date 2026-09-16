@@ -447,3 +447,69 @@ def test_the_collection_subprocess_runs_once_per_process(liveness, monkeypatch, 
     assert first == second
     assert len(calls) == 1, f"collected {len(calls)} times, expected 1"
     liveness._collect_counts_cached.cache_clear()
+
+
+# --------------------------------------------------------------------------
+# A gate must run on a pull request, or say why it does not.
+#
+# Found 2026-09-16: validate-citation-templates.py and validate-self-audit-
+# sources.py lived only inside `npm test`, which only npm-publish.yml runs, on a
+# published release. Both were unit-tested and both passed — their first real
+# execution would have been the release itself. The same shape had already
+# shipped once, in validate-curriculum-sources.py.
+# --------------------------------------------------------------------------
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_this_repo_runs_every_gate_on_a_pull_request(liveness):
+    problems = liveness.check_every_gate_runs_on_a_pr(ROOT, liveness.read_workflows(ROOT))
+    assert problems == [], "; ".join(problems)
+
+
+def test_a_gate_reachable_from_no_pr_workflow_is_reported(liveness):
+    """没有主 workflow 时，那些门禁就该一个个报出来 —— 门禁不会红等于没有门禁。"""
+    workflows = liveness.read_workflows(ROOT)
+    without_main = {
+        path: doc for path, doc in workflows.items()
+        if path != ".github/workflows/validate-and-test.yml"
+    }
+    problems = liveness.check_every_gate_runs_on_a_pr(ROOT, without_main)
+    assert any("runs nowhere on a pull request" in p for p in problems)
+
+
+def test_a_declaration_for_a_missing_script_is_stale(liveness, monkeypatch):
+    monkeypatch.setitem(liveness.NOT_A_PR_GATE, "no-such-gate.py", "编造的条目")
+    problems = liveness.check_every_gate_runs_on_a_pr(ROOT, liveness.read_workflows(ROOT))
+    assert any("no such script exists" in p for p in problems)
+
+
+def test_a_declaration_for_a_script_the_pr_does_run_is_stale(liveness, monkeypatch):
+    """反向漂移：借口留着、门禁其实已经在跑，比没有申报更糟 —— 它是个假的警告。"""
+    monkeypatch.setitem(liveness.NOT_A_PR_GATE, "validate-quote-attribution.py", "过期借口")
+    problems = liveness.check_every_gate_runs_on_a_pr(ROOT, liveness.read_workflows(ROOT))
+    assert any("does run it now" in p for p in problems)
+
+
+def test_reachability_follows_an_importlib_load(liveness):
+    """validate.py 用 spec_from_file_location 加载 curriculum 门禁；只看 workflow 文本会误报。"""
+    reachable = liveness.pr_reachable_scripts(ROOT, liveness.read_workflows(ROOT))
+    assert "validate-curriculum-sources.py" in reachable
+
+
+def test_reachability_follows_a_module_import(liveness):
+    """verify_citations 从不作为命令被调用，却被每个 PR 跑的脚本 import。"""
+    reachable = liveness.pr_reachable_scripts(ROOT, liveness.read_workflows(ROOT))
+    assert "verify_citations.py" in reachable
+
+
+def test_naming_a_script_in_the_declaration_table_is_not_calling_it(liveness):
+    """检查器自己列出 NOT_A_PR_GATE 的五个名字，而它每个 PR 都跑。
+
+    第一版把自己的源码也算作调用方，于是每个被申报的脚本都变成「可达」，
+    再被反向漂移那一条报成过期申报 —— 检查器自己推翻自己的条目。
+    """
+    reachable = liveness.pr_reachable_scripts(ROOT, liveness.read_workflows(ROOT))
+    for declared in liveness.NOT_A_PR_GATE:
+        assert declared not in reachable, f"{declared} 被自己的申报表拖成了可达"

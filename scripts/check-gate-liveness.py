@@ -25,6 +25,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import ast
 import functools
 import json
 import re
@@ -168,6 +169,42 @@ ADVISORY_GATES = {
     ),
 }
 
+# A gate that runs nowhere on a pull request has never guarded a change. This repo
+# has shipped that twice: `validate-curriculum-sources.py` was "wired into no
+# workflow, no npm script and no sub-check — only its own unit tests" (see the
+# sub-check in validate.py that now runs it), and on 2026-09-16
+# `validate-citation-templates.py` and `validate-self-audit-sources.py` were found
+# to live only inside `npm test`, which only npm-publish.yml runs, on a published
+# release. Both passed — the defect was latent, which is exactly why nothing
+# surfaced it.
+#
+# Every entry script under scripts/ must therefore be reachable from a workflow
+# that triggers on `pull_request`, or be declared here with the reason it is not.
+# `check_every_gate_runs_on_a_pr` keeps this true in both directions.
+NOT_A_PR_GATE = {
+    "cite.py": (
+        "a reader-facing offline lookup tool, documented in README.md and in the "
+        "personas' own SKILL.md; not a gate over repository content"
+    ),
+    "query.py": (
+        "a reader-facing offline search tool, documented alongside cite.py; not a "
+        "gate over repository content"
+    ),
+    "check-pe-subsystem.py": (
+        "inspects a built Windows executable, which exists only after the desktop "
+        "release build — release-desktop.yml is the only place it can run"
+    ),
+    "reaudit-report.py": (
+        "re-audits a committed eval run's stored answers; run by hand after a paid "
+        "sweep, against a report that does not exist on a PR"
+    ),
+    "regrade-report.py": (
+        "re-grades a committed eval run against the current judge; same as "
+        "reaudit-report.py — it needs a report a PR does not produce"
+    ),
+}
+
+
 # The shape of a silent skip: a step that exits 0 because a secret is missing.
 _SKIP_ON_MISSING_SECRET = re.compile(r'\[\s+-z\s+"\$\{[A-Z_]+:-\}"\s+\]')
 
@@ -249,6 +286,108 @@ def check_declared_gates_still_exist(workflow_docs: dict[str, dict]) -> list[str
 # ---------------------------------------------------------------------------
 # Repo-level wiring
 # ---------------------------------------------------------------------------
+
+
+def _script_references(source: str, scripts: set[str]) -> set[str]:
+    """Which other scripts this source actually runs — imports and loaded filenames.
+
+    Both spellings are in use: `validate.py` loads five siblings through
+    `spec_from_file_location(..., "validate-curriculum-sources.py")`, which puts the
+    literal filename in the source, while `verify_citations.py` is pulled in as
+    `from verify_citations import …`. Counting only workflow text would report both
+    as unreachable and invent a defect where there is none.
+
+    Read through `ast`, not as text. The first version matched filenames anywhere in
+    the source and reported five scripts as reachable on the strength of *comments*:
+    `verify_citations.py` mentions "scripts/query.py" in a comment about a shared
+    guard, and verify_citations is imported by a job the PR runs, so query.py came
+    out "reachable". Comments do not survive parsing, and an exact-match on string
+    constants keeps a docstring that merely names a path from counting as a call.
+    """
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:  # pragma: no cover — a syntactically broken script
+        return set()
+
+    wanted = {name: {name, f"scripts/{name}"} for name in scripts}
+    modules = {name[:-3]: name for name in scripts if "-" not in name[:-3]}
+    hit: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module in modules:
+            hit.add(modules[node.module])
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name in modules:
+                    hit.add(modules[alias.name])
+        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+            for name, spellings in wanted.items():
+                if node.value in spellings:
+                    hit.add(name)
+    return hit
+
+
+def pr_reachable_scripts(root: Path, workflow_docs: dict[str, dict]) -> set[str]:
+    """Scripts a pull request actually executes, following indirect calls."""
+    scripts_dir = root / "scripts"
+    names = {p.name for p in scripts_dir.glob("*.py")}
+    # This file names five scripts in NOT_A_PR_GATE, and this file runs on every PR.
+    # Counting its own source as a caller made each declared script "reachable" and
+    # then reported the declaration as stale — the checker proving its own entries
+    # wrong. Declaring a script is not calling it.
+    sources = {
+        p.name: p.read_text(encoding="utf-8")
+        for p in scripts_dir.glob("*.py")
+        if p.name != Path(__file__).name
+    }
+
+    reachable: set[str] = set()
+    for path, doc in workflow_docs.items():
+        triggers = doc.get("on", doc.get(True))
+        keys = set(triggers) if isinstance(triggers, (dict, list)) else set()
+        if "pull_request" not in keys:
+            continue
+        reachable |= {name for name in names if name in (root / path).read_text(encoding="utf-8")}
+
+    # Fixpoint: a script the PR runs may load or import others.
+    while True:
+        grown = set(reachable)
+        for name in list(reachable):
+            grown |= _script_references(sources.get(name, ""), names)
+        if grown == reachable:
+            return reachable
+        reachable = grown
+
+
+def check_every_gate_runs_on_a_pr(root: Path, workflow_docs: dict[str, dict]) -> list[str]:
+    """An entry script must run on a pull request, or say why it does not."""
+    scripts_dir = root / "scripts"
+    if not scripts_dir.is_dir():
+        return []
+    entries = {
+        p.name
+        for p in scripts_dir.glob("*.py")
+        if "def main(" in p.read_text(encoding="utf-8")
+    }
+    reachable = pr_reachable_scripts(root, workflow_docs)
+
+    problems = [
+        f"scripts/{name} runs nowhere on a pull request and is not in NOT_A_PR_GATE "
+        "— a gate whose first real execution is the release has guarded nothing"
+        for name in sorted(entries - reachable)
+        if name not in NOT_A_PR_GATE
+    ]
+    problems += [
+        f"NOT_A_PR_GATE declares {name!r}, but no such script exists — stale entry"
+        for name in sorted(NOT_A_PR_GATE)
+        if name not in entries
+    ]
+    problems += [
+        f"NOT_A_PR_GATE declares {name!r}, but a pull request does run it now "
+        "— drop the entry rather than leave a false caveat standing"
+        for name in sorted(NOT_A_PR_GATE)
+        if name in reachable
+    ]
+    return problems
 
 
 def discover_test_files(root: Path) -> list[str]:
@@ -356,6 +495,7 @@ def run_all(root: Path, fidelity_report: Path | None = None) -> list[str]:
     workflows = read_workflows(root)
     problems += check_advisory_gates_declared(workflows)
     problems += check_declared_gates_still_exist(workflows)
+    problems += check_every_gate_runs_on_a_pr(root, workflows)
 
     # check_graded_suites_graded_something shipped fully written and unit-tested
     # but unreferenced by run_all — the anti-fake-green script had a check that
