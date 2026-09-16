@@ -1283,13 +1283,17 @@ def test_the_citation_meta_filter_does_not_eat_real_quotations():
 
 
 def test_the_collector_gained_the_quotations_it_used_to_walk_past():
-    """扩容前 49 条里没有慧能的风幡偈、罗什所引《金刚经》、佛说的巴利经文、虚云的开示。"""
+    """扩容前 49 条里没有慧能的风幡偈、罗什所引《金刚经》、阿底峡所引《道灯论》、虚云的开示。
+
+    阿姜查摘录里以「佛说：」引出的巴利经文原也在此列，2026-09-16 移出：那个文件
+    声明自己「皆为经典主旨摘要，非巴利原文逐字翻译」，那几段也就不该再以佛陀原话
+    示人，采集器不收它们才是对的。「佛说：」这一形状仍由正则层面的测试覆盖。
+    """
     where = {w for w, _, _ in verify_sources.collect_persona_quotes()}
     for gained in (
         "master-huineng/references/teaching.md:93",
         "master-huineng/references/teaching.md:107",
         "master-kumarajiva/references/teaching.md:55",
-        "master-ajahn-chah/sources/sutta-excerpts.md:38",
         "master-atisha/references/teaching.md:83",
         "master-xuyun/references/teaching.md:21",
     ):
@@ -1380,3 +1384,61 @@ def test_the_block_collector_takes_only_blocks_without_a_cbeta_id():
     assert all(len(b) == 3 for b in blocks)
     assert all(b[0].startswith("master-yinguang/") for b in blocks), "目前只有印光的块没有经号"
     assert not any(verify_sources._DOC_CBETA_ID.search(b[2]) for b in blocks)
+
+
+# --- 自称「主旨摘要」的文件里，不该有被当作原话的引文 ---------------------------
+
+
+_GIST_DECLARATION = re.compile(
+    r"均为[^。\n]{0,12}主旨|非[^。\n]{0,10}逐字翻译|皆为[^。\n]{0,16}主旨摘要|不得加引号"
+)
+
+
+def _files_declaring_gist_throughout():
+    """(路径, 声明原文)：在文件头（前 6 行）或文件尾（后 8 行）声明全文皆为主旨摘要的文件。
+
+    只认头尾，不认节内。master-milarepa/references/teaching.md 第 124 行写着「这是传记
+    内容的概括，不是尊者原话，不要加引号」，但那只管那一节——同一文件第 25、43 行是对
+    《木纳记》逐字核过的道歌，合法地作为引文。把节内声明扩成全文件规则会误伤它们。
+    """
+    base = Path(verify_sources.PREBUILT_DIR)
+    for path in sorted(base.glob("*/*/*.md")):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        window = lines[:6] + lines[-8:]
+        for line in window:
+            if _GIST_DECLARATION.search(line):
+                yield path.relative_to(base).as_posix(), line.strip()
+                break
+
+
+def test_a_file_that_declares_itself_a_gist_presents_nothing_as_verbatim_speech():
+    """2026-09-16：master-ajahn-chah 的 sutta-excerpts.md 文件尾写着「皆为经典主旨摘要，
+    非巴利原文逐字翻译」，却有三段写成 `佛说："…"`，把摘要包装成佛陀原话——其中
+    SN 22.59 那段更把经中一问一答熔成一句佛陀从未说过的陈述句，而它正是人设回答
+    「三法印是什么」时读的那一节。master-mahasi-sayadaw 的 teachings-excerpts.md
+    文件头明令「不得加引号」，同样有一段引号块。
+
+    采集器只收被包装成原话的句子。一个自称主旨摘要的文件里只要收到了一条，
+    就说明有人又把转述当成了原话。
+    """
+    import collections
+
+    collected = collections.Counter(
+        where.rsplit(":", 1)[0] for where, _, _ in verify_sources.collect_persona_quotes()
+    )
+    declared = dict(_files_declaring_gist_throughout())
+    assert declared, "一个声明主旨摘要的文件都没找到——正则或窗口坏了，这条测试检查的是空集合"
+
+    violations = {rel: collected[rel] for rel in declared if collected.get(rel)}
+    assert violations == {}, (
+        "这些文件声明全文皆为主旨摘要，却有句子被包装成原话："
+        + "; ".join(f"{rel} 收到 {n} 条（声明：{declared[rel][:40]}）" for rel, n in violations.items())
+    )
+
+
+def test_a_section_scoped_gist_note_does_not_forbid_quotations_elsewhere_in_the_file():
+    """节内声明不能误伤同一文件里别处的真引文。"""
+    declared = {rel for rel, _ in _files_declaring_gist_throughout()}
+    assert "master-milarepa/references/teaching.md" not in declared
+    where = {w for w, _, _ in verify_sources.collect_persona_quotes()}
+    assert "master-milarepa/references/teaching.md:25" in where
