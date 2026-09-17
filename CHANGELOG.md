@@ -10,6 +10,13 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.13] — 2026-09-17
+
+Two defects on the paths 0.12.12 sent users down. The Claude Code plugin, which 0.12.12
+made register its skills, opened every session with a hook validation error and injected
+nothing. And `uninstall create-master` deleted every persona the user had generated —
+0.12.12's release notes had just explained how to generate and register them.
+
 ### Fixed — the Claude Code plugin's session-start hook failed at every session start (2026-09-17)
 
 Opening a session with the plugin installed printed `SessionStart:startup hook error —
@@ -2693,7 +2700,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.12...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.13...HEAD
+[0.12.13]: https://github.com/xr843/Master-skill/compare/v0.12.12...v0.12.13
 [0.12.12]: https://github.com/xr843/Master-skill/compare/v0.12.11...v0.12.12
 [0.12.11]: https://github.com/xr843/Master-skill/compare/v0.12.10...v0.12.11
 [0.12.10]: https://github.com/xr843/Master-skill/compare/v0.12.9...v0.12.10
