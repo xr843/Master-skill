@@ -10,6 +10,35 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — re-running the Claude Code clone instructions filled the clone with self-links and broke `install` (2026-09-17)
+
+The clone instructions linked each skill with `ln -sf`. When the destination is already
+a link to a directory, `ln -sf` follows it and creates the new link *inside* the linked
+directory. Run once, the commands were fine; run again — the natural way to pick up a new
+master — they created `prebuilt/<skill>/<skill>` pointing at its own parent for all 19
+prebuilt skills, plus `<checkout>/<checkout>`. Measured in a sandbox: 20 untracked links
+after the second run.
+
+Two things then broke on that clone. `node bin/cli.mjs install huineng` crashed with an
+uncaught `EISDIR: illegal operation on a directory, copyfile …/master-huineng/master-huineng`.
+And `doctor`, walking the source with `statSync`, followed the loop to the OS link limit and
+reported `master-huineng is missing 320 installed file(s)` — telling the user to run the
+`install` that crashed.
+
+- Both install guides use `ln -sfn`, which replaces an existing link; the documented
+  commands, extracted from `docs/install.md` and run three times over, leave the clone
+  clean with all 20 links resolving.
+- `install` skips links in the source tree (the package ships none) and says so on stderr;
+  `doctor` skips them too, matching what `install` copies.
+
+A CLI test builds a source tree with a self-referencing link (a junction on Windows) and
+requires `install` to succeed and `doctor` to report nothing; the install-guide test now
+rejects `ln -sf `. Both fail against the previous CLI and docs.
+
+A clone that already has the links lists them as untracked in `git status`; `find prebuilt
+-mindepth 2 -maxdepth 2 -type l -delete` removes the per-skill ones, and the remaining one
+at the top of the checkout carries the checkout's own name.
+
 ## [0.12.13] — 2026-09-17
 
 Two defects on the paths 0.12.12 sent users down. The Claude Code plugin, which 0.12.12

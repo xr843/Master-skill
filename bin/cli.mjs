@@ -151,6 +151,14 @@ function cpR(src, dest) {
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     const s = path.join(src, entry.name);
     const d = path.join(dest, entry.name);
+    // The package ships no links. One in the source is left over from running
+    // the clone instructions' `ln -sf` twice, which — with the target already a
+    // link to a directory — creates prebuilt/<skill>/<skill> pointing at its own
+    // parent. copyFileSync on it threw EISDIR and the install crashed.
+    if (entry.isSymbolicLink()) {
+      console.error(`  (skipped link ${s} — not part of the package)`);
+      continue;
+    }
     if (entry.isDirectory()) cpR(s, d);
     else fs.copyFileSync(s, d);
   }
@@ -503,6 +511,10 @@ function expectedInstallFiles(skill) {
   const walk = (rel) => {
     const abs = path.join(src, rel);
     if (!fs.existsSync(abs)) return;
+    // Same rule as cpR: install skips links, so they are not expected files.
+    // Following a self-referencing one walked the loop to the OS link limit and
+    // reported hundreds of phantom missing files.
+    if (fs.lstatSync(abs).isSymbolicLink()) return;
     if (fs.statSync(abs).isDirectory()) {
       if (path.basename(abs) === "__pycache__") return;
       for (const entry of fs.readdirSync(abs)) {
