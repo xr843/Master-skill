@@ -10,6 +10,30 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Security — `create-master` pre-approved any shell command while reading untrusted content (2026-09-17)
+
+A skill's `allowed-tools` lets Claude use those tools without asking during the turn
+that invokes the skill. `create-master` listed plain `Bash`, `Write`, `Edit` and
+`WebFetch`. That turn is when the generator pulls FoJin knowledge-graph and text content
+into context, content `tools/master_builder.py` already treats as untrusted, because FoJin
+enriches its graph from third-party-editable sources. An instruction smuggled into it could
+have run any shell command, written any file or fetched any URL, with no prompt shown to
+the user.
+
+The pre-approval is now `Read`, `Glob`, `Grep` and `Bash(python3
+${CLAUDE_SKILL_DIR}/tools/*)` (with and without quotes around the path). Nothing the
+generator does in that turn needs more: every shell command it documents runs one of its own
+Python tools, and it never uses WebFetch. It writes files in Step 5, after the user confirms
+the preview. That is a later message, by which time the grant has cleared anyway.
+
+`scripts/tests/test_generator_allowed_tools.py` rejects unrestricted acting tools, limits
+`Bash` rules to the generator's `tools/`, and fails if Steps 1–5 document a command outside
+`tools/`. Against the previous frontmatter it names all four. Claude Code's matching of the
+new rules was not exercised at runtime (that needs a model call); the rule syntax and the
+`${CLAUDE_SKILL_DIR}` substitution in `allowed-tools` Bash rules are as documented, and
+`claude plugin validate` passes. A non-matching rule would cost a permission prompt, not a
+failed generation.
+
 ### Fixed — re-running the Claude Code clone instructions filled the clone with self-links and broke `install` (2026-09-17)
 
 The clone instructions linked each skill with `ln -sf`. When the destination is already
