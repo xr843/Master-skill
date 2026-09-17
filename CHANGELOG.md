@@ -10,6 +10,14 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.14] — 2026-09-17
+
+A security fix and two install failures. `create-master` pre-approved any shell command,
+file write and web fetch during the turn in which it reads third-party-editable FoJin
+content. Its tools crashed at startup when their Python packages were missing, with nothing
+telling the user to install them. And re-running the Claude Code clone instructions filled
+the clone with self-referencing links that made `install` crash.
+
 ### Fixed — `create-master` crashed on startup without its Python packages, and nothing said to install them (2026-09-17)
 
 Every generator tool imports `fojin_bridge` (which imports `requests`) or `skill_writer`
@@ -2782,7 +2790,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.13...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.14...HEAD
+[0.12.14]: https://github.com/xr843/Master-skill/compare/v0.12.13...v0.12.14
 [0.12.13]: https://github.com/xr843/Master-skill/compare/v0.12.12...v0.12.13
 [0.12.12]: https://github.com/xr843/Master-skill/compare/v0.12.11...v0.12.12
 [0.12.11]: https://github.com/xr843/Master-skill/compare/v0.12.10...v0.12.11
