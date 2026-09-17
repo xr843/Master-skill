@@ -136,7 +136,17 @@ def wrap_for_host(context: str, env: dict) -> dict:
     if env.get("CURSOR_PLUGIN_ROOT"):
         return {"additional_context": context}
     if env.get("CLAUDE_PLUGIN_ROOT") and not env.get("COPILOT_CLI"):
-        return {"hookSpecificOutput": {"additionalContext": context}}
+        # `hookEventName` is required. Without it Claude Code 2.1.273 rejects the
+        # whole payload — "Hook JSON output validation failed — hookSpecificOutput
+        # is missing required field hookEventName" — shows that error at every
+        # session start, and injects nothing. Measured 2026-09-17 in an isolated
+        # plugin install; the transcript recorded `hook_non_blocking_error`.
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "SessionStart",
+                "additionalContext": context,
+            }
+        }
     return {"additionalContext": context}
 
 
