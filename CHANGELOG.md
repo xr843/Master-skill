@@ -10,6 +10,26 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — `uninstall create-master` deleted every persona the user had generated (2026-09-17)
+
+`update` has always treated `create-master/masters/` as user data: it copies the
+generated personas into the new runtime before swapping it in. `uninstall` removed the
+whole directory. Measured in a sandboxed HOME: with one generated and registered persona,
+`master-skill uninstall create-master` printed `✓ create-master removed`, exited 0, deleted
+the persona, and left its link in `~/.claude/skills/` pointing at nothing. A generated
+persona is the product of FoJin collection, two review passes and the user's own
+corrections; nothing could bring it back.
+
+`uninstall create-master` now refuses while `masters/` holds personas, lists them, and
+exits 1. `--force` deletes them and first removes the links `master_builder.py
+--register` made for them, resolved by real path so Windows junctions count. With no
+generated personas it uninstalls as before. The desktop manager lists personas only and
+offers no uninstall for the generator.
+
+Three CLI tests cover the refusal, `--force` and the unchanged case; the first two fail
+against the previous CLI. The dangling-link doctor test added in 0.12.12 had produced
+its state by uninstalling the generator, and now removes the persona directory instead.
+
 ## [0.12.12] — 2026-09-17
 
 Most of the path from installing this to asking a master a question did not work as

@@ -11,7 +11,7 @@
 
 **NPX (recommended, no global state)**
 
-`npx master-skill install --all` installs all 20 skills: 15 personas, 4 teaching modes (including the `/master-help` router), and the `create-master` generator. The generator is copied as a self-contained runtime, so it remains usable after the transient npx package directory is removed; reinstall and `update --all` refresh the runtime while preserving user-generated personas under `create-master/masters/`.
+`npx master-skill install --all` installs all 20 skills: 15 personas, 4 teaching modes (including the `/master-help` router), and the `create-master` generator. The generator is copied as a self-contained runtime, so it remains usable after the transient npx package directory is removed; reinstall and `update --all` refresh the runtime while preserving user-generated personas under `create-master/masters/`. `uninstall create-master` refuses while personas are there and lists them; `--force` deletes them too, along with the links registered for them.
 
 ```bash
 # Install individual public skills

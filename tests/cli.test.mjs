@@ -286,10 +286,51 @@ test("doctor reports a registered persona whose target is gone", { skip: process
   fs.mkdirSync(generated, { recursive: true });
   fs.symlinkSync(generated, path.join(skills, "master-mine"), "dir");
   assert.deepEqual(doctorJson(env).payload.problems, []);
-  run(["uninstall", "create-master"], env);
+  // `uninstall create-master` no longer deletes generated personas (or, with
+  // --force, removes their links too), so the target goes the other way a user
+  // loses it: deleting or moving the persona directory by hand.
+  fs.rmSync(generated, { recursive: true });
   const { code, payload } = doctorJson(env);
   assert.equal(code, 1);
   assert.deepEqual(payload.problems.map((p) => [p.code, p.name]), [["dangling-link", "master-mine"]]);
+});
+
+// Until 2026-09-17 `uninstall create-master` deleted masters/ with the rest:
+// every persona the user had generated went with "✓ removed" and exit 0.
+function generatorWithPersona(t) {
+  const { env, skills } = installedHome(t, ["create-master"]);
+  const persona = path.join(skills, "create-master", "masters", "master-mine");
+  fs.mkdirSync(persona, { recursive: true });
+  fs.writeFileSync(path.join(persona, "SKILL.md"), "---\nname: master-mine\n---\n");
+  // "junction" makes a junction on Windows (no privilege needed) and is ignored elsewhere.
+  fs.symlinkSync(persona, path.join(skills, "master-mine"), "junction");
+  return { env, skills, persona };
+}
+
+test("uninstall refuses to delete personas the user generated", (t) => {
+  const { env, skills, persona } = generatorWithPersona(t);
+  const { stdout, code } = run(["uninstall", "create-master"], env);
+  assert.equal(code, 1, stdout);
+  assert.match(stdout, /master-mine/);
+  assert.match(stdout, /--force/);
+  assert.ok(fs.existsSync(path.join(persona, "SKILL.md")));
+  assert.ok(fs.existsSync(path.join(skills, "create-master", "SKILL.md")));
+});
+
+test("uninstall --force deletes them and the links registered for them", (t) => {
+  const { env, skills } = generatorWithPersona(t);
+  const { stdout, code } = run(["uninstall", "create-master", "--force"], env);
+  assert.equal(code, 0, stdout);
+  assert.ok(!fs.existsSync(path.join(skills, "create-master")));
+  assert.throws(() => fs.lstatSync(path.join(skills, "master-mine")), /ENOENT/);
+  assert.deepEqual(doctorJson(env).payload.problems, []);
+});
+
+test("uninstall create-master with no generated personas needs no flag", (t) => {
+  const { env, skills } = installedHome(t, ["create-master"]);
+  const { code } = run(["uninstall", "create-master"], env);
+  assert.equal(code, 0);
+  assert.ok(!fs.existsSync(path.join(skills, "create-master")));
 });
 
 test("inspect shows master metadata, sources, and live grounding", (t) => {
