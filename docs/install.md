@@ -87,9 +87,9 @@ git clone 手动链接：
 git clone https://github.com/xr843/Master-skill ~/Master-skill
 cd ~/Master-skill && pip install -r requirements.txt
 mkdir -p ~/.claude/skills   # 目录不存在时下面的 ln 全部失败
-for d in prebuilt/master-*/; do ln -sf "$(pwd)/$d" ~/.claude/skills/"$(basename $d)"; done
-ln -sf "$(pwd)/prebuilt/compare-masters" ~/.claude/skills/compare-masters
-ln -sf "$(pwd)" ~/.claude/skills/create-master
+for d in prebuilt/master-*/; do ln -sfn "$(pwd)/${d%/}" ~/.claude/skills/"$(basename $d)"; done
+ln -sfn "$(pwd)/prebuilt/compare-masters" ~/.claude/skills/compare-masters
+ln -sfn "$(pwd)" ~/.claude/skills/create-master
 ```
 
 **Cursor**

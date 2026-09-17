@@ -90,9 +90,9 @@ From a clone, by linking:
 git clone https://github.com/xr843/Master-skill ~/Master-skill
 cd ~/Master-skill && pip install -r requirements.txt
 mkdir -p ~/.claude/skills   # every ln below fails if this directory does not exist
-for d in prebuilt/master-*/; do ln -sf "$(pwd)/$d" ~/.claude/skills/"$(basename $d)"; done
-ln -sf "$(pwd)/prebuilt/compare-masters" ~/.claude/skills/compare-masters
-ln -sf "$(pwd)" ~/.claude/skills/create-master
+for d in prebuilt/master-*/; do ln -sfn "$(pwd)/${d%/}" ~/.claude/skills/"$(basename $d)"; done
+ln -sfn "$(pwd)/prebuilt/compare-masters" ~/.claude/skills/compare-masters
+ln -sfn "$(pwd)" ~/.claude/skills/create-master
 ```
 
 **Cursor** — Clone the repo; Cursor auto-detects `.cursor-plugin/plugin.json`.

@@ -333,6 +333,33 @@ test("uninstall create-master with no generated personas needs no flag", (t) => 
   assert.ok(!fs.existsSync(path.join(skills, "create-master")));
 });
 
+test("install and doctor ignore a stray link left in the source tree", (t) => {
+  // Reproduces a clone after the old `ln -sf` instructions were run twice:
+  // prebuilt/<skill>/<skill> links back to its own parent directory.
+  const catalog = {
+    version: 1,
+    skills: [
+      { name: "master-zhiyi", kind: "persona", source: "prebuilt/master-zhiyi", install_dir: "master-zhiyi", aliases: ["zhiyi", "master-zhiyi"] },
+    ],
+  };
+  const { cli } = catalogFixture(t, catalog, (root) => {
+    const skill = path.join(root, "prebuilt", "master-zhiyi");
+    fs.mkdirSync(path.join(skill, "references"), { recursive: true });
+    fs.writeFileSync(path.join(skill, "SKILL.md"), "---\nname: master-zhiyi\n---\n");
+    fs.writeFileSync(path.join(skill, "references", "teaching.md"), "# teaching\n");
+    fs.symlinkSync(skill, path.join(skill, "master-zhiyi"), "junction");
+  });
+  const { env, home } = tmpHome(t);
+  const install = run(["install", "zhiyi"], env, cli);
+  assert.equal(install.code, 0, install.stdout);
+  const installed = path.join(skillsDir(home), "master-zhiyi");
+  assert.ok(fs.existsSync(path.join(installed, "references", "teaching.md")));
+  assert.throws(() => fs.lstatSync(path.join(installed, "master-zhiyi")), /ENOENT/);
+  const doctor = run(["doctor", "--json"], env, cli);
+  assert.equal(doctor.code, 0, doctor.stdout);
+  assert.deepEqual(JSON.parse(doctor.stdout).problems, []);
+});
+
 test("inspect shows master metadata, sources, and live grounding", (t) => {
   const { env } = tmpHome(t);
   const { stdout, code } = run(["inspect", "huineng"], env);
@@ -840,9 +867,13 @@ test("both clone examples install compare under its public name", () => {
     assert.match(readme, /for d in prebuilt\/master-\*\/;/, filename);
     assert.match(
       readme,
-      /ln -sf "\$\(pwd\)\/prebuilt\/compare-masters" ~\/\.claude\/skills\/compare-masters/,
+      /ln -sfn "\$\(pwd\)\/prebuilt\/compare-masters" ~\/\.claude\/skills\/compare-masters/,
       filename
     );
+    // `ln -sf` onto an existing link to a directory follows it and creates the
+    // new link inside the linked directory. Re-running the instructions filled a
+    // clone with 20 self-referencing links and made `install` crash (2026-09-17).
+    assert.doesNotMatch(readme, /ln -sf /, filename);
     assert.doesNotMatch(readme, /for d in prebuilt\/\*\/;/, filename);
   }
 });
