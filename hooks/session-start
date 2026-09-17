@@ -61,7 +61,8 @@ emit_modes_only() {
     if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
         printf '{"additional_context": %s}\n' "$MODES_JSON"
     elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -z "${COPILOT_CLI:-}" ]; then
-        printf '{"hookSpecificOutput": {"additionalContext": %s}}\n' "$MODES_JSON"
+        # hookEventName is required; without it Claude Code rejects the payload.
+        printf '{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": %s}}\n' "$MODES_JSON"
     else
         printf '{"additionalContext": %s}\n' "$MODES_JSON"
     fi

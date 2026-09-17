@@ -10,6 +10,29 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — the Claude Code plugin's session-start hook failed at every session start (2026-09-17)
+
+Opening a session with the plugin installed printed `SessionStart:startup hook error —
+Hook JSON output validation failed — hookSpecificOutput is missing required field
+"hookEventName"`. Claude Code requires `hookSpecificOutput.hookEventName`; without it
+the payload is rejected whole, so the master list was never injected. Measured with Claude
+Code 2.1.273 in an isolated config: the session transcript recorded
+`hook_non_blocking_error` and no injected context. The defect predates 0.12.12, but 0.12.12
+is the release that made the plugin register its skills, so it is the one that sends users
+there.
+
+Both emitters now include `"hookEventName": "SessionStart"` — `hooks/session_start.py`
+and the `hooks/session-start` fallback used when `python3` is missing. After the fix the
+same probe recorded `hook_success` and a `hook_additional_context` attachment carrying the
+master list, and the error line is gone.
+
+`hooks/tests/test_session_start.sh` asserts the field for the Python path and for the
+no-`python3` Claude payload; both assertions fail against the previous hook.
+
+Also measured along the way: in a plugin install the commands are namespaced
+(`/master-skill:master-huineng`), and typing the bare `/master-huineng` resolves to it
+through autocomplete, so the names the hook and docs use still work.
+
 ### Fixed — `uninstall create-master` deleted every persona the user had generated (2026-09-17)
 
 `update` has always treated `create-master/masters/` as user data: it copies the

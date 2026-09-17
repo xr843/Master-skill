@@ -336,7 +336,8 @@ ctx = json.load(sys.stdin)
 key = next(iter(ctx))
 body = (ctx.get('hookSpecificOutput', {}).get('additionalContext')
         or ctx.get('additionalContext') or ctx.get('additional_context') or '')
-sys.exit(0 if key == '$expected_key' and body.count(chr(10) + '  /') == 5 else 1)
+event_ok = key != 'hookSpecificOutput' or ctx[key].get('hookEventName') == 'SessionStart'
+sys.exit(0 if key == '$expected_key' and event_ok and body.count(chr(10) + '  /') == 5 else 1)
 " 2>/dev/null
 }
 for spec in "claude:hookSpecificOutput:CLAUDE_PLUGIN_ROOT=$SCRIPT_DIR/../.."             "cursor:additional_context:CURSOR_PLUGIN_ROOT=$SCRIPT_DIR/../.."             "copilot:additionalContext:COPILOT_CLI=1"; do
@@ -352,6 +353,24 @@ done
 rm -rf "$nopy"
 
 echo
+# Case 17b: Claude Code requires hookSpecificOutput.hookEventName. Without it,
+# 2.1.273 rejected the payload with "hookSpecificOutput is missing required
+# field hookEventName", showed that error at every session start, and injected
+# nothing (measured 2026-09-17 in an isolated plugin install).
+out=$(CLAUDE_PLUGIN_ROOT="$SCRIPT_DIR/../.." bash "$HOOK" 2>/dev/null)
+if printf '%s' "$out" | python3 -c '
+import json, sys
+ctx = json.load(sys.stdin)
+spec = ctx.get("hookSpecificOutput", {})
+sys.exit(0 if spec.get("hookEventName") == "SessionStart" and spec.get("additionalContext") else 1)
+'; then
+    echo "  PASS  Claude payload names its hookEventName"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL  Claude payload lacks hookEventName: Claude Code rejects it"
+    FAIL=$((FAIL + 1))
+fi
+
 # Case 18: a lineage keeps its meaning. Until 2026-09-16 the whitelist had no
 # Latin diacritic letters and deleted "/", so "(Mahāvihāra)" reached the model
 # as "(Mahvihra)" and "三论宗/中观" as the made-up single term "三论宗中观".
