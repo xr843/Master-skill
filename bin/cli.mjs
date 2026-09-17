@@ -405,7 +405,40 @@ function cmdInstallAll(label = "Installing") {
   return cmdInstall(all);
 }
 
-function cmdUninstall(names) {
+// Directories under create-master/masters/ — personas the user generated. `update`
+// carries them across (replaceGeneratorInstall); `uninstall` must not quietly
+// delete them either.
+function generatedPersonas(generatorDir) {
+  const mastersDir = path.join(generatorDir, "masters");
+  if (!fs.existsSync(mastersDir)) return [];
+  return fs
+    .readdirSync(mastersDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+}
+
+// Links in the skills directory that `master_builder.py --register` made into
+// this generator's masters/. Resolved with realpath so a Windows junction is
+// recognised as well as a symlink.
+function registrationsInto(generatorDir) {
+  const mastersDir = path.join(generatorDir, "masters");
+  if (!fs.existsSync(mastersDir) || !fs.existsSync(SKILLS_DIR)) return [];
+  const realMasters = fs.realpathSync(mastersDir);
+  return fs
+    .readdirSync(SKILLS_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isSymbolicLink())
+    .map((entry) => path.join(SKILLS_DIR, entry.name))
+    .filter((link) => {
+      try {
+        return fs.realpathSync(link).startsWith(realMasters + path.sep);
+      } catch {
+        return false;
+      }
+    });
+}
+
+function cmdUninstall(names, { force = false } = {}) {
   let failed = 0;
   for (const name of names) {
     if (!isSafeName(name)) {
@@ -428,6 +461,26 @@ function cmdUninstall(names) {
       console.log(`  ✗ ${name} — not installed`);
       failed++;
       continue;
+    }
+    if (skill.kind === "generator") {
+      // Until 2026-09-17 this removed the whole directory, masters/ included:
+      // every persona the user had generated was deleted with "✓ removed" and
+      // exit 0, and the links registered for them were left pointing at nothing.
+      const generated = generatedPersonas(dest);
+      if (generated.length && !force) {
+        console.log(
+          `  ✗ ${name} — holds ${generated.length} persona(s) you generated: ${generated.join(", ")}`
+        );
+        console.log(
+          `    Uninstalling deletes ${path.join(dest, "masters")}. Move it somewhere safe first, or rerun with --force.`
+        );
+        failed++;
+        continue;
+      }
+      for (const link of registrationsInto(dest)) {
+        fs.unlinkSync(link);
+        console.log(`  ✓ ${path.basename(link)} link removed (${link})`);
+      }
     }
     fs.rmSync(dest, { recursive: true, force: true });
     console.log(`  ✓ ${name} removed (${dest})`);
@@ -513,7 +566,9 @@ function installedProblems() {
   }
 
   // Personas registered by create-master are links into create-master/masters/;
-  // uninstalling the generator leaves them pointing at nothing.
+  // deleting or moving a generated persona by hand leaves its link pointing at
+  // nothing. (`uninstall create-master` refuses while personas exist, and with
+  // --force removes their links itself.)
   if (fs.existsSync(SKILLS_DIR)) {
     for (const entry of fs.readdirSync(SKILLS_DIR, { withFileTypes: true })) {
       if (!entry.isSymbolicLink()) continue;
@@ -909,6 +964,8 @@ Usage:
   master-skill doctor              Check local install and runtime paths
   master-skill doctor --json       Print diagnostics as JSON
   master-skill uninstall <name...> Remove installed skills
+  master-skill uninstall create-master --force
+                                   Also delete the personas you generated (refused otherwise)
   master-skill --version           Print version
   master-skill --help              Show this help
 
@@ -936,7 +993,8 @@ Examples:
 if (CATALOG) {
   const args = process.argv.slice(2);
   const json = args.includes("--json");
-  const positionalArgs = args.filter((arg) => arg !== "--json");
+  const force = args.includes("--force");
+  const positionalArgs = args.filter((arg) => arg !== "--json" && arg !== "--force");
   const cmd = positionalArgs[0];
 
   if (!cmd || cmd === "--help" || cmd === "-h") {
@@ -977,7 +1035,7 @@ if (CATALOG) {
       console.log("Usage: master-skill uninstall <name...>");
       process.exitCode = 1;
     } else {
-      if (cmdUninstall(rest) > 0) process.exitCode = 1;
+      if (cmdUninstall(rest, { force }) > 0) process.exitCode = 1;
     }
   } else {
     console.log(`Unknown command: ${cmd}\nRun master-skill --help for usage.`);
