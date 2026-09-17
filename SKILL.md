@@ -5,13 +5,11 @@ argument-hint: <法师名称>
 version: 1.0.0
 user-invocable: true
 allowed-tools:
-  - Bash
   - Read
-  - Write
-  - Edit
   - Glob
   - Grep
-  - WebFetch
+  - Bash(python3 ${CLAUDE_SKILL_DIR}/tools/*)
+  - Bash(python3 "${CLAUDE_SKILL_DIR}/tools/*)
 ---
 
 # Master-skill — 佛教法师教学角色生成器
