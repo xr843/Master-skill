@@ -199,6 +199,7 @@ gemini skills install https://github.com/xr843/Master-skill --path prebuilt
 ```
 
 系统将引导完成三步信息录入，然后自动从 FoJin 采集数据、生成教义分析与风格文件。
+生成器需要 Python 3.9+ 及 `requests`、`pyyaml`、`pypinyin`：它会先运行 `tools/check_deps.py`，缺什么、怎么装（包括系统 Python 拒绝 pip 时改用虚拟环境）会直接告诉你；`master-skill doctor` 也会检查。
 生成的 persona 存放在 `create-master/masters/master-{slug}/`（`update --all` 会保留），并链接到
 `~/.claude/skills/master-{slug}` 之后才能用 `/master-{slug}` 调用——生成器在终验通过后会做这一步；
 若同名 skill 已存在（如重新生成了一位预置祖师），它不会覆盖，而是交给你决定。
