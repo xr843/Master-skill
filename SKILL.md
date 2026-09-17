@@ -62,6 +62,10 @@ allowed-tools:
 
 ## 主流程（生成新法师）
 
+### Step 0：检查运行环境
+
+先运行 `python3 "${CLAUDE_SKILL_DIR}/tools/check_deps.py"`。生成器的每个工具启动时都要导入 `requests`、`pyyaml`、`pypinyin`，缺任何一个都会直接报 `ModuleNotFoundError`，连离线步骤也跑不了。退出码非 0 时停下，把它打印的安装方法原样告诉用户（系统 Python 拒绝 pip 时改用虚拟环境）；**不要擅自安装**，那会改动用户的环境。
+
 ### Step 1：信息录入
 
 加载 `${CLAUDE_SKILL_DIR}/prompts/intake.md`，3 问模式收集：①法师名称（FoJin KG 自动匹配） ②关注方面（教义/修行/讲解/全部） ③语言偏好（按传承默认）。

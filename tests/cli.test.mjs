@@ -53,10 +53,23 @@ function catalogFixture(t, catalog, setup = () => {}) {
   return { root, cli: path.join(root, "bin", "cli.mjs") };
 }
 
+// A temporary HOME also hides packages installed with `pip install --user`, which
+// live under the real home. doctor now asks Python whether create-master's
+// dependencies import, so keep the developer's user site visible.
+const PYTHON_USER_BASE = (() => {
+  try {
+    return execFileSync(PYTHON, ["-c", "import site; print(site.getuserbase())"], { encoding: "utf8" }).trim();
+  } catch {
+    return null;
+  }
+})();
+
 function tmpHome(t) {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), "master-skill-cli-test-"));
   t.after(() => fs.rmSync(home, { recursive: true, force: true }));
-  return { home, env: { HOME: home, USERPROFILE: home } };
+  const env = { HOME: home, USERPROFILE: home, PYTHON };
+  if (PYTHON_USER_BASE) env.PYTHONUSERBASE = PYTHON_USER_BASE;
+  return { home, env };
 }
 
 function skillsDir(home) {
@@ -358,6 +371,35 @@ test("install and doctor ignore a stray link left in the source tree", (t) => {
   const doctor = run(["doctor", "--json"], env, cli);
   assert.equal(doctor.code, 0, doctor.stdout);
   assert.deepEqual(JSON.parse(doctor.stdout).problems, []);
+});
+
+// create-master's tools import requests, pyyaml and pypinyin at startup; without
+// them every tool exits with ModuleNotFoundError (measured 2026-09-17 in a clean
+// venv), and nothing told an npx user to install them.
+test("install and doctor report create-master's missing Python packages", (t) => {
+  const venv = fs.mkdtempSync(path.join(os.tmpdir(), "master-skill-bare-venv-"));
+  t.after(() => fs.rmSync(venv, { recursive: true, force: true }));
+  execFileSync(PYTHON, ["-m", "venv", "--without-pip", venv]);
+  const bare = path.join(venv, process.platform === "win32" ? "Scripts" : "bin", process.platform === "win32" ? "python.exe" : "python");
+  const { env } = tmpHome(t);
+  const bareEnv = { ...env, PYTHON: bare, PYTHONUSERBASE: venv };
+
+  const install = run(["install", "create-master"], bareEnv);
+  assert.equal(install.code, 0, install.stdout);
+  assert.match(install.stdout, /missing Python package\(s\) requests, pyyaml, pypinyin/);
+
+  const { code, payload } = doctorJson(bareEnv);
+  assert.equal(code, 1);
+  assert.deepEqual(payload.problems.map((p) => p.code), ["generator-dependencies"]);
+  assert.match(payload.problems[0].message, /check_deps\.py/);
+});
+
+test("doctor says so when there is no Python for create-master at all", (t) => {
+  const { env } = installedHome(t, ["create-master"]);
+  const { code, payload } = doctorJson({ ...env, PYTHON: path.join(os.tmpdir(), "no-such-python-here") });
+  assert.equal(code, 1);
+  assert.equal(payload.problems[0].code, "generator-dependencies");
+  assert.match(payload.problems[0].message, /was not found; create-master needs Python 3\.9\+/);
 });
 
 test("inspect shows master metadata, sources, and live grounding", (t) => {

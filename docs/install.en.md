@@ -193,6 +193,7 @@ Create a persona for Master Hongyi
 ```
 
 The system will guide you through a three-step intake, then automatically collect data from FoJin and generate the doctrinal analysis and style files.
+The generator needs Python 3.9+ with `requests`, `pyyaml` and `pypinyin`. It runs `tools/check_deps.py` first and tells you what is missing and how to install it (including a virtual environment when the system Python refuses pip); `master-skill doctor` checks it too.
 Generated personas are stored under `create-master/masters/master-{slug}/` (kept by `update --all`) and become invocable as `/master-{slug}`
 only once linked into `~/.claude/skills/master-{slug}` — the generator does this after the final check, and leaves an existing skill of the same
 name (for example a regenerated prebuilt master) untouched for you to decide.

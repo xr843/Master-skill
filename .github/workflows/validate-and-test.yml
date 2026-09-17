@@ -259,6 +259,7 @@ jobs:
       - name: Run Python 3.9 generator smoke
         run: |
           python -m compileall -q tools scripts
+          python tools/check_deps.py
           TMP_DIR="$(mktemp -d)"
           trap 'rm -rf "$TMP_DIR"' EXIT
           python tools/sutra_collector.py \

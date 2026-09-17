@@ -10,6 +10,35 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — `create-master` crashed on startup without its Python packages, and nothing said to install them (2026-09-17)
+
+Every generator tool imports `fojin_bridge` (which imports `requests`) or `skill_writer`
+(which imports `yaml` and `pypinyin`) at module level. In a clean venv, `rag_query.py`,
+`sutra_collector.py` and `master_builder.py` — even `--offline-smoke`, which never touches
+the network — each exited with `ModuleNotFoundError` before doing anything. The npx
+install printed `✓ create-master`, and the generator's `SKILL.md` never mentioned
+dependencies. The only instruction anywhere was the clone guide's `pip install -r
+requirements.txt`, which on this machine's Ubuntu Python is refused as an
+`externally-managed-environment` (PEP 668).
+
+- `tools/check_deps.py` (standard library only) reports missing packages or a Python older
+  than 3.9, with install steps including a virtual environment. Following those steps in
+  a sandbox made the check pass and the builder and FoJin search run.
+- The generator runs it as Step 0 and stops with its output instead of installing
+  anything itself.
+- `master-skill install create-master` prints what is missing, and `doctor` reports
+  `generator-dependencies`, including when there is no Python at all. `PYTHON` overrides
+  the interpreter (`python3`, or `python` on Windows).
+- The Python 3.9 CI job runs the check.
+
+Tests: the check's result and exit codes; that it imports only the standard library; that
+every third-party module a tool imports at startup is on its list, so a new dependency
+cannot slip past; that Step 0 precedes Step 1. CLI tests build a bare venv for the
+missing-package case and point `PYTHON` nowhere for the no-Python case. The CLI tests'
+temporary HOME now passes `PYTHONUSERBASE`, because a changed HOME hides packages installed
+with `pip install --user`, which made three existing doctor tests fail on a developer
+machine.
+
 ### Security — `create-master` pre-approved any shell command while reading untrusted content (2026-09-17)
 
 A skill's `allowed-tools` lets Claude use those tools without asking during the turn

@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { fileURLToPath } from "url";
+import { spawnSync } from "child_process";
 
 // fileURLToPath (not new URL().pathname) — on Windows the URL pathname is
 // "/C:/…", which fs cannot resolve, so every command saw an empty prebuilt/.
@@ -373,6 +374,35 @@ function resolveMasterDir(input) {
 
 // Returns the number of failures so main can set a non-zero exit code —
 // scripted callers must be able to tell a typo from a clean install.
+// create-master's tools import requests, pyyaml and pypinyin at startup and exit
+// with ModuleNotFoundError without them. tools/check_deps.py (standard library
+// only) reports which are missing and how to install them.
+function pythonBin() {
+  return process.env.PYTHON || (process.platform === "win32" ? "python" : "python3");
+}
+
+function generatorDependencies(generatorDir) {
+  const script = path.join(generatorDir, "tools", "check_deps.py");
+  if (!fs.existsSync(script)) return null;
+  const result = spawnSync(pythonBin(), [script, "--json"], { encoding: "utf8", timeout: 30000 });
+  if (result.error) {
+    return { ok: false, pythonMissing: true, message: `${pythonBin()} was not found; create-master needs Python 3.9+` };
+  }
+  try {
+    const report = JSON.parse(result.stdout);
+    if (report.ok) return { ok: true };
+    const what = report.python_too_old
+      ? `Python ${report.python} is older than 3.9`
+      : `missing Python package(s) ${report.missing.join(", ")}`;
+    return {
+      ok: false,
+      message: `create-master: ${what} — run: ${pythonBin()} "${script}" for install steps`,
+    };
+  } catch {
+    return { ok: false, message: `create-master: could not check Python dependencies (${(result.stderr || "").trim()})` };
+  }
+}
+
 function cmdInstall(names) {
   fs.mkdirSync(SKILLS_DIR, { recursive: true });
   let failed = 0;
@@ -390,8 +420,10 @@ function cmdInstall(names) {
     }
     const src = path.join(PACKAGE_ROOT, skill.source);
     const dest = path.join(SKILLS_DIR, skill.install_dir);
+    let deps = null;
     if (skill.kind === "generator") {
       replaceGeneratorInstall(skill, src, dest);
+      deps = generatorDependencies(dest);
     } else {
       // Clear any previous install first: files renamed or removed upstream
       // must not linger as stale skill content under ~/.claude/skills/.
@@ -399,6 +431,7 @@ function cmdInstall(names) {
       cpR(src, dest);
     }
     console.log(`  ✓ ${name} → ${dest}`);
+    if (deps && !deps.ok) console.log(`    ! ${deps.message}`);
   }
   return failed;
 }
@@ -574,6 +607,15 @@ function installedProblems() {
         name: skill.name,
         message: `${skill.name} differs from package ${pkgVersion()} in ${changed.length} file(s), e.g. ${changed[0]} — run: master-skill update --all`,
       });
+    }
+  }
+
+  const generator = CATALOG.skills.find((skill) => skill.kind === "generator");
+  const generatorDir = generator && path.join(SKILLS_DIR, generator.install_dir);
+  if (generatorDir && fs.existsSync(path.join(generatorDir, "SKILL.md"))) {
+    const deps = generatorDependencies(generatorDir);
+    if (deps && !deps.ok) {
+      problems.push({ code: "generator-dependencies", name: generator.name, message: deps.message });
     }
   }
 
