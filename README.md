@@ -172,6 +172,8 @@ Master-skill 的核心不是"角色扮演提示词集合"，而是一个可验�
 
 **这一列不能推进 v1.0 门禁。** 门禁定义在 Anthropic（`claude-sonnet-4-6`）那一列上，两个模型是两把尺子，不混算。Anthropic 那一列至今只有 2026-08-18 的一次部分运行（84 / 211 条，因账户余额耗尽中断），当时的「零伪造引文」已于 2026-08-31 撤回——那次审计实际一条都没有运行。
 
+**这些数字属于 `06b8142` 那棵树。** 此后人设内容与夹具本身都改过（见 CHANGELOG 的 0.12.x 各条：经文摘要的表述、路由指向、宗派名清洗等），没有重测——重测要再跑一次付费全量运行。夹具条数仍是 211，但那不代表内容没变。
+
 这些是**关键词与引用字符串的覆盖检查，不是教义正确性，也不是 LLM 判分的答案质量**。详见 [BASELINE-deepseek.md](eval/reports/BASELINE-deepseek.md)（全量运行）、[ADJUDICATION.md](eval/reports/ADJUDICATION.md)（逐条裁定）、[BASELINE.md](eval/reports/BASELINE.md)（Anthropic 部分运行与撤回记录）与[元技能复测报告](eval/reports/0.11.0-e97ded0-deepseek-metaskills.json)。
 
 ---
