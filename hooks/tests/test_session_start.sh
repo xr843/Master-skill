@@ -414,5 +414,23 @@ else
     FAIL=$((FAIL + 1))
 fi
 
+# Case 21: on Windows `python3` is a Microsoft Store alias stub — it exists, so
+# `command -v python3` succeeds, and running it exits without doing anything.
+# Measured 2026-09-18 through the cmd.exe wrapper: every session fell back to
+# "listing modes only", so the masters never reached the model there.
+stub_dir=$(mktemp -d)
+printf '#!/bin/sh\nexit 9\n' > "$stub_dir/python3"
+chmod +x "$stub_dir/python3"
+ln -sf "$(command -v python3)" "$stub_dir/python"
+out=$(PATH="$stub_dir:/usr/bin:/bin" CLAUDE_PLUGIN_ROOT="$SCRIPT_DIR/../.." bash "$HOOK" 2>/dev/null)
+if printf '%s' "$out" | grep -q "/master-huineng"; then
+    echo "  PASS  a stub python3 falls through to a working interpreter"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL  a stub python3 left only the modes fallback"
+    FAIL=$((FAIL + 1))
+fi
+rm -rf "$stub_dir"
+
 printf "Summary: %d passed, %d failed\n" "$PASS" "$FAIL"
 exit $([ "$FAIL" -eq 0 ] && echo 0 || echo 1)

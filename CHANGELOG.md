@@ -10,6 +10,36 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — on Windows the session-start hook never listed the masters (2026-09-18)
+
+The hook ran `python3`. On Windows that name is a Microsoft Store alias stub: it exists,
+so `command -v python3` succeeds, and running it exits without executing anything. The
+hook took that as "session_start.py failed" and emitted its fallback — the five teaching
+modes and no masters. Measured through the cmd.exe wrapper on Windows 11: every session
+started that way, so the fifteen masters never reached the model on Windows.
+`desktop/src/cli.rs` already carried this knowledge for its own Python calls; the hook did
+not.
+
+It now takes the first of `$MASTER_SKILL_PYTHON`, `python3`, `python`, `py -3` that runs
+`import sys` successfully — existence is not enough. On the same Windows box the hook now
+emits the full list. A test replaces `python3` with a stub that exits 9 and requires the
+masters to still be listed; against the previous hook it fails.
+
+### Fixed — the Windows hook wrapper depended on the user's git configuration (2026-09-18)
+
+`hooks/run-hook.cmd` is a polyglot — cmd.exe on Windows, bash elsewhere — and the
+repository stores it with LF. Measured on Windows 11: cmd.exe mis-parses an LF-only batch
+file, echoing one of the bash half's comments as a command and emitting no JSON at all.
+It worked only where `core.autocrlf` happened to be true, which is Git for Windows'
+default but not what a clone with `autocrlf=false`, a downloaded zip, or an npm-installed
+copy gets.
+
+The bash half is now a single line ending in a comment, so a trailing CR falls inside that
+comment, and `.gitattributes` pins the file to CRLF on every checkout — bash runs it either
+way (both are tested), cmd.exe gets the CRLF it needs. `.gitattributes` also pins
+`hooks/session-start` and `*.sh` to LF, since Git Bash breaks on a CR in those. A test
+asserts the pin, and fails if `.gitattributes` stops declaring it.
+
 ## [0.12.14] — 2026-09-17
 
 A security fix and two install failures. `create-master` pre-approved any shell command,

@@ -68,13 +68,35 @@ emit_modes_only() {
     fi
 }
 
-if ! command -v python3 >/dev/null 2>&1; then
-    emit_modes_only "python3 not found"
+# Find an interpreter that actually runs. On Windows `python3` is a Microsoft
+# Store alias stub: it exists, so `command -v python3` succeeds, and running it
+# exits without executing anything. Measured 2026-09-18 through the cmd.exe
+# wrapper on Windows 11 — every session fell back to "listing modes only", so
+# the fifteen masters never reached the model there. The real interpreter is
+# python.exe or the py launcher; desktop/src/cli.rs already knew this.
+PY_BIN=""
+PY_ARG=""
+for candidate in ${MASTER_SKILL_PYTHON:-} python3 python py; do
+    command -v "$candidate" >/dev/null 2>&1 || continue
+    if [ "$candidate" = "py" ]; then
+        if py -3 -c "import sys" >/dev/null 2>&1; then
+            PY_BIN="py"
+            PY_ARG="-3"
+            break
+        fi
+    elif "$candidate" -c "import sys" >/dev/null 2>&1; then
+        PY_BIN="$candidate"
+        break
+    fi
+done
+
+if [ -z "$PY_BIN" ]; then
+    emit_modes_only "no working python3/python/py"
     exit 0
 fi
 
 if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$SCRIPT_DIR/session_start.py" ]; then
     emit_modes_only "could not locate session_start.py"
-elif ! python3 "$SCRIPT_DIR/session_start.py" "$PLUGIN_ROOT"; then
+elif ! "$PY_BIN" $PY_ARG "$SCRIPT_DIR/session_start.py" "$PLUGIN_ROOT"; then
     emit_modes_only "session_start.py failed"
 fi

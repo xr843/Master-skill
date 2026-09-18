@@ -1,0 +1,17 @@
+# Line endings here are behaviour, not formatting.
+
+# hooks/run-hook.cmd is a polyglot: cmd.exe runs it on Windows, bash everywhere
+# else. cmd.exe mis-parses an LF-only batch file — measured 2026-09-18 on
+# Windows 11, it echoed one of the bash half's comments as a command and emitted
+# no JSON at all, so the hook produced nothing. It must therefore arrive with
+# CRLF on every platform, not only where core.autocrlf happens to be true. The
+# bash half is a single line ending in a comment, so the CR lands inside that
+# comment and bash is unaffected.
+hooks/run-hook.cmd text eol=crlf
+
+# Run by bash on every platform, including Git Bash on Windows, where a CR on
+# the interpreter line or on a command word breaks them.
+hooks/session-start text eol=lf
+*.sh text eol=lf
+
+docs/assets/*.png binary
