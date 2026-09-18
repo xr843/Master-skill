@@ -10,6 +10,16 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Changed — the published fidelity numbers now say which tree they describe (2026-09-18)
+
+The README's fidelity table names the model, the commit (`06b8142`) and the date of the run
+it reports, but not that the tree has moved since. Measured: 36 commits have touched
+`prebuilt/` since that commit, 8 of them the `fidelity.jsonl` fixtures the numbers were
+computed against. The fixture count is still 211, which reads as "unchanged" and is not.
+
+Both READMEs now say the numbers belong to that tree, that persona content and fixtures
+have changed since, and that re-measuring means another paid full run.
+
 ### Fixed — on Windows the session-start hook never listed the masters (2026-09-18)
 
 The hook ran `python3`. On Windows that name is a Microsoft Store alias stub: it exists,

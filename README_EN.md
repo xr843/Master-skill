@@ -190,6 +190,8 @@ The 211 fixtures (`prebuilt/*/tests/fidelity.jsonl`) run mechanical checks again
 
 **This column cannot advance the v1.0 gate.** The gate is defined on the Anthropic (`claude-sonnet-4-6`) column; two models are two instruments and are never pooled. That column still holds only one partial run, from 2026-08-18 (84 / 211, stopped when the account ran out of credit), whose "zero fabricated citations" was retracted on 2026-08-31 — the audit had not actually run on a single case.
 
+**These numbers belong to the tree at `06b8142`.** Persona content and the fixtures themselves have changed since (see the 0.12.x entries in the CHANGELOG: how sutta summaries are framed, where routing points, lineage sanitization), and nothing has been re-measured — that needs another paid full run. The fixture count is still 211, which does not mean their content is unchanged.
+
 These are **keyword and citation-string coverage checks, not doctrinal correctness and not LLM-judged answer quality**. Details: [BASELINE-deepseek.md](eval/reports/BASELINE-deepseek.md) (the full run), [ADJUDICATION.md](eval/reports/ADJUDICATION.md) (case-by-case rulings), [BASELINE.md](eval/reports/BASELINE.md) (the Anthropic partial run and its retraction), and the [meta-skill re-run report](eval/reports/0.11.0-e97ded0-deepseek-metaskills.json).
 
 ---
