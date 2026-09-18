@@ -110,5 +110,40 @@ else
 fi
 
 echo
+# The wrapper ships with CRLF because cmd.exe mis-parses an LF-only batch file
+# (measured 2026-09-18 on Windows 11: it echoed a comment as a command and
+# emitted no JSON). bash has to run it either way, so the bash half is one line
+# ending in a comment — the CR lands inside that comment.
+for ending in lf crlf; do
+    tmp_eol=$(mktemp -d)
+    mkdir -p "$tmp_eol/hooks" "$tmp_eol/prebuilt/master-probe"
+    printf -- '---\nname: master-probe\nlineage: 禅宗\n---\n' > "$tmp_eol/prebuilt/master-probe/SKILL.md"
+    cp "$SCRIPT_DIR/../session-start" "$SCRIPT_DIR/../session_start.py" "$tmp_eol/hooks/"
+    if [ "$ending" = crlf ]; then
+        sed 's/\r*$/\r/' "$WRAPPER" > "$tmp_eol/hooks/run-hook.cmd"
+    else
+        tr -d '\r' < "$WRAPPER" > "$tmp_eol/hooks/run-hook.cmd"
+    fi
+    out=$(cd "$tmp_eol" && CLAUDE_PLUGIN_ROOT="$tmp_eol" bash hooks/run-hook.cmd session-start 2>/dev/null)
+    if printf '%s' "$out" | grep -q "master-probe"; then
+        printf "  PASS  bash runs the %s wrapper\n" "$ending"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL  bash could not run the %s wrapper: %s\n" "$ending" "$out"
+        FAIL=$((FAIL + 1))
+    fi
+    rm -rf "$tmp_eol"
+done
+
+# .gitattributes is what guarantees the CRLF the Windows half needs, on every
+# checkout rather than only where core.autocrlf is true.
+if [ "$(cd "$SCRIPT_DIR/../.." && git check-attr eol -- hooks/run-hook.cmd 2>/dev/null | sed 's/.*: //')" = "crlf" ]; then
+    echo "  PASS  .gitattributes pins the wrapper to CRLF"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL  .gitattributes no longer pins hooks/run-hook.cmd to CRLF"
+    FAIL=$((FAIL + 1))
+fi
+
 printf "Summary: %d passed, %d failed\n" "$PASS" "$FAIL"
 exit $([ "$FAIL" -eq 0 ] && echo 0 || echo 1)
