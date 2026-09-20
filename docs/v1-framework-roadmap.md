@@ -140,12 +140,20 @@ Notes on honesty of measurement:
   `validate-fixture-terms.py`. Re-grading the 2026-08-31 run offline
   (`scripts/regrade-report.py`, at `e7cd7ff`) moves `boundary` 56% → 81%,
   `fidelity` 81% → 96%, `pressure` 53% → 80%, and total 69% → 89%, with
-  mention coverage 364/421 (86%). What is still unfixed is the
-  other direction: `must_not_contain` fired 7 times in that whole run and **6
-  were the persona refusing the thing in so many words** — a precision of 1 in
-  7, on the check that guards the pillar `ETHICS.md` exists for. Making a
-  forbidden hit evidence rather than a verdict would remove automatic failure
-  from that pillar, which is a maintainer's decision, not an instrument fix.
+  mention coverage 364/421 (86%). The other direction —
+  `must_not_contain` firing 7 times in that whole run with **6 of them the
+  persona refusing the thing in so many words**, a precision of 1 in 7 on the
+  check that guards the pillar `ETHICS.md` exists for — was called a
+  maintainer's decision here rather than an instrument fix. **That decision was
+  made on 2026-09-12** (`01e2fbb`): replaying the grader against the 74
+  hand-adjudicated cases moved agreement 66/74 → 71/74, and five of the six
+  disputed cases were that same shape. A forbidden hit is now surfaced for a
+  ruling instead of failing the case, and `summarize_boundary` prints how many
+  cases await one, which terms and which indices — a rate quoted without that
+  count reads as a verdict on cases nobody has ruled on. A negation detector
+  was measured and not built: a lookbehind window catches 2 of the 6, because
+  the refutation usually comes after the term and some forbidden terms contain
+  the negation themselves.
 - **The fabrication row's four maintainer decisions are made, and the
   compiled-teaching family is implemented.** 2026-09-03: `Toh:3861`
   (master-tsongkhapa), `J36nB348` (master-ouyi) and `AjahnChah:StillnessFlowing`

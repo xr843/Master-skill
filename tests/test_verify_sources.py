@@ -1028,7 +1028,7 @@ def test_a_quoted_line_no_cbeta_text_has_is_flagged_for_a_cbeta_only_persona():
     quotes = [("master-zhiyi/references/voice.md:30", "master-zhiyi", "功在渐次，证在圆融。")]
     mismatched, unknown = verify_sources.classify_persona_quotes(
         quotes, {"master-zhiyi": {"cbeta"}}, {"master-zhiyi": ["T1911"]},
-        _quote_search("missing"),
+        _quote_search("missing"), {},
     )
     assert [m[0] for m in mismatched] == ["master-zhiyi/references/voice.md:30"]
     assert unknown == []
@@ -1039,7 +1039,7 @@ def test_the_same_line_is_only_unknown_when_the_persona_also_declares_other_sour
     quotes = [("master-xuyun/references/voice.md:29", "master-xuyun", "凡学佛贵真实不虚，尽除浮奢。")]
     mismatched, unknown = verify_sources.classify_persona_quotes(
         quotes, {"master-xuyun": {"cbeta", "compiled_teaching"}}, {"master-xuyun": ["T2008"]},
-        _quote_search("missing"),
+        _quote_search("missing"), verify_sources.declared_source_titles(),
     )
     assert mismatched == []
     assert [u[0] for u in unknown] == ["master-xuyun/references/voice.md:29"]
@@ -1050,7 +1050,7 @@ def test_a_line_only_in_a_work_the_persona_does_not_declare_is_unknown_not_wrong
     quotes = [("master-xuanzang/references/voice.md:33", "master-xuanzang", "真故极成色，不离于眼识宗。")]
     mismatched, unknown = verify_sources.classify_persona_quotes(
         quotes, {"master-xuanzang": {"cbeta"}}, {"master-xuanzang": ["T1585"]},
-        _quote_search("elsewhere"),
+        _quote_search("elsewhere"), {},
     )
     assert mismatched == []
     assert unknown[0][1] == "only in works this persona does not declare"
@@ -1059,17 +1059,87 @@ def test_a_line_only_in_a_work_the_persona_does_not_declare_is_unknown_not_wrong
 def test_a_line_in_a_declared_work_passes():
     quotes = [("master-huineng/references/voice.md:29", "master-huineng", "不是风动，不是幡动，仁者心动。")]
     assert verify_sources.classify_persona_quotes(
-        quotes, {"master-huineng": {"cbeta"}}, {"master-huineng": ["T2008"]}, _quote_search()
+        quotes, {"master-huineng": {"cbeta"}}, {"master-huineng": ["T2008"]}, _quote_search(), {}
     ) == ([], [])
 
 
 def test_cbeta_not_answering_is_unknown_not_wrong():
     quotes = [("master-huineng/references/voice.md:29", "master-huineng", "不是风动，不是幡动，仁者心动。")]
     mismatched, unknown = verify_sources.classify_persona_quotes(
-        quotes, {"master-huineng": {"cbeta"}}, {"master-huineng": ["T2008"]}, _quote_search("unreachable")
+        quotes, {"master-huineng": {"cbeta"}}, {"master-huineng": ["T2008"]},
+        _quote_search("unreachable"), {},
     )
     assert mismatched == []
     assert unknown[0][1] == "CBETA did not answer"
+
+
+def test_a_mixed_persona_is_judged_when_the_line_names_a_declared_cbeta_work():
+    """米拉日巴的示例句注明《木纳记》—— 那是他声明的 B11n0073，一直查得到。
+
+    这是 2026-09-20 补上的能力。在那之前，只要人设还声明了一条 BDRC 号，它所有
+    引文都记未判定：同一条输入，旧判据（不给题名表）给未判定，新判据给 WRONG。
+    """
+    where = "master-milarepa/references/voice.md:30"
+    quotes = [(where, "master-milarepa", "这句是编的，木纳记里没有这一行。")]
+    families = {"master-milarepa": {"cbeta", "tibetan_canon"}}
+    works = {"master-milarepa": ["B0073"]}
+
+    mismatched, unknown = verify_sources.classify_persona_quotes(
+        quotes, families, works, _quote_search("missing"), verify_sources.declared_source_titles()
+    )
+    assert [m[0] for m in mismatched] == [where]
+    assert unknown == []
+
+    blind, blind_unknown = verify_sources.classify_persona_quotes(
+        quotes, families, works, _quote_search("missing"), {}
+    )
+    assert blind == []
+    assert [u[0] for u in blind_unknown] == [where]
+
+
+def test_the_source_note_below_the_quote_is_read():
+    """摘录文件把出处写在下一行；只看引文行本身就看不见《木纳记》。"""
+    context = verify_sources.attribution_context("master-milarepa/references/teaching.md:25")
+    assert "《木纳记》" in context
+    assert "B11n0073" in context
+
+
+def test_a_line_naming_two_shelves_is_not_judged():
+    declared = {"cbeta": {"大佛顶首楞严经"}, "cbeta_ids": {"T19n0945"}, "other": {"虚云和尚法汇"}}
+    assert verify_sources.cbeta_is_the_right_shelf("老和尚讲《大佛顶首楞严经》时说", declared)
+    assert not verify_sources.cbeta_is_the_right_shelf(
+        "《大佛顶首楞严经》…（《虚云和尚法汇》·开示）", declared
+    )
+    assert not verify_sources.cbeta_is_the_right_shelf("出处：【《菩提道灯论》】（Toh 4465）", declared)
+
+
+def test_a_declared_sutra_number_settles_it_even_beside_a_see_also():
+    """「出处：《木纳记》卷十一（B11n0073）；…见 BDRC W1KG1252」—— 经号已经钉死了。"""
+    declared = {"cbeta": {"木纳记"}, "cbeta_ids": {"B11n0073"}, "other": {"BDRC:W1KG1252"}}
+    assert verify_sources.cbeta_is_the_right_shelf(
+        "出处：《木纳记》卷十一（B11n0073）；《道歌集》相关诸歌见 BDRC W1KG1252", declared
+    )
+
+
+def test_a_translator_note_never_becomes_a_title():
+    """`"菩提道灯论（法尊译）"` 登记的是书名，不是「法尊译」。"""
+    titles = verify_sources.declared_source_titles()
+    assert "菩提道灯论" in titles["master-atisha"]["cbeta"]
+    assert not any("法尊译" == name for names in titles["master-atisha"].values() for name in names)
+
+
+def test_a_work_declared_in_both_canons_does_not_veto_itself():
+    """阿底峡把《菩提道灯论》声明了三次（Toh 两次、CBETA 一次）。同一部书不算「指向别处」。"""
+    titles = verify_sources.declared_source_titles()["master-atisha"]
+    assert "菩提道灯论" in titles["cbeta"]
+    assert "菩提道灯论" not in titles["other"]
+
+
+def test_the_weekly_step_hands_the_title_table_to_the_gate():
+    """题名表不接上去，这道检查就退回只认全 CBETA 人设 —— 静静地少查一半。"""
+    source = (Path(verify_sources.__file__)).read_text(encoding="utf-8")
+    call = source[source.index("quote_line_mismatched, quote_line_unknown = classify_persona_quotes(") :]
+    assert "declared_source_titles()" in call[: call.index(")\n")]
 
 
 def test_the_converter_uses_the_variants_cbeta_prints():
