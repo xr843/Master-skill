@@ -58,17 +58,17 @@ verified_at: 2026-06-09
 - `atisha` → 阿底峡尊者
 - `ouyi` → 蕅益大师
 
-未列出的 master 同样从 `prebuilt/master-<slug>/meta.json` 的 `name` 字段读取。
+未列出的 master 同样从同级的 `master-<slug>/meta.json` 的 `name` 字段读取。
 
 ## 阶段 0 — 初始化（Orchestrator 执行）
 
 输入：`{topic, master_A_slug, master_B_slug, max_rounds?}`
 
-1. 读 `prebuilt/master-debate/meta.json` 的 `debate_protocol`：
+1. 读本 skill 目录下的 `meta.json` 的 `debate_protocol`：
    - 计算配对 key：把两个 slug **按字典序排序**后用 `-vs-` 拼接（例：`("yinguang", "huineng")` → `huineng-vs-yinguang`；`("tsongkhapa", "huineng")` → `huineng-vs-tsongkhapa`）。注意 slug 自身可含 `-`（如 `ajahn-chah`），lookup 时 **不要** 对 key 做 `split("-vs-")` 再排序，而应该是排好序之后**才**拼接。
    - 若 `per_pair_overrides[key]` 存在 → 用其 `default_rounds`，否则用 `debate_protocol.default_rounds`（=4）
    - `max_rounds` 用户传入则取 `min(用户值, debate_protocol.max_rounds)`，否则用上一步的 default
-2. 读 `prebuilt/master-<A>/meta.json` 与 `prebuilt/master-<B>/meta.json` 的 `cross_critique`：
+2. 读同级的 `master-<A>/meta.json` 与 `master-<B>/meta.json` 的 `cross_critique`：
    - `ammo_A_vs_B` = A 的 cross_critique 中 `target_master == B` 的所有 entry
    - `ammo_B_vs_A` = B 的 cross_critique 中 `target_master == A` 的所有 entry
 3. **覆盖检查**：若 `ammo_A_vs_B` 或 `ammo_B_vs_A` 为空 → orchestrator 在最终输出顶部打一条 `> ⚠️ 本配对 cross_critique 未双向覆盖，对辩力度可能降级。` **不阻塞流程**。
@@ -97,7 +97,7 @@ verified_at: 2026-06-09
  每条格式: position 文 + citation 经号}
 
 【背景资料】（如果该 master meta.json 含 style.qa / signature_phrases，
-此处拼入；否则忽略，由 subagent 自查 prebuilt/master-{slug}/references/voice.md）
+此处拼入；否则忽略，由 subagent 自查同级的 master-{slug}/references/voice.md）
 
 【硬约束】
 1. 300-500 字 zh-Hans
@@ -188,7 +188,7 @@ verified_at: 2026-06-09
 
 ### 阶段 0 — 初始化（orchestrator）
 
-读 `prebuilt/master-debate/meta.json`：
+读本 skill 目录下的 `meta.json`：
 - 配对 key = `huineng-vs-yinguang` → `default_rounds = 4`
 - `max_rounds` 用户未指定 → 取 4
 

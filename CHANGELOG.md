@@ -10,6 +10,32 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — the meta-skills sent the model to `prebuilt/…`, a directory installs do not have (2026-09-20)
+
+Eight instructions across three skills named a repository-relative path:
+`读 prebuilt/master-<A>/meta.json 的 cross_critique`, `加载 prebuilt/{slug}/sources/`,
+`/master-<slug> 必须指向已存在的 prebuilt/master-<slug>/`. `npx master-skill install`
+copies each skill to `~/.claude/skills/<name>/`; there is no `prebuilt/` level. The data is
+installed — a persona ships its `meta.json`, `references/` and `sources/` — the path just
+does not resolve. A Claude Code plugin user has the directory, an npm-install user does
+not, so the same instruction worked for one and not the other.
+
+One phrasing is true in both layouts: **与本 skill 同级的 `master-<slug>/`**. The personas
+sit beside the meta-skill in `~/.claude/skills/`, and beside it under `prebuilt/` in the
+repository. All eight now say that, and master-debate's two references to its own
+`meta.json` say 本 skill 目录下的.
+
+`validate-section-references.py` — the gate for "a pointer the model follows must land on
+something" — now rejects any `prebuilt/…` path in a model-facing document. It found one
+more while being written: `references/traditions.md` sent the generator's reader to
+`prebuilt/master-debate/SKILL.md`, and `create-master`'s bundle does not include `prebuilt/`
+either. That line now names the skill instead of a path.
+
+One line is exempt and says why: `references/ethics-runtime.md` tells a Tier B contributor
+to put the authorisation in `prebuilt/{slug}/LICENSE.md`, which is a file you add in a pull
+request, not one the model reads. The exemption is checked in both directions — if that
+line stops containing the path, the stale entry itself fails.
+
 ### Fixed — /master-help told the model to read a file that is not installed (2026-09-20)
 
 `master-help` is the "I don't know who to ask" entry point, and its documented algorithm has

@@ -273,6 +273,18 @@ CASES = [
     ),
     (
         "validate-section-references.py", (),
+        "a skill may not point the model at a `prebuilt/…` path",
+        # 实测的缺陷：`npx master-skill install` 装出来的树里没有 `prebuilt/` 这一层，
+        # 所以「读 prebuilt/master-<A>/meta.json」对这一半用户是死路 —— 数据装了，
+        # 路径没对上。把一条这样的指针塞回去就复现。
+        lambda r: (r / "prebuilt/master-debate/SKILL.md").write_text(
+            (r / "prebuilt/master-debate/SKILL.md").read_text(encoding="utf-8")
+            + "\n读 `prebuilt/master-debate/meta.json`。\n",
+            encoding="utf-8",
+        ),
+    ),
+    (
+        "validate-section-references.py", (),
         "a routing pointer's §section must exist in the file it names",
         # Rename the target, not the pointer: that is how every one of the 18
         # dangling pointers found on 2026-09-16 came about.

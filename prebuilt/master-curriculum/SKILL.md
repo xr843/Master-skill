@@ -74,7 +74,7 @@ verified_at: 2026-06-06
 ## 硬约束
 
 1. **引经必经查证**：所有 CBETA 经号 / SC uid / Toh / 集成开示 id 必须真实存在于某 master `meta.json.sources`。CI 通过 `scripts/validate-curriculum-sources.py` 强制。
-2. **推荐 master 必须存在**：`/master-<slug>` 必须指向已存在的 `prebuilt/master-<slug>/`。
+2. **推荐 master 必须存在**：`/master-<slug>` 必须指向一个真实存在、与本 skill 同级的 `master-<slug>/`。
 3. **不抹平传统差异**：哪怕用户问"综合"，也按传统分别给路径，禁止造混合体。
 4. **不替善知识**：盲点和精研环节必须明确提示"亲近善知识"。
 5. **L0 起手不灌输宗派优越**：第一阶段教法描述保持中性、传统内部声音。

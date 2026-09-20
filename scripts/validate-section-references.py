@@ -139,8 +139,58 @@ def model_facing_docs() -> list[Path]:
     return sorted({p for pattern in DOC_GLOBS for p in ROOT.glob(pattern) if p.is_file()})
 
 
+# 允许出现 `prebuilt/…` 的行：说的是**往仓库提 PR**，不是运行时去读一个文件。
+# 与本仓库其他申报一样双向校验 —— 条目对不上任何一行，同样报错：一条过期的借口
+# 比没有借口更糟，它是个假的豁免。
+_REPO_PATH_OK: tuple[tuple[str, str, str], ...] = (
+    (
+        "references/ethics-runtime.md",
+        "prebuilt/{slug}/LICENSE.md",
+        "Tier B 授权证明是提 PR 时放进仓库的文件，不是运行时读的",
+    ),
+)
+
+
+def repo_relative_pointers(docs: list[Path]) -> list[str]:
+    """模型可见的文档里不得出现 `prebuilt/…` 路径。
+
+    那个前缀只在仓库里存在。2026-09-20 实测：`npx master-skill install` 把每个
+    skill 拷到 `~/.claude/skills/<name>/`，没有 `prebuilt/` 这一层；Claude Code
+    插件注册整个仓库，才有。所以「读 `prebuilt/master-<A>/meta.json`」这条指令对
+    一半用户是死路 —— 数据其实装了，路径没对上。
+
+    两种布局里都成立的说法只有一种：**与本 skill 同级的 `master-<slug>/`**。
+    仓库里 `prebuilt/` 下是同级，`~/.claude/skills/` 下也是同级。
+    """
+    problems: list[str] = []
+    allowed = {(path, needle): reason for path, needle, reason in _REPO_PATH_OK}
+    used: set[tuple[str, str]] = set()
+    for doc in docs:
+        rel = doc.relative_to(ROOT).as_posix()
+        for number, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), 1):
+            if "prebuilt/" in line:
+                exempt = [key for key in allowed if key[0] == rel and key[1] in line]
+                if exempt:
+                    used.update(exempt)
+                    continue
+                problems.append(
+                    f"{doc.relative_to(ROOT)}:{number}: names a `prebuilt/…` path — that "
+                    f"prefix does not exist in an installed skill; say 与本 skill 同级的 "
+                    f"`master-<slug>/` instead"
+                )
+    for key in allowed:
+        if key not in used:
+            problems.append(
+                f"stale exemption: {key[0]} no longer contains `{key[1]}` — "
+                f"drop the entry from _REPO_PATH_OK"
+            )
+    return problems
+
+
 def main() -> int:
-    examined, problems = dangling(model_facing_docs())
+    docs = model_facing_docs()
+    examined, problems = dangling(docs)
+    problems = list(problems) + repo_relative_pointers(docs)
     if examined == 0:
         print("FAIL: found no file pointers at all — this gate examined an empty set.")
         return 1
