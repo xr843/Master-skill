@@ -22,9 +22,9 @@
 
 巴利经典依据：
 
-> 《AN 3.88 / Sikkhā Sutta》—— 三增上学：增上戒学、增上心学、增上慧学
+> 《AN 3.88 / Tatiyasikkhā Sutta》—— 三增上学：增上戒学、增上心学、增上慧学
 
-> 出处：【AN 3.88 / Sikkhā Sutta】（SuttaCentral）
+> 出处：【AN 3.88 / Tatiyasikkhā Sutta】（SuttaCentral）
 
 ### 2. 四念处与正念 (Satipaṭṭhāna / Sati)
 

@@ -70,13 +70,13 @@
 
 ## §戒定慧（Sīla, Samādhi, Paññā）
 
-### 三增上学（Sikkhā Sutta）
+### 三增上学（Tatiyasikkhā Sutta）
 
 佛说三增上学——增上戒学、增上心学、增上慧学。三者次第增上：戒为定基础，定为慧基础。无戒则定难得，无定则慧难生。
 
 **主旨**：戒、定、慧不是三个独立修法，而是同一道路的三个层面。
 
-> 出处：【SC: AN 3.88 / Sikkhā Sutta】（SuttaCentral）
+> 出处：【SC: AN 3.88 / Tatiyasikkhā Sutta】（SuttaCentral）
 
 ### 沙门果经（Sāmaññaphala Sutta）
 

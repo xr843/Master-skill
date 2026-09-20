@@ -1176,6 +1176,136 @@ def cbeta_search_hits(clause: str, work: str | None = None) -> int | None:
         return None
 
 
+SUTTACENTRAL_SUTTA_URL = "https://suttacentral.net/api/suttas"
+
+# 巴利经号与经名在人设文档里的写法：`《MN 10 / Satipaṭṭhāna Sutta》`、
+# `【SC: AN 3.88 / Tatiyasikkhā Sutta】`、`(Mahāsatipaṭṭhāna Sutta, DN 22)`、
+# 光一个 `（MN 22 引）`。经名可有可无，经号总在。
+_PALI_ID = re.compile(r"\b(AN|MN|SN|DN|Snp|Dhp|Ud|Iti|Thag|Thig)\s?(\d+(?:\.\d+)*)\b")
+_PALI_NAME = re.compile("([A-Za-z\u00c0-\u024f\u1e00-\u1eff'\u2019-]{3,40})\\s*[Ss]utta\\b")
+# 经名与 SuttaCentral 算多像才算同一部经。2026-09-20 在全部 13 组（经号, 人设写
+# 的经名）上实测：11 组 1.000；一组 0.957 —— MN 118 人设作 Ānāpānasati、SC 作
+# Ānāpānassati，单双 s 两种拼法学界都在用，不是错；唯一的真错 0.667 —— AN 3.88
+# 人设作 Sikkhā、SC 作 Tatiyasikkhā。0.667 与 0.957 之间是一条 0.29 宽的空带，
+# 判定线落在带中间。写死相等会把那条合法变体判成错，这正是这道门禁要避免的事。
+_PALI_NAME_MATCH = 0.90
+# 经名前后最多隔这么多字符还算「挨着这个经号」。`(Mahāsatipaṭṭhāna Sutta, DN 22)`
+# 里经名在前，中间只隔一个逗号和空格。
+_PALI_NAME_GAP = 6
+
+
+def collect_pali_references() -> list[tuple[str, str, str, str | None]]:
+    """(位置, 技能目录, SuttaCentral uid, 人设写的经名或 None)。
+
+    南传人设在文档里引具体的经 —— 79 处、12 个经号 —— 而在此之前**没有任何一步
+    核过它们**。这与 2026-09-15 那次 BDRC 事故是同一形状：米拉日巴声明的
+    `BDRC:W22272` 其实是宗喀巴全集，挂了约 60 处，所有门禁照绿，因为没有一步去
+    解析那个号。汉传有 3b/3c 核经号与题名，藏传有 3g 核 BDRC 记录，巴利这一支
+    什么都没有。
+
+    元技能也收。3h 跳过它们是因为它们没有声明来源、无从判断引文归属；而经号对不
+    对与声明无关，master-curriculum 里写错一个经号同样是写错。
+    """
+    base = Path(PREBUILT_DIR)
+    refs: list[tuple[str, str, str, str | None]] = []
+    for path in sorted(base.glob("*/**/*.md")):
+        where_base = path.relative_to(base).as_posix()
+        master = where_base.split("/")[0]
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            hits = list(_PALI_ID.finditer(line))
+            for index, match in enumerate(hits):
+                after_end = hits[index + 1].start() if index + 1 < len(hits) else len(line)
+                uid = (match.group(1) + match.group(2)).lower()
+                name = _pali_name_near(line, match.start(), match.end(), after_end)
+                refs.append((f"{where_base}:{number}", master, uid, name))
+    return refs
+
+
+def _pali_name_near(line: str, start: int, end: int, next_id: int) -> str | None:
+    """紧挨着这个经号写的经名。找不到返回 None —— 没写经名不是错。
+
+    只在这个经号与**下一个**经号之间找，否则
+    `《MN 10 / Satipaṭṭhāna Sutta》《MN 22 / Alagaddūpama Sutta》` 会让 MN 22
+    拿到前一部经的名字。
+    """
+    after = line[end:next_id]
+    match = _PALI_NAME.search(after)
+    if match and (after[: match.start()].lstrip().startswith("/") or len(after[: match.start()].strip(" ,·")) <= 2):
+        return match.group(1)
+    before = list(_PALI_NAME.finditer(line[:start]))
+    if before and len(line[: start]) - before[-1].end() <= _PALI_NAME_GAP:
+        return before[-1].group(1)
+    return None
+
+
+def fetch_suttacentral_sutta(uid: str) -> dict | None:
+    """SuttaCentral 的 suttaplex；取不到返回 None（未知，不是「这部经不存在」）。
+
+    **状态码不能当存在性用**：不存在的号（`mn999`）同样回 200，只是 suttaplex
+    里每个字段都是 null —— 与 BDRC 那个「任何号都回 200」的单页应用同一个坑。
+    存在与否看 `uid` 字段。
+    """
+    import urllib.error
+    import urllib.request
+
+    request = urllib.request.Request(
+        f"{SUTTACENTRAL_SUTTA_URL}/{urllib.parse.quote(uid)}",
+        headers={"User-Agent": "Mozilla/5.0 (master-skill weekly source check)"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+    return payload.get("suttaplex") or {}
+
+
+def _fold_pali(name: str) -> str:
+    """去掉变音符与非字母、转小写、去掉词尾 sutta。Anattalakkhaṇa → anattalakkhana。"""
+    import unicodedata
+
+    decomposed = unicodedata.normalize("NFD", name)
+    stripped = "".join(c for c in decomposed if not unicodedata.combining(c)).lower()
+    letters = "".join(c for c in stripped if c.isalnum())
+    return letters[:-5] if letters.endswith("sutta") else letters
+
+
+def classify_pali_references(
+    refs: list[tuple[str, str, str, str | None]],
+    fetch,
+) -> tuple[list[tuple[str, str, str]], list[tuple[str, str, str, str]], list[tuple[str, str]]]:
+    """把巴利经号引用分成「这个号不存在」「经名与 SuttaCentral 对不上」「问不到」。
+
+    两类判定都只在 SuttaCentral 答了话时才下。接口不通一律记未知：接口不通不是证据。
+    """
+    import difflib
+
+    missing: list[tuple[str, str, str]] = []
+    renamed: list[tuple[str, str, str, str]] = []
+    unknown: list[tuple[str, str]] = []
+    records: dict[str, dict | None] = {}
+    for where, _master, uid, name in refs:
+        if uid not in records:
+            records[uid] = fetch(uid)
+        record = records[uid]
+        if record is None:
+            unknown.append((where, f"SuttaCentral did not answer for {uid}"))
+            continue
+        if not record.get("uid"):
+            missing.append((where, uid, "SuttaCentral has no such sutta id"))
+            continue
+        title = str(record.get("original_title") or "")
+        if not name:
+            continue
+        if not title:
+            unknown.append((where, f"{uid} has no Pali title on SuttaCentral"))
+            continue
+        ratio = difflib.SequenceMatcher(None, _fold_pali(name), _fold_pali(title)).ratio()
+        if ratio < _PALI_NAME_MATCH:
+            renamed.append((where, uid, name, title))
+    return missing, renamed, unknown
+
+
 # 3h 判「这条引文注明的出处是哪本书」用到的三个常量。
 _WORK_TITLE_RE = re.compile(r"《([^》]{1,40})》")
 _PARENTHETICAL_RE = re.compile(r"[（(]([^）)]{2,60})[）)]")
@@ -1809,6 +1939,24 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
         for where, reason in block_unknown:
             print(f"    {where}: {reason}")
 
+    # Step 3j: 巴利经号。汉传有 3b/3c、藏传有 3g，这一支此前什么都没有
+    # （见 collect_pali_references）。
+    print("\n[3j/4] Resolving Pali sutta ids against SuttaCentral...")
+    pali_refs = collect_pali_references()
+    pali_missing, pali_renamed, pali_unknown = classify_pali_references(
+        pali_refs, fetch_suttacentral_sutta
+    )
+    for where, uid, reason in pali_missing:
+        print(f"    [WRONG] {where}: {uid} — {reason}")
+    for where, uid, written, actual in pali_renamed:
+        print(f"    [WRONG] {where}: {uid} is 《{actual}》, not 《{written}》")
+    if pali_unknown:
+        print(f"  Could not check {len(pali_unknown)} Pali reference(s) — unknown, not wrong:")
+        for where, reason in pali_unknown:
+            print(f"    {where}: {reason}")
+    named = len([r for r in pali_refs if r[3]])
+    print(f"  Resolved {len(pali_refs)} Pali reference(s) ({named} carry a sutta name)")
+
     # Step 4: Update URLs
     # Build replacement map: full_cbeta_id -> str(internal_text_id)
     id_replacement_map: dict[str, str] = {}
@@ -1860,6 +2008,8 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     print(f"  Quoted lines the compiled teachings do not have: {len(compiled_mismatched)}")
     print(f"  Compiled teaching corpora that could not be read: {len(compiled_unreadable)}")
     print(f"  Excerpt blocks the compiled teachings do not have: {len(block_mismatched)}")
+    print(f"  Pali sutta ids SuttaCentral does not have: {len(pali_missing)}")
+    print(f"  Pali sutta names that do not match SuttaCentral: {len(pali_renamed)}")
     if unknown_to_cbeta:
         print(f"  CBETA unreachable for:     {len(unknown_to_cbeta)} (not counted as wrong)")
     if dry_run and all_changes:
