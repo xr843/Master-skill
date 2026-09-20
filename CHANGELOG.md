@@ -10,6 +10,42 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — ten of the fifteen masters could not be reached by their own name (2026-09-20)
+
+`master-skill recommend` scores a question against each persona's
+`meta.json.search_scope.keywords`. Ten of the fifteen masters did not have their own name
+in that list. Asking 「阿姜查最核心的教导是什么？」 returned master-kumarajiva and
+master-yinguang, with `resolvedBy: "default_pairing"` and `note: "无关键词命中"` — the
+router had matched nothing at all and fallen back.
+
+Eight carried no form of their name: master-milarepa, master-ajahn-chah, master-atisha,
+master-zhiyi, master-fazang, master-kumarajiva, master-xuanzang, master-buddhaghosa. Two
+more looked covered and were not: master-huineng had 「六祖」 but not 「慧能」, and
+master-tsongkhapa had only 「宗喀巴全集」 — a book title longer than the query, and matching
+is containment of the keyword in the question, so it can never fire on 「宗喀巴大师」.
+
+The two trigger surfaces disagreed. Every persona's `SKILL.md` `description` already names
+the master, which is what Claude reads when deciding to invoke a skill; only the table
+behind `recommend` did not.
+
+Measured against the 211 fidelity fixtures, using each fixture's persona as the label — an
+independent set, written to probe doctrine rather than to name anyone:
+
+| | before | after |
+|---|---|---|
+| top-1 | 61.1% | **67.1%** |
+| top-3 | 77.2% | **83.8%** |
+
+That understates it. Only 15 of the 90 questions belonging to the affected masters name
+their master at all, because the fixtures ask about doctrine; a user asking for a teacher
+by name does it far more often.
+
+Names were chosen to avoid matching the wrong master: 「贤首」 and 「法藏大师」 rather than
+a bare 「法藏」, which would have caught the Pure Land 法藏比丘; 「智顗」 and 「智者大师」
+rather than 「智者」, an ordinary word. `test("recommend reaches every master by his own
+name")` generates its cases from `skill-catalog.json` and `meta.json.name`, so a new persona
+is covered the day it is added.
+
 ### Fixed — a quotation with an ellipsis in it was thrown away, not checked (2026-09-20)
 
 The collector behind steps 3h and 3i dropped any quoted line containing 「……」. Three of
