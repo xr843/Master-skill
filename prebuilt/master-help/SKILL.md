@@ -20,9 +20,12 @@ verified_at: 2026-07-20
 
 ## 数据源
 
-路由表在仓库根的 `routing.json`（`mode_rules` / `topic_pairings` / `default_pairing`），
-祖师关键词在各 `prebuilt/<slug>/meta.json` 的 `search_scope.keywords`。
-两处都是机器可读的单一数据源——**不要凭记忆列举祖师或关键词**，读文件。
+**祖师关键词**在已安装的 `master-*/meta.json` 的 `search_scope.keywords` 里 —— 这些文件
+确实随人设一起装到 `~/.claude/skills/`（实测过），读它们，**不要凭记忆列举祖师或关键词**。
+
+**路由表**不一定在。`routing.json` 在仓库根，插件装法能读到，`npx master-skill install`
+只拷 skill 自己的目录，读不到。所以下面三张表是随本 skill 走的那一份副本；
+`scripts/validate-routing.py` 逐行比对它们与 `routing.json`，不一致就让 CI 失败。
 
 确定性实现同样可用：
 
@@ -37,13 +40,16 @@ master-skill recommend "<用户原话>" --json
 与 `routing.json.mode_rules` 的 `order` 一致：
 
 ```
-1. 命中「学习计划 / 入门 / 先学什么 / 从哪开始 / 按什么顺序」 → /master-curriculum
-2. 命中「辩论 / 谁更对 / 高下 / 之争 / 之辩 / 分判」          → /master-debate
-3. 命中「对比 / 比较 / 不同 / 异同 / 各派怎么看」              → /compare-masters
-4. 都不命中 → 单位祖师：按 meta.json search_scope.keywords 打分
-5. 仍无命中 → routing.json.situations 白话状况层
-6. 仍无命中 → routing.json.topic_pairings 主题配对
-7. 再无命中 → routing.json.default_pairing
+1. 命中「学习计划 / 学修次第 / 入门 / 先学什么 / 从哪开始 / 开始学 / 应该读 / 下一步读什么 / 路径推荐 / 按什么顺序 / curriculum / roadmap」
+     → /master-curriculum
+2. 命中「辩论 / 各执一词 / 谁更对 / 高下 / 之争 / 之辩 / 分判 / debate」
+     → /master-debate
+3. 命中「对比 / 比较 / 不同 / 各派怎么看 / 各位祖师 / 多个角度 / 异同 / compare」
+     → /compare-masters
+4. 都不命中 → 单位祖师：按已安装 master-*/meta.json 的 search_scope.keywords 打分
+5. 仍无命中 → 下方「状况层」表（说不出术语的人）
+6. 仍无命中 → 下方「主题配对」表
+7. 再无命中 → 兜底配对
 ```
 
 第 5 步是给**说不出术语的人**用的。`search_scope.keywords` 是教理检索词，
@@ -53,6 +59,42 @@ master-skill recommend "<用户原话>" --json
 第 4 步打分规则：关键词**长度 ≥ 2** 才计分（单字 `空` `戒` `定` `慧` `苦` `禅` `业`
 会在日常汉语里误命中，已被 `min_keyword_length` 排除）；命中数高者优先；
 平局时**优先不同传统**，仍平局按 slug 字典序。最多 3 位。
+
+## 状况层（第 5 步）
+
+用户描述的是**感受**而非主题时用这张表。
+
+| 状况（用户原话） | 目标 | 说明 |
+|---|---|---|
+| 妄念 / 杂念 / 坐不住 / 静不下来 / 定不下来 / 心乱 | master-xuyun + master-zhiyi + master-ajahn-chah | 参话头 / 止观 / 正念观察 |
+| 看不懂 / 读不懂 / 理不清 / 没有逻辑 | master-xuanzang | 唯识严密分析 |
+| 无力感 / 使不上力 / 没有进步 / 学佛很久 / 提不起劲 | master-yinguang | 老实念佛 |
+| 最朴素 / 朴素 / 最简单的修法 | master-ajahn-chah | 南传森林禅 · 出入息念 |
+
+## 主题配对（第 6 步）与兜底（第 7 步）
+
+| 问题主题 | 配对祖师 |
+|---|---|
+| 念佛 / 往生 / 净土 | master-yinguang + master-ouyi |
+| 参禅 / 话头 / 开悟 | master-huineng + master-xuyun |
+| 唯识 / 空有 / 性相 / 法相 | master-xuanzang + master-kumarajiva |
+| 判教 / 圆融 / 止观 | master-zhiyi + master-fazang |
+| 修行次第 / 综合法门 | master-ouyi + master-yinguang |
+| 戒律 / 持戒 / 律仪 / 行持 | master-xuyun + master-atisha + master-buddhaghosa |
+| 般若 / 空性 / 中观 / 缘起性空 / 应成 / 毕竟空 | master-kumarajiva + master-tsongkhapa + master-huineng |
+| 道次第 / 三士道 / 下士道 / 中士道 / 上士道 / lam rim | master-atisha + master-tsongkhapa |
+| 心识 / 阿赖耶 / 心所 / 末那 | master-xuanzang + master-buddhaghosa + master-huineng |
+| 苦行 / 闭关 / 山中修行 / 头陀 | master-xuyun + master-milarepa |
+| 正念 / 观心 / 觉知 | master-huineng + master-ajahn-chah + master-mahasi-sayadaw |
+| 禅修方法 / 业处 / 所缘 | master-buddhaghosa + master-mahasi-sayadaw + master-ajahn-chah |
+| 七清净 / 十六观智 / 观智 | master-buddhaghosa + master-mahasi-sayadaw |
+| 出离心 / 暇满 / 无常 | master-yinguang + master-atisha + master-ajahn-chah |
+| 菩提心 / 慈悲 / 自他相换 | master-atisha + master-ouyi |
+| 上师 / 善知识 / 依止 | master-xuyun + master-atisha + master-tsongkhapa |
+| 论师风格 / 经院严密 / 因明 | master-xuanzang + master-tsongkhapa + master-buddhaghosa |
+| 四大传统 / 四方对照 | master-nagarjuna + master-huineng + master-tsongkhapa + master-buddhaghosa |
+| 跨传统禅修 / 大手印 | master-huineng + master-milarepa + master-ajahn-chah |
+| 其他 | master-kumarajiva + master-yinguang |
 
 ## 输出格式
 
@@ -91,4 +133,4 @@ master-skill recommend "<用户原话>" --json
 | 藏传 | master-atisha · master-tsongkhapa · master-milarepa |
 | 南传 | master-buddhaghosa · master-mahasi-sayadaw · master-ajahn-chah |
 
-> 此表仅供快速定位。判断该选谁时以 `routing.json` 与各 `meta.json` 为准。
+> 此表仅供快速定位。判断该选谁时以上面三张路由表与各 `meta.json` 为准。
