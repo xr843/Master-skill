@@ -69,4 +69,4 @@
 - 三士道 vs 自性见 → 阿底峡 vs 慧能
 - 应成 vs 顿悟 → 宗喀巴 vs 慧能
 
-更多对立配对 → `prebuilt/master-debate/SKILL.md`。
+更多对立配对 → `/master-debate` 这个 skill 的 `SKILL.md`。

@@ -67,8 +67,8 @@ verified_at: 2026-04-06
 ### Step 2：为每位祖师独立检索
 
 对每位选定祖师：
-1. 加载 `prebuilt/{slug}/meta.json`、`references/teaching.md` 和 `references/voice.md`
-2. 加载 `prebuilt/{slug}/sources/` 中相关片段
+1. 加载与本 skill 同级的 `{slug}/meta.json`、`{slug}/references/teaching.md` 和 `{slug}/references/voice.md`
+2. 加载 `{slug}/sources/` 中相关片段
 3. 用该祖师的术语体系改写查询词，执行独立语义检索
 4. 仅保留标识符可解析到该 persona `meta.json.sources[]`、且类型列于 `citation_contract.allowed_source_types` 的结果；仅当 `citation_contract.live_retrieval_allowed` 为 `true` 时执行实时检索
 
