@@ -98,6 +98,19 @@ CASES = [
         ),
     ),
     (
+        "validate-routing.py", (),
+        "master-help must carry the same routing tables routing.json declares",
+        # 实测的缺陷：`npx master-skill install master-help` 只拷 SKILL.md 与 tests/，
+        # routing.json 不随行，于是第 5–7 步在用户机器上没有数据。表现在随 skill 走，
+        # 删掉状况层表的一行就复现「表与 routing.json 不一致」。
+        lambda r: (r / "prebuilt/master-help/SKILL.md").write_text(
+            (r / "prebuilt/master-help/SKILL.md")
+            .read_text(encoding="utf-8")
+            .replace("| 看不懂 / 读不懂 / 理不清 / 没有逻辑 | master-xuanzang |", ""),
+            encoding="utf-8",
+        ),
+    ),
+    (
         "check-manifest-versions.py", (),
         "the version must agree across every platform manifest",
         lambda r: _edit_json(r / "package.json", lambda d: d.__setitem__("version", "9.9.9")),

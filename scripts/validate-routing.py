@@ -222,6 +222,7 @@ def validate(root: Path = ROOT) -> list:
             )
 
     problems.extend(_prose_table_problems(root, routing))
+    problems.extend(_master_help_problems(root, routing))
 
     return problems
 
@@ -281,6 +282,64 @@ def _prose_table_problems(root: Path, routing: dict) -> list:
             problems.append(
                 f"prose table row {index}: masters {got_ms} != routing.json {want_ms}"
             )
+    return problems
+
+
+def _md_rows(text: str, header: str) -> list[tuple[list, list]]:
+    """取 `header` 之后那张 markdown 表，每行切成 (第一列的 / 分词, master- 开头的项)。"""
+    if header not in text:
+        return []
+    body = text[text.index(header) :]
+    rows: list[tuple[list, list]] = []
+    for line in body.splitlines()[1:]:
+        if not line.startswith("|"):
+            if rows:
+                break
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 2 or set(cells[0]) <= set("-: "):
+            continue
+        masters = [m.strip() for m in cells[1].split("+") if m.strip().startswith("master-")]
+        if masters:
+            rows.append(([k.strip() for k in cells[0].split("/") if k.strip()], masters))
+    return rows
+
+
+def _master_help_problems(root: Path, routing: dict) -> list:
+    """master-help 自带的三张路由表必须与 routing.json 一致。
+
+    这个 skill 装到 `~/.claude/skills/` 时只带 SKILL.md 和 tests/ —— 仓库根的
+    routing.json 不随行（插件装法才读得到，两种装法能力不同）。2026-09-20 实测：
+    它的第 5–7 步（状况层 / 主题配对 / 兜底）在 npm 装法下**连数据都没有**，而
+    SKILL 里却写着「读文件」。现在表随 skill 走，这道检查保证它们不分叉。
+    """
+    problems: list = []
+    skill_md = root / "prebuilt" / "master-help" / "SKILL.md"
+    if not skill_md.exists():
+        return ["master-help: prebuilt/master-help/SKILL.md is missing"]
+    text = skill_md.read_text(encoding="utf-8")
+
+    for rule in routing.get("mode_rules") or []:
+        listed = f"命中「{' / '.join(rule['keywords'])}」"
+        if listed not in text:
+            problems.append(
+                f"master-help: the route order does not list {rule['mode']}'s keywords "
+                f"exactly as routing.json has them"
+            )
+
+    got = _md_rows(text, "| 状况（用户原话） | 目标 | 说明 |")
+    want = [(list(s.get("keywords") or []), list(s.get("masters") or [])) for s in routing.get("situations") or []]
+    if got != want:
+        problems.append(f"master-help: situations table {got} != routing.json {want}")
+
+    got = _md_rows(text, "| 问题主题 | 配对祖师 |")
+    default = routing.get("default_pairing")
+    if isinstance(default, dict):
+        default = default.get("masters")
+    want = [(list(x.get("keywords") or []), list(x.get("masters") or [])) for x in routing.get("topic_pairings") or []]
+    want.append((["其他"], list(default or [])))
+    if got != want:
+        problems.append("master-help: the topic pairing table does not mirror routing.json")
     return problems
 
 

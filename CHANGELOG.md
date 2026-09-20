@@ -10,6 +10,32 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — /master-help told the model to read a file that is not installed (2026-09-20)
+
+`master-help` is the "I don't know who to ask" entry point, and its documented algorithm has
+seven steps. Steps 1–3 short-circuit to a teaching mode, step 4 scores personas, and steps
+5–7 fall back to `routing.json`'s situation layer, topic pairings and default pairing. Its
+数据源 section said: 路由表在仓库根的 `routing.json` … 读文件.
+
+Measured with a sandboxed `HOME`: `npx master-skill install master-help master-huineng`
+writes `master-help/SKILL.md`, `master-help/tests/`, and the persona's full directory
+**including its `meta.json`** — so step 4's keyword data is there. `routing.json` is not,
+anywhere. The two install paths differ: the Claude Code plugin registers the whole
+repository, so a plugin user's model can read it; an npm-install user's cannot. **Steps 5–7
+had no data at all**, and the instruction to read the file was false for that user.
+
+The three tables now ship inside the skill: the mode keywords completed (the route order
+listed 19 of routing.json's 28 — 「roadmap」, 「各执一词」, 「学修次第」 and six others were
+missing, so the manual path was silently narrower than `master-skill recommend`), the
+four-row situation layer, and the nineteen topic pairings plus the default. The 数据源
+section now says which files are actually present and which are not.
+
+`validate-routing.py` checks all three against `routing.json` and fails on any difference;
+`test_gates_actually_fire.py` pins that it fires. This is the second gated copy of the
+pairing table — `compare-masters` carries one too, for the same reason. The duplication is
+the price of a skill that works when installed alone; what is not acceptable is a copy
+nothing compares.
+
 ### Fixed — /compare-masters still followed the pairing table routing.json was created to replace (2026-09-20)
 
 `scripts/validate-routing.py` opens by explaining why it exists: the routing knowledge used
