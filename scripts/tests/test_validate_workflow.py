@@ -148,6 +148,43 @@ def test_every_output_the_issue_condition_reads_is_actually_written():
     assert not missing, f"读取了但从未写入的 output: {sorted(missing)}"
 
 
+def test_every_defect_counter_the_weekly_check_prints_reaches_the_issue():
+    """脚本数出来的每一类问题，都必须能让周检开出 issue。
+
+    一个计数要真的有用，得出现在五个地方：脚本打印、workflow 抽取、写进
+    outputs、issue 的 `if:` 条件、issue 标题。2026-09-20 加 3j（巴利经号）时只
+    做了第一件 —— 检查跑了、问题会打印，然后躺在日志里没人看，与没有这道门禁
+    等价。姊妹测试
+    `test_every_output_the_issue_condition_reads_is_actually_written` 管的是
+    反方向（读了却没写），漏的正是这一向。
+    """
+    import re
+    import sys
+
+    sys.path.insert(0, str(ROOT / "tools"))
+    import verify_sources
+
+    verify = _step(VERIFY_LINKS_WORKFLOW, "verify", "Run verify_sources.py (dry run)")
+    run = verify.get("run", "")
+    issue = [
+        step
+        for job in VERIFY_LINKS_WORKFLOW["jobs"].values()
+        for step in job.get("steps", [])
+        if "outputs.failed" in str(step.get("if", ""))
+    ]
+    assert len(issue) == 1, "找不到那个开 issue 的步骤"
+    condition = str(issue[0].get("if", ""))
+    script = str(issue[0].get("with", {}).get("script", ""))
+
+    counters = verify_sources.SUMMARY_DEFECT_COUNTERS
+    assert len(counters) >= 14, counters
+    for name, label in counters:
+        assert re.search(rf'grep -oP "{re.escape(label)}:', run), f"workflow 没有抽取 {label!r}"
+        assert f'echo "{name}=' in run, f"抽了却没写进 outputs: {name}"
+        assert f"steps.verify.outputs.{name} != '0'" in condition, f"不在 issue 条件里: {name}"
+        assert f"steps.verify.outputs.{name}" in script, f"issue 标题/正文里没有: {name}"
+
+
 @pytest.mark.parametrize(
     ("step_name", "command"),
     [
