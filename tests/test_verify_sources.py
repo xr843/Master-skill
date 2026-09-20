@@ -839,8 +839,11 @@ def test_every_count_the_weekly_workflow_reads_is_printed_by_the_script():
     source = (TOOLS / "verify_sources.py").read_text(encoding="utf-8")
     labels = re.findall(r'grep -oP "([^"]+?):\\s\*\\K\\d\+"', workflow)
     assert len(labels) >= 7, labels
+    declared = {label for _, label in verify_sources.SUMMARY_DEFECT_COUNTERS}
+    assert declared, "缺陷计数清单是空的 —— 这个断言会空转"
     for label in labels:
-        assert f"{label}:" in source, label
+        assert label in declared, f"workflow grep 的标签不在 SUMMARY_DEFECT_COUNTERS 里: {label}"
+    assert "SUMMARY_DEFECT_COUNTERS" in source
 
 
 # --- Step 3g: declared BDRC work ids ------------------------------------------

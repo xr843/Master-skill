@@ -82,6 +82,10 @@ jobs:
           # 于是 master-yinguang 的五个块对每一步检查都不可见 —— 2026-09-16 核出
           # 其中两块是真语拼接的改写，却一直以「原典」示人。
           EXCERPT_BLOCKS=$(grep -oP "Excerpt blocks the compiled teachings do not have:\s*\K\d+" verify_output.txt || echo "0")
+          # 巴利这一支此前没有任何一步核过 —— 3j 加上了检查，却一度没接到这里，
+          # 查出问题也只会躺在日志里。SUMMARY_DEFECT_COUNTERS 现在钉住了这条接线。
+          PALI_MISSING=$(grep -oP "Pali sutta ids SuttaCentral does not have:\s*\K\d+" verify_output.txt || echo "0")
+          PALI_RENAMED=$(grep -oP "Pali sutta names that do not match SuttaCentral:\s*\K\d+" verify_output.txt || echo "0")
           # 一组重定向而不是多条 —— shellcheck SC2129。
           {
             echo "failed=$FAILED"
@@ -96,10 +100,12 @@ jobs:
             echo "compiled_quoted_lines=$COMPILED_QUOTED_LINES"
             echo "compiled_unreadable=$COMPILED_UNREADABLE"
             echo "excerpt_blocks=$EXCERPT_BLOCKS"
+            echo "pali_missing=$PALI_MISSING"
+            echo "pali_renamed=$PALI_RENAMED"
           } >> "$GITHUB_OUTPUT"
 
       - name: Create issue if links need updating
-        if: steps.verify.outputs.updates != '0' || steps.verify.outputs.failed != '0' || steps.verify.outputs.mismatched != '0' || steps.verify.outputs.title_mismatched != '0' || steps.verify.outputs.frontmatter_mismatched != '0' || steps.verify.outputs.doc_link_mismatched != '0' || steps.verify.outputs.excerpt_quote_mismatched != '0' || steps.verify.outputs.bdrc_mismatched != '0' || steps.verify.outputs.quoted_lines != '0' || steps.verify.outputs.compiled_quoted_lines != '0' || steps.verify.outputs.compiled_unreadable != '0' || steps.verify.outputs.excerpt_blocks != '0'
+        if: steps.verify.outputs.updates != '0' || steps.verify.outputs.failed != '0' || steps.verify.outputs.mismatched != '0' || steps.verify.outputs.title_mismatched != '0' || steps.verify.outputs.frontmatter_mismatched != '0' || steps.verify.outputs.doc_link_mismatched != '0' || steps.verify.outputs.excerpt_quote_mismatched != '0' || steps.verify.outputs.bdrc_mismatched != '0' || steps.verify.outputs.quoted_lines != '0' || steps.verify.outputs.compiled_quoted_lines != '0' || steps.verify.outputs.compiled_unreadable != '0' || steps.verify.outputs.excerpt_blocks != '0' || steps.verify.outputs.pali_missing != '0' || steps.verify.outputs.pali_renamed != '0'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
@@ -128,6 +134,8 @@ jobs:
               ['quoted lines the compiled teachings lack', '${{ steps.verify.outputs.compiled_quoted_lines }}'],
               ['corpora that could not be read', '${{ steps.verify.outputs.compiled_unreadable }}'],
               ['「原典」 blocks the compiled teachings lack', '${{ steps.verify.outputs.excerpt_blocks }}'],
+              ['Pali sutta ids SuttaCentral does not have', '${{ steps.verify.outputs.pali_missing }}'],
+              ['Pali sutta names that disagree with SuttaCentral', '${{ steps.verify.outputs.pali_renamed }}'],
             ];
             const hits = counts.filter(([, n]) => n !== '0');
             const shown = hits.slice(0, 3).map(([what, n]) => `${n} ${what}`);
@@ -147,6 +155,8 @@ jobs:
                   `- **Quoted lines the compiled teachings do not have:** ${{ steps.verify.outputs.compiled_quoted_lines }}\n` +
                   `- **Compiled teaching corpora that could not be read at all:** ${{ steps.verify.outputs.compiled_unreadable }}\n` +
                   `- **「原典」 blocks the compiled teachings do not have:** ${{ steps.verify.outputs.excerpt_blocks }}\n` +
+                  `- **Pali sutta ids SuttaCentral does not have:** ${{ steps.verify.outputs.pali_missing }}\n` +
+                  `- **Pali sutta names that disagree with SuttaCentral:** ${{ steps.verify.outputs.pali_renamed }}\n` +
                   `- **Last run:** ${new Date().toISOString()}\n\n` +
                   `## Full output\n\n\`\`\`\n${output}\n\`\`\`\n\n` +
                   `Run \`python3 tools/verify_sources.py --fix\` locally and commit the changes.`;

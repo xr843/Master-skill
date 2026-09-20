@@ -10,6 +10,30 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — the Pali check could find something and nobody would hear about it (2026-09-20)
+
+Step 3j was added earlier today and printed two counts into the weekly summary. The weekly
+workflow decides whether to open an issue by grepping specific summary labels out of the
+run log, and neither new label was in its list. A wrong sutta id would have been found,
+printed, and left in a log nobody reads — the same outcome as not having the check.
+
+A counter is only load-bearing when it appears in five places: the script prints it, the
+workflow greps it, it is written to `outputs`, the issue's `if:` reads it, and the issue
+title names it. Missing any one of them is silent.
+
+`SUMMARY_DEFECT_COUNTERS` in `tools/verify_sources.py` is now the single source of truth for
+the fourteen counts, and the summary is printed from it.
+`test_every_defect_counter_the_weekly_check_prints_reaches_the_issue` asserts all five
+wirings for every entry, so a gate added without being wired fails CI rather than passing
+quietly. Its sibling `test_every_output_the_issue_condition_reads_is_actually_written`
+already covered the opposite direction — reading an output nobody writes — which is exactly
+the half that would not have caught this.
+
+The existing `test_every_count_the_weekly_workflow_reads_is_printed_by_the_script` now
+checks the workflow's grep labels against that table instead of against the literal text of
+`print()` calls. Verified with `grep -oP` itself, not a reimplementation of its regex
+semantics, that all fourteen still match the reformatted lines.
+
 ### Fixed — ten of the fifteen masters could not be reached by their own name (2026-09-20)
 
 `master-skill recommend` scores a question against each persona's

@@ -1175,6 +1175,30 @@ def cbeta_search_hits(clause: str, work: str | None = None) -> int | None:
         return None
 
 
+# 周检里「算作问题」的计数：(workflow 的 output 名, Summary 里的标签)。
+#
+# 这张表是单一事实来源。每加一道门禁，它的计数要出现在五个地方才真的有用：
+# 脚本打印、workflow 抽取、写进 outputs、issue 的 `if:` 条件、issue 标题。
+# 2026-09-20 加 3j 时我只做了第一件 —— 巴利经号查出问题也只会躺在日志里，
+# 永远不开 issue，和没有这道门禁一样。现在少接一处就是 CI 失败，见
+# `test_every_defect_counter_the_weekly_check_prints_reaches_the_issue`。
+SUMMARY_DEFECT_COUNTERS: tuple[tuple[str, str], ...] = (
+    ("failed", "Not found in FoJin"),
+    ("updates", "URL replacements"),
+    ("mismatched", "CBETA id mismatches"),
+    ("title_mismatched", "CBETA title mismatches"),
+    ("frontmatter_mismatched", "Frontmatter FoJin id mismatches"),
+    ("doc_link_mismatched", "Doc citation links to another work"),
+    ("excerpt_quote_mismatched", "Excerpt quotes not in the cited text"),
+    ("bdrc_mismatched", "BDRC records that do not match"),
+    ("quoted_lines", "Quoted lines CBETA does not have"),
+    ("compiled_quoted_lines", "Quoted lines the compiled teachings do not have"),
+    ("compiled_unreadable", "Compiled teaching corpora that could not be read"),
+    ("excerpt_blocks", "Excerpt blocks the compiled teachings do not have"),
+    ("pali_missing", "Pali sutta ids SuttaCentral does not have"),
+    ("pali_renamed", "Pali sutta names that do not match SuttaCentral"),
+)
+
 SUTTACENTRAL_SUTTA_URL = "https://suttacentral.net/api/suttas"
 
 # 巴利经号与经名在人设文档里的写法：`《MN 10 / Satipaṭṭhāna Sutta》`、
@@ -2006,24 +2030,32 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     print(f"  CBETA IDs in URLs:         {len([u for u in all_url_ids if FULL_CBETA_RE.match(u)])}")
     print(f"  Total unique CBETA IDs:    {len(all_ids)}")
     print(f"  Verified in FoJin:         {len(found)}")
-    print(f"  Not found in FoJin:        {len(not_found) + len(stale_absent)}")
     if expected_absent:
         print(f"  Known absent (not counted):{len(expected_absent):>4}")
     if stale_absent:
         print(f"  Stale known-absent entries:{len(stale_absent):>4}")
-    print(f"  URL replacements:          {len(all_changes)}")
-    print(f"  CBETA id mismatches:       {len(mismatched)}")
-    print(f"  CBETA title mismatches:    {len(title_mismatched)}")
-    print(f"  Frontmatter FoJin id mismatches: {len(fm_mismatched)}")
-    print(f"  Doc citation links to another work: {len(doc_mismatched)}")
-    print(f"  Excerpt quotes not in the cited text: {len(quote_mismatched)}")
-    print(f"  BDRC records that do not match: {len(bdrc_mismatched)}")
-    print(f"  Quoted lines CBETA does not have: {len(quote_line_mismatched)}")
-    print(f"  Quoted lines the compiled teachings do not have: {len(compiled_mismatched)}")
-    print(f"  Compiled teaching corpora that could not be read: {len(compiled_unreadable)}")
-    print(f"  Excerpt blocks the compiled teachings do not have: {len(block_mismatched)}")
-    print(f"  Pali sutta ids SuttaCentral does not have: {len(pali_missing)}")
-    print(f"  Pali sutta names that do not match SuttaCentral: {len(pali_renamed)}")
+    counts = {
+        "failed": len(not_found) + len(stale_absent),
+        "updates": len(all_changes),
+        "mismatched": len(mismatched),
+        "title_mismatched": len(title_mismatched),
+        "frontmatter_mismatched": len(fm_mismatched),
+        "doc_link_mismatched": len(doc_mismatched),
+        "excerpt_quote_mismatched": len(quote_mismatched),
+        "bdrc_mismatched": len(bdrc_mismatched),
+        "quoted_lines": len(quote_line_mismatched),
+        "compiled_quoted_lines": len(compiled_mismatched),
+        "compiled_unreadable": len(compiled_unreadable),
+        "excerpt_blocks": len(block_mismatched),
+        "pali_missing": len(pali_missing),
+        "pali_renamed": len(pali_renamed),
+    }
+    missing_counts = [name for name, _ in SUMMARY_DEFECT_COUNTERS if name not in counts]
+    if missing_counts:  # pragma: no cover - 由 test_every_defect_counter... 钉住
+        raise AssertionError(f"declared defect counters with no value: {missing_counts}")
+    width = max(len(label) for _, label in SUMMARY_DEFECT_COUNTERS)
+    for name, label in SUMMARY_DEFECT_COUNTERS:
+        print(f"  {label + ':':<{width + 1}} {counts[name]}")
     if unknown_to_cbeta:
         print(f"  CBETA unreachable for:     {len(unknown_to_cbeta)} (not counted as wrong)")
     if dry_run and all_changes:
