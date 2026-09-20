@@ -10,6 +10,25 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — a quotation with an ellipsis in it was thrown away, not checked (2026-09-20)
+
+The collector behind steps 3h and 3i dropped any quoted line containing 「……」. Three of
+master-milarepa's songs are quoted with the middle verses elided, so they had never been
+looked at by any step — and an ellipsis is the cheapest place in a document to hide a
+fabricated line.
+
+The reason for the rule was real: an elided quote never appears in the source book as one
+contiguous run, because the book has the omitted verses in between, so 3i's whole-string
+containment would have called every one of them fabricated. Dropping them avoided the false
+positive by giving up the check. The 「原典」 block path in the same file
+(`classify_compiled_excerpt_blocks`) had solved this from the start — it splits on the
+ellipsis and requires every segment. The quoted-line path now does the same.
+
+Segments shorter than four characters are dropped rather than required: a two-character
+remnant is in every book, and requiring it would make the check read stricter than it is.
+Measured after the change: the collector sees 61 lines instead of 58, and the three
+newly admitted ones resolve in CBETA inside `B11n0073`, the work they cite.
+
 ### Fixed — the Pali sutta ids in the personas were never resolved against anything (2026-09-20)
 
 Chinese canon ids have steps 3b and 3c: the number must resolve and its title must match.

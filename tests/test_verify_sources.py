@@ -1251,8 +1251,10 @@ def test_the_quote_collector_reads_the_real_repo_and_skips_what_is_not_a_quotati
     # 示例句与引用块都收
     assert any(w.startswith("master-huineng/references/voice.md") for w in where)
     assert any("菩提自性，本来清净" in t for t in text)
-    # 模板句、拒答话术、自述为转述的行都不收
-    assert not any("……" in t or "/" in t for t in text)
+    # 省略号曾经也在这一行里 —— 带「……」的引文被整条丢弃，见
+    # test_an_elided_quote_is_no_longer_thrown_away。现在按段匹配，收。
+    # 模板句、拒答话术、自述为转述的行仍不收
+    assert not any("/" in t for t in text)
     assert not any("具格上师" in t for t in text)
     assert not any(t.startswith("见空性而不坏因果") for t in text)
     assert all(w.startswith("master-") and ("/references/" in w or "/sources/" in w) for w in where)
@@ -1304,6 +1306,47 @@ def test_a_line_the_complete_corpus_does_not_have_is_wrong():
     )
     assert [m[0] for m in mismatched] == ["master-yinguang/references/voice.md:99"]
     assert (verified, unknown, unreadable) == ([], [], [])
+
+
+def test_an_elided_quote_is_no_longer_thrown_away():
+    """带「……」的引文原本被收集器整条丢弃 —— 三条米拉日巴道歌从未被任何一步看过。"""
+    elided = [q for q in verify_sources.collect_persona_quotes() if "…" in q[2]]
+    assert [q[0] for q in elided] == [
+        "master-milarepa/references/teaching.md:63",
+        "master-milarepa/references/voice.md:31",
+        "master-milarepa/references/voice.md:32",
+    ]
+
+
+def test_every_segment_of_an_elided_quote_must_be_in_the_book():
+    """省掉中间几句的偈，整条连起来在原书里永远找不到；要逐段找，且每段都要找到。"""
+    quote = "愿离娑婆，如狱囚之冀出牢狱。……愿生极乐，如穷子之思归故乡。"
+    where = "master-yinguang/references/voice.md:29"
+
+    def fetch_both(url, encoding="utf-8"):
+        return "愿离娑婆如狱囚之冀出牢狱中间隔着几句别的愿生极乐如穷子之思归故乡"
+
+    def fetch_first_only(url, encoding="utf-8"):
+        return "愿离娑婆如狱囚之冀出牢狱后面接的是完全不同的另一段话凑满字数"
+
+    _, verified, _, _ = verify_sources.classify_compiled_teaching_quotes(
+        [(where, "master-yinguang", quote)], _corpus("complete"), fetch_both
+    )
+    assert [v[0] for v in verified] == [where]
+
+    mismatched, verified, _, _ = verify_sources.classify_compiled_teaching_quotes(
+        [(where, "master-yinguang", quote)], _corpus("complete"), fetch_first_only
+    )
+    assert [m[0] for m in mismatched] == [where]
+    assert verified == []
+
+
+def test_a_short_remnant_is_not_a_segment():
+    """两三个字的残句在任何一部书里都找得到，凑进去只会把判定做虚。"""
+    assert verify_sources.quote_segments("人身难得无暇我亦知……如是……思无常罪苦轮回自輭") == [
+        "人身难得无暇我亦知",
+        "思无常罪苦轮回自輭",
+    ]
 
 
 def test_a_partial_corpus_can_confirm_but_never_convict():
