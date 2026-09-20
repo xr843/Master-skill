@@ -1107,7 +1107,6 @@ def collect_persona_quotes() -> list[tuple[str, str, str]]:
                     quote = match.group(1).split("——", 1)[0]
                     if (
                         len(_QUOTE_HAN.findall(quote)) >= 8
-                        and "……" not in quote
                         and "/" not in quote
                         and not _QUOTE_BOILER.search(quote)
                     ):
@@ -1506,6 +1505,21 @@ def fetch_compiled_text(url: str, encoding: str = "utf-8") -> str | None:
     return _han_only(raw.decode(encoding, errors="replace"))
 
 
+def quote_segments(quote: str) -> list[str]:
+    """按省略号切开，每段只留汉字；短于 EXCERPT_MIN_CLAUSE 的段丢掉。
+
+    人设引长偈时会省掉中间几句：「上师不动慈悲口，细译麻把教令勅。……上师恩德最
+    无上。」整条连起来在原书里永远找不到，因为原书里本来就隔着被省掉的那几句。
+    收集器原本把带「……」的引文整条丢弃 —— 三条米拉日巴道歌因此从未被任何一步
+    看过，而省略号恰好是藏一句伪造的最省事的地方。「原典」块那条路径
+    （`classify_compiled_excerpt_blocks`）从一开始就是分段匹配的；这里照办。
+
+    太短的段不留：两三个字的残句在任何一部书里都找得到，凑数只会把判定做虚。
+    """
+    parts = (_han_only(part) for part in re.split(r"…+|\.{3,}", quote))
+    return [part for part in parts if len(part) >= EXCERPT_MIN_CLAUSE]
+
+
 def classify_compiled_teaching_quotes(
     quotes: list[tuple[str, str, str]],
     corpora: dict[str, dict],
@@ -1531,8 +1545,8 @@ def classify_compiled_teaching_quotes(
         if not corpus:
             continue
         touched.add(master)
-        wanted = _han_only(quote)
-        if len(wanted) < 8:
+        wanted = quote_segments(quote)
+        if sum(len(segment) for segment in wanted) < 8:
             unknown.append((where, "quote too short to search"))
             continue
         found_in, unreachable = None, []
@@ -1543,7 +1557,7 @@ def classify_compiled_teaching_quotes(
             body = bodies[url]
             if body is None:
                 unreachable.append(str(text.get("title")))
-            elif wanted in body:
+            elif all(segment in body for segment in wanted):
                 found_in = str(text.get("title"))
                 break
         if found_in:
