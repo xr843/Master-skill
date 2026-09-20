@@ -10,6 +10,44 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — a persona that declares one Tibetan id had every quoted line waved through (2026-09-20)
+
+Step 3h asks whether a line a persona presents as the master's own words exists in CBETA.
+It would only rule on a persona whose declared sources are **all** CBETA. One BDRC number
+or one compiled collection among them, and every quoted line that persona carries was
+recorded as undetermined — not checked, and reading as clean.
+
+Measured on the current tree: the collector finds 58 quoted lines, and **19 of them were
+unjudgeable for that reason alone**. Seven said where they came from: master-milarepa's
+songs are marked 《木纳记》卷十一（B11n0073）and master-atisha's verses 《菩提道灯论》法尊译
+— both are in CBETA (B11n0073, G148n2518), both were searchable all along, and neither was
+searched. Planting a fabricated line in master-milarepa's voice samples under its real
+citation format reproduced it: the old rule returned "also declares non-CBETA sources",
+against live CBETA.
+
+3h now rules whenever the line **itself** names a CBETA work the persona declares, whatever
+else that persona declares. The standard is unchanged — a line is called wrong only when
+CBETA does not have it anywhere; a line found in some other work is still undetermined.
+Six of the nineteen become judged; the planted line is now reported as wrong.
+
+It stays conservative where the attribution is. A declared sutra number in the source note
+settles it even when a "see also" for another canon sits beside it. A bare title does not,
+if the same note also points at another shelf — master-atisha's 「从具德相师，受持彼律仪」
+cites 《菩提道灯论》 but its 出处 line names Toh 4465 and 《父法·子法》, so it is left
+undetermined rather than judged on a guess. A work declared in two canons at once does not
+veto itself: the same 《菩提道灯论》 is declared as Toh:4465, Toh:3947 and G148n2518.
+
+The step now also prints how many of the lines it judged, not only how many it could not.
+
+### Changed — the v1.0 roadmap said a decision was pending three weeks after it was made (2026-09-20)
+
+`docs/v1-framework-roadmap.md` still described turning a `must_not_contain` hit into
+evidence rather than a verdict as an open maintainer's decision. It was made on 2026-09-12
+(`01e2fbb`), on measured grounds: replaying the grader against the 74 hand-adjudicated
+cases moved agreement 66/74 → 71/74, five of the six disputed cases being the persona
+refusing in so many words. That document defines the v1.0 fidelity gate, so a stale entry
+in it is a stale gate.
+
 ## [0.12.15] — 2026-09-20
 
 Two Windows failures and a documentation correction. On Windows the session-start hook

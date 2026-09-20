@@ -1176,21 +1176,143 @@ def cbeta_search_hits(clause: str, work: str | None = None) -> int | None:
         return None
 
 
+# 3h 判「这条引文注明的出处是哪本书」用到的三个常量。
+_WORK_TITLE_RE = re.compile(r"《([^》]{1,40})》")
+_PARENTHETICAL_RE = re.compile(r"[（(]([^）)]{2,60})[）)]")
+# 非 CBETA 的编号家族。只按声明串比对不够：米拉日巴的出处行写「BDRC W1KG1252」，
+# 声明里是「BDRC:W1KG1252」，一个空格就让守卫看不见。
+_OTHER_SHELF_RE = re.compile(r"BDRC[:\s]|Toh[:\s]?\d|PTS[:\s]|\bSC[:：]")
+# 题名短于两个字会在散文里到处撞上；现有声明里没有单字题名，所以这一格差别为 0，
+# 它是前瞻护栏。与 verify_citations.py 的 _MIN_TITLE_ALIAS 取同一个下限。
+_MIN_QUOTE_TITLE = 2
+# 摘录文件把「出处」写在引文下方一两行；取 8 行与 validate-quote-attribution.py
+# 的窗口一致，两处读的是同一批引文，窗口不一样会各说各话。
+_ATTRIBUTION_LOOK = 8
+
+
+def declared_source_titles() -> dict[str, dict[str, set[str]]]:
+    """{祖师目录: {"cbeta": 题名, "cbeta_ids": 经号, "other": 别处的题名与编号}}。
+
+    题名去掉括注：`"木纳记（尊者传汉译，…）"` 登记为「木纳记」，因为行文里写的是
+    《木纳记》。译者、册数这些括注不是题名 —— 否则「法尊译」会变成一个到处撞上的
+    别名 —— 但它们要进 `other`，因为那里宁可多认：认出一个「另见某处」就少下一次
+    判定，代价只是保守。
+
+    `other` 减去 `cbeta`：阿底峡把《菩提道灯论》声明了三次 —— Toh:4465、Toh:3947
+    是藏文，G148n2518 是法尊汉译。同一部书两边都有，就不算「指向了别处」，否则
+    自己声明得越全，能查的反而越少。
+
+    这张表只服务 3h 的「这条引文该不该拿 CBETA 去判」，与 `verify_citations.py`
+    的 `load_title_aliases` 是两回事：那里管的是**模型答案**的引用，CBETA 契约
+    要求写出经号，所以那边故意不给经号来源生成题名别名。这里读的是**人设自己的
+    文档**，文档本来就用书名称呼所引之书。
+    """
+    titles: dict[str, dict[str, set[str]]] = {}
+    for meta_path in sorted(Path(PREBUILT_DIR).glob("*/meta.json")):
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        cbeta: set[str] = set()
+        cbeta_ids: set[str] = set()
+        other: set[str] = set()
+        for src in meta.get("sources") or []:
+            title = str(src.get("title") or "")
+            head = re.sub(r"\s*[（(].*$", "", title).strip()
+            if src.get("type") == "cbeta":
+                cbeta.update({head, *_WORK_TITLE_RE.findall(title)})
+                if src.get("id"):
+                    cbeta_ids.add(str(src.get("id")))
+            else:
+                other.update({head, *_WORK_TITLE_RE.findall(title)})
+                other.update(_PARENTHETICAL_RE.findall(title))
+                if src.get("id"):
+                    other.add(str(src.get("id")))
+        def keep(names: set[str]) -> set[str]:
+            return {n.strip() for n in names if len(n.strip()) >= _MIN_QUOTE_TITLE}
+
+        bucket = {
+            "cbeta": keep(cbeta),
+            "cbeta_ids": keep(cbeta_ids),
+            "other": keep(other),
+        }
+        bucket["other"] -= bucket["cbeta"]
+        if any(bucket.values()):
+            titles[meta_path.parent.name] = bucket
+    return titles
+
+
+def attribution_context(where: str, lines_by_path: dict[str, list[str]] | None = None) -> str:
+    """一条引文自己写明的出处所在的那点文字：引文行本身，加下方几行里的「出处」行。
+
+    摘录文件把出处写在引文下一行（`> 出处：《木纳记》卷十一（B11n0073）`），
+    voice.md 的示例句写在同一行的括号里（`（《菩提道灯论》法尊译）`）。两种都要读到。
+    """
+    path, _, number = where.rpartition(":")
+    if lines_by_path is None:
+        lines_by_path = {}
+    if path not in lines_by_path:
+        full = Path(PREBUILT_DIR) / path
+        try:
+            lines_by_path[path] = full.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            lines_by_path[path] = []
+    lines = lines_by_path[path]
+    try:
+        index = int(number) - 1
+    except ValueError:
+        return ""
+    if index < 0 or index >= len(lines):
+        return ""
+    parts = [lines[index]]
+    for below in lines[index + 1 : index + 1 + _ATTRIBUTION_LOOK]:
+        if "出处" in below:
+            parts.append(below)
+            break
+    return "\n".join(parts)
+
+
+def cbeta_is_the_right_shelf(context: str, declared: dict[str, set[str]]) -> bool:
+    """这条引文自注的出处，是不是该人设声明的某部 CBETA 藏经。
+
+    写出了经号就算数，哪怕同一行还挂着一句「另见 BDRC W1KG1252」—— 经号已经把
+    这句话钉在那部书上了。只写书名的，则要求这点文字**没有**同时指向别的书架：
+    一行里既有《楞严经》又有《法汇》，说不准这句归哪本，宁可不判。
+    """
+    if any(cid in context for cid in declared.get("cbeta_ids", ())):
+        return True
+    if not any(title in context for title in declared.get("cbeta", ())):
+        return False
+    if _OTHER_SHELF_RE.search(context):
+        return False
+    return not any(title in context for title in declared.get("other", ()))
+
+
 def classify_persona_quotes(
     quotes: list[tuple[str, str, str]],
     families: dict[str, set[str]],
     works: dict[str, list[str]],
     search,
+    titles: dict[str, dict[str, set[str]]],
 ) -> tuple[list[tuple[str, str, str]], list[tuple[str, str]]]:
     """把人设里当原话引的句子分成「CBETA 没有这句」与「比不了」两类。
 
-    判「没有」只对**声明来源全是 CBETA** 的人设成立。master-xuyun 的语录出自
-    《虚云和尚法汇》、master-yinguang 的出自《文钞》，两部都不在 CBETA —— 对它们，
-    查不到只说明这一步够不着，不是伪造。查得到却不在声明作品里的（玄奘引窥基所记
-    的唯识比量、蕅益《要解》在净土十要本），同样记为未知：行文里往往已注明他书。
+    什么时候可以判「没有」：
+
+    1. 人设**声明来源全是 CBETA** —— 它引的话本来就该在 CBETA 里。
+    2. 或者这条引文**自己注明**出处是该人设声明的某部 CBETA 藏经。
+
+    第二条是 2026-09-20 补的。在那之前只有第一条，于是只要人设还声明了一条 BDRC
+    号或一部编集语录，它**所有**引文都记未判定 —— 实测 58 条引文里有 19 条落在
+    这里，而其中 7 条根本就注明了出处：米拉日巴的道歌写着「《木纳记》卷十一
+    （B11n0073）」、阿底峡的偈颂写着「（《菩提道灯论》法尊译）」，两部都是 CBETA
+    补编收的（B11n0073、G148n2518），一直查得到，只是没人去查。记忆里那句「往
+    虚云里塞一句伪造语录也只报未判定」说的就是这个洞。
+
+    判据本身没有放宽：仍然是「全 CBETA 检索不到」才算伪造。查得到却不在声明作品
+    里的（玄奘引窥基所记的唯识比量、蕅益《要解》在净土十要本），照旧记未知 ——
+    行文里往往已注明他书。
     """
     mismatched: list[tuple[str, str, str]] = []
     unknown: list[tuple[str, str]] = []
+    cache: dict[str, list[str]] = {}
     for where, master, quote in quotes:
         clauses = sorted((c for c in quote_clauses(quote) if len(c) >= 4), key=len, reverse=True)
         if not clauses:
@@ -1201,10 +1323,16 @@ def classify_persona_quotes(
         if anywhere is None:
             unknown.append((where, "CBETA did not answer"))
         elif not anywhere:
-            if families.get(master) == {"cbeta"}:
+            cbeta_only = families.get(master) == {"cbeta"}
+            attributed = cbeta_is_the_right_shelf(
+                attribution_context(where, cache), titles.get(master) or {}
+            )
+            if cbeta_only or attributed:
                 mismatched.append((where, quote, clause))
             else:
-                unknown.append((where, f"{master} also declares non-CBETA sources"))
+                unknown.append(
+                    (where, f"{master} also declares non-CBETA sources, and this line names none of its CBETA ones")
+                )
         elif not any(search(clause, work) for work in works.get(master, [])):
             unknown.append((where, "only in works this persona does not declare"))
     return mismatched, unknown
@@ -1627,7 +1755,11 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
     print("\n[3h/4] Checking quoted lines in persona docs against CBETA...")
     persona_quotes = collect_persona_quotes()
     quote_line_mismatched, quote_line_unknown = classify_persona_quotes(
-        persona_quotes, persona_source_families(), declared_cbeta_works(), cbeta_search_hits
+        persona_quotes,
+        persona_source_families(),
+        declared_cbeta_works(),
+        cbeta_search_hits,
+        declared_source_titles(),
     )
     for where, quote, clause in quote_line_mismatched:
         print(f"    [WRONG] {where}: CBETA has no 「{clause}」 — 「{quote[:40]}」")
@@ -1635,6 +1767,8 @@ def _run_legacy_link_verification(*, fix: bool) -> int:
         print(f"  Could not check {len(quote_line_unknown)} quoted line(s) — unknown, not wrong:")
         for where, reason in quote_line_unknown:
             print(f"    {where}: {reason}")
+    judged = len(persona_quotes) - len(quote_line_unknown)
+    print(f"  Judged {judged} of {len(persona_quotes)} quoted lines against CBETA")
     if not quote_line_mismatched and not quote_line_unknown:
         print(f"  All {len(persona_quotes)} quoted lines are in CBETA, in a work the persona declares")
 
