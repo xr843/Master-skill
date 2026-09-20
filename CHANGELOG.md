@@ -10,6 +10,42 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — the Pali sutta ids in the personas were never resolved against anything (2026-09-20)
+
+Chinese canon ids have steps 3b and 3c: the number must resolve and its title must match.
+Tibetan BDRC records got step 3g after `BDRC:W22272` turned out to be Tsongkhapa's collected
+works, declared in about 60 places with every gate green. The Pali family had nothing.
+Measured on this tree: **79 references to 12 sutta ids across the persona docs, and not one
+step resolved any of them.**
+
+Step 3j now does. Every `AN 3.88`, `MN 10`, `SN 22.59` in a persona document is resolved
+against SuttaCentral; where the document also writes the sutta's Pali name — 53 of the 79 do
+— the name is compared with SuttaCentral's.
+
+It found one: **AN 3.88 is the *Tatiyasikkhāsutta*, and five places called it the
+*Sikkhā Sutta***, four in master-ajahn-chah and one in master-buddhaghosa's Visuddhimagga
+excerpts. The same repository already had it right in master-buddhaghosa's `teaching.md`, so
+the two personas cited the same sutta under two different names, and both cited
+「（SuttaCentral）」 as where the name came from. Corrected in all five.
+
+Two things this step refuses to do:
+
+- **It does not read the status code as existence.** SuttaCentral answers 200 for `mn999`
+  with every `suttaplex` field null — the same shape as the BDRC single-page app that
+  returned 200 for any id and let a wrong number sit for months. Existence is the `uid`
+  field being there.
+- **It does not require the name to match letter for letter.** MN 118 is `Ānāpānassatisutta`
+  on SuttaCentral and `Ānāpānasati Sutta` in the persona; both spellings are in ordinary
+  scholarly use. Measured across all 13 (id, name) pairs in the tree: eleven agree exactly,
+  that variant scores 0.957, and the one real error scores 0.667. The threshold sits in the
+  0.29-wide empty band between them, and both edges are pinned by a test.
+
+Toh numbers got no such step, and the reason is in the code: 84000 serves only an English
+title (`A Lamp for the Path to Enlightenment` for Toh 3947), the personas declare Chinese and
+Sanskrit ones, and the Sanskrit title is not in the static page. Existence alone would be a
+check that decides nothing, which is the failure mode this repository keeps finding in
+itself. Toh 4465 in particular resolves to an untitled page and is still a valid number.
+
 ### Fixed — a persona that declares one Tibetan id had every quoted line waved through (2026-09-20)
 
 Step 3h asks whether a line a persona presents as the master's own words exists in CBETA.

@@ -137,7 +137,7 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 | 三法印是什么 | `sources/sutta-excerpts.md` §三法印 | 《SN 22.59 / Anattalakkhaṇa》 |
 | 出入息念怎么修 | `sources/teachings-excerpts.md` §出入息念 | 《MN 118 / Ānāpānasati Sutta》 |
 | 妄念太多坐不住 | `sources/teachings-excerpts.md` §妄念 | 《Living Dhamma》§Meditation |
-| 戒定慧怎么理解 | `references/teaching.md` §戒定慧 | 《AN 3.88 / Sikkhā Sutta》 |
+| 戒定慧怎么理解 | `references/teaching.md` §戒定慧 | 《AN 3.88 / Tatiyasikkhā Sutta》 |
 | 杜多行 / 头陀十三行 | `references/teaching.md` §杜多行 | 《Visuddhimagga》§II（参考资料）|
 
 ## 教学路径（用于组织回答）

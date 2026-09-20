@@ -1142,6 +1142,101 @@ def test_the_weekly_step_hands_the_title_table_to_the_gate():
     assert "declared_source_titles()" in call[: call.index(")\n")]
 
 
+def _sc(records):
+    """假的 SuttaCentral：uid -> suttaplex；None 表示接口不通。"""
+
+    def fetch(uid):
+        return records.get(uid, {})
+
+    return fetch
+
+
+def test_a_sutta_id_suttacentral_does_not_have_is_wrong():
+    refs = [("master-ajahn-chah/references/teaching.md:25", "master-ajahn-chah", "mn999", None)]
+    missing, renamed, unknown = verify_sources.classify_pali_references(refs, _sc({}))
+    assert [m[1] for m in missing] == ["mn999"]
+    assert renamed == [] and unknown == []
+
+
+def test_a_200_with_an_empty_record_is_not_proof_the_sutta_exists():
+    """SuttaCentral 对 mn999 也回 200，suttaplex 每个字段都是 null。
+
+    与 BDRC 那个「任何号都回 200」的单页应用同一个坑：状态码不能当存在性用。
+    """
+    refs = [("x/SKILL.md:1", "x", "mn999", None)]
+    missing, _, _ = verify_sources.classify_pali_references(
+        refs, _sc({"mn999": {"uid": None, "original_title": None}})
+    )
+    assert missing and missing[0][1] == "mn999"
+
+
+def test_a_name_that_belongs_to_another_sutta_is_wrong():
+    """AN 3.88 是 Tatiyasikkhāsutta。人设一度写作 Sikkhā Sutta，5 处，无人发现。"""
+    refs = [("master-ajahn-chah/SKILL.md:140", "master-ajahn-chah", "an3.88", "Sikkhā")]
+    _, renamed, _ = verify_sources.classify_pali_references(
+        refs, _sc({"an3.88": {"uid": "an3.88", "original_title": "Tatiyasikkhāsutta"}})
+    )
+    assert renamed == [("master-ajahn-chah/SKILL.md:140", "an3.88", "Sikkhā", "Tatiyasikkhāsutta")]
+
+
+def test_a_spelling_variant_is_not_a_mismatch():
+    """MN 118：人设作 Ānāpānasati、SC 作 Ānāpānassati。单双 s 两种拼法学界都在用。
+
+    实测相似度 0.957，而真错那条是 0.667 —— 判定线落在这条 0.29 宽的空带里。
+    写死相等会把合法变体判成错。
+    """
+    refs = [("master-ajahn-chah/references/teaching.md:43", "master-ajahn-chah", "mn118", "Ānāpānasati")]
+    missing, renamed, unknown = verify_sources.classify_pali_references(
+        refs, _sc({"mn118": {"uid": "mn118", "original_title": "Ānāpānassatisutta"}})
+    )
+    assert (missing, renamed, unknown) == ([], [], [])
+
+
+def test_suttacentral_not_answering_is_unknown_not_wrong():
+    refs = [("x/SKILL.md:1", "x", "mn10", "Satipaṭṭhāna")]
+    missing, renamed, unknown = verify_sources.classify_pali_references(refs, lambda uid: None)
+    assert missing == [] and renamed == []
+    assert unknown[0][1] == "SuttaCentral did not answer for mn10"
+
+
+def test_a_reference_without_a_name_is_only_an_existence_check():
+    """`（MN 22 引）` 没写经名 —— 没写不是错，但号还是要存在。"""
+    refs = [("master-buddhaghosa/references/teaching.md:185", "master-buddhaghosa", "mn22", None)]
+    out = verify_sources.classify_pali_references(
+        refs, _sc({"mn22": {"uid": "mn22", "original_title": "Alagaddūpamasutta"}})
+    )
+    assert out == ([], [], [])
+
+
+def test_each_id_on_a_line_gets_its_own_name():
+    """`《MN 10 / Satipaṭṭhāna Sutta》《MN 22 / Alagaddūpama Sutta》` —— MN 22 不能拿到前一部经的名字。"""
+    line = "进阶推荐《MN 10 / Satipaṭṭhāna Sutta》《MN 22 / Alagaddūpama Sutta》《MN 36 / Mahāsaccaka Sutta》"
+    import re
+
+    hits = list(verify_sources._PALI_ID.finditer(line))
+    names = [
+        verify_sources._pali_name_near(
+            line, m.start(), m.end(), hits[i + 1].start() if i + 1 < len(hits) else len(line)
+        )
+        for i, m in enumerate(hits)
+    ]
+    assert names == ["Satipaṭṭhāna", "Alagaddūpama", "Mahāsaccaka"]
+
+
+def test_a_name_written_before_the_id_is_read():
+    """`《Dhammacakkappavattana Sutta》（SN 56.11）` —— 经名在号之前。"""
+    line = "| 《Dhammacakkappavattana Sutta》（SN 56.11） | 转法轮经 |"
+    m = verify_sources._PALI_ID.search(line)
+    assert verify_sources._pali_name_near(line, m.start(), m.end(), len(line)) == "Dhammacakkappavattana"
+
+
+def test_the_weekly_step_resolves_pali_ids_against_suttacentral():
+    """这一步不接上去，巴利这一支就和 BDRC 事故前一样：79 处引用，零核对。"""
+    source = (Path(verify_sources.__file__)).read_text(encoding="utf-8")
+    call = source[source.index("pali_missing, pali_renamed, pali_unknown = classify_pali_references(") :]
+    assert "fetch_suttacentral_sutta" in call[: call.index(")\n")]
+
+
 def test_the_converter_uses_the_variants_cbeta_prints():
     """opencc's s2t gives 爲 and 衆; CBETA has 為 and 眾, and searching the others finds nothing."""
     assert verify_sources.to_traditional("一切有为法") == "一切有為法"

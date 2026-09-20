@@ -27,7 +27,7 @@
 
 **主旨**：戒为定基础，定为慧基础。无戒则定难得，无定则慧难生。三者次第增上。
 
-> 出处：【《Visuddhimagga》§I + §III + §XIV】（PTS Vism）+【SC: AN 3.88 / Sikkhā Sutta — 三增上学】（SuttaCentral）
+> 出处：【《Visuddhimagga》§I + §III + §XIV】（PTS Vism）+【SC: AN 3.88 / Tatiyasikkhā Sutta — 三增上学】（SuttaCentral）
 
 ---
 
