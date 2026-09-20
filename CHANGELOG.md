@@ -10,6 +10,15 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.15] — 2026-09-20
+
+Two Windows failures and a documentation correction. On Windows the session-start hook
+never listed the fifteen masters — `python3` there is a Store alias stub that exists and
+does nothing, so the hook always fell back to its five teaching modes. The hook's cmd.exe
+wrapper also depended on the user's `core.autocrlf` to be parsed at all. And the README's
+fidelity numbers now say which tree they describe: the run behind them predates 36 commits
+to `prebuilt/`, 8 of them to the fixtures the numbers were computed against.
+
 ### Changed — the published fidelity numbers now say which tree they describe (2026-09-18)
 
 The README's fidelity table names the model, the commit (`06b8142`) and the date of the run
@@ -2830,7 +2839,8 @@ Iteration layer between initial skeleton and full v0.3 rebuild. Highlights:
 
 ---
 
-[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.14...HEAD
+[Unreleased]: https://github.com/xr843/Master-skill/compare/v0.12.15...HEAD
+[0.12.15]: https://github.com/xr843/Master-skill/compare/v0.12.14...v0.12.15
 [0.12.14]: https://github.com/xr843/Master-skill/compare/v0.12.13...v0.12.14
 [0.12.13]: https://github.com/xr843/Master-skill/compare/v0.12.12...v0.12.13
 [0.12.12]: https://github.com/xr843/Master-skill/compare/v0.12.11...v0.12.12
