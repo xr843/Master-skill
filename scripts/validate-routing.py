@@ -221,6 +221,66 @@ def validate(root: Path = ROOT) -> list:
                 f"`recommend` cannot score it"
             )
 
+    problems.extend(_prose_table_problems(root, routing))
+
+    return problems
+
+
+def _prose_pairings(skill_md: Path) -> list[tuple[set, list]]:
+    """compare-masters/SKILL.md 里那张「主题映射兜底」表，解析成 (关键词集合, 祖师)。"""
+    rows: list[tuple[set, list]] = []
+    for line in skill_md.read_text(encoding="utf-8").splitlines():
+        if not line.startswith("|") or "master-" not in line:
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 3 or cells[0].startswith("master-"):
+            continue
+        masters = [m.strip() for m in cells[1].split("+") if m.strip().startswith("master-")]
+        keywords = {k.strip() for k in cells[0].split("/") if k.strip()}
+        if masters and keywords:
+            rows.append((keywords, masters))
+    return rows
+
+
+def _prose_table_problems(root: Path, routing: dict) -> list:
+    """散文表必须与 routing.json 逐行一致。
+
+    `compare-masters` 装到 `~/.claude/skills/` 时只带 SKILL.md 和 tests/ —— 仓库根的
+    routing.json 不在里面。所以这张表不能删：运行时模型能读到的只有它。既然要留一份
+    副本，就得有东西保证两份不分叉。
+
+    2026-09-20 实测它们已经分叉了：routing.json 当初是靠**合并**消除碰撞的
+    （`戒律/行持` 并入 `戒律/持戒/律仪/行持`、`中观` 从「唯识」行移到「般若/空性」行、
+    `道次第` 从「七清净」行移走），而散文表原封不动保留着合并前的旧行。本文件开头那段
+    「原始配对表有三处碰撞」说的正是这张表 —— 可执行的那份修好了，被模型读的那份没有。
+    结果是同一个「戒律」既命中 xuyun+yinguang+ajahn-chah，又命中 xuyun+atisha+buddhaghosa。
+    """
+    problems: list = []
+    skill_md = root / "prebuilt" / "compare-masters" / "SKILL.md"
+    if not skill_md.exists():
+        return ["prose table: prebuilt/compare-masters/SKILL.md is missing"]
+    rows = _prose_pairings(skill_md)
+    pairings = routing.get("topic_pairings") or []
+    default = routing.get("default_pairing")
+    if isinstance(default, dict):
+        default = default.get("masters")
+    expected = [(set(p.get("keywords") or []), list(p.get("masters") or [])) for p in pairings]
+    expected.append(({"其他"}, list(default or [])))
+    if len(rows) != len(expected):
+        problems.append(
+            f"prose table: compare-masters/SKILL.md has {len(rows)} pairing row(s), "
+            f"routing.json has {len(expected)} (topic_pairings + default) — they must mirror each other"
+        )
+        return problems
+    for index, ((got_kw, got_ms), (want_kw, want_ms)) in enumerate(zip(rows, expected), 1):
+        if got_kw != want_kw:
+            problems.append(
+                f"prose table row {index}: keywords {sorted(got_kw)} != routing.json {sorted(want_kw)}"
+            )
+        if got_ms != want_ms:
+            problems.append(
+                f"prose table row {index}: masters {got_ms} != routing.json {want_ms}"
+            )
     return problems
 
 

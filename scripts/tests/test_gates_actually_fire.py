@@ -82,6 +82,22 @@ CASES = [
         lambda r: (r / "routing.json").write_text('{"modes": {}}', encoding="utf-8"),
     ),
     (
+        "validate-routing.py", (),
+        "compare-masters' prose pairing table must mirror routing.json",
+        # 实测的缺陷：routing.json 靠合并消除了 `戒律` 的碰撞，
+        # compare-masters/SKILL.md 里那张被模型真正读到的表却留着合并前的旧行。
+        # 把那一行改回旧值就复现了它。
+        lambda r: (r / "prebuilt/compare-masters/SKILL.md").write_text(
+            (r / "prebuilt/compare-masters/SKILL.md")
+            .read_text(encoding="utf-8")
+            .replace(
+                "| 戒律 / 持戒 / 律仪 / 行持 | master-xuyun + master-atisha + master-buddhaghosa |",
+                "| 戒律 / 行持 / 日常 | master-xuyun + master-yinguang + master-ajahn-chah |",
+            ),
+            encoding="utf-8",
+        ),
+    ),
+    (
         "check-manifest-versions.py", (),
         "the version must agree across every platform manifest",
         lambda r: _edit_json(r / "package.json", lambda d: d.__setitem__("version", "9.9.9")),

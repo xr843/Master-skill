@@ -10,6 +10,43 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — /compare-masters still followed the pairing table routing.json was created to replace (2026-09-20)
+
+`scripts/validate-routing.py` opens by explaining why it exists: the routing knowledge used
+to live only as prose, and "the original pairing table shipped three key collisions
+(`戒律`, `道次第`, `中观/空性` each matched two or three rows), so which pairing a query
+landed on depended on iteration order." That table is in
+`prebuilt/compare-masters/SKILL.md`. routing.json resolved the collisions by merging rows.
+**The prose table was never updated, and it is the one the skill actually reads.**
+
+Installing `compare-masters` copies `SKILL.md` and `tests/` and nothing else — checked, in a
+sandboxed `HOME`. The repository-root `routing.json` is not in the installed skill, so at
+runtime the model has only the prose table. The executable path was fixed; the path that
+runs was not.
+
+All three original collisions were still live:
+
+| keyword | prose said | and also said |
+|---|---|---|
+| 戒律 | 「戒律 / 行持 / 日常」 → xuyun + yinguang + ajahn-chah | 「戒律 / 持戒 / 律仪」 → xuyun + atisha + buddhaghosa |
+| 中观 | 「唯识 / 中观 / 空有」 → xuanzang + kumarajiva | 「中观 / 缘起性空 / 应成」 → kumarajiva + tsongkhapa |
+| 道次第 | 「道次第 / 三士道 / lam rim」 → atisha + tsongkhapa | 「七清净 / 十六观智 / 道次第」 → buddhaghosa + mahasi-sayadaw |
+
+routing.json had already decided each one: 戒律 rows merged into a single
+`戒律 / 持戒 / 律仪 / 行持`, 中观 moved out of the 唯识 row and into `般若 / 空性 / 中观 /
+缘起性空 / 应成 / 毕竟空` (which also adds master-huineng), and 道次第 removed from the
+七清净 row. Two of the prose rows therefore named different masters than the CLI for the
+same question.
+
+The table is now generated from routing.json — the same nineteen pairings plus the default
+— with the hand-written 说明 column preserved. `validate-routing.py` compares the two row by
+row and fails on any difference, and `test_gates_actually_fire.py` pins that it really does,
+by restoring the stale 戒律 row.
+
+The prose row that carried 「日常」 is gone; that keyword was never in the executable table.
+Adding it would be a routing change, not a drift fix, and 「日常」 is broad enough that it
+belongs in a deliberate decision rather than this one.
+
 ### Fixed — the Pali check could find something and nobody would hear about it (2026-09-20)
 
 Step 3j was added earlier today and printed two counts into the weekly summary. The weekly
