@@ -33,25 +33,23 @@ verified_at: 2026-04-06
 |---------|---------|------|
 | 念佛 / 往生 / 净土 | master-yinguang + master-ouyi | 净土专精 + 跨宗派 |
 | 参禅 / 话头 / 开悟 | master-huineng + master-xuyun | 古今禅宗对比 |
-| 唯识 / 中观 / 空有 | master-xuanzang + master-kumarajiva | 唯识 vs 中观 |
+| 唯识 / 空有 / 性相 / 法相 | master-xuanzang + master-kumarajiva | 唯识 vs 中观 |
 | 判教 / 圆融 / 止观 | master-zhiyi + master-fazang | 天台 vs 华严 |
 | 修行次第 / 综合法门 | master-ouyi + master-yinguang | 综合 vs 专修 |
-| 戒律 / 行持 / 日常 | master-xuyun + master-yinguang + master-ajahn-chah | 禅门戒律 vs 净土行持 vs 上座部律仪 |
-| 般若 / 空性 | master-kumarajiva + master-tsongkhapa + master-huineng | 早期中观译师 · 应成中观精确分判 · 禅宗直指 |
-| 中观 / 缘起性空 / 应成 | master-kumarajiva + master-tsongkhapa | 印度中观东渡 vs 藏地后期精确化 |
-| 道次第 / 三士道 / lam rim | master-atisha + master-tsongkhapa | 印藏桥梁源头 vs 格鲁派系统化 |
-| 心识 / 阿赖耶 / 心所 | master-xuanzang + master-buddhaghosa + master-huineng | 唯识 vs 上座部阿毗达摩 vs 禅宗直指 |
-| 戒律 / 持戒 / 律仪 | master-xuyun + master-atisha + master-buddhaghosa | 汉传禅门律 vs 印藏菩萨律 vs 上座部律藏注释 |
-| 苦行 / 闭关 / 山中修行 | master-xuyun + master-milarepa | 汉传禅门头陀 vs 藏传瑜伽士传统 |
+| 戒律 / 持戒 / 律仪 / 行持 | master-xuyun + master-atisha + master-buddhaghosa | 汉传禅门律 vs 印藏菩萨律 vs 上座部律藏注释 |
+| 般若 / 空性 / 中观 / 缘起性空 / 应成 / 毕竟空 | master-kumarajiva + master-tsongkhapa + master-huineng | 早期中观译师 · 应成中观精确分判 · 禅宗直指 |
+| 道次第 / 三士道 / 下士道 / 中士道 / 上士道 / lam rim | master-atisha + master-tsongkhapa | 印藏桥梁源头 vs 格鲁派系统化 |
+| 心识 / 阿赖耶 / 心所 / 末那 | master-xuanzang + master-buddhaghosa + master-huineng | 唯识 vs 上座部阿毗达摩 vs 禅宗直指 |
+| 苦行 / 闭关 / 山中修行 / 头陀 | master-xuyun + master-milarepa | 汉传禅门头陀 vs 藏传瑜伽士传统 |
 | 正念 / 观心 / 觉知 | master-huineng + master-ajahn-chah + master-mahasi-sayadaw | 禅宗自性 vs 南传 sati 朴素 vs 缅甸标记法 |
 | 禅修方法 / 业处 / 所缘 | master-buddhaghosa + master-mahasi-sayadaw + master-ajahn-chah | 论藏四十种业处 vs 标记法腹部起伏 vs 朴素观心 |
-| 七清净 / 十六观智 / 道次第 | master-buddhaghosa + master-mahasi-sayadaw | 《清净道论》原典 vs 现代缅甸应用 |
+| 七清净 / 十六观智 / 观智 | master-buddhaghosa + master-mahasi-sayadaw | 《清净道论》原典 vs 现代缅甸应用 |
 | 出离心 / 暇满 / 无常 | master-yinguang + master-atisha + master-ajahn-chah | 净土 · 噶当 · 上座部跨传统出离观对比 |
-| 菩提心 / 慈悲 | master-atisha + master-ouyi | 印藏自他相换 vs 跨宗派融通 |
+| 菩提心 / 慈悲 / 自他相换 | master-atisha + master-ouyi | 印藏自他相换 vs 跨宗派融通 |
 | 上师 / 善知识 / 依止 | master-xuyun + master-atisha + master-tsongkhapa | 汉传善知识 vs 噶当依止论 vs 格鲁视师如佛 |
-| 论师风格 / 经院严密 | master-xuanzang + master-tsongkhapa + master-buddhaghosa | 唯识 · 应成中观 · 上座部三大论师传统 |
-| 四大传统对比（明确要求） | master-nagarjuna + master-huineng + master-tsongkhapa + master-buddhaghosa | 印度中观 · 禅 · 应成中观 · 上座部论藏，四方系统对照 |
-| 跨传统禅修对比 | master-huineng + master-milarepa + master-ajahn-chah | 禅 · 大手印 · 森林禅，跨传统禅修法 |
+| 论师风格 / 经院严密 / 因明 | master-xuanzang + master-tsongkhapa + master-buddhaghosa | 唯识 · 应成中观 · 上座部三大论师传统 |
+| 四大传统 / 四方对照 | master-nagarjuna + master-huineng + master-tsongkhapa + master-buddhaghosa | 印度中观 · 禅 · 应成中观 · 上座部论藏，四方系统对照 |
+| 跨传统禅修 / 大手印 | master-huineng + master-milarepa + master-ajahn-chah | 禅 · 大手印 · 森林禅，跨传统禅修法 |
 | 其他 | master-kumarajiva + master-yinguang | 中观 + 净土两大传统 |
 
 ## 工作流程
