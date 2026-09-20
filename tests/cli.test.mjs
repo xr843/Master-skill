@@ -1027,6 +1027,35 @@ test("recommend prefers distinct traditions when scores tie", () => {
   assert.equal(new Set(traditions).size, traditions.length);
 });
 
+// 点名找一位祖师，必须找得到他本人。
+//
+// 2026-09-20 实测：十五位里有十位做不到。`meta.json.search_scope.keywords`
+// 里没有他们的名号 —— 米拉日巴、阿姜查、阿底峡、智顗、法藏、鸠摩罗什、玄奘、
+// 觉音八位一条都没有；慧能只有「六祖」，宗喀巴只有「宗喀巴全集」（书名比查询
+// 还长，按包含匹配永远命中不了）。问「阿姜查最核心的教导是什么」，回的是
+// 鸠摩罗什和印光，resolvedBy 写着 default_pairing。
+//
+// 两个触发面当时是矛盾的：每个 SKILL.md 的 description 里都写着名号（所以
+// Claude 自己调用 skill 没问题），只有 recommend 走的这张表里没有。
+//
+// 用例从 skill-catalog.json + meta.json.name 生成，新增祖师自动纳入。
+test("recommend reaches every master by his own name", () => {
+  const catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, "utf8"));
+  const personas = catalog.skills.filter((s) => s.kind === "persona");
+  assert.ok(personas.length >= 15, "catalog lost personas");
+  for (const persona of personas) {
+    const meta = JSON.parse(
+      fs.readFileSync(path.join(REPO, "prebuilt", persona.name, "meta.json"), "utf8"),
+    );
+    const data = recommendJson(meta.name);
+    assert.equal(
+      data.masters[0]?.name,
+      persona.name,
+      `“${meta.name}” routed to ${data.resolvedBy} → ${data.masters.map((m) => m.name).join(", ")}`,
+    );
+  }
+});
+
 test("recommend caps at three masters", () => {
   for (const q of ["菩提心怎么发", "正念怎么修", "戒定慧"]) {
     assert.ok(recommendJson(q).masters.length <= 3, `${q} returned too many`);
