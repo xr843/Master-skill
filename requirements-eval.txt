@@ -62,4 +62,4 @@ pytest>=9.1.1,<10
 # comment here guessed that 3.x was where `max_tokens` gave way to
 # `max_completion_tokens`; checked on 3.10.0, both were accepted, so
 # build_request() needed no change. Same >= 3.10 floor as anthropic.
-openai==3.13.0
+openai==3.14.1
