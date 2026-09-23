@@ -37,7 +37,7 @@
 #   - the HTTP layer moved to httpx2, which handles proxies differently — on a
 #     machine with a SOCKS proxy set, constructing the client now raises unless
 #     `socksio` is installed. Hit while verifying this bump.
-anthropic==1.6.0
+anthropic==1.7.0
 
 # >=9.0.3, not the 8.x line this file first pinned. PYSEC-2026-1845: pytest
 # through 9.0.2 on UNIX uses the predictable directory name
@@ -63,4 +63,4 @@ pytest>=9.1.1,<10
 # comment here guessed that 3.x was where `max_tokens` gave way to
 # `max_completion_tokens`; checked on 3.10.0, both were accepted, so
 # build_request() needed no change. Same >= 3.10 floor as anthropic.
-openai==3.14.1
+openai==3.16.2
