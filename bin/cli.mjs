@@ -643,6 +643,7 @@ function doctorData() {
   const masters = availableMasters();
   const installed = installedSkillDirs();
   const expectedInstalled = masters.filter((m) => installed.includes(m.name));
+  const installedCatalog = CATALOG.skills.filter((s) => installed.includes(s.install_dir));
   // Every catalog skill, not only `availableMasters()`. That list leaves out
   // compare-masters, and create-master's SKILL.md lives at the package root
   // rather than under prebuilt/, so doctor checked 18 of the 20 installable
@@ -666,7 +667,13 @@ function doctorData() {
     skillsPath: SKILLS_DIR,
     availableSkills: masters.length,
     installedKnownSkills: expectedInstalled.length,
-    otherInstalledSkillDirs: installed.length - expectedInstalled.length,
+    catalogSkills: CATALOG.skills.length,
+    installedCatalogSkills: installedCatalog.length,
+    // Directories this package did not put there. It was `installed -
+    // installedKnownSkills`, and the known count leaves out compare-masters
+    // and create-master, so a clean `install --all` reported two foreign
+    // directories, both of them ours.
+    otherInstalledSkillDirs: installed.length - installedCatalog.length,
     status: problems.length ? "problems" : "ok",
     problems,
   };
@@ -684,8 +691,7 @@ function cmdDoctor({ json = false } = {}) {
   console.log(`Node version: ${data.nodeVersion}`);
   console.log(`Prebuilt path: ${data.prebuiltPath}`);
   console.log(`Claude skills path: ${data.skillsPath}`);
-  console.log(`Available skills: ${data.availableSkills}`);
-  console.log(`Installed known skills: ${data.installedKnownSkills}`);
+  console.log(`Installed skills: ${data.installedCatalogSkills} of ${data.catalogSkills}`);
   console.log(`Other installed skill dirs: ${data.otherInstalledSkillDirs}`);
 
   if (data.problems.length) {
