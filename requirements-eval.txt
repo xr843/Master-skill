@@ -13,8 +13,8 @@
 #      against anthropic's 0.x line. A grading harness that silently changes
 #      SDK major versions between runs is not an instrument.
 #
-# 1.6.0, verified 2026-09-23 (moved from 1.5.0, which moved from 1.4.0 in
-# #175; dependabot proposed this one as #260) in two ways, neither of
+# 1.7.0, verified 2026-09-23 (moved from 1.6.0 in #267, the first bump
+# dependabot grouped; 1.6.0 came in #264, 1.5.0 in #175) in two ways, neither of
 # which is CI going green — the grading never runs without a key, so a
 # breaking SDK change would not show up until someone spent money:
 #
@@ -55,8 +55,8 @@ pytest>=9.1.1,<10
 # a clean checkout — while the guard test only grepped for anthropic and pytest.
 #
 # `==`, same reasoning as anthropic above, and pinned to the version actually
-# verified: 3.14.1 (moved from 3.13.0, dependabot #261; 3.13.0 had moved
-# from 3.10.0 in #174), checked 2026-09-23 by the same two scripts. It still takes `OpenAI(api_key, base_url, max_retries)` and
+# verified: 3.16.2 (moved from 3.14.1 in #267; 3.14.1 came in #264, 3.13.0
+# in #174), checked 2026-09-23 by the same two scripts. It still takes `OpenAI(api_key, base_url, max_retries)` and
 # `chat.completions.create(model, max_tokens, messages, timeout)`, and the
 # smoke confirms the request lands on the patched base_url's
 # /v1/chat/completions with the key in the Authorization header. An earlier
