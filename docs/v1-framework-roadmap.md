@@ -48,7 +48,28 @@ Minimum per master:
 Evaluation policy:
 
 - Schema validation is a hard gate.
-- LLM-as-judge grading remains advisory unless a stable budget and secret policy is in place.
+- LLM-as-judge grading remains advisory. Budget is no longer the reason: re-judging
+  the human verdicts in `eval/reports/adjudication-06b8142-deepseek.json` with a
+  classification model (Jev) cost $0.0025 on 2026-09-20 — 66 mention verdicts
+  (the 67th blames the fixture, not the answer) and all 8 forbidden verdicts; the
+  cite verdicts were left out. What blocks it is
+  whether the judge can be trusted, and the answer split by assertion type:
+  - `must_mention` / `must_convey` (did the answer convey X): 60/66 correct against
+    the human verdicts, where the substring gauge got 11/66. At confidence ≥ 0.90 it
+    decided 28 of the 66 with no errors. Usable as **triage only**: it may downgrade
+    a gauge FAIL to pass when confident, never turn a PASS into FAIL, and the
+    report must print how many results it decided next to the pass rate.
+  - `must_not_contain` (boundary guardrails): not usable. It missed both real
+    violations, one with confidence 0.80. The miss was a whole section framed in
+    another school's doctrine — sustained drift, not a phrase. These stay
+    hit-is-evidence, human-adjudicated.
+  - Citation audit stays exact identifier matching. It is a contract, and a
+    probabilistic check would weaken it.
+
+  66 items is a small sample to set a 0.90 threshold on. It has to be re-checked
+  against the adjudications of the next full run before any CI step relies on it,
+  and a CI step that needs the judge's key must fail when the key is missing, not
+  skip.
 - Results should be uploaded as CI artifacts when available.
 
 ## Phase 4: Teaching Mode Contracts

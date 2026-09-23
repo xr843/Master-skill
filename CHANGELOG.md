@@ -10,6 +10,17 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Changed — the v1.0 roadmap gave cost as the reason the model judge stays advisory (2026-09-23)
+
+`docs/v1-framework-roadmap.md` said LLM-as-judge grading stays advisory "unless a stable
+budget … is in place". Re-judging the existing human verdicts with a classification model
+cost $0.0025, so that reason no longer holds, and leaving it would suggest money is all
+that stands between the judge and the gate. The entry now gives the measured reason, which
+differs by assertion type: `must_mention` / `must_convey` 60/66 against the human verdicts
+(the substring gauge: 11/66), usable as one-way triage; `must_not_contain` missed both real
+violations, not usable; citation audit stays exact matching. Nothing in the eval path
+changes.
+
 ### Fixed — two of the week's four dependency PRs could never go green, and the review instructions would have rejected a genuine one (2026-09-23)
 
 Dependabot opened `github/codeql-action/init` and `…/analyze` 4.38.0 → 4.38.1 as two
