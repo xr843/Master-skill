@@ -240,11 +240,16 @@ function parseFrontmatter(filepath) {
   return fm;
 }
 
+// Every skill under prebuilt/: the 15 personas and the 4 teaching modes.
+// Named for the first CLI, when "masters" meant personas and `compare` was the
+// only meta-skill, so it was filtered out here. The three teaching modes added
+// later were not, which left compare-masters the one skill the desktop manager
+// — whose rows are this list — could not show.
 function availableMasters() {
   if (!fs.existsSync(PREBUILT)) return [];
   return fs
     .readdirSync(PREBUILT, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && d.name !== "compare-masters")
+    .filter((d) => d.isDirectory())
     .map((d) => {
       const skillMd = path.join(PREBUILT, d.name, "SKILL.md");
       const fm = fs.existsSync(skillMd) ? parseFrontmatter(skillMd) : {};
@@ -342,7 +347,7 @@ function cmdList({ json = false } = {}) {
     console.log("No installable skills found.");
     return;
   }
-  console.log(`\nAvailable masters (${data.count}); installable skills (${data.skillCount}):`);
+  console.log(`\nInstallable skills (${data.skillCount}):`);
   const groups = [
     ["persona", "Personas"],
     ["teaching-mode", "Teaching modes"],
@@ -644,10 +649,11 @@ function doctorData() {
   const installed = installedSkillDirs();
   const expectedInstalled = masters.filter((m) => installed.includes(m.name));
   const installedCatalog = CATALOG.skills.filter((s) => installed.includes(s.install_dir));
-  // Every catalog skill, not only `availableMasters()`. That list leaves out
-  // compare-masters, and create-master's SKILL.md lives at the package root
-  // rather than under prebuilt/, so doctor checked 18 of the 20 installable
-  // skills and would have reported "ok" with either of the other two gone.
+  // Every catalog skill, not only `availableMasters()`. create-master's
+  // SKILL.md lives at the package root rather than under prebuilt/ (and until
+  // 2026-09-23 that list also left out compare-masters), so doctor checked 18
+  // of the 20 installable skills and would have reported "ok" with either of
+  // the other two gone.
   // The two counts above keep their narrower meaning: the desktop manager
   // reads them as its denominator.
   const missingSkillMd = catalogSkills().filter(

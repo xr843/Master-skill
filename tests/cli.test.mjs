@@ -78,7 +78,7 @@ function skillsDir(home) {
 
 const prebuiltMasters = fs
   .readdirSync(path.join(REPO, "prebuilt"), { withFileTypes: true })
-  .filter((d) => d.isDirectory() && d.name !== "compare-masters")
+  .filter((d) => d.isDirectory())
   .map((d) => d.name);
 
 test("skill catalog declares 20 unique installable skills", () => {
@@ -107,7 +107,7 @@ test("skill catalog declares 20 unique installable skills", () => {
 test("list names every prebuilt master with its description", () => {
   const { stdout, code } = run(["list"]);
   assert.equal(code, 0);
-  assert.match(stdout, new RegExp(`Available masters \\(${prebuiltMasters.length}\\)`));
+  assert.match(stdout, /Installable skills \(20\)/);
   for (const name of prebuiltMasters) {
     assert.ok(stdout.includes(name), `missing ${name} in list output`);
   }
@@ -208,9 +208,10 @@ test("doctor counts only directories this package did not install as other skill
   const catalogSize = JSON.parse(fs.readFileSync(CATALOG_PATH, "utf8")).skills.length;
   assert.equal(payload.catalogSkills, catalogSize);
   assert.equal(payload.installedCatalogSkills, 2);
-  // The narrow counts the desktop uses as its denominator keep their meaning.
+  // The prebuilt/ counts the desktop uses as its denominator: create-master
+  // is not under prebuilt/, compare-masters is.
   assert.equal(payload.availableSkills, prebuiltMasters.length);
-  assert.equal(payload.installedKnownSkills, 1);
+  assert.equal(payload.installedKnownSkills, 2);
 
   const { stdout } = run(["doctor"], env);
   assert.match(stdout, new RegExp(`Installed skills: 2 of ${catalogSize}`));

@@ -10,6 +10,27 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — the desktop manager could not show `/compare-masters` (2026-09-23)
+
+The desktop manager builds its skill table from `list --json`'s `masters`, which came from
+`availableMasters()` — and that function has filtered out `compare` since the first CLI in
+April, when "masters" meant personas and `compare` was the only meta-skill. The three
+teaching modes added since were not filtered, so the list became 15 personas plus three of
+four teaching modes, and `compare-masters` was the one skill the desktop never listed:
+not installable from its row, never counted, its fidelity cases never shown.
+
+Including it was not enough on its own. The desktop found each skill's directory as
+`prebuilt/master-<slug>`, which holds for every persona and for `master-debate`,
+`master-curriculum`, `master-help`, and not for `compare-masters`, whose slug is its full
+name. Given `compare-masters` it read `prebuilt/master-compare-masters`, found nothing and
+classified it as a persona with zero cases. It now uses the directory name from `list --json`.
+The Rust test covers `compare-masters` and fails on the old lookup (`left: Persona, right:
+MetaSkill`).
+
+`list` printed `Available masters (18); installable skills (20)`, where the 18 mixed personas
+and teaching modes. It now prints `Installable skills (20)`. `list --json`'s `count` and
+`doctor`'s `availableSkills` become 19: every skill under `prebuilt/`.
+
 ### Fixed — from 2026-10-19 no pull request could have merged (2026-09-23)
 
 `Generator compatibility (Python 3.9)` is a required status check and ran on
