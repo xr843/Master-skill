@@ -10,6 +10,28 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — two of the week's four dependency PRs could never go green, and the review instructions would have rejected a genuine one (2026-09-23)
+
+Dependabot opened `github/codeql-action/init` and `…/analyze` 4.38.0 → 4.38.1 as two
+PRs (#262, #263). CodeQL refuses a database configured by one version and analysed by
+another — `Loaded a configuration file for version '4.38.0', but running version
+'4.38.1'` — so each failed Security Scanning, and merging either alone would have broken
+the scan on `main`. Both steps now move together, and `dependabot.yml` puts every
+`github/codeql-action*` path in one group so the pair arrives as one PR.
+
+The two eval-SDK PRs (#260 anthropic 1.5.0 → 1.6.0, #261 openai 3.13.0 → 3.14.1) were red
+by design: `tests/test_requirements.py` requires the pinned version to appear in the
+comment above it, and Dependabot changes only the number. Verified per CONTRIBUTING § 7 —
+`check-eval-sdk-surface.py` reads the full surface `test-fidelity.py` calls on both,
+`smoke-eval-sdk.py` passes through both providers, `--break` still exits 1 — and the
+comments now record that. They are grouped too (`eval-sdks`): each needs a human edit
+regardless, so one PR is one review.
+
+CONTRIBUTING § 7's SHA check was `gh api …/git/refs/tags/<ver> --jq '.object.sha'`. For an
+annotated tag — codeql-action's are — that returns the tag object (`c23de5a…` for v4.38.1),
+not the commit Dependabot pins (`1c5b675…`). Followed as written, a reviewer would find a
+mismatch on a genuine PR. The instruction now dereferences the tag when `type` is `tag`.
+
 ### Fixed — the meta-skills sent the model to `prebuilt/…`, a directory installs do not have (2026-09-20)
 
 Eight instructions across three skills named a repository-relative path:

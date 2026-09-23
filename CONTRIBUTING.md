@@ -544,6 +544,11 @@ python3 scripts/check-eval-sdk-surface.py
 python3 scripts/smoke-eval-sdk.py
 ```
 
+两个包在 `dependabot.yml` 里是同一个 group（`eval-sdks`），会出现在同一个 PR 里。
+这个 PR **必定是红的**，这是有意的：`tests/test_requirements.py` 要求钉的版本号出现
+在它上方的注释里——理由必须跟着数字走，而 Dependabot 只改数字。评审者跑完下面两个
+脚本后，把「哪天、用什么验证的」写进 `requirements-eval.txt` 的注释，推到该 PR 上。
+
 前者导入实际装上的包、逐项读 `test-fidelity.py` 真正调用的表面，并核对装的
 就是钉的那个版本。缺任何一项则退出 1 并指名。
 
@@ -558,9 +563,17 @@ CI 的 validate job 在每个 PR 上都跑它，**并且同时跑 `--break`**（
 1. **CI 必须全绿**——所有 required status checks 是依赖更新最可靠的回归信号。
 2. **SHA 真实性核对**（仅 github-actions PR）：
    ```bash
-   gh api repos/actions/<name>/git/refs/tags/<new-version> --jq '.object.sha'
+   ref=$(gh api repos/<owner>/<repo>/git/ref/tags/<new-version>)
+   echo "$ref" | jq -r '.object.type, .object.sha'
+   # type 是 tag（annotated tag，如 github/codeql-action）时，上面的 sha 是
+   # tag 对象本身，不是 commit——再解一层：
+   gh api repos/<owner>/<repo>/git/tags/<上一步的 sha> --jq '.object.sha'
    ```
-   与 Dependabot PR 里写的 SHA 比对，一致才合并。
+   最终拿到的 commit SHA 与 Dependabot PR 里写的比对，一致才合并。只看第一层，
+   annotated tag 永远对不上，真 PR 会被当成可疑的拒掉。
+   同一个 action 的多个子路径（`codeql-action/init` 与 `/analyze`）必须同版本，
+   `dependabot.yml` 用 `groups` 把它们合进一个 PR；单独合其中一个会让 CodeQL 报
+   `Loaded a configuration file for version …, but running version …`。
 3. **major bump 不可自动合并**：major 版本通常含 breaking change，必须人工读 release note + 跑 fidelity smoke 确认行为不变。
 4. **minor / patch**：CI 绿即可合并，合并方式与本仓库其它 PR 一致——`gh pr merge --merge`（保留 commit 历史）。
 

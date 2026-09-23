@@ -16,6 +16,17 @@ version: 2
 # All updates open weekly Monday PRs with the `dependencies` label plus an
 # ecosystem-specific label so the maintainer can filter quickly. Major-
 # version bumps are NOT auto-merged — they require explicit review.
+#
+# Two groups exist because ungrouped PRs for them can never go green alone:
+#   - codeql-action: init and analyze are separate "dependencies" to
+#     dependabot, so it opened one PR per step (#262, #263). CodeQL refuses a
+#     config written by one version and analysed by another ("Loaded a
+#     configuration file for version '4.38.0', but running version
+#     '4.38.1'"), so each PR failed Security Scanning and neither could merge.
+#   - eval-sdks: requirements-eval.txt pins must carry a comment saying why
+#     that version (tests/test_requirements.py), so every bump needs a human
+#     edit anyway — one PR means one review and one run of the verification
+#     in CONTRIBUTING § 7, not two.
 
 updates:
   - package-ecosystem: "github-actions"
@@ -29,6 +40,10 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
@@ -59,6 +74,11 @@ updates:
     labels:
       - "dependencies"
       - "pip"
+    groups:
+      eval-sdks:
+        patterns:
+          - "anthropic"
+          - "openai"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
