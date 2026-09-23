@@ -240,7 +240,14 @@ jobs:
 
   python-compat:
     name: Generator compatibility (Python 3.9)
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest. ubuntu-latest becomes Ubuntu 26.04 on
+    # 2026-10-19, and actions/python-versions publishes no 3.9 build for it
+    # (3.9.25: 22.04 and 24.04 only; 3.10 and 3.11 have 26.04 builds). On
+    # ubuntu-latest this job would fail at setup-python, and it is a required
+    # check, so no PR could merge. When 24.04 runners retire, the choice is to
+    # drop 3.9 from README's "Python 3.9+" or test it another way — not to
+    # let this job float.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1

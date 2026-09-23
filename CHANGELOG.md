@@ -10,6 +10,16 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — from 2026-10-19 no pull request could have merged (2026-09-23)
+
+`Generator compatibility (Python 3.9)` is a required status check and ran on
+`ubuntu-latest`, which GitHub moves to Ubuntu 26.04 on 2026-10-19 (the notice is in every CI
+log). `actions/python-versions` publishes Python 3.9.25 for 22.04 and 24.04 only — 3.10 and
+3.11 have 26.04 builds — so the job would have failed at `setup-python`, and a required check
+that cannot pass blocks every merge. Checked against the versions manifest, not inferred from
+3.9 being end-of-life. The job is pinned to `ubuntu-24.04`; the comment beside it says that
+when those runners retire, the decision is whether README's "Python 3.9+" still holds.
+
 ### Fixed — `doctor` reported two foreign skill directories after a clean `install --all`, both of them ours (2026-09-23)
 
 `otherInstalledSkillDirs` was computed as "directories under `~/.claude/skills/` minus
