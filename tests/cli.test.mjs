@@ -177,8 +177,8 @@ test("doctor reports local runtime paths and available skills", (t) => {
   assert.match(stdout, /master-skill doctor/);
   assert.match(stdout, /Package version:/);
   assert.match(stdout, /Node version:/);
-  assert.match(stdout, new RegExp(`Available skills: ${prebuiltMasters.length}`));
-  assert.match(stdout, /Installed known skills: 0/);
+  const catalogSize = JSON.parse(fs.readFileSync(CATALOG_PATH, "utf8")).skills.length;
+  assert.match(stdout, new RegExp(`Installed skills: 0 of ${catalogSize}`));
   assert.match(stdout, /Status: ok/);
 });
 
@@ -193,6 +193,28 @@ test("doctor --json returns machine-readable runtime diagnostics", (t) => {
   assert.equal(payload.installedKnownSkills, 0);
   assert.equal(payload.status, "ok");
   assert.deepEqual(payload.problems, []);
+});
+
+test("doctor counts only directories this package did not install as other skill dirs", (t) => {
+  // otherInstalledSkillDirs was `installed - installedKnownSkills`, and the
+  // known count leaves out compare-masters and create-master. A clean
+  // `install --all` therefore reported two foreign directories — both ours.
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "compare-masters", "zhiyi"], env).code, 0);
+  fs.mkdirSync(path.join(skillsDir(home), "someone-elses-skill"));
+
+  const payload = JSON.parse(run(["doctor", "--json"], env).stdout);
+  assert.equal(payload.otherInstalledSkillDirs, 1);
+  const catalogSize = JSON.parse(fs.readFileSync(CATALOG_PATH, "utf8")).skills.length;
+  assert.equal(payload.catalogSkills, catalogSize);
+  assert.equal(payload.installedCatalogSkills, 2);
+  // The narrow counts the desktop uses as its denominator keep their meaning.
+  assert.equal(payload.availableSkills, prebuiltMasters.length);
+  assert.equal(payload.installedKnownSkills, 1);
+
+  const { stdout } = run(["doctor"], env);
+  assert.match(stdout, new RegExp(`Installed skills: 2 of ${catalogSize}`));
+  assert.match(stdout, /Other installed skill dirs: 1\b/);
 });
 
 test("doctor checks SKILL.md for every catalog skill, not only prebuilt masters", (t) => {
@@ -227,7 +249,7 @@ test("doctor counts installed known skills", (t) => {
   run(["install", "zhiyi"], env);
   const { stdout, code } = run(["doctor"], env);
   assert.equal(code, 0);
-  assert.match(stdout, /Installed known skills: 1/);
+  assert.match(stdout, /Installed skills: 1 of \d+/);
 });
 
 // Until 2026-09-17 doctor checked only the package's own sources: it reported

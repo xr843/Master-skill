@@ -10,6 +10,22 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — `doctor` reported two foreign skill directories after a clean `install --all`, both of them ours (2026-09-23)
+
+`otherInstalledSkillDirs` was computed as "directories under `~/.claude/skills/` minus
+`installedKnownSkills`", and the known count covers only the 18 skills under `prebuilt/`
+other than compare-masters. `compare-masters` and `create-master` are installed by the same
+command, so a fresh `npx master-skill install --all` printed `Other installed skill dirs: 2`,
+and the desktop manager's diagnostics table showed the same. A user with nothing else
+installed was told they had two unknown skills. Measured in a sandboxed `HOME`.
+
+It now counts directories whose name is not any catalog skill's `install_dir`. Two fields are
+added, `catalogSkills` and `installedCatalogSkills`, and the text output prints
+`Installed skills: 20 of 20` from them, matching `install --all`'s "Install all 20". The
+text used to print `Available skills: 18` beside a help screen that says 20.
+`availableSkills` and `installedKnownSkills` keep their meaning, because the desktop manager
+divides one by the other over its 18 rows.
+
 ### Changed — the v1.0 roadmap gave cost as the reason the model judge stays advisory (2026-09-23)
 
 `docs/v1-framework-roadmap.md` said LLM-as-judge grading stays advisory "unless a stable
