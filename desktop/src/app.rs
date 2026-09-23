@@ -478,7 +478,7 @@ impl MasterSkillApp {
             let mut row = SkillRow::from_summary_and_inspect(summary, Some(&inspect));
             row.apply_diagnostics(SkillDiagnostics::from_prebuilt_dir(
                 prebuilt_dir,
-                &summary.slug,
+                &summary.name,
             ));
             rows.push(row);
         }

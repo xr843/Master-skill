@@ -72,8 +72,12 @@ pub struct SkillDiagnostics {
 }
 
 impl SkillDiagnostics {
-    pub fn from_prebuilt_dir(prebuilt_dir: &Path, slug: &str) -> Self {
-        let skill_dir = prebuilt_dir.join(format!("master-{slug}"));
+    /// `dir_name` is the skill's directory under `prebuilt/`, which is its
+    /// `name` in `list --json`. It used to take the slug and prepend
+    /// `master-`, which holds for every persona and for three of the four
+    /// teaching modes, and not for `compare-masters`.
+    pub fn from_prebuilt_dir(prebuilt_dir: &Path, dir_name: &str) -> Self {
+        let skill_dir = prebuilt_dir.join(dir_name);
         let fidelity_path = skill_dir.join("tests").join("fidelity.jsonl");
         let (fidelity_cases, fidelity_error) = match fs::read_to_string(&fidelity_path) {
             Ok(content) => match parse_fidelity_cases(&content) {
@@ -680,7 +684,7 @@ mod tests {
         )
         .unwrap();
 
-        let diagnostics = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "huineng");
+        let diagnostics = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "master-huineng");
 
         assert!(diagnostics.source_index_present);
         assert_eq!(diagnostics.fidelity_case_count, 2);
@@ -699,7 +703,7 @@ mod tests {
         )
         .unwrap();
 
-        let diagnostics = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "huineng");
+        let diagnostics = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "master-huineng");
 
         assert_eq!(diagnostics.fidelity_cases.len(), 2);
         assert_eq!(diagnostics.fidelity_cases[0].index, 1);
@@ -726,7 +730,7 @@ mod tests {
         )
         .unwrap();
 
-        let diagnostics = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "huineng");
+        let diagnostics = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "master-huineng");
 
         assert_eq!(diagnostics.fidelity_case_count, 0);
         assert!(diagnostics.fidelity_cases.is_empty());
@@ -922,11 +926,28 @@ mod tests {
         )
         .unwrap();
 
-        let curriculum = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "curriculum");
-        let debate = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "debate");
+        let curriculum = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "master-curriculum");
+        let debate = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "master-debate");
+
+        // The one teaching mode whose directory is not `master-<slug>`.
+        let compare_dir = root.join("compare-masters");
+        fs::create_dir_all(compare_dir.join("tests")).unwrap();
+        fs::write(
+            compare_dir.join("SKILL.md"),
+            "---\nname: compare-masters\nkind: meta-skill\n---\n",
+        )
+        .unwrap();
+        fs::write(
+            compare_dir.join("tests").join("fidelity.jsonl"),
+            "{\"prompt\":\"compare case\"}\n",
+        )
+        .unwrap();
+        let compare = SkillDiagnostics::from_prebuilt_dir(Path::new(&root), "compare-masters");
 
         assert_eq!(curriculum.kind, SkillKind::MetaSkill);
         assert_eq!(debate.kind, SkillKind::MetaSkill);
+        assert_eq!(compare.kind, SkillKind::MetaSkill);
+        assert_eq!(compare.fidelity_case_count, 1);
 
         fs::remove_dir_all(root).unwrap();
     }
