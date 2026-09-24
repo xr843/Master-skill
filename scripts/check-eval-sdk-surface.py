@@ -29,18 +29,26 @@ import sys
 REQUIRED = {
     "anthropic": {
         "client_kwargs": ["api_key", "max_retries"],
-        "create_params": ["model", "max_tokens", "system", "messages", "timeout"],
+        # `tools`: teaching-mode runs declare read_file / list_dir (2026-09-24).
+        "create_params": ["model", "max_tokens", "system", "messages", "timeout", "tools"],
         "model_fields": {
             "Message": ["stop_reason"],
             "TextBlock": ["text"],
+            # Read by the tool loop (`converse`) and echoed back to the API.
+            "ToolUseBlock": ["id", "name", "input"],
             # Read by the prompt-cache reporting.
             "Usage": ["cache_read_input_tokens", "cache_creation_input_tokens"],
         },
     },
     "openai": {
         "client_kwargs": ["api_key", "base_url", "max_retries"],
-        "create_params": ["model", "max_tokens", "messages", "timeout"],
-        "model_fields": {},
+        "create_params": ["model", "max_tokens", "messages", "timeout", "tools"],
+        # `chat.` = openai.types.chat. The tool loop reads a reply's tool calls
+        # and each call's id and function.
+        "model_fields": {
+            "chat.ChatCompletionMessage": ["content", "tool_calls"],
+            "chat.ChatCompletionMessageFunctionToolCall": ["id", "function"],
+        },
     },
 }
 
@@ -78,9 +86,12 @@ def _missing_for(name: str, spec: dict) -> list[str]:
             problems.append(f"{name} {version}: create({param}=) is gone")
 
     if spec["model_fields"]:
-        types_module = importlib.import_module(f"{name}.types")
         for cls_name, fields in spec["model_fields"].items():
-            cls = getattr(types_module, cls_name, None)
+            submodule, _, short = cls_name.rpartition(".")
+            types_module = importlib.import_module(
+                f"{name}.types" + (f".{submodule}" if submodule else "")
+            )
+            cls = getattr(types_module, short, None)
             if cls is None:
                 problems.append(f"{name} {version}: types.{cls_name} is gone")
                 continue

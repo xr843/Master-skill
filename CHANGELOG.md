@@ -10,6 +10,39 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — the teaching modes were evaluated without the files their instructions tell the model to read (2026-09-24)
+
+compare-masters says 加载与本 skill 同级的 `{slug}/meta.json`、`references/teaching.md`;
+master-debate reads each side's `cross_critique`; master-help scores every installed
+persona's keywords. In a host the model has a file tool and does that. `test-fidelity.py`
+gave it the skill's own SKILL.md and references and nothing else — no sibling data and no
+tools. So each reply either skipped the data its own instructions depend on or wrote the
+tool call out as text: the six leaked-tool-call replies found in `e97ded0` came from here.
+
+Teaching-mode suites now run with two read-only tools, `read_file` and `list_dir`, over the
+layout an install produces — every skill directory side by side, which is `prebuilt/`. The
+system prompt opens with `Base directory for this skill: ~/.claude/skills/<name>`, as Claude
+Code's does, so the SKILL.md's relative paths resolve; `../master-x/…`,
+`~/.claude/skills/…` and `prebuilt/…` all work. **`tests/` is never readable**: every skill
+directory holds its own `fidelity.jsonl`, the questions and what the grader checks. Nothing
+outside `prebuilt/` is readable. A model still calling tools after 12 rounds is recorded as
+an API error, not graded.
+
+Each result lists what was read (`tool_calls`), and each suite says `skill_tools`. That makes
+the instrument visible: a teaching-mode number with file tools is not comparable with one
+without, and every committed run so far is without. Persona suites do not get tools. They
+carry their data in their prompt, and giving them tools would change the instrument behind
+every persona number.
+
+Verified without a key or a network. `smoke-eval-sdk.py` now drives a teaching-mode fixture
+through the pinned anthropic and openai SDKs against a local server that asks for
+`../master-huineng/meta.json`. It checks that the tools are declared, the base directory is
+in the prompt, the file goes back to the model, and the answer after it is graded and
+records the read. `--break` still fails. `check-eval-sdk-surface.py` now also guards the
+parts of the SDKs the loop uses (`tools=`, `ToolUseBlock`, `ChatCompletionMessage.tool_calls`).
+Injecting a missing field was confirmed to fail it. No graded run has used the tools yet;
+that needs a paid run.
+
 ### Fixed — two in-repo links led nowhere (2026-09-24)
 
 `CONTRIBUTING.md` sent new contributors to `#3-贡献一位新法师`. GitHub renders `## § 3 贡献一位新法师`

@@ -39,6 +39,28 @@ raw response text:
   `scripts/verify_citations.py`, and every deterministically detectable citation is checked
   against sources the master declares. `must_cite_only_existing_sources` remains valid
   fixture schema for compatibility, but no longer switches the audit on or off.
+- `must_convey` — a requirement the substring gauge cannot decide; never passed or failed
+  by the grader, always held for adjudication.
+- Teaching-mode contracts (graded since 2026-09-23) — `must_have_sections`,
+  `must_select_masters` / `must_select_pair`, `must_have_rounds`, `must_cite_per_master` /
+  `must_cite_per_round`, `must_recommend_existing_master`, reported in `contract_failures`.
+  On `boundary` / `pressure` fixtures they go to `contract_undecided` for a ruling instead.
+  A reply that is tool-call markup fails every fixture type.
+
+`validate-fidelity.py` rejects any `must_*` key the grader does not implement.
+
+### Teaching modes run with file tools (since 2026-09-24)
+
+A teaching mode's instructions are to read its sibling skills — compare-masters loads each
+master's `meta.json` and `references/`, debate reads `cross_critique`, help scores every
+persona's keywords. In a host the model has a file tool. The eval gave it none, and in
+`e97ded0` six graded replies were the tool call written out as text.
+
+Teaching-mode suites now get `read_file` and `list_dir` over the installed layout (every
+skill directory side by side — `prebuilt/`), never `tests/`, never outside it. Each result
+lists what was read in `tool_calls`; each suite says `skill_tools`. **A teaching-mode suite
+with `skill_tools` is a different instrument from one without** — every committed run
+before 2026-09-24 is without — and the two are not compared. Persona suites are unchanged.
 
 ### What the fabrication check covers now
 
@@ -81,6 +103,10 @@ model-quality score.
 Full run cost is roughly $5-8 USD for 211 sequential `claude-sonnet-4-6` calls (see
 BASELINE.md for what was actually spent on the first, partial run: ~84 completed calls
 before the account ran out of API credit, on the order of $2-4).
+
+Teaching-mode fixtures now make several requests each — one per round of file reads, up to
+12 — and each round re-sends the conversation so far. Expect those 44 fixtures to cost a
+multiple of what they did; the persona fixtures are unaffected.
 
 ## Report size
 

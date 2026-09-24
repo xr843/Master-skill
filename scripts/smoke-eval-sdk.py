@@ -41,6 +41,21 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 ANSWER = "菩提自性，本来清净，但用此心，直了成佛。【《六祖大师法宝坛经》行由品，T48n2008】"
 CACHE_CREATED = 6700
+# The teaching-mode run's first reply asks for this file; the second request
+# must carry it back. See SkillFiles in test-fidelity.py.
+TOOL_PATH = "../master-huineng/meta.json"
+
+
+def _has_tool_result(body: dict) -> bool:
+    for message in body.get("messages", []):
+        if message.get("role") == "tool":
+            return True
+        content = message.get("content")
+        if isinstance(content, list) and any(
+            isinstance(part, dict) and part.get("type") == "tool_result" for part in content
+        ):
+            return True
+    return False
 
 
 def _server(broken: bool, received: list) -> ThreadingHTTPServer:
@@ -53,7 +68,31 @@ def _server(broken: bool, received: list) -> ThreadingHTTPServer:
             body = json.loads(self.rfile.read(length) or b"{}")
             headers = {k.lower(): v for k, v in self.headers.items()}
             received.append((self.path, body, headers))
-            if self.path.endswith("/messages"):
+            wants_tool = bool(body.get("tools")) and not _has_tool_result(body)
+            if self.path.endswith("/messages") and wants_tool:
+                reply = {
+                    "id": "msg_tool", "type": "message", "role": "assistant",
+                    "model": body.get("model"),
+                    "content": [{"type": "tool_use", "id": "toolu_smoke", "name": "read_file",
+                                 "input": {"path": TOOL_PATH}}],
+                    "stop_reason": "tool_use", "stop_sequence": None,
+                    "usage": {"input_tokens": 21, "output_tokens": 10},
+                }
+            elif wants_tool:
+                reply = {
+                    "id": "chatcmpl-tool", "object": "chat.completion", "created": 1,
+                    "model": body.get("model"),
+                    "choices": [{
+                        "index": 0, "finish_reason": "tool_calls",
+                        "message": {"role": "assistant", "content": None, "tool_calls": [{
+                            "id": "call_smoke", "type": "function",
+                            "function": {"name": "read_file",
+                                         "arguments": json.dumps({"path": TOOL_PATH})},
+                        }]},
+                    }],
+                    "usage": {"prompt_tokens": 21, "completion_tokens": 10, "total_tokens": 31},
+                }
+            elif self.path.endswith("/messages"):
                 reply = {
                     "id": "msg_smoke", "type": "message", "role": "assistant",
                     "model": body.get("model"),
@@ -164,6 +203,39 @@ def main(argv: list[str]) -> int:
                   headers.get("authorization") == "Bearer sk-smoke")
             check("the pinned SDK is the one that sent it",
                   openai.__version__ in headers.get("user-agent", ""))
+
+    # A teaching mode reads its sibling skills through the tool loop: the first
+    # reply asks for a file, the second request must carry it back, the answer
+    # after that is graded.
+    for provider, extra in (("anthropic", []), ("deepseek", ["--model", "deepseek-v4-flash"])):
+        received.clear()
+        sys.argv = ["test-fidelity.py", "--master", "compare-masters", "--provider", provider,
+                    "--max-tests", "1", "--concurrency", "1", "--json", *extra]
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+            fidelity.main()
+        suite = json.loads(out.getvalue())[0]
+        result = suite["results"][0]
+        print(f"── {provider} (teaching mode, file tools): {result.get('status')}")
+        check("two requests: the tool call, then the answer", len(received) == 2)
+        if len(received) < 2:
+            continue
+        first, second = received[0][1], received[1][1]
+        tool_names = sorted(
+            (tool.get("name") or tool.get("function", {}).get("name")) for tool in first.get("tools", [])
+        )
+        check("the tools were declared", tool_names == ["list_dir", "read_file"])
+        system = (first.get("system") or [{}])[0].get("text") if provider == "anthropic" \
+            else first["messages"][0]["content"]
+        check("the prompt names the skill's base directory",
+              system.startswith("Base directory for this skill: ~/.claude/skills/compare-masters"))
+        check("the file went back to the model", "慧能大师" in json.dumps(second, ensure_ascii=False))
+        check("the reply was graded, not recorded as api_error",
+              result.get("status") in ("PASS", "FAIL"))
+        check("the answer text survived the loop intact", result.get("response") == ANSWER)
+        check("the report says what was read",
+              result.get("tool_calls") == [{"tool": "read_file", "path": TOOL_PATH, "ok": True}])
+        check("the suite says which instrument", suite.get("skill_tools") == ["read_file", "list_dir"])
 
     server.shutdown()
     print(f"{'✓ eval SDK path intact' if not failures else f'✗ {failures} check(s) failed'}")

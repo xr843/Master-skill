@@ -405,6 +405,229 @@ def load_tests(master_dir: Path) -> list[dict]:
     return tests
 
 
+# ── Skill file tools for teaching-mode runs ────────────────────────────────
+#
+# The teaching modes are instructions to go and read other skills: compare-
+# masters says 加载与本 skill 同级的 `{slug}/meta.json` 和 references/, debate
+# reads each side's `cross_critique`, help scores every persona's keywords. In
+# Claude Code the model has a file tool and does that. Here it had none — the
+# system prompt was the skill's own SKILL.md and references, nothing else — so
+# the model either answered without the data its instructions depend on, or
+# wrote the tool call out as text: six of e97ded0's graded PASSes were
+# 「<｜｜DSML｜｜ invoke name="Bash">ls -la…」.
+#
+# So teaching-mode runs get two read-only tools over the layout an install
+# produces: every skill directory side by side, which is what prebuilt/ is.
+# Personas do not — they carry their data in their own prompt, and giving
+# them tools would change the instrument behind every persona number.
+#
+# `tests/` is never readable. Every skill directory holds its own
+# `tests/fidelity.jsonl` — the questions and what the grader looks for.
+MAX_TOOL_ROUNDS = 12
+_TOOL_READ_LIMIT = 40_000
+SKILL_TOOL_NAMES = ("read_file", "list_dir")
+_TOOL_DESCRIPTIONS = {
+    "read_file": (
+        "Read a text file from the installed skills directory "
+        "(~/.claude/skills/). Paths are relative to this skill's directory; "
+        "sibling skills are at ../<skill-name>/."
+    ),
+    "list_dir": (
+        "List a directory in the installed skills directory. Paths are relative "
+        "to this skill's directory; '..' lists every installed skill."
+    ),
+}
+_PATH_SCHEMA = {
+    "type": "object",
+    "properties": {"path": {"type": "string"}},
+    "required": ["path"],
+}
+
+
+def skill_kind(dir_name: str) -> str | None:
+    """The catalog kind of the skill installed as ``dir_name``."""
+    catalog = json.loads(
+        (PREBUILT_DIR.parent / "skill-catalog.json").read_text(encoding="utf-8")
+    )
+    for skill in catalog["skills"]:
+        if skill["install_dir"] == dir_name:
+            return skill["kind"]
+    return None
+
+
+def uses_skill_tools(master_dir: Path) -> bool:
+    return skill_kind(master_dir.name) == "teaching-mode"
+
+
+def tool_definitions(provider: str) -> list[dict]:
+    if resolve_provider(provider)["api"] == "anthropic":
+        return [
+            {"name": name, "description": _TOOL_DESCRIPTIONS[name], "input_schema": _PATH_SCHEMA}
+            for name in SKILL_TOOL_NAMES
+        ]
+    return [
+        {
+            "type": "function",
+            "function": {
+                "name": name,
+                "description": _TOOL_DESCRIPTIONS[name],
+                "parameters": _PATH_SCHEMA,
+            },
+        }
+        for name in SKILL_TOOL_NAMES
+    ]
+
+
+class SkillFiles:
+    """Read-only view of the installed skills directory, rooted at prebuilt/.
+
+    Every call is logged — path, tool, whether it resolved — so a report says
+    what the model read before it answered.
+    """
+
+    _INSTALLED = re.compile(r"(?:^|/)\.claude/skills/(?P<rest>.*)$")
+
+    def __init__(self, own_dir: Path, root: Path = PREBUILT_DIR):
+        self.root = root.resolve()
+        self.own = own_dir.resolve()
+        self.log: list[dict] = []
+
+    def _resolve(self, raw: str) -> Path:
+        path = str(raw).strip().replace("\\", "/")
+        installed = self._INSTALLED.search(path)
+        if installed:
+            candidate = self.root / installed.group("rest")
+        elif path.startswith("prebuilt/"):
+            candidate = self.root / path[len("prebuilt/"):]
+        elif path.startswith("/"):
+            raise ValueError("only the installed skills directory is readable")
+        else:
+            candidate = self.own / path
+            # 「master-huineng/meta.json」 written from the skill's own directory
+            # means the sibling, the way the SKILL.md phrases it.
+            first = path.split("/", 1)[0]
+            if (
+                not candidate.exists()
+                and first not in (".", "..")
+                and (self.root / first).is_dir()
+            ):
+                candidate = self.root / path
+        resolved = candidate.resolve()
+        try:
+            relative = resolved.relative_to(self.root)
+        except ValueError:
+            raise ValueError("outside the installed skills directory") from None
+        if "tests" in relative.parts:
+            raise ValueError("tests/ is not readable during an eval")
+        return resolved
+
+    def call(self, name: str, arguments: dict) -> str:
+        path = (arguments or {}).get("path", "")
+        try:
+            target = self._resolve(path)
+            if name == "read_file":
+                if not target.is_file():
+                    raise ValueError("no such file")
+                text = target.read_text(encoding="utf-8")
+                if len(text) > _TOOL_READ_LIMIT:
+                    text = text[:_TOOL_READ_LIMIT] + "\n…[truncated]"
+                result = text
+            elif name == "list_dir":
+                if not target.is_dir():
+                    raise ValueError("no such directory")
+                result = "\n".join(
+                    entry.name + ("/" if entry.is_dir() else "")
+                    for entry in sorted(target.iterdir())
+                    if entry.name != "tests"
+                )
+            else:
+                raise ValueError(f"unknown tool {name}")
+        except (ValueError, OSError) as error:
+            self.log.append({"tool": name, "path": path, "ok": False})
+            return f"error: {error}"
+        self.log.append({"tool": name, "path": path, "ok": True})
+        return result
+
+
+def _tool_calls(provider: str, response: object) -> list[tuple[str, str, dict]]:
+    """(call id, tool name, arguments) for each tool call in ``response``."""
+    if resolve_provider(provider)["api"] == "anthropic":
+        return [
+            (block.id, block.name, dict(block.input or {}))
+            for block in (getattr(response, "content", None) or [])
+            if getattr(block, "type", None) == "tool_use"
+        ]
+    choices = getattr(response, "choices", None) or []
+    if not choices:
+        return []
+    calls = []
+    for call in getattr(choices[0].message, "tool_calls", None) or []:
+        try:
+            arguments = json.loads(call.function.arguments or "{}")
+        except json.JSONDecodeError:
+            arguments = {}
+        calls.append((call.id, call.function.name, arguments))
+    return calls
+
+
+def converse(send, provider: str, body: dict, files: SkillFiles, on_response=None):
+    """Send ``body``; while the reply asks for tools, answer and resend.
+
+    Returns the final response — the first one that asks for no tool. More
+    than MAX_TOOL_ROUNDS rounds raises, and the fixture is recorded as an API
+    error: an answer the loop cut off is not one to grade.
+    """
+    body = {**body, "messages": list(body["messages"]), "tools": tool_definitions(provider)}
+    anthropic_api = resolve_provider(provider)["api"] == "anthropic"
+    for _ in range(MAX_TOOL_ROUNDS + 1):
+        response = send(body)
+        if on_response:
+            on_response(response)
+        calls = _tool_calls(provider, response)
+        if not calls:
+            return response
+        results = [(call_id, files.call(name, args)) for call_id, name, args in calls]
+        if anthropic_api:
+            assistant = []
+            for block in response.content:
+                if block.type == "text":
+                    assistant.append({"type": "text", "text": block.text})
+                elif block.type == "tool_use":
+                    assistant.append({
+                        "type": "tool_use", "id": block.id,
+                        "name": block.name, "input": dict(block.input or {}),
+                    })
+            body["messages"] += [
+                {"role": "assistant", "content": assistant},
+                {"role": "user", "content": [
+                    {"type": "tool_result", "tool_use_id": call_id, "content": text}
+                    for call_id, text in results
+                ]},
+            ]
+        else:
+            message = response.choices[0].message
+            assistant = {
+                "role": "assistant",
+                "content": message.content or "",
+                "tool_calls": [
+                    {"id": call.id, "type": "function",
+                     "function": {"name": call.function.name,
+                                  "arguments": call.function.arguments}}
+                    for call in message.tool_calls
+                ],
+            }
+            # DeepSeek's thinking mode wants its reasoning handed back in the
+            # turn that made the tool call.
+            reasoning = getattr(message, "reasoning_content", None)
+            if reasoning:
+                assistant["reasoning_content"] = reasoning
+            body["messages"] += [assistant] + [
+                {"role": "tool", "tool_call_id": call_id, "content": text}
+                for call_id, text in results
+            ]
+    raise ValueError(f"model still calling tools after {MAX_TOOL_ROUNDS} rounds")
+
+
 def _split_echoes(
     terms: list[str], response: str, question: str
 ) -> tuple[list[str], list[str]]:
@@ -1028,6 +1251,14 @@ def run_tests(
 
     # Load skill context
     system_prompt = load_skill_context(master_dir)
+    tools = uses_skill_tools(master_dir)
+    if tools:
+        # What Claude Code tells the model when it invokes a skill, so the
+        # relative paths in the SKILL.md have somewhere to be relative to.
+        system_prompt = (
+            f"Base directory for this skill: ~/.claude/skills/{master_dir.name}\n\n"
+            + system_prompt
+        )
 
     try:
         spec = resolve_provider(provider)
@@ -1087,15 +1318,21 @@ def run_tests(
         Every failure mode is a returned value, not a raised exception, so one
         bad fixture cannot take the pool down with it.
         """
+        files = SkillFiles(master_dir) if tools else None
         try:
-            response = send(
-                build_request(
-                    provider, model, system_prompt, test["q"], max_output_tokens
-                )
+            body = build_request(
+                provider, model, system_prompt, test["q"], max_output_tokens
             )
+            if files is not None:
+                response = converse(
+                    send, provider, body, files,
+                    on_response=lambda r: _record_cache_usage(cache_stats, r),
+                )
+            else:
+                response = send(body)
+                _record_cache_usage(cache_stats, response)
             response_text = extract_text(provider, response)
             finish_reason = extract_finish_reason(provider, response)
-            _record_cache_usage(cache_stats, response)
         except Exception as e:  # noqa: BLE001 — provider errors are data here
             return (
                 {
@@ -1143,6 +1380,8 @@ def run_tests(
                 "GRADER ERROR",
             )
         entry = result_entry(i, test, check, response_text)
+        if files is not None:
+            entry["tool_calls"] = files.log
         if check["passed"]:
             return entry, True, "PASS (review)" if check["needs_review"] else "PASS"
         failures = (check["missing_cites"] + check["missing_mentions"]
@@ -1240,6 +1479,9 @@ def run_tests(
 
     return {
         **suite_common(master_name, dry_run, "completed", provider),
+        # Which instrument: a teaching-mode suite graded with file tools is not
+        # comparable with one graded without (every run before 2026-09-24).
+        "skill_tools": list(SKILL_TOOL_NAMES) if tools else [],
         "model": model,
         "total": len(tests),
         "passed": passed,
