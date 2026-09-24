@@ -106,3 +106,25 @@ def test_every_command_the_hook_announces_is_a_registered_skill():
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     missing = announced - discovered_skills(ROOT, manifest)
     assert not missing, f"hook announces commands the plugin does not register: {sorted(missing)}"
+
+
+def test_hook_citation_line_covers_every_declared_family():
+    """The hook told every session "All doctrinal responses include CBETA
+    citations" — false for the Tibetan, Pali and compiled-teaching masters."""
+    spec = importlib.util.spec_from_file_location("session_start_cite", ROOT / "hooks" / "session_start.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    declared = set()
+    for meta in (ROOT / "prebuilt").glob("master-*/meta.json"):
+        contract = json.loads(meta.read_text(encoding="utf-8")).get("citation_contract") or {}
+        declared |= set(contract.get("allowed_source_types", []))
+    families = set(module.CITATION_FAMILIES)
+    uncovered = {
+        t for t in declared
+        if not any(t == f or t.startswith(f + "_") or t.split("_")[0] == f for f in families)
+        and t != "kadam_corpus"  # Atiśa's Kadam texts are Tibetan: cited by Toh / BDRC
+    }
+    assert not uncovered, uncovered
+    context = module.build_context([])
+    assert module.CITATION_LINE in context
+    assert "All doctrinal responses include CBETA" not in context
