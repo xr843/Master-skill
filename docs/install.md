@@ -45,7 +45,7 @@ npx master-skill recommend "禅宗从哪开始学"
 它只给目标，不代答教理——落到哪位祖师，就由那位祖师自己的 `citation_contract`
 和边界规则接手。
 
-上方[「你的状况」表](#如果你不确定该找谁问可以这样开始)的每一行都被
+[README](../README.md) 里「你的状况」那张表的每一行都被
 `tests/cli.test.mjs` 锁住：**改那张表而不改路由数据，测试就会失败**。
 
 ```bash

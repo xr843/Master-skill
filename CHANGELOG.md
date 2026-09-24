@@ -10,6 +10,16 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — two in-repo links led nowhere (2026-09-24)
+
+`CONTRIBUTING.md` sent new contributors to `#3-贡献一位新法师`. GitHub renders `## § 3 贡献一位新法师`
+as `-3-贡献一位新法师`: the § is dropped and the space before the 3 becomes a hyphen. Checked
+against GitHub's own rendering of the file, not a slug algorithm. `docs/install.md` pointed
+「上方」 (above) to the 「你的状况」 table, but the table is in the README and has been since the
+README slim-down moved this text out. The link was also to an anchor that does not exist,
+because that line is bold text, not a heading. It now links to the README. All 166 tracked
+Markdown files were checked for relative links (none broken) and anchors (these two).
+
 ### Fixed — the teaching modes' output contracts were never graded, and a leaked tool call passed as an answer (2026-09-23)
 
 The four teaching-mode skills' fixtures express their output contracts in seven assertion
