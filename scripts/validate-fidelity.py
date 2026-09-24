@@ -113,6 +113,22 @@ def validate_master(master_dir: Path) -> list[str]:
                     f"scripts/test-fidelity.py — implement it there or remove it"
                 )
 
+        # A per-master or per-round citation rule applies to the masters or
+        # rounds the fixture names. Without them it has nothing to apply to
+        # and passes any reply — compare-masters #16 did.
+        if test.get("must_cite_per_master") and not (
+            test.get("must_select_masters") or test.get("must_select_pair")
+        ):
+            errors.append(
+                f"{master_dir.name}:{i}: must_cite_per_master without "
+                "must_select_masters / must_select_pair checks nothing"
+            )
+        if test.get("must_cite_per_round") and not test.get("must_have_rounds"):
+            errors.append(
+                f"{master_dir.name}:{i}: must_cite_per_round without "
+                "must_have_rounds checks nothing"
+            )
+
         # Must have at least one assertion
         if not any(k in test for k in IMPLEMENTED_ASSERTIONS):
             errors.append(f"{master_dir.name}:{i}: no assertion fields found")

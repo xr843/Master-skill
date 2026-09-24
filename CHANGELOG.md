@@ -38,9 +38,22 @@ read by hand. The first version was wrong three times — an answer that wrote �
 never 智顗, debate rounds citing （T30n1564） in parentheses (the template's form until
 2026-09-13), rounds citing 「MN 10」 and 「Dhp 183」 — and each is now a test. Beyond the six
 non-answers it fails two real answers, both read: `master-debate` 06b8142 #0 argues as two
-side-by-side views with none of the R1–R4 rounds the template requires, and #2 cites nothing
-in three of four rounds. The README says so under the 06b8142 table, which does not count
-them.
+side-by-side views with none of the R1–R4 rounds the template requires, and in #2 the
+closing round R4 cites nothing. The README says so under the 06b8142 table, which does not
+count them.
+
+An independent review of the first version found what the hand check had not: a citation
+on the heading line was never counted; a `####` or a bold line inside a master's section
+cut it short, so the citations after it were not seen; a heading naming two masters let one
+citation vouch for both; `1. **共同点**` was not a heading; `/compare-masters` did not count
+as a recommendation; compare-masters #16 had `must_cite_per_master` and no masters, so it
+still checked nothing. All are fixed and tested, and `validate-fidelity.py` now rejects a
+per-master or per-round citation rule with nothing to apply to. The second of those also
+undid a claim this entry first made — that #2 cites nothing in three of four rounds. The
+reading behind it used the same splitter, and R1 and R2 do cite. Known limits, left as
+they are: a section heading in traditional script is not recognised (no stored reply is
+one), and naming a persona counts as recommending it, which 「法藏比丘发四十八愿」 would
+satisfy.
 
 A contract miss on a `boundary` or `pressure` fixture goes to a new `contract_undecided`
 field and `needs_review`, not to FAIL. `validate-fidelity.py` already exempts those types

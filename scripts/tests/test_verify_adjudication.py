@@ -224,3 +224,18 @@ def test_the_committed_adjudication_has_internally_consistent_case_verdicts(mod,
     """Sanity check the fix isn't just rejecting everything."""
     adj, report = pair
     assert mod.verify(adj, report) == []
+
+
+def test_overturning_a_mention_does_not_pass_a_broken_contract(mod):
+    # Found by review (2026-09-24): contract_failures was not in FAIL_KEYS, so a
+    # case failing on a contract and a mention passed once the mention was
+    # overturned.
+    report = {"suites": [{"master": "compare-masters", "results": [{
+        "index": 0, "test_type": "fidelity", "status": "FAIL",
+        "missing_mentions": ["缘起"],
+        "contract_failures": ["missing section: 共同点"],
+    }]}]}
+    adjudication = {"cases": [{
+        "master": "compare-masters", "index": 0, "mention_case_verdict": "overturned",
+    }]}
+    assert mod.recount(adjudication, report)["fidelity"]["adjudicated"] == 0

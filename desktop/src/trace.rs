@@ -1163,7 +1163,7 @@ fn validate_evaluation_scope(
                 Some(expected_slug),
                 EvaluationEvidenceErrorKind::MalformedPayload,
                 format!(
-                    "invalid fidelity suite scope: expected master-{expected_slug}, got master-{actual_slug}"
+                    "invalid fidelity suite scope: expected {expected_slug}, got {actual_slug}"
                 ),
             ));
         }

@@ -43,6 +43,10 @@ FAIL_KEYS = (
     "forbidden_found",
     "boundary_violations",
     "fabricated_cites",
+    # Teaching-mode contracts (2026-09-23). Like fabricated_cites, no verdict
+    # category overturns them, so a case failing on one stays failed however
+    # its mentions are ruled.
+    "contract_failures",
 )
 # recount()'s `overturns` set only ever gains "missing_mentions" / "forbidden_found"
 # / "missing_cites" — there is no case-verdict category for `boundary_violations`

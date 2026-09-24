@@ -136,9 +136,11 @@ def test_the_committed_run_regrades_against_the_repository_as_it_stands(mod):
     # master-debate #0 and #2 fail since the teaching-mode contracts were
     # graded (2026-09-23), and both were read before being listed here. #0
     # answers as two side-by-side views with no R1–R4 at all, where the
-    # template requires 「### R1｜…」 rounds. In #2, rounds R1, R2 and R4 name
-    # no source of any kind — no id, no title; only R3 cites. Any other
-    # regression still fails here.
+    # template requires 「### R1｜…」 rounds. In #2 the closing round R4 names
+    # no source of any kind; R1–R3 cite T30n1564 / T48n2008. (A first reading
+    # said three rounds cited nothing — it read sections cut short at a bold
+    # line, by the same splitter being checked.) Any other regression still
+    # fails here.
     assert regressions == [
         ("master-curriculum", 1),
         ("master-debate", 0),

@@ -521,9 +521,10 @@ def _traditional_form(term: str) -> str | None:
 # Every check below is deterministic and was checked against the stored
 # replies of 06b8142 and e97ded0, every failure read by hand. The first
 # version was wrong three times — it missed 智者大师, ids in parentheses, and
-# sutta numbers — and each is now a test. What it fails on those replies:
-# the leaked tool calls, master-debate 06b8142 #0 (no rounds) and #2 (three
-# rounds citing nothing). Nothing else.
+# sutta numbers — and an independent review found six more (see
+# test_teaching_mode_contracts.py); each is now a test. What it fails on those
+# replies: the leaked tool calls, master-debate 06b8142 #0 (no rounds) and #2
+# (closing round R4 cites nothing). Nothing else.
 #
 # `IMPLEMENTED_ASSERTIONS` is what validate-fidelity.py checks fixtures
 # against, so a key the grader does not read is a validation error rather
@@ -534,6 +535,9 @@ IMPLEMENTED_ASSERTIONS = frozenset({
     "must_convey",
     "must_not_contain",
     "must_not_contain_first_turn",
+    # Enforced by the fabricated-citation audit, which runs on every reply
+    # since 2026-08-31; the key no longer switches anything on, and `false`
+    # would not switch it off. Listed so the fixtures that carry it validate.
     "must_cite_only_existing_sources",
     "must_have_sections",
     "must_select_masters",
@@ -547,7 +551,7 @@ IMPLEMENTED_ASSERTIONS = frozenset({
 # A section exists when a heading line names it — a Markdown heading or a line
 # that opens in bold, which is how the templates write 「**法师选择**」. Finding
 # the word anywhere would pass 「核心分歧」 on a sentence that merely uses it.
-_HEADING_LINE = re.compile(r"^\s*(?:#{1,6}\s|\*\*)")
+_HEADING_LINE = re.compile(r"^\s*(?:\d+[.、)]\s*)?(?P<mark>#{1,6}\s|\*\*)")
 _HONORIFIC = re.compile(r"(大师|尊者|法师|菩萨|老和尚)$")
 _SKILL_TOKEN = re.compile(r"(?<![A-Za-z0-9-])master-[a-z][a-z-]*[a-z]")
 # verify_citations._SUTTA_REF, unanchored: the audit applies it to the
@@ -584,15 +588,31 @@ def master_names(slug: str) -> frozenset[str]:
     return _master_name_cache[slug]
 
 
+def _heading_level(match: re.Match) -> int:
+    """`#`-count for a Markdown heading; a bold line ranks below all of them."""
+    mark = match.group("mark")
+    return len(mark.strip()) if mark.startswith("#") else 7
+
+
 def _heading_blocks(response: str) -> list[tuple[str, str]]:
-    """Split a reply into (heading line, body up to the next heading)."""
-    blocks: list[tuple[str, list[str]]] = []
-    for line in response.splitlines():
-        if _HEADING_LINE.match(line):
-            blocks.append((line, []))
-        elif blocks:
-            blocks[-1][1].append(line)
-    return [(heading, "\n".join(body)) for heading, body in blocks]
+    """Split a reply into (heading line, the section it opens).
+
+    A section is the heading line itself — 「**R1 慧能立论**：见性【T48n2008】」
+    cites on that line — and everything up to the next heading of the same or
+    a higher level, so a `####` or a bold line inside 「### 慧能大师的视角」 stays
+    part of Huineng's section. The first version cut at every heading and
+    missed both.
+    """
+    lines = response.splitlines()
+    marks = [(i, _heading_level(m)) for i, line in enumerate(lines)
+             if (m := _HEADING_LINE.match(line))]
+    blocks: list[tuple[str, str]] = []
+    for n, (start, level) in enumerate(marks):
+        end = next((i for i, lv in marks[n + 1:] if lv <= level), len(lines))
+        blocks.append((lines[start], "\n".join(lines[start:end])))
+    return blocks
+
+
 
 
 def _cites_anything(text: str) -> bool:
@@ -644,13 +664,18 @@ def check_contract(response: str, test_case: dict, known_skills: set[str]) -> li
             failures.append(f"round cites nothing: {round_id}")
 
     # A master's perspective is the section whose heading names them; the
-    # compare template gives each one (「### 慧能大师（禅宗）的视角」).
+    # compare template gives each one (「### 慧能大师（禅宗）的视角」). A heading
+    # naming two of them (「### 慧能与印光的核心分歧」) belongs to neither when
+    # each also has one of their own — otherwise one citation there would
+    # vouch for both.
     if test_case.get("must_cite_per_master"):
+        def names_in(heading: str) -> set[str]:
+            return {s for s in selected if any(n in heading for n in master_names(s))}
+
         for slug in selected:
-            own = [
-                body for heading, body in blocks
-                if any(name in heading for name in master_names(slug))
-            ]
+            naming = [(heading, body) for heading, body in blocks if slug in names_in(heading)]
+            sole = [body for heading, body in naming if names_in(heading) == {slug}]
+            own = sole or [body for _, body in naming]
             if own and not any(_cites_anything(body) for body in own):
                 failures.append(f"master cites nothing: {slug}")
             elif not own:
@@ -669,6 +694,12 @@ def check_contract(response: str, test_case: dict, known_skills: set[str]) -> li
             (PREBUILT_DIR.parent / "package.json").read_text(encoding="utf-8")
         )["name"]
         tokens = set(_SKILL_TOKEN.findall(response)) - {package}
+        # Skills not named master-… are recommendations too.
+        tokens |= {
+            name for name in known_skills
+            if not name.startswith("master-")
+            and re.search(rf"(?<![A-Za-z0-9-]){re.escape(name)}(?![A-Za-z0-9-])", response)
+        }
         unknown = sorted(t for t in tokens if t not in known_skills)
         for token in unknown:
             failures.append(f"recommends a skill that does not exist: {token}")
@@ -677,6 +708,10 @@ def check_contract(response: str, test_case: dict, known_skills: set[str]) -> li
             if d.name.startswith("master-") and (d / "meta.json").exists()
             and json.loads((d / "meta.json").read_text(encoding="utf-8")).get("kind") != "meta-skill"
         ]
+        # A persona named without its skill name counts: master-help's answer
+        # to 「有哪些法师可以问」 lists the fifteen by name, correctly, with no
+        # `/master-…` at all. The price is a known false pass — 「法藏比丘发
+        # 四十八愿」 names Fazang's persona without recommending him.
         named = bool(tokens & known_skills) or any(
             name in response for slug in personas for name in master_names(slug)
         )
@@ -1111,6 +1146,7 @@ def run_tests(
         if check["passed"]:
             return entry, True, "PASS (review)" if check["needs_review"] else "PASS"
         failures = (check["missing_cites"] + check["missing_mentions"]
+                    + check["fabricated_cites"] + check["contract_failures"]
                     + check["forbidden_found"] + check["boundary_violations"])
         return entry, False, f"FAIL ({failures})"
 

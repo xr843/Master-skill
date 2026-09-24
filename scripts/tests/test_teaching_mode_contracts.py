@@ -195,3 +195,45 @@ def test_the_package_name_is_not_a_recommended_skill(fidelity):
     # master-help's SKILL.md tells the user to run `npx master-skill install`.
     answer = "建议 /master-huineng。没装的话先运行 npx master-skill install huineng。"
     assert _contract(fidelity, answer, RECOMMEND) == []
+
+
+# ── Found by an independent review of the first version (2026-09-24) ───────
+
+
+def test_a_citation_on_the_heading_line_counts(fidelity):
+    case = dict(COMPARE, must_have_sections=[], must_select_masters=["huineng"])
+    assert _contract(fidelity, "**慧能大师**：见性【T48n2008】", case) == []
+    debate = dict(DEBATE, must_have_rounds=["R1"], must_select_pair=[])
+    assert _contract(fidelity, "**R1 慧能立论**：见性【T48n2008】", debate) == []
+
+
+def test_a_subheading_stays_inside_the_masters_section(fidelity):
+    case = dict(COMPARE, must_have_sections=[], must_select_masters=["huineng"])
+    answer = "### 慧能大师的视角\n见性。\n#### 引文\n【T48n2008】\n**注意**：别执文字。"
+    assert _contract(fidelity, answer, case) == []
+
+
+def test_a_heading_naming_two_masters_does_not_cite_for_both(fidelity):
+    case = dict(COMPARE, must_have_sections=[], must_select_masters=["huineng", "yinguang"])
+    answer = (
+        "### 慧能与印光的核心分歧\n【T48n2008】\n"
+        "### 慧能大师的视角\n自性。\n### 印光大师的视角\n信愿。"
+    )
+    assert _contract(fidelity, answer, case) == [
+        "master cites nothing: huineng",
+        "master cites nothing: yinguang",
+    ]
+
+
+def test_a_numbered_bold_heading_names_a_section(fidelity):
+    case = {"q": "x", "must_have_sections": ["共同点", "核心分歧"]}
+    assert _contract(fidelity, "1. **共同点**\n…\n### 核心分歧\n…", case) == []
+
+
+def test_skills_not_named_master_are_recommendations(fidelity):
+    assert _contract(fidelity, "先用 /compare-masters 横向看一遍。", RECOMMEND) == []
+
+
+def test_the_console_names_a_contract_failure(fidelity):
+    check = fidelity.check_response(LEAKED_TOOL_CALL, COMPARE)
+    assert "missing section: 共同点" in check["contract_failures"]
