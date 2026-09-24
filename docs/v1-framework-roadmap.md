@@ -17,7 +17,9 @@ The four pillars map directly to implementation work:
 
 ## Phase 1: Alignment
 
-Status: in progress.
+Status: done as of 2026-09-24. README, README_EN, npm and the plugin manifests
+use the framework positioning; the last gap was the npm and Claude-plugin
+descriptions naming three of the four teaching modes (not `/master-help`).
 
 - Align README, README_EN, PRD, npm description, and GitHub description.
 - Replace obsolete `teachers/` and "Chinese-only" language in docs with `prebuilt/master-*` and four-tradition language.
@@ -101,7 +103,9 @@ Document and enforce output contracts for the three meta-skills.
 
 ## Phase 5: Runtime And CLI Polish
 
-Candidate v1.x CLI improvements:
+Status: shipped — all three exist, beside `recommend` and `list --json`.
+
+Originally listed as candidate v1.x CLI improvements:
 
 ```bash
 npx master-skill doctor
