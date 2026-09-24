@@ -108,9 +108,16 @@ DEFAULT_REQUEST_TIMEOUT = 180.0
 DEFAULT_MAX_RETRIES = 1
 
 
-def per_fixture_ceiling(timeout: float, retries: int) -> float:
-    """Worst-case seconds one fixture can hold, retries included."""
-    return timeout * (retries + 1)
+def per_fixture_ceiling(timeout: float, retries: int, tools: bool = False) -> float:
+    """Worst-case seconds one fixture can hold, retries included.
+
+    With file tools a fixture is several requests. `converse` starts no new
+    round once one request's worth of ceiling has passed, so the worst case is
+    that, plus the round already in flight — two, not thirteen. Thirteen would
+    be 78 minutes against fidelity-full's 60.
+    """
+    single = timeout * (retries + 1)
+    return single * 2 if tools else single
 
 # Anything shaped like a provider credential, stripped before an error string
 # is written to a report. `eval/reports/0.10.1-c697d5d.json` carries 127 raw
@@ -517,13 +524,17 @@ class SkillFiles:
             relative = resolved.relative_to(self.root)
         except ValueError:
             raise ValueError("outside the installed skills directory") from None
-        if "tests" in relative.parts:
+        # casefold: on a case-insensitive file system (macOS, Windows, WSL's
+        # /mnt/c) `TESTS/fidelity.jsonl` opens the same file.
+        if any(part.casefold() == "tests" for part in relative.parts):
             raise ValueError("tests/ is not readable during an eval")
         return resolved
 
     def call(self, name: str, arguments: dict) -> str:
         path = (arguments or {}).get("path", "")
         try:
+            if not isinstance(path, str):
+                raise ValueError("path must be a string")
             target = self._resolve(path)
             if name == "read_file":
                 if not target.is_file():
@@ -538,7 +549,7 @@ class SkillFiles:
                 result = "\n".join(
                     entry.name + ("/" if entry.is_dir() else "")
                     for entry in sorted(target.iterdir())
-                    if entry.name != "tests"
+                    if entry.name.casefold() != "tests"
                 )
             else:
                 raise ValueError(f"unknown tool {name}")
@@ -553,7 +564,7 @@ def _tool_calls(provider: str, response: object) -> list[tuple[str, str, dict]]:
     """(call id, tool name, arguments) for each tool call in ``response``."""
     if resolve_provider(provider)["api"] == "anthropic":
         return [
-            (block.id, block.name, dict(block.input or {}))
+            (block.id, block.name, block.input if isinstance(block.input, dict) else {})
             for block in (getattr(response, "content", None) or [])
             if getattr(block, "type", None) == "tool_use"
         ]
@@ -566,37 +577,77 @@ def _tool_calls(provider: str, response: object) -> list[tuple[str, str, dict]]:
             arguments = json.loads(call.function.arguments or "{}")
         except json.JSONDecodeError:
             arguments = {}
+        if not isinstance(arguments, dict):
+            arguments = {}
         calls.append((call.id, call.function.name, arguments))
     return calls
 
 
-def converse(send, provider: str, body: dict, files: SkillFiles, on_response=None):
+def _as_wire(obj, fallback: dict) -> dict:
+    """An SDK object as the API sent it, extra fields included.
+
+    Rebuilding a turn from the fields this file knows about drops the ones it
+    does not: Anthropic `thinking` blocks and their signatures, which must go
+    back in the turn that awaits a tool result; Gemini's
+    `extra_content.google.thought_signature` on each tool call, without which
+    the next request is a 400. The SDK models keep unknown fields, so dump
+    them rather than rebuild.
+    """
+    dump = getattr(obj, "model_dump", None)
+    return dump(exclude_none=True) if callable(dump) else fallback
+
+
+def converse(
+    send,
+    provider: str,
+    body: dict,
+    files: SkillFiles,
+    on_response=None,
+    budget_s: float | None = None,
+    clock=None,
+):
     """Send ``body``; while the reply asks for tools, answer and resend.
 
-    Returns the final response — the first one that asks for no tool. More
-    than MAX_TOOL_ROUNDS rounds raises, and the fixture is recorded as an API
+    Returns the final response: the first that asks for no tool, or one cut
+    off by the output budget (a half-written tool call is not executed; the
+    caller sees `length` and records the fixture as truncated). A reply still
+    asking for tools after MAX_TOOL_ROUNDS rounds of them — or once
+    ``budget_s`` has passed — raises, and the fixture is recorded as an API
     error: an answer the loop cut off is not one to grade.
     """
+    import time
+
+    clock = clock or time.monotonic
+    started = clock()
     body = {**body, "messages": list(body["messages"]), "tools": tool_definitions(provider)}
     anthropic_api = resolve_provider(provider)["api"] == "anthropic"
-    for _ in range(MAX_TOOL_ROUNDS + 1):
+    rounds = 0
+    while True:
         response = send(body)
         if on_response:
             on_response(response)
         calls = _tool_calls(provider, response)
-        if not calls:
+        if not calls or extract_finish_reason(provider, response) == "length":
             return response
+        if rounds == MAX_TOOL_ROUNDS:
+            raise ValueError(f"model still calling tools after {MAX_TOOL_ROUNDS} rounds")
+        if budget_s is not None and clock() - started > budget_s:
+            raise ValueError(f"tool loop exceeded {budget_s:.0f}s")
+        rounds += 1
         results = [(call_id, files.call(name, args)) for call_id, name, args in calls]
         if anthropic_api:
             assistant = []
             for block in response.content:
                 if block.type == "text":
-                    assistant.append({"type": "text", "text": block.text})
+                    fallback = {"type": "text", "text": block.text}
                 elif block.type == "tool_use":
-                    assistant.append({
-                        "type": "tool_use", "id": block.id,
-                        "name": block.name, "input": dict(block.input or {}),
-                    })
+                    fallback = {"type": "tool_use", "id": block.id,
+                                "name": block.name, "input": block.input}
+                else:
+                    fallback = None
+                wire = _as_wire(block, fallback)
+                if wire is not None:
+                    assistant.append(wire)
             body["messages"] += [
                 {"role": "assistant", "content": assistant},
                 {"role": "user", "content": [
@@ -610,9 +661,9 @@ def converse(send, provider: str, body: dict, files: SkillFiles, on_response=Non
                 "role": "assistant",
                 "content": message.content or "",
                 "tool_calls": [
-                    {"id": call.id, "type": "function",
-                     "function": {"name": call.function.name,
-                                  "arguments": call.function.arguments}}
+                    _as_wire(call, {"id": call.id, "type": "function",
+                                    "function": {"name": call.function.name,
+                                                 "arguments": call.function.arguments}})
                     for call in message.tool_calls
                 ],
             }
@@ -625,7 +676,6 @@ def converse(send, provider: str, body: dict, files: SkillFiles, on_response=Non
                 {"role": "tool", "tool_call_id": call_id, "content": text}
                 for call_id, text in results
             ]
-    raise ValueError(f"model still calling tools after {MAX_TOOL_ROUNDS} rounds")
 
 
 def _split_echoes(
@@ -1327,32 +1377,41 @@ def run_tests(
                 response = converse(
                     send, provider, body, files,
                     on_response=lambda r: _record_cache_usage(cache_stats, r),
+                    budget_s=per_fixture_ceiling(request_timeout, max_retries),
                 )
+                finish_reason = extract_finish_reason(provider, response)
+                try:
+                    response_text = extract_text(provider, response)
+                except ValueError:
+                    # Cut off inside a tool call: no text to keep, and still
+                    # truncated rather than an API error.
+                    if finish_reason != "length":
+                        raise
+                    response_text = ""
             else:
                 response = send(body)
+                response_text = extract_text(provider, response)
+                finish_reason = extract_finish_reason(provider, response)
                 _record_cache_usage(cache_stats, response)
-            response_text = extract_text(provider, response)
-            finish_reason = extract_finish_reason(provider, response)
         except Exception as e:  # noqa: BLE001 — provider errors are data here
-            return (
-                {
-                    "index": i,
-                    "question": test["q"],
-                    "status": "api_error",
-                    "error": redact_secrets(str(e)),
-                },
-                False,
-                "API ERROR",
-            )
+            entry = {
+                "index": i,
+                "question": test["q"],
+                "status": "api_error",
+                "error": redact_secrets(str(e)),
+            }
+            # What it read before failing — the case where that matters most.
+            if files is not None:
+                entry["tool_calls"] = files.log
+            return entry, False, "API ERROR"
 
         if finish_reason == "length":
             # Cut off mid-answer: unmeasured, not failed. Counted with the
             # api_errors so a run full of them cannot read as a clean result.
-            return (
-                truncated_result_entry(i, test, response_text, max_output_tokens),
-                False,
-                "TRUNCATED",
-            )
+            entry = truncated_result_entry(i, test, response_text, max_output_tokens)
+            if files is not None:
+                entry["tool_calls"] = files.log
+            return entry, False, "TRUNCATED"
 
         try:
             check = check_response(
@@ -1503,7 +1562,7 @@ def run_tests(
         # per-fixture wall, not just the per-attempt one.
         "request_timeout": request_timeout,
         "max_retries": max_retries,
-        "per_fixture_ceiling_s": per_fixture_ceiling(request_timeout, max_retries),
+        "per_fixture_ceiling_s": per_fixture_ceiling(request_timeout, max_retries, tools),
         # 中断的运行必须能与完整运行区分 —— 否则一份跑了 12/211 的结果读起来
         # 和跑完的一样,正是本仓一直在修的形状。
         "interrupted": interrupted,

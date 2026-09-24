@@ -25,8 +25,11 @@ system prompt opens with `Base directory for this skill: ~/.claude/skills/<name>
 Code's does, so the SKILL.md's relative paths resolve; `../master-x/…`,
 `~/.claude/skills/…` and `prebuilt/…` all work. **`tests/` is never readable**: every skill
 directory holds its own `fidelity.jsonl`, the questions and what the grader checks. Nothing
-outside `prebuilt/` is readable. A model still calling tools after 12 rounds is recorded as
-an API error, not graded.
+outside `prebuilt/` is readable. Twelve rounds of tool calls are allowed. A thirteenth
+request for tools, or any request once one request's time ceiling (360 s) has passed, is
+recorded as an API error, not graded. That keeps a fixture's worst case at 720 s, which
+`per_fixture_ceiling_s` reports. Without the time bound, thirteen rounds could hold one
+fixture for 78 minutes, past fidelity-full's 60-minute job limit.
 
 Each result lists what was read (`tool_calls`), and each suite says `skill_tools`. That makes
 the instrument visible: a teaching-mode number with file tools is not comparable with one
@@ -42,6 +45,16 @@ records the read. `--break` still fails. `check-eval-sdk-surface.py` now also gu
 parts of the SDKs the loop uses (`tools=`, `ToolUseBlock`, `ChatCompletionMessage.tool_calls`).
 Injecting a missing field was confirmed to fail it. No graded run has used the tools yet;
 that needs a paid run.
+
+An independent review found what the local server could not show. Each turn is sent back
+as the SDK parsed it, not rebuilt from known fields. Rebuilding dropped Gemini's
+`extra_content.google.thought_signature`, so the next Gemini 3 request would be a 400, and
+Anthropic `thinking` blocks, which a thinking-enabled model must get back in the tool turn.
+Both were checked against the real SDK types. `tests/` is refused in any letter case,
+because on macOS and Windows `TESTS/fidelity.jsonl` opens the same file. A tool call cut off
+by the output budget is not run, and the fixture is recorded as truncated. Arguments that
+are not an object are an error, not a crash. `api_error` and `truncated` entries also list
+what was read.
 
 ### Fixed — two in-repo links led nowhere (2026-09-24)
 

@@ -105,7 +105,7 @@ BASELINE.md for what was actually spent on the first, partial run: ~84 completed
 before the account ran out of API credit, on the order of $2-4).
 
 Teaching-mode fixtures now make several requests each — one per round of file reads, up to
-12 — and each round re-sends the conversation so far. Expect those 44 fixtures to cost a
+12 rounds within a 360 s budget — and each round re-sends the conversation so far. Expect those 44 fixtures to cost a
 multiple of what they did; the persona fixtures are unaffected.
 
 ## Report size

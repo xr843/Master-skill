@@ -131,3 +131,91 @@ def test_a_model_that_never_stops_calling_tools_is_not_graded(tf, files):
     with pytest.raises(ValueError, match="still calling tools"):
         tf.converse(lambda body: looping, "anthropic",
                     tf.build_request("anthropic", "m", "s", "q", 10), files)
+
+
+# ── Found by independent review (2026-09-24) ───────────────────────────────
+
+
+class _Dumpable(NS):
+    """A fake SDK object whose model_dump carries a field this file never names."""
+
+    def model_dump(self, exclude_none=False):  # recursive, as pydantic's is
+        return {
+            k: v.model_dump(exclude_none=exclude_none) if isinstance(v, _Dumpable) else v
+            for k, v in vars(self).items()
+            if not (exclude_none and v is None)
+        }
+
+
+def test_a_gemini_thought_signature_goes_back_with_its_tool_call(tf, files):
+    call = _Dumpable(id="c1", type="function",
+                     function=NS(name="read_file", arguments='{"path": "SKILL.md"}'),
+                     extra_content={"google": {"thought_signature": "SIG"}})
+    call.function = _Dumpable(name="read_file", arguments='{"path": "SKILL.md"}')
+    replies = iter([
+        NS(choices=[NS(finish_reason="tool_calls", message=NS(content=None, tool_calls=[call]))]),
+        NS(choices=[NS(finish_reason="stop", message=NS(content="答", tool_calls=None))]),
+    ])
+    sent = []
+    tf.converse(lambda b: (sent.append(json.loads(json.dumps(b))), next(replies))[1],
+                "gemini", tf.build_request("gemini", "m", "s", "q", 10), files)
+    echoed = sent[1]["messages"][2]["tool_calls"][0]
+    assert echoed["extra_content"] == {"google": {"thought_signature": "SIG"}}
+
+
+def test_an_anthropic_thinking_block_goes_back_in_the_tool_turn(tf, files):
+    thinking = _Dumpable(type="thinking", thinking="…", signature="SIG")
+    use = _Dumpable(type="tool_use", id="t1", name="read_file", input={"path": "SKILL.md"})
+    replies = iter([
+        NS(content=[thinking, use], stop_reason="tool_use", usage=None),
+        NS(content=[NS(type="text", text="答")], stop_reason="end_turn", usage=None),
+    ])
+    sent = []
+    tf.converse(lambda b: (sent.append(json.loads(json.dumps(b))), next(replies))[1],
+                "anthropic", tf.build_request("anthropic", "m", "s", "q", 10), files)
+    assert sent[1]["messages"][1]["content"][0] == {
+        "type": "thinking", "thinking": "…", "signature": "SIG"}
+
+
+@pytest.mark.parametrize("path", ["TESTS/fidelity.jsonl", "../master-huineng/Tests/fidelity.jsonl"])
+def test_the_answer_key_check_ignores_case(tf, tmp_path, path):
+    # On macOS / Windows these open the real file; refuse them everywhere.
+    files = tf.SkillFiles(tf.PREBUILT_DIR / "compare-masters")
+    assert files.call("read_file", {"path": path}).startswith("error: tests/")
+
+
+def test_a_tool_call_cut_off_by_the_output_budget_is_not_run(tf, files):
+    cut = NS(content=[NS(type="tool_use", id="t1", name="read_file", input={})],
+             stop_reason="max_tokens", usage=None)
+    final = tf.converse(lambda b: cut, "anthropic",
+                        tf.build_request("anthropic", "m", "s", "q", 10), files)
+    assert final is cut and files.log == []
+    assert tf.extract_finish_reason("anthropic", final) == "length"
+
+
+def test_twelve_rounds_run_and_a_thirteenth_request_for_tools_raises(tf, files):
+    looping = NS(content=[NS(type="tool_use", id="t", name="list_dir", input={"path": "."})],
+                 stop_reason="tool_use", usage=None)
+    with pytest.raises(ValueError, match="after 12 rounds"):
+        tf.converse(lambda b: looping, "anthropic",
+                    tf.build_request("anthropic", "m", "s", "q", 10), files)
+    assert len(files.log) == tf.MAX_TOOL_ROUNDS
+
+
+def test_the_loop_stops_starting_rounds_after_its_budget(tf, files):
+    ticks = iter(range(0, 10_000, 100))
+    looping = NS(content=[NS(type="tool_use", id="t", name="list_dir", input={"path": "."})],
+                 stop_reason="tool_use", usage=None)
+    with pytest.raises(ValueError, match="exceeded 250s"):
+        tf.converse(lambda b: looping, "anthropic",
+                    tf.build_request("anthropic", "m", "s", "q", 10), files,
+                    budget_s=250, clock=lambda: next(ticks))
+    assert tf.per_fixture_ceiling(180, 1, tools=True) == 720
+    assert tf.per_fixture_ceiling(180, 1) == 360
+
+
+def test_arguments_that_are_not_an_object_are_an_error_not_a_crash(tf, files):
+    assert files.call("read_file", {"path": ["a"]}).startswith("error:")
+    call = NS(id="c", function=NS(name="read_file", arguments='["x"]'))
+    reply = NS(choices=[NS(message=NS(tool_calls=[call]))])
+    assert tf._tool_calls("deepseek", reply) == [("c", "read_file", {})]
