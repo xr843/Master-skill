@@ -55,8 +55,17 @@ def _report(question: str, response: str, status: str = "FAIL") -> dict:
 def test_regrading_joins_results_to_fixtures_by_question_not_position(mod):
     """夹具增删会让下标全线错位,而错位后每一条都会被拿错题去判。"""
     report = _report("这道题夹具里没有", "随便什么回答")
-    with pytest.raises(ValueError, match="does not match"):
-        mod.regrade(report, {"master-nagarjuna": [{"q": "另一道题"}]})
+    out = mod.regrade(report, {"master-nagarjuna": [{"q": "另一道题", "must_mention": ["x"]}]})
+    assert out["cases"] == []
+    assert out["unmatched"] == ["master-nagarjuna #0"]
+
+
+def test_a_shifted_fixture_is_still_found_by_its_question(mod):
+    """A fixture inserted before it moves the index, not the question."""
+    fixtures = {"master-nagarjuna": [{"q": "新插入的题"}, {"q": "问", "must_mention": ["阿赖耶"]}]}
+    out = mod.regrade(_report("问", "因缘所生法。"), fixtures)
+    assert out["unmatched"] == []
+    assert out["cases"][0]["now"] == "FAIL"
 
 
 def test_a_migrated_requirement_stops_failing_and_starts_needing_review(mod):
@@ -122,9 +131,18 @@ def test_the_committed_run_regrades_against_the_repository_as_it_stands(mod):
     # only while the persona carried the wrong ids (corrected 2026-09-15). The
     # fixtures now require W1GS56158 and W1KG1252. The boundary cases #5, #7 and
     # #8 have no must_cite; they fail because the audit now reads the old ids
-    # as undeclared. Any other regression still fails here.
+    # as undeclared.
+    #
+    # master-debate #0 and #2 fail since the teaching-mode contracts were
+    # graded (2026-09-23), and both were read before being listed here. #0
+    # answers as two side-by-side views with no R1–R4 at all, where the
+    # template requires 「### R1｜…」 rounds. In #2, rounds R1, R2 and R4 name
+    # no source of any kind — no id, no title; only R3 cites. Any other
+    # regression still fails here.
     assert regressions == [
         ("master-curriculum", 1),
+        ("master-debate", 0),
+        ("master-debate", 2),
         ("master-fazang", 3),
         ("master-milarepa", 0),
         ("master-milarepa", 2),
@@ -136,6 +154,11 @@ def test_the_committed_run_regrades_against_the_repository_as_it_stands(mod):
         ("master-milarepa", 9),
     ], regressions
     assert out["mentions"]["mention_coverage"].endswith("%")
+    # Asked without the L0–L3 level their skill requires (「缺则反问」), so the
+    # right answer was a question back, while the fixture required the full
+    # four-stage plan. The questions now state a level; the stored answers
+    # were to the old ones and are not graded against the new.
+    assert out["unmatched"] == ["master-curriculum #3", "master-curriculum #4"]
 
 
 def test_api_error_rows_are_not_graded_as_a_hard_fail(mod):

@@ -192,6 +192,8 @@ The 211 fixtures (`prebuilt/*/tests/fidelity.jsonl`) run mechanical checks again
 
 **These numbers belong to the tree at `06b8142`.** Persona content and the fixtures themselves have changed since (see the 0.12.x entries in the CHANGELOG: how sutta summaries are framed, where routing points, lineage sanitization), and nothing has been re-measured — that needs another paid full run. The fixture count is still 211, which does not mean their content is unchanged.
 
+**The grader of that run did not check the teaching modes' output contracts.** Seven assertion kinds across the 44 teaching-mode fixtures — required sections, choosing the right masters, debate rounds, a source in every round or master's section, recommending a skill that exists — were never graded until 2026-09-23. Re-grading the stored answers above with the current grader moves 2 more `master-debate` cases from PASS to FAIL (#0 has no rounds; in #2, three of four rounds cite nothing). They passed at the time, so no one adjudicated them, and the numbers above do not count them. In the 2026-09-13 teaching-mode re-run, 5 of `compare-masters`' 11 PASSes and 1 of `master-debate`'s 4 were leaked tool-call markup, not answers; all six now fail.
+
 These are **keyword and citation-string coverage checks, not doctrinal correctness and not LLM-judged answer quality**. Details: [BASELINE-deepseek.md](eval/reports/BASELINE-deepseek.md) (the full run), [ADJUDICATION.md](eval/reports/ADJUDICATION.md) (case-by-case rulings), [BASELINE.md](eval/reports/BASELINE.md) (the Anthropic partial run and its retraction), and the [meta-skill re-run report](eval/reports/0.11.0-e97ded0-deepseek-metaskills.json).
 
 ---

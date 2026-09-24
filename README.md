@@ -174,6 +174,8 @@ Master-skill 的核心不是"角色扮演提示词集合"，而是一个可验�
 
 **这些数字属于 `06b8142` 那棵树。** 此后人设内容与夹具本身都改过（见 CHANGELOG 的 0.12.x 各条：经文摘要的表述、路由指向、宗派名清洗等），没有重测——重测要再跑一次付费全量运行。夹具条数仍是 211，但那不代表内容没变。
 
+**当时的判分器漏查了元技能的输出契约。** 44 条元技能夹具里有七类断言（必备章节、选对祖师、辩论轮次、每轮 / 每位祖师有出处、推荐的技能须存在）从未被评分，2026-09-23 起才评分。用现在的判分器离线重评上表那批存档回答：`master-debate` 另有 2 条由 PASS 变 FAIL（#0 没有分轮次，#2 四轮中三轮无任何出处），它们当时判为通过，没有进入人工裁定，上表的数字没有算进去。2026-09-13 那次元技能复测里，`compare-masters` 的 11 条 PASS 中有 5 条、`master-debate` 的 4 条 PASS 中有 1 条，其实是模型吐出的伪造工具调用，不是回答；现在这 6 条都判为 FAIL。
+
 这些是**关键词与引用字符串的覆盖检查，不是教义正确性，也不是 LLM 判分的答案质量**。详见 [BASELINE-deepseek.md](eval/reports/BASELINE-deepseek.md)（全量运行）、[ADJUDICATION.md](eval/reports/ADJUDICATION.md)（逐条裁定）、[BASELINE.md](eval/reports/BASELINE.md)（Anthropic 部分运行与撤回记录）与[元技能复测报告](eval/reports/0.11.0-e97ded0-deepseek-metaskills.json)。
 
 ---

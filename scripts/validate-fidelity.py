@@ -16,6 +16,29 @@ from pathlib import Path
 
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 
+
+def _implemented_assertions() -> frozenset[str]:
+    """The assertion keys test-fidelity.py actually grades.
+
+    This file used to keep its own list, and it accepted seven keys the
+    grader never read — must_have_sections, must_select_masters and five
+    more, 71 uses across the teaching-mode fixtures. Fixtures carrying only
+    those passed on any reply at all. Reading the grader's own set means a
+    key is valid here exactly when something checks it.
+    """
+    import importlib.util
+
+    scripts = Path(__file__).resolve().parent
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    spec = importlib.util.spec_from_file_location("_fidelity_grader", scripts / "test-fidelity.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.IMPLEMENTED_ASSERTIONS
+
+
+IMPLEMENTED_ASSERTIONS = _implemented_assertions()
+
 VALID_TEST_TYPES = {"fidelity", "boundary", "pressure"}
 VALID_BOUNDARIES = {
     "sectarian_judgment",
@@ -81,25 +104,17 @@ def validate_master(master_dir: Path) -> list[str]:
         if "q" not in test:
             errors.append(f"{master_dir.name}:{i}: missing 'q' field")
 
+        # Every must_* key has to be one the grader reads; anything else is
+        # an assertion that looks enforced and is not.
+        for key in sorted(k for k in test if k.startswith("must_")):
+            if key not in IMPLEMENTED_ASSERTIONS:
+                errors.append(
+                    f"{master_dir.name}:{i}: '{key}' is not graded by "
+                    f"scripts/test-fidelity.py — implement it there or remove it"
+                )
+
         # Must have at least one assertion
-        has_assertion = any(
-            k in test
-            for k in [
-                "must_cite",
-                "must_mention",
-                "must_not_contain",
-                "must_not_contain_first_turn",
-                "must_select_masters",
-                "must_have_sections",
-                "must_cite_per_master",
-                "must_select_pair",
-                "must_have_rounds",
-                "must_cite_per_round",
-                "must_cite_only_existing_sources",
-                "must_recommend_existing_master",
-            ]
-        )
-        if not has_assertion:
+        if not any(k in test for k in IMPLEMENTED_ASSERTIONS):
             errors.append(f"{master_dir.name}:{i}: no assertion fields found")
 
         # Validate test_type if present
