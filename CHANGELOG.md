@@ -10,6 +10,18 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — every session was told that all answers cite CBETA (2026-09-24)
+
+The SessionStart hook closes the list of masters it injects into the model's context with a
+sentence about citations. That sentence was "All doctrinal responses include CBETA citations
+linked to fojin.app." It holds for the twelve masters who declare `cbeta`. Milarepa, Atiśa
+and Tsongkhapa's Tibetan works cite Toh / BDRC; Buddhaghosa, Mahāsi and Ajahn Chah cite PTS /
+SuttaCentral; Xuyun, Yinguang, Mahāsi and Ajahn Chah also cite compiled teachings. A
+model told otherwise at the start of every session has a reason to put a CBETA number on a
+Pali sutta. The line now names the four families. A test derives the families from every
+persona's `citation_contract.allowed_source_types`, so a family added later without a word
+in the hook fails.
+
 ### Fixed — the teaching modes were evaluated without the files their instructions tell the model to read (2026-09-24)
 
 compare-masters says 加载与本 skill 同级的 `{slug}/meta.json`、`references/teaching.md`;

@@ -111,6 +111,21 @@ def collect_masters(plugin_root: Path) -> list[tuple[str, str]]:
     return found
 
 
+# One family per `citation_contract.allowed_source_types` group the personas
+# declare; test_hook_citation_line_covers_every_declared_family keeps it so.
+CITATION_FAMILIES = {
+    "cbeta": "CBETA for the Chinese canon",
+    "tibetan": "Toh / BDRC for Tibetan texts",
+    "pali": "PTS / SuttaCentral for Pali",
+    "compiled_teaching": "compiled teachings for modern teachers",
+}
+CITATION_LINE = (
+    "Each master cites only the sources it declares — "
+    + ", ".join(CITATION_FAMILIES.values())
+    + " — with a fojin.app link where FoJin holds the text."
+)
+
+
 def build_context(masters: list[tuple[str, str]]) -> str:
     lines = "".join(
         # The bracketed marker gives the model an unambiguous boundary even if
@@ -127,7 +142,11 @@ def build_context(masters: list[tuple[str, str]]) -> str:
         "  /master-curriculum — staged learning path within a tradition\n"
         "  /create-master — generate new master from FoJin knowledge graph\n"
         "\n"
-        "All doctrinal responses include CBETA citations linked to fojin.app."
+        # Said to the model at every session start, so it has to be true of
+        # every master. It said "All doctrinal responses include CBETA
+        # citations" — true of the Chinese masters only; Milarepa cites BDRC,
+        # Buddhaghosa PTS, Ajahn Chah compiled teachings.
+        + CITATION_LINE
     )
 
 
