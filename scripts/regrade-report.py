@@ -56,12 +56,13 @@ def regrade(report: dict, fixtures: dict[str, list[dict]]) -> dict:
         raise ValueError("no stored answers in this report — nothing to re-grade")
 
     cases: list[dict] = []
+    unmatched: list[str] = []
     graded_results: list[dict] = []
     by_test_type: dict[str, dict[str, int]] = {}
 
     for suite in report["suites"]:
         master = suite["master"]
-        cases_for_master = fixtures.get(master, [])
+        by_question = {case.get("q"): case for case in fixtures.get(master, [])}
         try:
             declared = load_declared_ids(master) or None
             aliases = load_member_aliases(master) or None
@@ -73,13 +74,18 @@ def regrade(report: dict, fixtures: dict[str, list[dict]]) -> dict:
             if result.get("status") in ("truncated", "api_error"):
                 continue
             index = result["index"]
-            fixture = cases_for_master[index] if index < len(cases_for_master) else None
-            if fixture is None or fixture.get("q") != result["question"]:
-                raise ValueError(
-                    f"{master} #{index}: the fixture at this position does not match "
-                    f"the question that was graded. Fixtures moved; re-grading by "
-                    f"position would compare an answer with someone else's question."
-                )
+            # Joined by question text. This used to take the fixture at the
+            # same index and raise when its question differed — so rewording
+            # one question (two curriculum fixtures asked without the level
+            # their skill requires, 2026-09-23) made every committed report
+            # impossible to re-grade. An answer whose question is no longer
+            # a fixture is reported as not re-graded; it was an answer to a
+            # different question, and grading it against the new one would be
+            # the mismatch this join exists to prevent.
+            fixture = by_question.get(result["question"])
+            if fixture is None:
+                unmatched.append(f"{master} #{index}")
+                continue
             check = _fidelity.check_response(
                 result.get("response") or "",
                 fixture,
@@ -113,6 +119,7 @@ def regrade(report: dict, fixtures: dict[str, list[dict]]) -> dict:
         "by_test_type": by_test_type,
         "mentions": _fidelity.summarize_mentions(graded_results),
         "needs_review": sum(1 for c in cases if c["needs_review"]),
+        "unmatched": unmatched,
     }
 
 
@@ -144,6 +151,11 @@ def main(argv: list[str]) -> int:
         f"{m['script_mismatches']} answers in the wrong script)"
     )
     print(f"cases needing adjudication: {out['needs_review']}")
+    if out["unmatched"]:
+        print(
+            f"not re-graded — question no longer a fixture: "
+            f"{', '.join(out['unmatched'])}"
+        )
 
     moved_wrong = [c for c in out["cases"] if c["was"] == "PASS" and c["now"] == "FAIL"]
     if moved_wrong:

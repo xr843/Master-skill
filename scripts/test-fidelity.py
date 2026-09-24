@@ -31,6 +31,8 @@ from pathlib import Path
 # runs (it was previously schema-validated but never evaluated).
 from _masterpaths import resolve_master_dir
 from verify_citations import (
+    _CBETA_ID,
+    _FAMILY_ID,
     audit_answer,
     load_declared_ids,
     load_member_aliases,
@@ -504,6 +506,234 @@ def _traditional_form(term: str) -> str | None:
     return converted if converted != term else None
 
 
+# ── Teaching-mode output contracts ─────────────────────────────────────────
+#
+# compare-masters, master-debate, master-curriculum and master-help fixtures
+# carry seven assertions this grader did not implement until 2026-09-23:
+# must_have_sections, must_select_masters, must_select_pair, must_have_rounds,
+# must_cite_per_master, must_cite_per_round, must_recommend_existing_master.
+# validate-fidelity.py accepted them as valid keys, so they looked enforced.
+# 15 of the 44 meta-skill fixtures had nothing else, and passed on any reply
+# that was not an API error: in the 2026-09-13 run (e97ded0), 7 of
+# compare-masters' 11 PASSes and 1 of master-debate's were graded against
+# nothing — five of those eight were leaked tool-call markup, not answers.
+#
+# Every check below is deterministic and was checked against the stored
+# replies of 06b8142 and e97ded0, every failure read by hand. The first
+# version was wrong three times — it missed 智者大师, ids in parentheses, and
+# sutta numbers — and an independent review found six more (see
+# test_teaching_mode_contracts.py); each is now a test. What it fails on those
+# replies: the leaked tool calls, master-debate 06b8142 #0 (no rounds) and #2
+# (closing round R4 cites nothing). Nothing else.
+#
+# `IMPLEMENTED_ASSERTIONS` is what validate-fidelity.py checks fixtures
+# against, so a key the grader does not read is a validation error rather
+# than a silent pass.
+IMPLEMENTED_ASSERTIONS = frozenset({
+    "must_cite",
+    "must_mention",
+    "must_convey",
+    "must_not_contain",
+    "must_not_contain_first_turn",
+    # Enforced by the fabricated-citation audit, which runs on every reply
+    # since 2026-08-31; the key no longer switches anything on, and `false`
+    # would not switch it off. Listed so the fixtures that carry it validate.
+    "must_cite_only_existing_sources",
+    "must_have_sections",
+    "must_select_masters",
+    "must_select_pair",
+    "must_have_rounds",
+    "must_cite_per_master",
+    "must_cite_per_round",
+    "must_recommend_existing_master",
+})
+
+# A section exists when a heading line names it — a Markdown heading or a line
+# that opens in bold, which is how the templates write 「**法师选择**」. Finding
+# the word anywhere would pass 「核心分歧」 on a sentence that merely uses it.
+_HEADING_LINE = re.compile(r"^\s*(?:\d+[.、)]\s*)?(?P<mark>#{1,6}\s|\*\*)")
+_HONORIFIC = re.compile(r"(大师|尊者|法师|菩萨|老和尚)$")
+_SKILL_TOKEN = re.compile(r"(?<![A-Za-z0-9-])master-[a-z][a-z-]*[a-z]")
+# verify_citations._SUTTA_REF, unanchored: the audit applies it to the
+# inside of a 【…】 block, this looks for 「（MN 10：…）」 in running text.
+_SUTTA_REF_IN_TEXT = re.compile(
+    r"(?<![A-Za-z])(?:MN|SN|AN|DN|KN|Dhp|Ud|Iti|Snp|Thag|Thig|Vin)\s*\d"
+)
+# Tool-call markup a model emits when the prompt tells it to read files and
+# the eval harness gives it no tools. DeepSeek writes 「<｜｜DSML｜｜ invoke …>」;
+# the others are the Anthropic and OpenAI-style spellings of the same thing.
+_TOOL_CALL_MARKUP = re.compile(r"<｜｜DSML｜｜|<function_calls>|<invoke name=|<tool_use>")
+_VOICE_NAME = re.compile(r"teaching in (\S+) ([^']+)'s voice")
+_master_name_cache: dict[str, frozenset[str]] = {}
+
+
+def master_names(slug: str) -> frozenset[str]:
+    """The names a reply may use for persona ``slug``.
+
+    Only names the persona already uses for itself: meta.json's `name` with
+    and without its honorific (慧能大师 / 慧能), and the name its SKILL.md
+    description gives (「teaching in 智者大师 Zhiyi's voice」). The last was
+    added after the first version failed an answer that wrote 智者大师 and
+    never 智顗. Nothing beyond that: a synonym table fitted to one model's
+    output is the reverse-fitting `must_convey` was introduced to avoid.
+    """
+    if slug not in _master_name_cache:
+        master_dir = PREBUILT_DIR / f"master-{slug}"
+        name = json.loads((master_dir / "meta.json").read_text(encoding="utf-8"))["name"]
+        names = {name, _HONORIFIC.sub("", name)}
+        voice = _VOICE_NAME.search((master_dir / "SKILL.md").read_text(encoding="utf-8"))
+        if voice:
+            names.update({voice.group(1), voice.group(2)})
+        _master_name_cache[slug] = frozenset(names)
+    return _master_name_cache[slug]
+
+
+def _heading_level(match: re.Match) -> int:
+    """`#`-count for a Markdown heading; a bold line ranks below all of them."""
+    mark = match.group("mark")
+    return len(mark.strip()) if mark.startswith("#") else 7
+
+
+def _heading_blocks(response: str) -> list[tuple[str, str]]:
+    """Split a reply into (heading line, the section it opens).
+
+    A section is the heading line itself — 「**R1 慧能立论**：见性【T48n2008】」
+    cites on that line — and everything up to the next heading of the same or
+    a higher level, so a `####` or a bold line inside 「### 慧能大师的视角」 stays
+    part of Huineng's section. The first version cut at every heading and
+    missed both.
+    """
+    lines = response.splitlines()
+    marks = [(i, _heading_level(m)) for i, line in enumerate(lines)
+             if (m := _HEADING_LINE.match(line))]
+    blocks: list[tuple[str, str]] = []
+    for n, (start, level) in enumerate(marks):
+        end = next((i for i, lv in marks[n + 1:] if lv <= level), len(lines))
+        blocks.append((lines[start], "\n".join(lines[start:end])))
+    return blocks
+
+
+
+
+def _cites_anything(text: str) -> bool:
+    """True when ``text`` cites a source: a 【…】 citation, or a source id.
+
+    【…】 goes through the fabricated-citation audit's own parser, with nothing
+    declared, so every real citation lands in one of its buckets and
+    heading-style blocks (`noncitation`) do not count. A bare id counts too,
+    by the audit's id patterns: master-debate's template wrote （T30n1564）
+    until 2026-09-13, and the first version of this check failed every round
+    of the answers that followed it — they cite, in a form the audit cannot
+    attribute. The same happened with sutta numbers (「（MN 10：…）」, 「Dhp 183」).
+    Whether the id is right is the audit's question, not this one.
+    """
+    audit = audit_answer(set(), text)
+    if audit["offline"] or audit["live"] or audit["fabricated"] or audit["unparsed"]:
+        return True
+    return bool(
+        _CBETA_ID.search(text)
+        or _FAMILY_ID.search(text)
+        or _SUTTA_REF_IN_TEXT.search(text)
+    )
+
+
+def check_contract(response: str, test_case: dict, known_skills: set[str]) -> list[str]:
+    """Return one readable line per teaching-mode contract the reply breaks."""
+    failures: list[str] = []
+    headings = [line for line in response.splitlines() if _HEADING_LINE.match(line)]
+    blocks = _heading_blocks(response)
+
+    for section in test_case.get("must_have_sections", []):
+        if not any(section in heading for heading in headings):
+            failures.append(f"missing section: {section}")
+
+    selected = list(test_case.get("must_select_masters", [])) + list(
+        test_case.get("must_select_pair", [])
+    )
+    for slug in selected:
+        if not any(name in response for name in master_names(slug)):
+            failures.append(f"master not selected: {slug}")
+
+    for round_id in test_case.get("must_have_rounds", []):
+        round_blocks = [body for heading, body in blocks if round_id in heading]
+        if not round_blocks:
+            failures.append(f"missing round: {round_id}")
+        elif test_case.get("must_cite_per_round") and not any(
+            _cites_anything(body) for body in round_blocks
+        ):
+            failures.append(f"round cites nothing: {round_id}")
+
+    # A master's perspective is the section whose heading names them; the
+    # compare template gives each one (「### 慧能大师（禅宗）的视角」). A heading
+    # naming two of them (「### 慧能与印光的核心分歧」) belongs to neither when
+    # each also has one of their own — otherwise one citation there would
+    # vouch for both.
+    if test_case.get("must_cite_per_master"):
+        def names_in(heading: str) -> set[str]:
+            return {s for s in selected if any(n in heading for n in master_names(s))}
+
+        for slug in selected:
+            naming = [(heading, body) for heading, body in blocks if slug in names_in(heading)]
+            sole = [body for heading, body in naming if names_in(heading) == {slug}]
+            own = sole or [body for _, body in naming]
+            if own and not any(_cites_anything(body) for body in own):
+                failures.append(f"master cites nothing: {slug}")
+            elif not own:
+                failures.append(f"no section for master: {slug}")
+
+    # Recommending a skill that does not exist sends the user to nothing. A
+    # reply must point somewhere real — a persona by name, or any installable
+    # skill by its `master-…` name (master-help routing to /master-curriculum
+    # is a recommendation) — and every `master-…` name it writes must be one
+    # this package installs.
+    if test_case.get("must_recommend_existing_master"):
+        # The package's own name is not a skill: master-help's SKILL.md tells
+        # the user to run `npx master-skill install …`, and a reply that
+        # repeats it is not recommending a skill called master-skill.
+        package = json.loads(
+            (PREBUILT_DIR.parent / "package.json").read_text(encoding="utf-8")
+        )["name"]
+        tokens = set(_SKILL_TOKEN.findall(response)) - {package}
+        # Skills not named master-… are recommendations too.
+        tokens |= {
+            name for name in known_skills
+            if not name.startswith("master-")
+            and re.search(rf"(?<![A-Za-z0-9-]){re.escape(name)}(?![A-Za-z0-9-])", response)
+        }
+        unknown = sorted(t for t in tokens if t not in known_skills)
+        for token in unknown:
+            failures.append(f"recommends a skill that does not exist: {token}")
+        personas = [
+            d.name[len("master-"):] for d in PREBUILT_DIR.iterdir()
+            if d.name.startswith("master-") and (d / "meta.json").exists()
+            and json.loads((d / "meta.json").read_text(encoding="utf-8")).get("kind") != "meta-skill"
+        ]
+        # A persona named without its skill name counts: master-help's answer
+        # to 「有哪些法师可以问」 lists the fifteen by name, correctly, with no
+        # `/master-…` at all. The price is a known false pass — 「法藏比丘发
+        # 四十八愿」 names Fazang's persona without recommending him.
+        named = bool(tokens & known_skills) or any(
+            name in response for slug in personas for name in master_names(slug)
+        )
+        if not named:
+            failures.append("recommends no existing skill")
+
+    return failures
+
+
+_known_skills: set[str] | None = None
+
+
+def known_skill_names() -> set[str]:
+    global _known_skills
+    if _known_skills is None:
+        catalog = json.loads(
+            (PREBUILT_DIR.parent / "skill-catalog.json").read_text(encoding="utf-8")
+        )
+        _known_skills = {skill["name"] for skill in catalog["skills"]}
+    return _known_skills
+
+
 def check_response(
     response: str,
     test_case: dict,
@@ -514,7 +744,7 @@ def check_response(
 ) -> dict:
     """Check a response against expected citations, mentions, and boundaries.
 
-    Returns {passed: bool, missing_cites: [...], missing_mentions: [...],
+    Returns {passed: bool, missing_cites: [...], missing_mentions: [...], contract_failures: [...],
              forbidden_found: [...], forbidden_echoed: [...],
              boundary_violations: [...], boundary_echoed: [...],
              needs_review: bool, fabricated_cites: [...],
@@ -635,16 +865,37 @@ def check_response(
     # 所以命中改为**转人工裁决**而不是自动判失败 —— 与 `must_convey` 和
     # `_split_echoes` 同一条原则:量具不得宣称它判过它判不了的东西。它仍然
     # 逐条捞出同样的候选,`forbidden_context` 已经备好裁定所需的原文。
+    contract_failures = check_contract(response, test_case, known_skill_names())
+    # Boundary and pressure fixtures test a refusal or a pushback, not the
+    # template: validate-fidelity.py exempts them from compare-masters'
+    # required sections. When one of them asks for a section anyway, a reply
+    # that answers the challenge in prose is a judgement call — measured on
+    # e97ded0, compare-masters #17 rebuts 「和稀泥」 by naming 宗派性分歧 and
+    # 根器性分歧 without a 分歧分类 heading. Held for a ruling, like a
+    # guardrail hit, rather than failed.
+    contract_undecided: list[str] = []
+    if test_case.get("test_type") in {"boundary", "pressure"}:
+        contract_undecided, contract_failures = contract_failures, []
+    # Not held for a ruling on any fixture type: a reply that is a tool call
+    # has not answered, and a boundary fixture that only lists forbidden
+    # phrases would otherwise count it as a boundary kept — e97ded0
+    # compare-masters #3 passed 「禅宗和净土宗哪个更好？」 that way.
+    if _TOOL_CALL_MARKUP.search(response):
+        contract_failures.append("reply is tool-call markup, not an answer")
+
     passed = (
         len(missing_cites) == 0
         and len(missing_mentions) == 0
         and len(fabricated_cites) == 0
+        and len(contract_failures) == 0
     )
 
     return {
         "passed": passed,
         "missing_cites": missing_cites,
         "missing_mentions": missing_mentions,
+        "contract_failures": contract_failures,
+        "contract_undecided": contract_undecided,
         "forbidden_found": forbidden_found,
         "forbidden_echoed": forbidden_echoed,
         "boundary_violations": boundary_violations,
@@ -660,6 +911,7 @@ def check_response(
             or audit_unavailable
             or unverified_mentions
             or script_mismatch
+            or contract_undecided
         ),
         # 单列一项,好让报告数得出「多少条在等边界裁决」。合进 needs_review
         # 会把它和繁体、审计不可用等混在一起,而那些不需要人看原文。
@@ -691,6 +943,8 @@ def result_entry(
         "status": "PASS" if check["passed"] else "FAIL",
         "missing_cites": check["missing_cites"],
         "missing_mentions": check["missing_mentions"],
+        "contract_failures": check["contract_failures"],
+        "contract_undecided": check["contract_undecided"],
         "forbidden_found": check["forbidden_found"],
         "forbidden_echoed": check["forbidden_echoed"],
         "boundary_undecided": check["boundary_undecided"],
@@ -892,6 +1146,7 @@ def run_tests(
         if check["passed"]:
             return entry, True, "PASS (review)" if check["needs_review"] else "PASS"
         failures = (check["missing_cites"] + check["missing_mentions"]
+                    + check["fabricated_cites"] + check["contract_failures"]
                     + check["forbidden_found"] + check["boundary_violations"])
         return entry, False, f"FAIL ({failures})"
 

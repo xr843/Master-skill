@@ -76,6 +76,12 @@ Evaluation policy:
 
 ## Phase 4: Teaching Mode Contracts
 
+Status: graded since 2026-09-23. The contracts below were written into each
+skill's template and into its fixtures early on, but `test-fidelity.py` read
+none of the seven assertion kinds that express them, so they were documented,
+not enforced. `validate-fidelity.py` now rejects any fixture assertion the
+grader does not implement.
+
 Document and enforce output contracts for the three meta-skills.
 
 `/compare-masters` should include:

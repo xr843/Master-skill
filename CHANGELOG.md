@@ -10,6 +10,77 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — the teaching modes' output contracts were never graded, and a leaked tool call passed as an answer (2026-09-23)
+
+The four teaching-mode skills' fixtures express their output contracts in seven assertion
+kinds: `must_have_sections`, `must_select_masters`, `must_select_pair`, `must_have_rounds`,
+`must_cite_per_master`, `must_cite_per_round`, `must_recommend_existing_master` — 71 uses
+across 44 fixtures. `validate-fidelity.py` listed all seven as valid assertions.
+`test-fidelity.py` read none of them. 15 fixtures had nothing else, so they passed on any
+reply that was not an API error.
+
+What that hid, in the committed 2026-09-13 teaching-mode run (`e97ded0`): the model several
+times answered the system prompt's instruction to read files by emitting tool calls
+(`<｜｜DSML｜｜ invoke name="Bash">ls -la…`), and the eval harness has no tools. Six such
+replies were graded PASS — five of `compare-masters`' eleven and one of `master-debate`'s
+four. One was a boundary fixture that lists only forbidden phrases, which a non-answer
+never says.
+
+All seven are graded now, deterministically, into a new `contract_failures` field: a section
+exists when a heading names it; a master is selected when the reply uses a name the persona
+uses for itself (meta.json's `name` with and without its honorific, and the name in its
+SKILL.md description); a round or a master's section cites when it holds a 【…】 citation or
+any source id the audit recognises; a recommended skill must exist in the catalog. A reply
+containing tool-call markup fails on every fixture type.
+
+Checked against every stored teaching-mode reply in `06b8142` and `e97ded0`, each failure
+read by hand. The first version was wrong three times — an answer that wrote 智者大师 and
+never 智顗, debate rounds citing （T30n1564） in parentheses (the template's form until
+2026-09-13), rounds citing 「MN 10」 and 「Dhp 183」 — and each is now a test. Beyond the six
+non-answers it fails two real answers, both read: `master-debate` 06b8142 #0 argues as two
+side-by-side views with none of the R1–R4 rounds the template requires, and in #2 the
+closing round R4 cites nothing. The README says so under the 06b8142 table, which does not
+count them.
+
+An independent review of the first version found what the hand check had not: a citation
+on the heading line was never counted; a `####` or a bold line inside a master's section
+cut it short, so the citations after it were not seen; a heading naming two masters let one
+citation vouch for both; `1. **共同点**` was not a heading; `/compare-masters` did not count
+as a recommendation; compare-masters #16 had `must_cite_per_master` and no masters, so it
+still checked nothing. All are fixed and tested, and `validate-fidelity.py` now rejects a
+per-master or per-round citation rule with nothing to apply to. The second of those also
+undid a claim this entry first made — that #2 cites nothing in three of four rounds. The
+reading behind it used the same splitter, and R1 and R2 do cite. Known limits, left as
+they are: a section heading in traditional script is not recognised (no stored reply is
+one), and naming a persona counts as recommending it, which 「法藏比丘发四十八愿」 would
+satisfy.
+
+A contract miss on a `boundary` or `pressure` fixture goes to a new `contract_undecided`
+field and `needs_review`, not to FAIL. `validate-fidelity.py` already exempts those types
+from compare-masters' required sections; `compare-masters` #17 rebuts 「和稀泥」 by naming
+宗派性分歧 and 根器性分歧 in prose, without a 分歧分类 heading, and that is a ruling, not a
+string test.
+
+Two `master-curriculum` fixtures asked 「天台止观怎么按次第学？」 and 「上座部内观从马哈希入手好还是
+阿姜查入手好？」 without a level, while the skill says the level is 必填，缺则反问 — so the
+correct answer was a question back, and the fixture required the full four-stage plan. The
+stored #3 answer asked. Both questions now state a level.
+
+`regrade-report.py` joined results to fixtures by position and raised on any mismatch, so
+rewording those two questions made every committed report impossible to re-grade. Its
+docstring said it joins by question text; it now does, and lists answers whose question is
+no longer a fixture as not re-graded.
+
+To stop this recurring, `validate-fidelity.py` reads `IMPLEMENTED_ASSERTIONS` from the grader
+and rejects any `must_*` key outside it — the second time this happened;
+`must_cite_only_existing_sources` was validated and never evaluated until PR #49 (2026-06-19).
+
+The desktop manager's evaluation console shows `contract_failures` in a case's failure
+summary. While adding that, a second desktop gap from the same root as the compare-masters
+fix above: `normalized_master_slug` required a `master-` prefix, so every `compare-masters`
+suite in a fidelity run was rejected as a malformed payload and its results never reached
+the console.
+
 ### Changed — the npm and Claude-plugin descriptions named three of the four teaching modes (2026-09-24)
 
 `package.json` said "plus /compare-masters, /master-debate, and /master-curriculum", and both

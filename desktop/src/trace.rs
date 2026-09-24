@@ -373,6 +373,10 @@ pub struct EvaluationCaseResult {
     pub forbidden_found: Vec<String>,
     pub boundary_violations: Vec<String>,
     pub fabricated_cites: Vec<String>,
+    /// Teaching-mode contract failures (missing section, uncited round, …),
+    /// graded since 2026-09-23. A case failing only on these used to show
+    /// here as a failure with no stated reason.
+    pub contract_failures: Vec<String>,
     pub trace_id: u64,
 }
 
@@ -384,6 +388,7 @@ impl EvaluationCaseResult {
         push_detail_part(&mut parts, "forbidden", &self.forbidden_found);
         push_detail_part(&mut parts, "boundary", &self.boundary_violations);
         push_detail_part(&mut parts, "fabricated cites", &self.fabricated_cites);
+        push_detail_part(&mut parts, "contract", &self.contract_failures);
 
         if parts.is_empty() {
             match &self.status {
@@ -402,6 +407,7 @@ impl EvaluationCaseResult {
             || !self.forbidden_found.is_empty()
             || !self.boundary_violations.is_empty()
             || !self.fabricated_cites.is_empty()
+            || !self.contract_failures.is_empty()
     }
 
     fn failure_priority(&self) -> EvaluationFailurePriority {
@@ -410,7 +416,10 @@ impl EvaluationCaseResult {
             || !self.forbidden_found.is_empty()
         {
             EvaluationFailurePriority::Critical
-        } else if !self.missing_cites.is_empty() || !self.missing_mentions.is_empty() {
+        } else if !self.missing_cites.is_empty()
+            || !self.missing_mentions.is_empty()
+            || !self.contract_failures.is_empty()
+        {
             EvaluationFailurePriority::High
         } else {
             EvaluationFailurePriority::Medium
@@ -618,6 +627,8 @@ struct EvaluationCaseWire {
     boundary_violations: Vec<String>,
     #[serde(default)]
     fabricated_cites: Vec<String>,
+    #[serde(default)]
+    contract_failures: Vec<String>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
@@ -824,7 +835,7 @@ fn parse_evaluation_suite_v1(
             trace_id,
             fallback_slug,
             EvaluationEvidenceErrorKind::MalformedPayload,
-            "invalid fidelity v1 suite: master must start with master-",
+            "invalid fidelity v1 suite: master must be a non-empty skill name",
         )
     })?;
     validate_evaluation_scope(trace_id, &slug, fallback_slug)?;
@@ -1008,7 +1019,7 @@ fn parse_legacy_evaluation_suite(
             trace_id,
             fallback_slug,
             EvaluationEvidenceErrorKind::MalformedPayload,
-            "invalid legacy fidelity suite: master must start with master-",
+            "invalid legacy fidelity suite: master must be a non-empty skill name",
         )
     })?;
     validate_evaluation_scope(trace_id, &slug, fallback_slug)?;
@@ -1114,6 +1125,7 @@ fn completed_evaluation_suite(
             forbidden_found: case.forbidden_found,
             boundary_violations: case.boundary_violations,
             fabricated_cites: case.fabricated_cites,
+            contract_failures: case.contract_failures,
             trace_id,
         })
         .collect();
@@ -1130,8 +1142,12 @@ fn completed_evaluation_suite(
     }
 }
 
+/// The slug `list --json` gives the same skill: the name without `master-`,
+/// or the name itself when it has no such prefix. Requiring the prefix made
+/// every compare-masters suite a malformed payload — its results never
+/// reached the console, and each `--all` run carried an error for it.
 fn normalized_master_slug(master: &str) -> Option<String> {
-    let slug = master.strip_prefix("master-")?;
+    let slug = master.strip_prefix("master-").unwrap_or(master);
     (!slug.is_empty()).then(|| slug.to_string())
 }
 
@@ -1147,7 +1163,7 @@ fn validate_evaluation_scope(
                 Some(expected_slug),
                 EvaluationEvidenceErrorKind::MalformedPayload,
                 format!(
-                    "invalid fidelity suite scope: expected master-{expected_slug}, got master-{actual_slug}"
+                    "invalid fidelity suite scope: expected {expected_slug}, got {actual_slug}"
                 ),
             ));
         }
@@ -4295,6 +4311,47 @@ mod tests {
         assert_eq!(queue[1].priority.label(), "high");
         assert_eq!(queue[2].slug, "huineng");
         assert_eq!(queue[2].priority.label(), "medium");
+    }
+
+    #[test]
+    fn a_teaching_mode_contract_failure_says_why() {
+        // Graded since 2026-09-23. Without this field the case below showed
+        // as a failure with no stated reason, ranked with bare status fails.
+        let mut store = TraceStore::new(10);
+        let run = store.begin_with_action(
+            "Running fidelity run",
+            TraceAction::FidelityDryRunAll,
+            Some("python3 scripts/test-fidelity.py --all --json"),
+            "Queued.",
+        );
+        store.finish_success_with_detail(
+            run,
+            "fidelity run finished",
+            r#"[
+              {
+                "master": "compare-masters",
+                "passed": 0,
+                "results": [
+                  {
+                    "index": 0,
+                    "question": "缘起和性空各宗怎么看？",
+                    "status": "FAIL",
+                    "contract_failures": ["missing section: 共同点", "master not selected: zhiyi"]
+                  }
+                ]
+              }
+            ]"#,
+            Duration::from_millis(55),
+        );
+
+        let queue = store.evaluation_failure_queue();
+
+        assert_eq!(queue.len(), 1);
+        assert_eq!(
+            queue[0].failure_summary,
+            "contract: missing section: 共同点, master not selected: zhiyi"
+        );
+        assert_eq!(queue[0].priority.label(), "high");
     }
 
     #[test]
