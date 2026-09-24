@@ -10,6 +10,16 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Changed — the npm and Claude-plugin descriptions named three of the four teaching modes (2026-09-24)
+
+`package.json` said "plus /compare-masters, /master-debate, and /master-curriculum", and both
+Claude plugin manifests "plus compare, debate, and curriculum meta-skills". `/master-help`,
+the entry point for someone who does not know whom to ask, was missing from all three, and
+`/create-master` from all but the README. They now name all four teaching modes and the
+generator. That was the last open item of the v1.0 roadmap's Phase 1, which now says done;
+Phase 5 listed `doctor`, `inspect` and `update --all` as candidates long after all three
+shipped, and now says so.
+
 ### Fixed — the desktop manager could not show `/compare-masters` (2026-09-23)
 
 The desktop manager builds its skill table from `list --json`'s `masters`, which came from
