@@ -10,6 +10,29 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Measured — the teaching modes with file tools (2026-09-25)
+
+The first graded run since the teaching modes got read-only file tools (#272): all four, 44
+fixtures, DeepSeek `deepseek-v4-flash`, ¥2.61 measured by balance difference. Committed as
+`eval/reports/0.12.15-df76fd2-deepseek-metaskills-tools.json`.
+
+The tools did what they were for. Every fixture read files, and compare-masters read a median
+of 20. The leaked-tool-call replies fell from 6 to 0. Five reads were refused — `scripts/`,
+`routing.json`, a `master-curriculum/meta.json` that does not exist — which is the layout an
+npm install produces. 455 citations were checked and none were fabricated; `e97ded0`, without
+tools, checked 102 and found 6 fabricated. 40 of 41 graded fixtures pass. The pass rate is not
+set beside `e97ded0`'s, because a run with tools is a different instrument.
+
+What it found, recorded in the report's caveats rather than fixed on one run:
+- compare-masters needs 16384 output tokens once it has read its sources. At 8192, 10 of 18
+  were truncated; at 16384, 2.
+- compare-masters #1 read 29 files and reached the 12-round tool cap.
+- compare-masters #0, the one FAIL: the fixture wants 鸠摩罗什 × 玄奘; the skill's own routing
+  table row for 空性 / 缘起性空 names 鸠摩罗什 + 宗喀巴 + 慧能; the model chose 龙树 + 宗喀巴 +
+  慧能. It is for adjudication, not a fixture edit.
+- master-debate's protocol dispatches a fresh subagent per round, and the eval has no Task
+  tool. The model said so at the top of its answer.
+
 ### Fixed — every session was told that all answers cite CBETA (2026-09-24)
 
 The SessionStart hook closes the list of masters it injects into the model's context with a
