@@ -189,6 +189,8 @@ def main(argv: list[str]) -> int:
               (suite.get("audit") or {}).get("citations_checked", 0) >= 1)
         check("model, max_tokens and messages were sent",
               {"model", "max_tokens", "messages"} <= set(body))
+        check(f"a persona gets the default budget (sent {body.get('max_tokens')})",
+              body.get("max_tokens") == fidelity.DEFAULT_MAX_OUTPUT_TOKENS)
         if provider == "anthropic":
             check(f"sent to /v1/messages (got {path})", path == "/v1/messages")
             check("the persona prompt carries cache_control",
@@ -225,6 +227,8 @@ def main(argv: list[str]) -> int:
             (tool.get("name") or tool.get("function", {}).get("name")) for tool in first.get("tools", [])
         )
         check("the tools were declared", tool_names == ["list_dir", "read_file"])
+        check(f"a teaching mode gets its own budget (sent {first.get('max_tokens')})",
+              first.get("max_tokens") == fidelity.TEACHING_MODE_MAX_OUTPUT_TOKENS)
         system = (first.get("system") or [{}])[0].get("text") if provider == "anthropic" \
             else first["messages"][0]["content"]
         check("the prompt names the skill's base directory",
@@ -235,6 +239,7 @@ def main(argv: list[str]) -> int:
         check("the answer text survived the loop intact", result.get("response") == ANSWER)
         check("the report says what was read",
               result.get("tool_calls") == [{"tool": "read_file", "path": TOOL_PATH, "ok": True}])
+        check("and in how many rounds", result.get("tool_rounds") == 1)
         check("the suite says which instrument", suite.get("skill_tools") == ["read_file", "list_dir"])
 
     server.shutdown()

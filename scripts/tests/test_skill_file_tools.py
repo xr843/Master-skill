@@ -219,3 +219,15 @@ def test_arguments_that_are_not_an_object_are_an_error_not_a_crash(tf, files):
     call = NS(id="c", function=NS(name="read_file", arguments='["x"]'))
     reply = NS(choices=[NS(message=NS(tool_calls=[call]))])
     assert tf._tool_calls("deepseek", reply) == [("c", "read_file", {})]
+
+
+def test_rounds_are_counted_for_the_report(tf, files):
+    # Two calls in one round is one round: reads alone cannot judge the cap.
+    two = _anthropic_reply(
+        NS(type="tool_use", id="a", name="list_dir", input={"path": "."}),
+        NS(type="tool_use", id="b", name="read_file", input={"path": "SKILL.md"}),
+    )
+    replies = iter([two, _anthropic_reply(NS(type="text", text="答"))])
+    tf.converse(lambda b: next(replies), "anthropic",
+                tf.build_request("anthropic", "m", "s", "q", 10), files)
+    assert files.rounds == 1 and len(files.log) == 2

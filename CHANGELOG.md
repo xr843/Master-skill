@@ -10,6 +10,20 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Changed — the teaching modes default to a 16384-token budget; each result counts its tool rounds (2026-09-25)
+
+With `--all` every suite shared one `--max-output-tokens`, and the default is 2048. The
+teaching modes read their sources before answering, and the run above measured what that
+costs: compare-masters truncated 10 of 18 at 8192 and 2 of 18 at 16384. master-debate has
+needed 16384 since 2026-09-13. When the flag is not given, teaching-mode suites now use 16384
+and personas keep 2048. An explicit value still applies to every suite, and each suite
+records the budget it used. The cap is a ceiling, not a spend: a reply is billed for the
+tokens it writes.
+
+Each teaching-mode result now records `tool_rounds` beside `tool_calls`. The run above could
+not say whether the 12-round cap is right, because a round can hold several reads and only
+the reads were recorded. The next run will have that number.
+
 ### Measured — the teaching modes with file tools (2026-09-25)
 
 The first graded run since the teaching modes got read-only file tools (#272): all four, 44

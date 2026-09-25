@@ -78,6 +78,13 @@ PROVIDERS: dict[str, dict] = {
 # before writing anything — raise it with --max-output-tokens and say so in the
 # report, because a different budget is a different instrument.
 DEFAULT_MAX_OUTPUT_TOKENS = 2048
+# Teaching modes with file tools read their sources before they answer. On
+# 2026-09-25 (eval/reports/0.12.15-df76fd2-deepseek-metaskills-tools.json)
+# compare-masters truncated 10 of 18 at 8192 and 2 of 18 at 16384, and
+# master-debate had needed 16384 since 2026-09-13. The default when
+# --max-output-tokens is not given; an explicit value always wins, and the
+# budget each suite used is in its report.
+TEACHING_MODE_MAX_OUTPUT_TOKENS = 16384
 
 DEFAULT_PROVIDER = "anthropic"
 
@@ -498,6 +505,10 @@ class SkillFiles:
         self.root = root.resolve()
         self.own = own_dir.resolve()
         self.log: list[dict] = []
+        # Rounds of tool calls, set by `converse` — the number the round cap
+        # is judged against. Reads alone do not say it: one round can hold
+        # several calls.
+        self.rounds = 0
 
     def _resolve(self, raw: str) -> Path:
         path = str(raw).strip().replace("\\", "/")
@@ -634,6 +645,7 @@ def converse(
         if budget_s is not None and clock() - started > budget_s:
             raise ValueError(f"tool loop exceeded {budget_s:.0f}s")
         rounds += 1
+        files.rounds = rounds
         results = [(call_id, files.call(name, args)) for call_id, name, args in calls]
         if anthropic_api:
             assistant = []
@@ -1244,7 +1256,7 @@ def run_tests(
     max_tests: int | None = None,
     quiet: bool = False,
     provider: str = DEFAULT_PROVIDER,
-    max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS,
+    max_output_tokens: int | None = None,
     concurrency: int = DEFAULT_CONCURRENCY,
     request_timeout: float = DEFAULT_REQUEST_TIMEOUT,
     max_retries: int = DEFAULT_MAX_RETRIES,
@@ -1302,6 +1314,10 @@ def run_tests(
     # Load skill context
     system_prompt = load_skill_context(master_dir)
     tools = uses_skill_tools(master_dir)
+    if max_output_tokens is None:
+        max_output_tokens = (
+            TEACHING_MODE_MAX_OUTPUT_TOKENS if tools else DEFAULT_MAX_OUTPUT_TOKENS
+        )
     if tools:
         # What Claude Code tells the model when it invokes a skill, so the
         # relative paths in the SKILL.md have somewhere to be relative to.
@@ -1403,6 +1419,7 @@ def run_tests(
             # What it read before failing — the case where that matters most.
             if files is not None:
                 entry["tool_calls"] = files.log
+                entry["tool_rounds"] = files.rounds
             return entry, False, "API ERROR"
 
         if finish_reason == "length":
@@ -1411,6 +1428,7 @@ def run_tests(
             entry = truncated_result_entry(i, test, response_text, max_output_tokens)
             if files is not None:
                 entry["tool_calls"] = files.log
+                entry["tool_rounds"] = files.rounds
             return entry, False, "TRUNCATED"
 
         try:
@@ -1441,6 +1459,7 @@ def run_tests(
         entry = result_entry(i, test, check, response_text)
         if files is not None:
             entry["tool_calls"] = files.log
+            entry["tool_rounds"] = files.rounds
         if check["passed"]:
             return entry, True, "PASS (review)" if check["needs_review"] else "PASS"
         failures = (check["missing_cites"] + check["missing_mentions"]
@@ -1683,9 +1702,11 @@ def main() -> int:
     parser.add_argument(
         "--max-output-tokens",
         type=int,
-        default=DEFAULT_MAX_OUTPUT_TOKENS,
+        default=None,
         help=(
-            "Output budget per answer (default %(default)s). Reasoning models "
+            f"Output budget per answer (default {DEFAULT_MAX_OUTPUT_TOKENS}; "
+            f"{TEACHING_MODE_MAX_OUTPUT_TOKENS} for the teaching modes, which "
+            "read files before answering). Reasoning models "
             "spend this on reasoning before writing: deepseek-v4-pro needs "
             "~8192 or it stops mid-answer, and master-debate needs 16384 — "
             "measured 2026-09-13 on deepseek-v4-flash, 3 of its 8 fixtures "
