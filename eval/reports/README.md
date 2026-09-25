@@ -12,6 +12,9 @@ against a real model.
   commit, model, timestamps, coverage/pass totals) wraps the `suites` array, which is
   `scripts/test-fidelity.py --all --json`'s own output, captured verbatim and unmodified.
 - `BASELINE.md` — the human-readable summary table and failure analysis for the same run.
+- `0.12.15-df76fd2-deepseek-metaskills-tools.json` — the four teaching modes only, the first
+  run with file tools (`skill_tools` on every suite, `tool_calls` on every result). Its `meta`
+  records cost, both output budgets, and why each unmeasured fixture is unmeasured.
 
 ## How to regenerate
 
