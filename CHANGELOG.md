@@ -10,6 +10,22 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — a declared Pali treatise cited by its Latin title was judged fabricated (2026-09-26)
+
+In the 2026-09-26 persona run, Mahāsi cited 【《Visuddhimagga》§XVIII–XXII】. He declares
+`PTS:Vism`, titled 「清净道论 (Visuddhimagga)」, and the title alias `Visuddhimagga → PTS:Vism`
+exists. The audit still judged the citation fabricated. For a master who declares compiled
+teachings, every Latin title that is not one of those teachings was returned as fabricated,
+and the declared-title aliases, which would have resolved it, were only consulted when
+nothing else had matched. That affects any master who declares compiled teachings beside a
+Latin-titled source of another family: Mahāsi and Ajahn Chah.
+
+The aliases are now consulted before such a title is judged fabricated. Their targets are
+declared ids by construction, so the change can only move a wrongly-fabricated citation to
+checked. A Latin title that matches nothing declared is still fabricated, and a test pins
+both directions. The run's only fabricated citation of 681 was this one. Re-audited, it has
+none.
+
 ### Adjudicated — the runs with tools (2026-09-26)
 
 Both runs with tools raised reviews, and all 11 are now ruled on in committed verdict files,
