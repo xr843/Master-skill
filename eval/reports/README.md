@@ -72,7 +72,9 @@ protocol runs every round in a fresh subagent so neither side sees the other's t
 gets `Task` (since 2026-09-26). Each call is a new conversation: a generic subagent system
 prompt, the orchestrator's prompt as the only message, the file tools, and no `Task` of its
 own. Reads made inside a subagent carry `"agent": "subagent-N"` in `tool_calls`; each Task
-call is logged with its description and reply length. The orchestrator and its subagents
+call is logged with its description, its reply (up to 8,000 characters) and `in_answer` —
+the share of the reply's paragraphs found verbatim in the final answer, since the protocol
+has the orchestrator append each round rather than rewrite it. Recorded, not graded. The orchestrator and its subagents
 share one deadline (1080 s before no new request starts; `per_fixture_ceiling_s` 1440).
 `tool_rounds` sums every conversation's rounds; `tool_rounds_max` is the most any one
 conversation used, which is what the 12-round cap applies to. A fixture graded after a

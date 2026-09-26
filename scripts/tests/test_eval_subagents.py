@@ -105,7 +105,8 @@ def test_the_report_says_who_read_what(fidelity, monkeypatch):
     assert {"tool": "read_file", "path": "../master-huineng/meta.json", "ok": True,
             "agent": "subagent-1"} in log
     task = [e for e in log if e["tool"] == "Task"]
-    assert task == [{"tool": "Task", "description": "R1 慧能立论", "ok": True, "reply_chars": 2}]
+    assert task == [{"tool": "Task", "description": "R1 慧能立论", "ok": True,
+                     "reply_chars": 2, "reply": "正文", "in_answer": None}]
     assert suite["results"][0]["tool_rounds"] == 2  # one orchestrator round, one subagent round
 
 
@@ -170,3 +171,14 @@ def test_a_graded_debate_missing_a_round_is_flagged(fidelity, monkeypatch):
     result = suite["results"][0]
     assert result["subagent_failures"] == 1 and result["needs_review"] is True
     assert result["tool_rounds_max"] == 1
+
+
+def test_share_in_answer_tells_an_appended_round_from_a_rewritten_one(fidelity):
+    reply = "善知识，汝问谁的见地更究竟。老僧只道：究竟二字，本无可比。\n\n菩提自性，本来清净，但用此心，直了成佛。【T48n2008】"
+    appended = "### R1｜慧能大师 立论\n\n" + reply + "\n\n### R2｜印光大师 反驳\n…"
+    rewritten = "### R1｜慧能大师 立论\n\n慧能认为自性本来清净，不必比较究竟与否。【T48n2008】"
+    assert fidelity.share_in_answer(reply, appended) == 1.0
+    assert fidelity.share_in_answer(reply, rewritten) == 0.0
+    assert fidelity.share_in_answer("短", appended) is None
+    # Whitespace and re-wrapping do not count as rewriting.
+    assert fidelity.share_in_answer(reply, appended.replace("。", "。\n")) == 1.0
