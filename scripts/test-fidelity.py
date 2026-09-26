@@ -498,6 +498,28 @@ _TOOL_SCHEMAS[SUBAGENT_TOOL] = {
     },
     "required": ["prompt"],
 }
+_SUBAGENT_REPLY_KEPT = 8_000
+_PARAGRAPH_MIN = 20
+
+
+def share_in_answer(reply: str, answer: str) -> float | None:
+    """How much of a subagent's reply appears verbatim in the final answer.
+
+    The share of its paragraphs of 20+ characters found in the answer
+    (whitespace ignored). master-debate's protocol has the orchestrator
+    append each round's text, and forbids it writing a master's words in its
+    own context; a round the orchestrator rewrote scores low. Recorded, not
+    graded: a heading added or a line trimmed is not a violation.
+    """
+    squash = lambda s: re.sub(r"\s+", "", s)  # noqa: E731
+    paragraphs = [squash(p) for p in re.split(r"\n\s*\n", reply)]
+    paragraphs = [p for p in paragraphs if len(p) >= _PARAGRAPH_MIN]
+    if not paragraphs:
+        return None
+    whole = squash(answer)
+    return round(sum(p in whole for p in paragraphs) / len(paragraphs), 2)
+
+
 SUBAGENT_SYSTEM_PROMPT = (
     "You are a subagent dispatched by another agent to carry out one task. "
     "Do what the task asks and give the result as your final reply; it is "
@@ -1497,7 +1519,9 @@ def run_tests(
             return f"error: subagent failed: {redact_secrets(str(error))}"
         finally:
             files.agent = "main"
-        entry.update(ok=True, reply_chars=len(reply))
+        # The reply itself, so a report can show whether the orchestrator
+        # appended each round as the protocol says or rewrote it.
+        entry.update(ok=True, reply_chars=len(reply), reply=reply[:_SUBAGENT_REPLY_KEPT])
         files.log.append(entry)
         return reply
 
@@ -1591,6 +1615,9 @@ def run_tests(
             )
         entry = result_entry(i, test, check, response_text)
         if files is not None:
+            for call in files.log:
+                if call["tool"] == SUBAGENT_TOOL and call.get("ok"):
+                    call["in_answer"] = share_in_answer(call.get("reply", ""), response_text)
             entry["tool_calls"] = files.log
             entry["tool_rounds"] = files.rounds
             entry["tool_rounds_max"] = files.max_rounds

@@ -10,6 +10,17 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — a debate report shows whether each round reached the answer as written (2026-09-26)
+
+master-debate's protocol has the orchestrator append each subagent's round to its answer and
+forbids it to write a master's words in its own context. The run above could not show whether
+that happened: a Task call recorded only the reply's length. Each call now keeps the reply, up
+to 8,000 characters, and `in_answer`: the share of its paragraphs of 20 or more characters
+found verbatim in the final answer, whitespace ignored. It is recorded, not graded. A round
+that was appended scores 1.0, and one the orchestrator rewrote scores near 0. A heading added
+or a line trimmed is not a violation, so no threshold is set before there is data to set it
+on.
+
 ### Measured — master-debate with its rounds in subagents (2026-09-26)
 
 The first graded debate since the eval gained the Task tool (#277): 8 fixtures, DeepSeek
