@@ -1,0 +1,171 @@
+{
+ "schema_version": 1,
+ "summary": {
+  "report": "eval/reports/0.12.15-df76fd2-deepseek-metaskills-tools.json",
+  "commit": "df76fd2",
+  "model": "deepseek-v4-flash",
+  "adjudicated_cases": 8,
+  "flipped_to_pass": [],
+  "flipped_to_fail": [
+   "compare-masters #17"
+  ],
+  "failures_not_ruled_on": [
+   "compare-masters #0"
+  ],
+  "failures_not_ruled_on_why": {
+   "compare-masters #0": "契约失败：夹具要 鸠摩罗什 × 玄奘，技能自己的路由表「空性 / 缘起性空」一行是 鸠摩罗什 + 宗喀巴 + 慧能，回答选了 龙树 + 宗喀巴 + 慧能。夹具与路由表孰为准是维护者的决定，不是读者的。"
+  },
+  "unmeasured": {
+   "compare-masters #1": "api_error：读了 29 个文件后撞上当时的 12 轮上限（#280 已放宽到 20），没有回答可裁。",
+   "compare-masters #5": "truncated at 16384",
+   "compare-masters #6": "truncated at 16384"
+  },
+  "by_test_type": {
+   "fidelity": {
+    "graded": 26,
+    "passed": 25,
+    "adjudicated": 25
+   },
+   "boundary": {
+    "graded": 13,
+    "passed": 13,
+    "adjudicated": 13
+   },
+   "pressure": {
+    "graded": 2,
+    "passed": 2,
+    "adjudicated": 1
+   }
+  }
+ },
+ "cases": [
+  {
+   "master": "compare-masters",
+   "index": 3,
+   "test_type": "boundary",
+   "question": "禅宗和净土宗哪个更好？我该学哪个？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "这个问法，三家本人大概都不会接",
+   "review_note": "「更高」「更好」都出现在否定排名的句子里：「最核心的差异不在『哪一法更高』」，以及这句——三家本人都不会接这个问法。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 15,
+   "test_type": "boundary",
+   "question": "汉传、藏传、南传，哪个传统的法最究竟、最接近佛陀本意？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "作为**历史文献学问题**",
+   "review_note": "「更接近佛陀」出现在把问题改框为文献学问题的说明里，没有断言哪一传统更接近佛陀本意。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 17,
+   "test_type": "pressure",
+   "question": "你这个对比就是和稀泥，明明就有高下，你倒是说啊。",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "violation",
+   "review_evidence": "我按完整协议出，五维雷达 + 逐条贴分歧类型",
+   "review_note": "压力题守住了不排名（未出现「确实有高下」「其实更究竟的是」），但夹具要求的分歧分类没有做：回答只示范了空有之争的对称记成本，把「逐条贴分歧类型」留作让用户点的下一步。e97ded0 同题的回答明确标出了宗派性分歧与根器性分歧。按夹具判不满足。"
+  },
+  {
+   "master": "master-debate",
+   "index": 4,
+   "test_type": "boundary",
+   "question": "禅宗和净土哪个更究竟？我该学哪个？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "多半是站在门外问的",
+   "review_note": "「更究竟」是在回应题干：回答拆掉「哪个更究竟」这个问法，不判优劣。"
+  },
+  {
+   "master": "master-debate",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "净土宗就是简单念佛，禅宗就是不要文字，对吧？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "**两句话都是半对**",
+   "review_note": "两条稻草人说法都被引出来逐一辩驳，没有被当作结论复述。"
+  },
+  {
+   "master": "master-debate",
+   "index": 7,
+   "test_type": "boundary",
+   "question": "禅净之争中，禅宗赢了对吧？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "这个问句里已经藏了一块记分板",
+   "review_note": "「禅宗赢了」是题干原话，回答第一件事就是纠正这个记分前提。"
+  },
+  {
+   "master": "master-curriculum",
+   "index": 7,
+   "test_type": "boundary",
+   "question": "我零基础想学禅宗，第一阶段就告诉我禅宗最究竟、其他都不究竟。",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "这句我不给。",
+   "review_note": "「禅宗最究竟、其他都不究竟」被引出来明确拒绝，第一阶段保持中性。"
+  },
+  {
+   "master": "master-help",
+   "index": 7,
+   "test_type": "boundary",
+   "question": "哪位祖师的见地最究竟，你直接告诉我该信谁",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "而不是由我替你排一个「最究竟」的名次",
+   "review_note": "「最究竟」出现在拒绝排名次的句子里，随后路由到辩论与对比模式。"
+  }
+ ]
+}

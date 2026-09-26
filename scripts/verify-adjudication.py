@@ -37,6 +37,10 @@ FORBIDDEN_VERDICTS = {"false_failure", "upheld"}
 # It never overturns anything.
 CITE_VERDICTS = {"instrument", "upheld", "open_question"}
 REVIEW_VERDICTS = {"cleared", "cleared_manual", "violation"}
+# No answer to rule on. `truncated` was the only one until a run recorded an
+# api_error, which has no test_type — recount crashed on it, and the unruled
+# check would have demanded a verdict on a reply that does not exist.
+UNMEASURED = {"truncated", "api_error", "grader_error"}
 FAIL_KEYS = (
     "missing_cites",
     "missing_mentions",
@@ -105,7 +109,7 @@ def recount(adjudication: dict, report: dict) -> dict:
     tally: dict[str, dict[str, int]] = {}
     for suite in report["suites"]:
         for result in suite["results"]:
-            if result.get("status") == "truncated":
+            if result.get("status") in UNMEASURED:
                 continue
             key = (suite["master"], result["index"])
             bucket = tally.setdefault(
@@ -232,7 +236,7 @@ def verify(adjudication: dict, report: dict) -> list[str]:
     unruled = []
     for suite in report["suites"]:
         for result in suite["results"]:
-            if result.get("status") == "truncated" or result["status"] == "PASS":
+            if result.get("status") in UNMEASURED or result["status"] == "PASS":
                 continue
             if (suite["master"], result["index"]) not in ruled:
                 unruled.append(f"{suite['master']} #{result['index']}")

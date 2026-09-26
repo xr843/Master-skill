@@ -239,3 +239,14 @@ def test_overturning_a_mention_does_not_pass_a_broken_contract(mod):
         "master": "compare-masters", "index": 0, "mention_case_verdict": "overturned",
     }]}
     assert mod.recount(adjudication, report)["fidelity"]["adjudicated"] == 0
+
+
+def test_an_api_error_is_unmeasured_not_a_failure_to_rule_on(mod):
+    # The first run with tools recorded an api_error (no test_type, no answer);
+    # recount crashed on it.
+    report = {"suites": [{"master": "compare-masters", "results": [
+        {"index": 0, "test_type": "fidelity", "status": "PASS"},
+        {"index": 1, "status": "api_error", "error": "model still calling tools"},
+    ]}]}
+    assert mod.recount({"cases": []}, report) == {
+        "fidelity": {"graded": 1, "passed": 1, "adjudicated": 1}}

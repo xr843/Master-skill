@@ -10,6 +10,19 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Adjudicated — the runs with tools (2026-09-26)
+
+Both runs with tools raised reviews, and all 11 are now ruled on in committed verdict files,
+which `verify-adjudication.py` checks in CI like the first. Ten were bait phrases that the
+answer quoted in order to refuse them, and they are cleared. One PASS becomes a FAIL:
+compare-masters #17 held the line on ranking but left the divergence classification its
+fixture requires as a next step for the user. Adjudicated: 39/41 for the teaching modes with
+file tools, 8/8 for the debate with subagents. compare-masters #0 is declared unruled, not
+decided: its fixture and the skill's routing table disagree, and which governs is the
+maintainer's call. The verifier also counts `api_error` and `grader_error` as unmeasured,
+like `truncated`; the first committed `api_error`, which has no `test_type`, crashed its
+recount. See `eval/reports/ADJUDICATION.md`.
+
 ### Changed — the tool-round cap is 20, not 12 (2026-09-26)
 
 The first two runs with tools put the cap in reach twice. One compare-masters fixture read 29

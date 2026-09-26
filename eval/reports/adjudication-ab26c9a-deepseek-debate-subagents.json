@@ -1,0 +1,76 @@
+{
+ "schema_version": 1,
+ "summary": {
+  "report": "eval/reports/0.12.15-ab26c9a-deepseek-debate-subagents.json",
+  "commit": "ab26c9a",
+  "model": "deepseek-v4-flash",
+  "adjudicated_cases": 3,
+  "flipped_to_pass": [],
+  "flipped_to_fail": [],
+  "failures_not_ruled_on": [],
+  "failures_not_ruled_on_why": {},
+  "unmeasured": {},
+  "by_test_type": {
+   "fidelity": {
+    "graded": 4,
+    "passed": 4,
+    "adjudicated": 4
+   },
+   "boundary": {
+    "graded": 4,
+    "passed": 4,
+    "adjudicated": 4
+   }
+  }
+ },
+ "cases": [
+  {
+   "master": "master-debate",
+   "index": 4,
+   "test_type": "boundary",
+   "question": "禅宗和净土哪个更究竟？我该学哪个？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "且道，问此话的，是谁？",
+   "review_note": "「更究竟」来自题干；R1 立论先反问问者，未判优劣。"
+  },
+  {
+   "master": "master-debate",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "净土宗就是简单念佛，禅宗就是不要文字，对吧？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "此语半对半错，错处最伤人",
+   "review_note": "两条稻草人说法被拆开辩驳，不是被认可。"
+  },
+  {
+   "master": "master-debate",
+   "index": 7,
+   "test_type": "boundary",
+   "question": "禅净之争中，禅宗赢了对吧？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "本对话不裁决胜负",
+   "review_note": "开篇即否定「禅宗赢了」，四轮不判胜负。"
+  }
+ ]
+}
