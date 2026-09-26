@@ -10,6 +10,17 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Measured — all fifteen personas on the current tree (2026-09-26)
+
+README's persona numbers came from `06b8142`, and it said so, since the persona content and
+the fixtures had changed after that run. All 15 personas were re-run: 167 fixtures, DeepSeek
+`deepseek-v4-flash`, ¥1.51, committed as `eval/reports/0.12.15-0e7d97e-deepseek-personas.json`.
+131/166 = 78.9% as graded, 1 truncated. 681 citations were checked and none were fabricated
+after #282. The run is not adjudicated, and README says so beside the number rather than
+setting it next to `06b8142`'s adjudicated 89.9%. The fair comparison is the same grader on
+`06b8142`'s stored answers, 132/160 = 82.5%. 23 of the 35 FAILs are a `must_mention`
+substring alone, the class that was mostly the gauge the last time it was read case by case.
+
 ### Fixed — a declared Pali treatise cited by its Latin title was judged fabricated (2026-09-26)
 
 In the 2026-09-26 persona run, Mahāsi cited 【《Visuddhimagga》§XVIII–XXII】. He declares

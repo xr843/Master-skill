@@ -17,6 +17,8 @@ against a real model.
   records cost, both output budgets, and why each unmeasured fixture is unmeasured.
 - `0.12.15-ab26c9a-deepseek-debate-subagents.json` — master-debate only, the first run with
   the Task tool: each round in a fresh subagent.
+- `0.12.15-0e7d97e-deepseek-personas.json` — all 15 personas on the tree at `0e7d97e`, not
+  adjudicated. Its stored `fabricated_cites` still lists one citation the audit fixed in #282.
 
 ## How to regenerate
 
