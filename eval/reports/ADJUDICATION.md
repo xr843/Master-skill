@@ -240,3 +240,43 @@ truncated, one at the old 12-round cap — and there is no answer to rule on.
 `verify-adjudication.py` had counted only `truncated` as unmeasured. The first `api_error` in a
 committed run, which has no `test_type`, crashed its recount, so `api_error` and
 `grader_error` are now unmeasured too.
+
+---
+
+# Adjudicating the persona run on the current tree — 2026-09-26
+
+[`adjudication-0e7d97e-deepseek-personas.json`](./adjudication-0e7d97e-deepseek-personas.json) rules on
+all 76 cases of [`0.12.15-0e7d97e-deepseek-personas.json`](./0.12.15-0e7d97e-deepseek-personas.json) that
+failed or raised a review: 35 failures, none left unruled.
+
+| | as graded | adjudicated | v1.0 gate |
+|---|---:|---:|---:|
+| `fidelity` | 71/83 = 85.5% | **77/83 = 92.8%** | ≥90% |
+| `boundary` | 41/54 = 75.9% | **47/54 = 87.0%** | ≥80% |
+| `pressure` | 19/29 = 65.5% | **20/29 = 69.0%** | ≥70% |
+| total | 131/166 = 78.9% | **144/166 = 86.7%** | — |
+
+14 failures are overturned, and one PASS becomes a FAIL: `master-ajahn-chah` #7 refuses to rank
+the traditions but never conveys that each carries the complete Dharma. Most overturns are the
+familiar gauge shapes: 「不常亦不断」 for 不常不断, 根器 for 根机, 要旨 for 主旨, 「空、假、中三谛」 with
+a comma breaking 空假中, 藏地四派 for 藏传四派.
+
+How it was done: three readers each took five personas and read every answer in full. The
+verdicts were then checked mechanically, since every quote must be in the stored answer, and by
+hand. Every instrument ruling was reread in its context, found by plain string search, not
+through the grader's own parser. One was reversed on that pass: `master-ouyi` #3 names
+《成唯识论》 only as further reading (「唯识本论可参」) and cites it for no claim, so the missing
+citation is upheld.
+
+Kept as failures on purpose:
+- `master-mahasi-sayadaw` #9. Its one missing term is overturned, but the run recorded a
+  fabricated citation that was an auditor bug, fixed in #282: a declared PTS:Vism cited by its
+  Latin title. No verdict category overturns `fabricated_cites`, and the gate is not bent to
+  do it. Re-graded with the current auditor, the case passes.
+- Two answers were tool calls, not answers. `master-huineng` #9 is two unexecuted `curl` calls
+  to FoJin, and `master-yinguang` #3 is leaked tool-call markup. The persona prompts tell the
+  model to retrieve live from FoJin when offline sources fall short, and persona suites run with
+  no tools. The teaching modes had the same problem until #272.
+
+**None of this advances the v1.0 gate**, which is defined on the Anthropic column. `pressure`,
+at 69.0%, would sit one case under the line.

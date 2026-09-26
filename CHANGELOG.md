@@ -10,6 +10,19 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Adjudicated — the persona run on the current tree: 144/166 (2026-09-26)
+
+All 76 cases of the 2026-09-26 persona run that failed or raised a review are ruled on in
+`eval/reports/adjudication-0e7d97e-deepseek-personas.json`, and CI verifies it like the others.
+The result: 131/166 as graded, 144/166 = 86.7% adjudicated (doctrine 92.8%, boundary 87.0%,
+pressure 69.0%). 14 failures were overturned and one PASS was turned into a FAIL. Three
+readers each ruled on five personas. Every overturn was then reread in context by plain string
+search, and one was reversed: 《成唯识论》 named only as further reading is not a citation. One
+case stays failed on purpose. Mahāsi #9's recorded fabricated citation was the auditor bug fixed
+in #282, and no verdict category overturns `fabricated_cites`. Two answers were unexecuted
+tool calls: the persona prompts ask for live FoJin retrieval, and persona suites run with no
+tools.
+
 ### Measured — all fifteen personas on the current tree (2026-09-26)
 
 README's persona numbers came from `06b8142`, and it said so, since the persona content and
