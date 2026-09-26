@@ -454,7 +454,12 @@ def load_tests(master_dir: Path) -> list[dict]:
 #
 # `tests/` is never readable. Every skill directory holds its own
 # `tests/fidelity.jsonl` — the questions and what the grader looks for.
-MAX_TOOL_ROUNDS = 12
+# A backstop, not the bound: `tool_budget` is what limits a fixture's time.
+# 12 until 2026-09-26, when the first runs with tools put one compare-masters
+# fixture at it (29 files read, recorded as an API error) and one debate
+# conversation at 11 — a model reading its sources, not looping. A host has
+# no such cap.
+MAX_TOOL_ROUNDS = 20
 _TOOL_READ_LIMIT = 40_000
 SKILL_TOOL_NAMES = ("read_file", "list_dir")
 _TOOL_DESCRIPTIONS = {

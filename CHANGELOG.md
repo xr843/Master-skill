@@ -10,6 +10,14 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Changed — the tool-round cap is 20, not 12 (2026-09-26)
+
+The first two runs with tools put the cap in reach twice. One compare-masters fixture read 29
+files, hit 12 rounds and was recorded as an API error. One debate conversation used 11. Both
+were a model reading the sources its instructions name, not a loop. The cap is a backstop.
+What bounds a fixture is the time budget (720 s with file tools, 1440 s with subagents), and a
+host has no round cap at all, so 12 was turning ordinary reading into unmeasured fixtures.
+
 ### Added — a debate report shows whether each round reached the answer as written (2026-09-26)
 
 master-debate's protocol has the orchestrator append each subagent's round to its answer and
