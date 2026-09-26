@@ -15,6 +15,8 @@ against a real model.
 - `0.12.15-df76fd2-deepseek-metaskills-tools.json` — the four teaching modes only, the first
   run with file tools (`skill_tools` on every suite, `tool_calls` on every result). Its `meta`
   records cost, both output budgets, and why each unmeasured fixture is unmeasured.
+- `0.12.15-ab26c9a-deepseek-debate-subagents.json` — master-debate only, the first run with
+  the Task tool: each round in a fresh subagent.
 
 ## How to regenerate
 

@@ -10,6 +10,17 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Measured — master-debate with its rounds in subagents (2026-09-26)
+
+The first graded debate since the eval gained the Task tool (#277): 8 fixtures, DeepSeek
+`deepseek-v4-flash`, ¥0.46 by balance difference, committed as
+`eval/reports/0.12.15-ab26c9a-deepseek-debate-subagents.json`. All 8 pass, and every one
+dispatched 4–5 subagents with none failing — two pairings run five rounds by their
+`meta.json`. The answer no longer opens by saying it cannot dispatch subagents, as every
+debate in the previous run did. 86 citations were checked, 0 fabricated, 0 unparsed. The
+highest round count in any one conversation was 11, one under the cap. That is the first real
+data point on whether 12 is enough.
+
 ### Fixed — master-debate's rounds were written in one context during the eval (2026-09-26)
 
 master-debate's protocol runs every round in a fresh subagent through Claude Code's Task tool:
