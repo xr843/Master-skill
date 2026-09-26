@@ -634,6 +634,17 @@ def audit_answer(
         )
         if not ids:
             compiled = _compiled_teaching_id(m.group(1), declared_ids, member_aliases)
+            if compiled and compiled.startswith("《") and title_aliases:
+                # _compiled_teaching_id returns a Latin title that matches none
+                # of the master's compiled teachings as itself, to be judged
+                # fabricated. But the master may declare it under another
+                # family: Mahāsi's 「清净道论 (Visuddhimagga)」 is PTS:Vism, and
+                # 【《Visuddhimagga》§XVIII–XXII】 was being judged fabricated
+                # before the declared-title aliases were ever consulted.
+                block = m.group(1)
+                hit = [(alias, sid) for alias, sid in title_aliases.items() if alias in block]
+                if hit:
+                    compiled = max(hit, key=lambda pair: len(pair[0]))[1]
             if compiled:
                 ids = [compiled]
         if not ids:

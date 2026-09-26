@@ -1300,3 +1300,20 @@ def test_fazun_translation_ids_are_verified_for_the_tibetan_personas():
     assert r["fabricated"] == [], r
     r = audit_answer(atisha, "见【《菩提道灯论》卷一，G148n9999】")
     assert "G148n9999" in r["fabricated"], r
+
+
+def test_a_latin_title_of_a_declared_treatise_is_not_fabricated_beside_compiled_teachings():
+    # 2026-09-26 persona rerun: Mahāsi cited 【《Visuddhimagga》§XVIII–XXII】. He declares
+    # PTS:Vism, titled 「清净道论 (Visuddhimagga)」, and it was judged fabricated:
+    # a master with compiled teachings had every Latin title that is not one of them
+    # returned as fabricated before the declared-title aliases were consulted.
+    import verify_citations as vc
+    master = "master-mahasi-sayadaw"
+    declared = vc.load_declared_ids(master)
+    aliases = vc.load_member_aliases(master)
+    titles = vc.load_title_aliases(master)
+    audit = vc.audit_answer(declared, "【《Visuddhimagga》§XVIII–XXII】", aliases, titles)
+    assert audit["fabricated"] == [] and audit["offline"] == ["PTS:Vism"]
+    # A Latin title that is nothing declared is still fabricated.
+    audit = vc.audit_answer(declared, "【《The Book That Is Not There》】", aliases, titles)
+    assert audit["fabricated"] == ["《The Book That Is Not There》"]
