@@ -44,6 +44,18 @@ CACHE_CREATED = 6700
 # The teaching-mode run's first reply asks for this file; the second request
 # must carry it back. See SkillFiles in test-fidelity.py.
 TOOL_PATH = "../master-huineng/meta.json"
+# master-debate also gets the Task tool; its first reply dispatches a subagent,
+# whose request must arrive as a fresh conversation.
+SUBAGENT_PROMPT = "你扮演慧能大师。第 1 轮。立论。"
+SUBAGENT_REPLY = "慧能立论：菩提自性，本来清净。【T48n2008】"
+
+
+def _is_subagent(body: dict) -> bool:
+    system = body.get("system")
+    text = system[0].get("text", "") if isinstance(system, list) else (
+        body.get("messages", [{}])[0].get("content", "")
+        if body.get("messages", [{}])[0].get("role") == "system" else "")
+    return str(text).startswith("You are a subagent")
 
 
 def _has_tool_result(body: dict) -> bool:
@@ -69,12 +81,28 @@ def _server(broken: bool, received: list) -> ThreadingHTTPServer:
             headers = {k.lower(): v for k, v in self.headers.items()}
             received.append((self.path, body, headers))
             wants_tool = bool(body.get("tools")) and not _has_tool_result(body)
-            if self.path.endswith("/messages") and wants_tool:
+            tool_names = [t.get("name") or t.get("function", {}).get("name") for t in body.get("tools", [])]
+            call = ("Task", {"description": "R1", "prompt": SUBAGENT_PROMPT}) \
+                if "Task" in tool_names else ("read_file", {"path": TOOL_PATH})
+            if _is_subagent(body):
+                if self.path.endswith("/messages"):
+                    reply = {"id": "msg_sub", "type": "message", "role": "assistant",
+                             "model": body.get("model"),
+                             "content": [{"type": "text", "text": SUBAGENT_REPLY}],
+                             "stop_reason": "end_turn", "stop_sequence": None,
+                             "usage": {"input_tokens": 5, "output_tokens": 5}}
+                else:
+                    reply = {"id": "chatcmpl-sub", "object": "chat.completion", "created": 1,
+                             "model": body.get("model"),
+                             "choices": [{"index": 0, "finish_reason": "stop",
+                                          "message": {"role": "assistant", "content": SUBAGENT_REPLY}}],
+                             "usage": {"prompt_tokens": 5, "completion_tokens": 5, "total_tokens": 10}}
+            elif self.path.endswith("/messages") and wants_tool:
                 reply = {
                     "id": "msg_tool", "type": "message", "role": "assistant",
                     "model": body.get("model"),
-                    "content": [{"type": "tool_use", "id": "toolu_smoke", "name": "read_file",
-                                 "input": {"path": TOOL_PATH}}],
+                    "content": [{"type": "tool_use", "id": "toolu_smoke", "name": call[0],
+                                 "input": call[1]}],
                     "stop_reason": "tool_use", "stop_sequence": None,
                     "usage": {"input_tokens": 21, "output_tokens": 10},
                 }
@@ -86,8 +114,8 @@ def _server(broken: bool, received: list) -> ThreadingHTTPServer:
                         "index": 0, "finish_reason": "tool_calls",
                         "message": {"role": "assistant", "content": None, "tool_calls": [{
                             "id": "call_smoke", "type": "function",
-                            "function": {"name": "read_file",
-                                         "arguments": json.dumps({"path": TOOL_PATH})},
+                            "function": {"name": call[0],
+                                         "arguments": json.dumps(call[1])},
                         }]},
                     }],
                     "usage": {"prompt_tokens": 21, "completion_tokens": 10, "total_tokens": 31},
@@ -241,6 +269,33 @@ def main(argv: list[str]) -> int:
               result.get("tool_calls") == [{"tool": "read_file", "path": TOOL_PATH, "ok": True}])
         check("and in how many rounds", result.get("tool_rounds") == 1)
         check("the suite says which instrument", suite.get("skill_tools") == ["read_file", "list_dir"])
+
+    # master-debate dispatches each round to a fresh subagent (Task tool).
+    for provider, extra in (("anthropic", []), ("deepseek", ["--model", "deepseek-v4-flash"])):
+        received.clear()
+        sys.argv = ["test-fidelity.py", "--master", "master-debate", "--provider", provider,
+                    "--max-tests", "1", "--concurrency", "1", "--json", *extra]
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+            fidelity.main()
+        suite = json.loads(out.getvalue())[0]
+        result = suite["results"][0]
+        print(f"── {provider} (debate, subagent): {result.get('status')}")
+        check("three requests: dispatch, the subagent, the answer", len(received) == 3)
+        if len(received) < 3:
+            continue
+        sub = received[1][1]
+        user_turns = [m for m in sub.get("messages", []) if m.get("role") == "user"]
+        check("the subagent got a fresh context: only the orchestrator's prompt",
+              _is_subagent(sub) and [m.get("content") for m in user_turns] == [SUBAGENT_PROMPT])
+        check("the subagent cannot dispatch another",
+              "Task" not in json.dumps(sub.get("tools", [])))
+        check("its reply went back to the orchestrator",
+              SUBAGENT_REPLY in json.dumps(received[2][1], ensure_ascii=False))
+        check("the answer after it was graded", result.get("status") in ("PASS", "FAIL")
+              and result.get("response") == ANSWER)
+        check("the suite says which instrument",
+              suite.get("skill_tools") == ["read_file", "list_dir", "Task"])
 
     server.shutdown()
     print(f"{'✓ eval SDK path intact' if not failures else f'✗ {failures} check(s) failed'}")

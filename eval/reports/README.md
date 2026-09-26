@@ -65,6 +65,14 @@ lists what was read in `tool_calls`; each suite says `skill_tools`. **A teaching
 with `skill_tools` is a different instrument from one without** — every committed run
 before 2026-09-24 is without — and the two are not compared. Persona suites are unchanged.
 
+A teaching mode whose SKILL.md dispatches work through the Task tool — master-debate, whose
+protocol runs every round in a fresh subagent so neither side sees the other's text — also
+gets `Task` (since 2026-09-26). Each call is a new conversation: a generic subagent system
+prompt, the orchestrator's prompt as the only message, the file tools, and no `Task` of its
+own. Reads made inside a subagent carry `"agent": "subagent-N"` in `tool_calls`; each Task
+call is logged with its description and reply length. The orchestrator and its subagents
+share one deadline (1080 s before no new request starts; `per_fixture_ceiling_s` 1440).
+
 ### What the fabrication check covers now
 
 1. **It runs for every graded response.** When a non-empty declared source set is

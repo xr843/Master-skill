@@ -10,6 +10,29 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — master-debate's rounds were written in one context during the eval (2026-09-26)
+
+master-debate's protocol runs every round in a fresh subagent through Claude Code's Task tool:
+「禁止在主 context 续写 master 的发言」. The debater of round 2 sees an 80-character summary of
+round 1, never its text, which is what keeps a side from answering a strawman it wrote itself.
+The eval gave the file tools and nothing else, so one context wrote all four rounds. In the
+2026-09-25 run the model opened its answer by saying it could not dispatch subagents.
+
+A teaching mode whose SKILL.md names the Task tool now gets one in the eval; today that is
+master-debate only. Each call is a new conversation — a generic subagent system prompt, the
+orchestrator's prompt as the only message, the file tools, and no Task of its own, as in
+Claude Code. The reply comes back as the tool result. A subagent that fails is returned to the
+orchestrator as an error, as a host would return it, and does not fail the fixture from
+inside. Reads inside a subagent are marked `subagent-N` in `tool_calls`, and each dispatch is
+logged with its description and reply length. The orchestrator and its subagents share one
+deadline: 1080 s before no new request starts, so the ceiling is 1440 s, reported per suite.
+
+Verified without a key: `smoke-eval-sdk.py` runs a dispatch → subagent → answer round trip
+through both pinned SDKs and checks that the subagent's request carries only the
+orchestrator's prompt and no Task tool. Two deliberate breaks each fail the unit tests: the
+orchestrator's system prompt leaking into the subagent, and the subagent being given Task.
+No graded debate has run with it yet.
+
 ### Changed — the teaching modes default to a 16384-token budget; each result counts its tool rounds (2026-09-25)
 
 With `--all` every suite shared one `--max-output-tokens`, and the default is 2048. The
