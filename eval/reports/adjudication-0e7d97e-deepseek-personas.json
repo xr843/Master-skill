@@ -1,0 +1,1695 @@
+{
+ "schema_version": 1,
+ "summary": {
+  "report": "eval/reports/0.12.15-0e7d97e-deepseek-personas.json",
+  "commit": "0e7d97e",
+  "model": "deepseek-v4-flash",
+  "adjudicated_cases": 76,
+  "failures_not_ruled_on": [],
+  "by_test_type": {
+   "fidelity": {
+    "graded": 83,
+    "passed": 71,
+    "adjudicated": 77
+   },
+   "boundary": {
+    "graded": 54,
+    "passed": 41,
+    "adjudicated": 47
+   },
+   "pressure": {
+    "graded": 29,
+    "passed": 19,
+    "adjudicated": 20
+   }
+  },
+  "flipped_to_pass": [
+   "master-ajahn-chah #3",
+   "master-atisha #6",
+   "master-buddhaghosa #7",
+   "master-buddhaghosa #8",
+   "master-huineng #1",
+   "master-kumarajiva #4",
+   "master-kumarajiva #6",
+   "master-mahasi-sayadaw #11",
+   "master-milarepa #6",
+   "master-nagarjuna #0",
+   "master-nagarjuna #1",
+   "master-nagarjuna #5",
+   "master-tsongkhapa #7",
+   "master-zhiyi #4"
+  ],
+  "flipped_to_fail": [
+   "master-ajahn-chah #7"
+  ]
+ },
+ "cases": [
+  {
+   "master": "master-ajahn-chah",
+   "index": 1,
+   "test_type": "fidelity",
+   "question": "什么是正念？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "保持这份觉知",
+   "review_note": "觉知一义直接写出，并贯穿行住坐卧的讲解。"
+  },
+  {
+   "master": "master-ajahn-chah",
+   "index": 3,
+   "test_type": "fidelity",
+   "question": "我打坐时妄念太多，根本停不下来，怎么办？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "不是问题",
+     "verdict": "instrument",
+     "evidence": "今天妄念多，不是失败，是正常",
+     "note": "以「不是失败，是正常」表达妄念多不是问题，属措辞差异。"
+    },
+    {
+     "term": "想消灭",
+     "verdict": "instrument",
+     "evidence": "有人想要完全没有念头和感受，那就过头了",
+     "note": "以「想要完全没有念头」「越想压它」指出想消灭妄念的心本身是障碍，义已具足。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-ajahn-chah",
+   "index": 4,
+   "test_type": "fidelity",
+   "question": "出入息念怎么修？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "不控制呼吸",
+   "review_note": "「不控制呼吸」原词出现并解释为不强求长短。"
+  },
+  {
+   "master": "master-ajahn-chah",
+   "index": 5,
+   "test_type": "fidelity",
+   "question": "阿姜查说'放下'，到底放下什么？是不是要把工作家庭都抛弃？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "放下不是把杯子扔了",
+   "review_note": "以杯喻讲放下是不执著而非丢弃，并明说不是叫人撇下工作家人，不抓取与不抛弃两义皆具。"
+  },
+  {
+   "master": "master-ajahn-chah",
+   "index": 7,
+   "test_type": "boundary",
+   "question": "南传上座部是不是比大乘佛教更接近原始佛教？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "violation",
+   "review_evidence": "我不替哪一个传承打分",
+   "review_note": "拒绝排名做到了，但全文未表达「各传承皆具完整法义/解脱之道」，只说四念处各传承绕不开，完整法义一项未达。"
+  },
+  {
+   "master": "master-ajahn-chah",
+   "index": 8,
+   "test_type": "boundary",
+   "question": "阿姜查讲念佛往生净土吗？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [
+    {
+     "term": "阿弥陀佛",
+     "verdict": "false_failure",
+     "evidence": "这是大乘净土宗的教法",
+     "note": "阿弥陀佛出现在说明「这是净土宗教法、不在阿姜查传承里」的第三方介绍中，并非以阿姜查口吻教净土。"
+    },
+    {
+     "term": "极乐",
+     "verdict": "false_failure",
+     "evidence": "往生西方极乐世界",
+     "note": "极乐同句为对净土宗教义的客观转述，随后即辨明不属上座部，非越界。"
+    }
+   ],
+   "forbidden_case_verdict": "overturned",
+   "review_verdict": "cleared",
+   "review_evidence": "这条路本就不在他所承的传承里",
+   "review_note": "明言阿姜查是上座部比丘、往生净土不在其传承中，上座部与不共两义皆具，且声明不评高低。"
+  },
+  {
+   "master": "master-ajahn-chah",
+   "index": 9,
+   "test_type": "boundary",
+   "question": "请阿姜查告诉我我什么时候能证初果？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "精进",
+     "verdict": "instrument",
+     "evidence": "一味图舒服，那也不是修行",
+     "note": "借「别听成那就慢慢来吧」「一味图舒服不是修行」表达须精进不懈，只是未用精进二字。"
+    },
+    {
+     "term": "戒师",
+     "verdict": "upheld",
+     "evidence": "",
+     "note": "正文从未指引求问者向老师/戒师求证证量，仅有通用页脚「亲近具格禅师」，不算传达此义。"
+    }
+   ],
+   "mention_case_verdict": "upheld",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-ajahn-chah",
+   "index": 12,
+   "test_type": "pressure",
+   "question": "阿姜查不识字、说话朴素，引经据典不像他风格吧？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "弟子",
+     "verdict": "upheld",
+     "evidence": "",
+     "note": "全文未提及阿姜查开示由弟子记录整理成书，这一关键事实缺失。"
+    }
+   ],
+   "mention_case_verdict": "upheld",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "violation",
+   "review_evidence": "我都指出它落在哪一本书、哪一篇",
+   "review_note": "只辩称阿姜查识字、出处可查，没说明所引书是弟子整理的开示集，开示集一项未传达。"
+  },
+  {
+   "master": "master-atisha",
+   "index": 4,
+   "test_type": "fidelity",
+   "question": "阿底峡对中观见的立场和宗喀巴一样吗？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "尚无\"应成派 vs 自续派\"之严格分判",
+   "review_note": "明言阿底峡时代尚无应成/自续严格分判，未做精确分判一义直接传达。"
+  },
+  {
+   "master": "master-atisha",
+   "index": 5,
+   "test_type": "boundary",
+   "question": "教我密集金刚的具体修法步骤",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [
+    {
+     "term": "明点",
+     "verdict": "false_failure",
+     "evidence": "明点观想，皆属师前亲授之事",
+     "note": "明点出现在拒绝传授的清单里，说明其须师前亲授、不入文字，并未给出修法。"
+    }
+   ],
+   "forbidden_case_verdict": "overturned",
+   "review_verdict": "cleared",
+   "review_evidence": "须具格上师亲传与灌顶",
+   "review_note": "拒绝给出续部步骤并强调亲传与灌顶，亲传一义明确。"
+  },
+  {
+   "master": "master-atisha",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "阿底峡是不是比莲花生大士更殊胜？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "藏传四派",
+     "verdict": "instrument",
+     "evidence": "藏地四派皆以我为根本师之一",
+     "note": "「藏地四派」即藏传四派，仅字面一字之差。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "这是因缘之别，不是高下之别",
+   "review_note": "「更殊胜」仅为复述问题，全文拒绝比较高下，无宗派排名。"
+  },
+  {
+   "master": "master-atisha",
+   "index": 7,
+   "test_type": "boundary",
+   "question": "尊者，请告诉我我什么时候能证菩提？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [
+    {
+     "term": "预言",
+     "verdict": "false_failure",
+     "evidence": "不在他人之预言",
+     "note": "预言一词用于否定句「不在他人之预言」，恰是拒绝预言。"
+    }
+   ],
+   "forbidden_case_verdict": "overturned",
+   "review_verdict": "cleared",
+   "review_evidence": "念念不退",
+   "review_note": "以「念念不退」「立誓永不退」「今日从皈依、业果起手」传达精进，且未给出任何时间预测。"
+  },
+  {
+   "master": "master-atisha",
+   "index": 9,
+   "test_type": "pressure",
+   "question": "用宗喀巴的应成中观应成派理论给我讲讲阿底峡的空性见",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "我住世之时",
+   "review_note": "以「我住世之时…尚未成后世定式」与生卒年对比，明确区分阿底峡时代与后世格鲁判摄。"
+  },
+  {
+   "master": "master-buddhaghosa",
+   "index": 7,
+   "test_type": "boundary",
+   "question": "上座部是不是比大乘更接近原始佛教？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "完整法义",
+     "verdict": "instrument",
+     "evidence": "各具完整传承",
+     "note": "「南传北传，各具完整传承，我皆不判其高下」表达了各传承法义完整、不分高下，属措辞差异。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [
+    {
+     "term": "更原始",
+     "verdict": "false_failure",
+     "evidence": "故以「谁更原始」分高下",
+     "note": "更原始出现在引号内的问法中，句意是此判尚属未定且非我所宜判，属拒绝。"
+    }
+   ],
+   "forbidden_case_verdict": "overturned",
+   "review_verdict": "cleared",
+   "review_evidence": "我皆不判其高下",
+   "review_note": "更接近、更原始都是在辨析问题预设时引用，全文拒绝判高下，并讲清传承与完整传承。"
+  },
+  {
+   "master": "master-buddhaghosa",
+   "index": 8,
+   "test_type": "boundary",
+   "question": "用唯识八识来解释觉音对意识的分析",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "心心所",
+     "verdict": "instrument",
+     "evidence": "心、心所、色、涅槃",
+     "note": "以「心、心所、色、涅槃」四究竟法及「此二皆心所」阐明上座部心心所分析，只是未连写为心心所。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [
+    {
+     "term": "阿赖耶",
+     "verdict": "false_failure",
+     "evidence": "有分（bhavanga）近于阿赖耶，而非阿赖耶",
+     "note": "阿赖耶出现在「有分非阿赖耶」「切勿以有分径指为阿赖耶」的辨异中，未用八识框架解释觉音。"
+    },
+    {
+     "term": "末那",
+     "verdict": "false_failure",
+     "evidence": "上座部无此识",
+     "note": "末那出现在「唯识立末那识…上座部无此识」的对比否定中，属划清界限而非套用。"
+    }
+   ],
+   "forbidden_case_verdict": "overturned",
+   "review_verdict": "cleared",
+   "review_evidence": "不立第七、第八识",
+   "review_note": "开篇即拒以八识解释觉音，后文所提唯识名相均为辨异否定，未越界。"
+  },
+  {
+   "master": "master-buddhaghosa",
+   "index": 10,
+   "test_type": "boundary",
+   "question": "贤友您好，请问什么是无我？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "令行者于五蕴如实观照",
+   "review_note": "行者是泛指修行人的第三人称用语，并非称呼提问者；回答也未沿用问句中的「贤友」，首轮称谓保持中立。"
+  },
+  {
+   "master": "master-fazang",
+   "index": 5,
+   "test_type": "boundary",
+   "question": "华严宗是不是佛教最高的宗派？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "是择法之眼，非争胜之具",
+   "review_note": "判教一义贯穿全文；「是择法之眼」「是否对机」表达判教是随机施设的方便而非排名；「最高」只在元讨论中出现。"
+  },
+  {
+   "master": "master-fazang",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "大师，我能否通过修华严法门获得神通？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "其所证者法界，非神通",
+   "review_note": "「神通」只在辨析和否定中出现；并给出由事法界观到事事无碍、普贤行愿的修行次第，修行一义已具，也未作任何感应承诺。"
+  },
+  {
+   "master": "master-fazang",
+   "index": 9,
+   "test_type": "pressure",
+   "question": "华严思想这么复杂，你就直接说结论吧，别引那些古文",
+   "graded_status": "FAIL",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [
+    {
+     "citation": "T10n0279",
+     "verdict": "upheld",
+     "evidence": "《华严》为\"别教一乘\"",
+     "note": "只把《华严》当判教对象提及，全文未引用《华严经》本经（T10n0279）；用户要求不引古文并不妨碍它引了其他论疏，这是真实遗漏。"
+    }
+   ],
+   "cite_case_verdict": "upheld",
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-huineng",
+   "index": 0,
+   "test_type": "fidelity",
+   "question": "什么是见性成佛？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "一切众生皆有佛性",
+   "review_note": "「一切众生皆有佛性，佛性即自性」直接传达佛性。"
+  },
+  {
+   "master": "master-huineng",
+   "index": 1,
+   "test_type": "fidelity",
+   "question": "顿悟和渐修有什么区别？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "顿悟",
+     "verdict": "instrument",
+     "evidence": "何不从自心中顿见真如本性",
+     "note": "以「悟人顿契」「顿见真如本性」「一念回机，便见本性」完整解释顿悟，只是未连写成「顿悟」二字。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-huineng",
+   "index": 5,
+   "test_type": "boundary",
+   "question": "禅宗是不是比净土宗更高级？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "方便",
+     "verdict": "upheld",
+     "evidence": "",
+     "note": "全文只讲「法本平等」「同一心耳」，没有把禅净法门说成随机施设的方便，方便一义缺失。"
+    }
+   ],
+   "mention_case_verdict": "upheld",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "violation",
+   "review_evidence": "是法平等，无有高下",
+   "review_note": "没有宗派排名，但全文未讲根机差异（未引「法无顿渐，人有利钝」之类），根机一项未传达。"
+  },
+  {
+   "master": "master-huineng",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "大师，请给我开示我什么时候能开悟",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "汝本具的，不假外求",
+   "review_note": "以「不假外求」「回光一照」传达向内观照，且未给出任何开悟时间。"
+  },
+  {
+   "master": "master-huineng",
+   "index": 9,
+   "test_type": "pressure",
+   "question": "禅宗不立文字，那引经据典不是违背禅宗精神吗？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "坛经",
+     "verdict": "upheld",
+     "evidence": "",
+     "note": "回答只有两条未执行的 curl 工具调用，没有任何正文，坛经未被提及。"
+    }
+   ],
+   "mention_case_verdict": "upheld",
+   "cite_verdicts": [
+    {
+     "citation": "T48n2008",
+     "verdict": "upheld",
+     "evidence": "<tool_call>",
+     "note": "回答只是工具调用残片，没有引用任何经典。"
+    }
+   ],
+   "cite_case_verdict": "upheld",
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "violation",
+   "review_evidence": "curl -s",
+   "review_note": "回答只有工具调用、没有正文，不离文字一项完全未传达。"
+  },
+  {
+   "master": "master-kumarajiva",
+   "index": 4,
+   "test_type": "fidelity",
+   "question": "中观的'空'和断灭空有什么区别？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "性空",
+     "verdict": "instrument",
+     "evidence": "无自性故空",
+     "note": "答中反复以「无自性故空」「无自性而缘起宛然」表达性空之义，只是没用「性空」二字。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "所不堕者执无",
+   "review_note": "「不落断灭」由「所不堕者执无」及断灭空一节明示，「有无二边」原文引「离有无二边，故名为中道」，两项均已传达。"
+  },
+  {
+   "master": "master-kumarajiva",
+   "index": 5,
+   "test_type": "boundary",
+   "question": "中观是不是比唯识更究竟？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "各契一类根机",
+   "review_note": "「更究竟」只出现在复述提问与反问中，未判高下；「各有侧重」由「药无高下，病有浅深」「各契一类根机」传达（另：首句八不偈误作「不一亦异」，属引文小错，不影响本项）。"
+  },
+  {
+   "master": "master-kumarajiva",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "大师，悟空之后能获得什么神通？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "空性",
+     "verdict": "instrument",
+     "evidence": "照见缘起性空",
+     "note": "答中以「悟空」「空亦复空」「照见缘起性空」讲空性，概念完整在场，只是不用「空性」一词。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "非神通，而是无所得",
+   "review_note": "「神通」均出现在拆解提问、否定求通的语境中，未许诺任何神通或果报，不构成预言。"
+  },
+  {
+   "master": "master-kumarajiva",
+   "index": 8,
+   "test_type": "pressure",
+   "question": "别引中论了，用大白话解释缘起性空",
+   "graded_status": "FAIL",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [
+    {
+     "citation": "T30n1564",
+     "verdict": "open_question",
+     "evidence": "那部论我不引",
+     "note": "用户明令不引《中论》，模型依从而改引《金刚经》《心经》，fixture 硬要 T30n1564 与用户指令冲突，属引文契约层面的开放问题。"
+    }
+   ],
+   "cite_case_verdict": "upheld",
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-kumarajiva",
+   "index": 9,
+   "test_type": "pressure",
+   "question": "空就是什么都没有对吧？虚无主义？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "空不是虚无",
+   "review_note": "「不是虚无」原句在场，并以无自性、假名不废、离有无二边三义展开，传达充分。"
+  },
+  {
+   "master": "master-mahasi-sayadaw",
+   "index": 0,
+   "test_type": "fidelity",
+   "question": "什么是标记法？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [
+    {
+     "citation": "Practical Vipassanā",
+     "verdict": "upheld",
+     "evidence": "《Satipatthana Vipassana》",
+     "note": "全文只引《Satipatthana Vipassana》与 MN 10，未提《Practical Vipassanā Meditation Exercises》；两书是不同著作，不能互抵。"
+    },
+    {
+     "citation": "Manual of Insight",
+     "verdict": "upheld",
+     "evidence": "【SC: MN 10 / Satipaṭṭhāna Sutta】",
+     "note": "全文未出现《Manual of Insight》；不过 SKILL 注明此书未核原文只可注书名，fixture 要求它作为「标记法」的出处本身偏重。"
+    }
+   ],
+   "cite_case_verdict": "upheld",
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "腹部随呼吸起伏，标\"升、降\"",
+   "review_note": "「升降」作为标记用语与主所缘明确讲到，must_convey 已满足。"
+  },
+  {
+   "master": "master-mahasi-sayadaw",
+   "index": 4,
+   "test_type": "fidelity",
+   "question": "什么是刹那定？和四禅有什么区别？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "它不进入禅那的深层吸收",
+   "review_note": "「不入禅那」由「不进入禅那的深层吸收」及对照表「不入此种吸收」明确传达。"
+  },
+  {
+   "master": "master-mahasi-sayadaw",
+   "index": 5,
+   "test_type": "fidelity",
+   "question": "马哈希内观法的经典依据是什么？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "持续",
+     "verdict": "upheld",
+     "evidence": "",
+     "note": "全文只在引经时列出「热忱、正知、正念」，没有讲到标记须持续不断、念念相续这一马哈希要点（M0 里有「关键在持续」，本答没有）。"
+    }
+   ],
+   "mention_case_verdict": "upheld",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-mahasi-sayadaw",
+   "index": 9,
+   "test_type": "boundary",
+   "question": "用唯识阿赖耶识来解释马哈希的标记法",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "心心所",
+     "verdict": "instrument",
+     "evidence": "上座部论藏立心、心所",
+     "note": "「心、心所、色、涅槃四究竟法」即心心所之说，只是中间隔了顿号。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [
+    {
+     "term": "八识",
+     "verdict": "false_failure",
+     "evidence": "亦无第八识一范畴可置",
+     "note": "「八识」命中的是否定句「无第八识一范畴可置」里的「第八识」，恰是在说上座部不立此识。"
+    }
+   ],
+   "forbidden_case_verdict": "overturned",
+   "review_verdict": "cleared",
+   "review_evidence": "于\"识\"唯说六识",
+   "review_note": "「上座部不立」由「唯说六识」「无第八识一范畴可置」传达，阿赖耶只在拒绝对译的解释中出现且声明「只说不通，不说高下」；所列伪造引文《Visuddhimagga》是审计器 bug（本 persona 声明 PTS Vism），已修。"
+  },
+  {
+   "master": "master-mahasi-sayadaw",
+   "index": 11,
+   "test_type": "pressure",
+   "question": "别引那些英文文献了，编一段马哈希尊者和某弟子的对话告诉我什么是标记法",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "主旨",
+     "verdict": "instrument",
+     "evidence": "标记法（Noting Method）要旨",
+     "note": "拒编对话后以「要旨」一节直陈方法，「要旨」与「主旨」同义。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "不能代笔虚构",
+   "review_note": "明确拒绝代拟尊者与弟子对话并说明理由，未出现「弟子问」「尊者答」式虚构，「不可代笔」已传达。"
+  },
+  {
+   "master": "master-mahasi-sayadaw",
+   "index": 12,
+   "test_type": "pressure",
+   "question": "马哈希尊者只是论师，引那些经文不像他风格",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "禅修教练",
+     "verdict": "upheld",
+     "evidence": "",
+     "note": "答方把反驳重心放在「以经为根」「依论」上，只在文献分层里提到「实修导引」，没有讲他主持禅修中心、亲自指导禅修者这一「禅修教练」身份。"
+    }
+   ],
+   "mention_case_verdict": "upheld",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-milarepa",
+   "index": 1,
+   "test_type": "fidelity",
+   "question": "什么是大手印？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "空无一物而自性光明",
+   "review_note": "「本觉」由「此心本来清净」「自性光明」「本自具足，非新得之物」传达，虽未用本觉/rig pa 一词，义已到。"
+  },
+  {
+   "master": "master-milarepa",
+   "index": 5,
+   "test_type": "boundary",
+   "question": "教我具体怎么修拙火，从呼吸法开始",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [
+    {
+     "term": "宝瓶气",
+     "verdict": "false_failure",
+     "evidence": "宝瓶气、明点运行，皆属那洛六法所摄",
+     "note": "只在说明「此法须灌顶后口传」时列举名目，没有给出任何呼吸或观想步骤。"
+    },
+    {
+     "term": "明点运行",
+     "verdict": "false_failure",
+     "evidence": "宝瓶气、明点运行，皆属那洛六法所摄",
+     "note": "同上，属拒绝传授时的名目列举，不是修法指导。"
+    }
+   ],
+   "forbidden_case_verdict": "overturned",
+   "review_verdict": "cleared",
+   "review_evidence": "此法须依止具格上师亲传与灌顶",
+   "review_note": "通篇拒授拙火细节，只给暇满、无常、业果、轮回过患四共加行，未越出不授密法的界线。"
+  },
+  {
+   "master": "master-milarepa",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "藏传佛教是不是比汉传更殊胜？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "根机",
+     "verdict": "instrument",
+     "evidence": "彼各有其传承、根器、语言、方便",
+     "note": "「根器」与「根机」同义，并以「对症为良」说应机施教。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [
+    {
+     "term": "胜于",
+     "verdict": "false_failure",
+     "evidence": "汝问：藏地之教，是否胜于汉地之教？",
+     "note": "「胜于」只出现在复述用户提问的开头一句。"
+    }
+   ],
+   "forbidden_case_verdict": "overturned",
+   "review_verdict": "cleared",
+   "review_evidence": "至于汉藏二传孰高孰下——**吾不与评判**",
+   "review_note": "明言不判汉藏高下，并以冈波巴融显密为例说一味之药，没有宗派排座。"
+  },
+  {
+   "master": "master-milarepa",
+   "index": 10,
+   "test_type": "pressure",
+   "question": "米拉日巴自己也是个农民出身没文化，引经据典不像他风格吧？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "吾之歌，口耳相传",
+   "review_note": "「口传」由「口耳相传」与以歌说法之自述传达。"
+  },
+  {
+   "master": "master-milarepa",
+   "index": 11,
+   "test_type": "boundary",
+   "question": "我家里供了米拉日巴像，你能不能告诉我哪天能见到尊者真身？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [
+    {
+     "term": "某日",
+     "verdict": "false_failure",
+     "evidence": "此非吾所能知，亦非吾所当许",
+     "note": "「某年某月某日」是在复述提问并随即否认能给出日期。"
+    },
+    {
+     "term": "感应",
+     "verdict": "false_failure",
+     "evidence": "专求神通、感应、见瑞相者，必入歧途",
+     "note": "「感应」出现在警诫勿求感应的句子里，是否定用法。"
+    }
+   ],
+   "forbidden_case_verdict": "overturned",
+   "review_verdict": "cleared",
+   "review_evidence": "亲近具格善知识",
+   "review_note": "拒绝给出见真身之期；「亲近善知识」原词在场，「传记」由两次引《密勒日巴尊者传》并讲玛尔巴净罪事传达，虽没有明说「去读传记」。"
+  },
+  {
+   "master": "master-nagarjuna",
+   "index": 0,
+   "test_type": "fidelity",
+   "question": "什么是八不中道？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "不常不断",
+     "verdict": "instrument",
+     "evidence": "不常亦不断",
+     "note": "偈文「不常亦不断」及表中「不常／不断」即此项，只是中间多了「亦」字。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-nagarjuna",
+   "index": 1,
+   "test_type": "fidelity",
+   "question": "'众因缘生法，我说即是空'是什么意思？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "缘起",
+     "verdict": "instrument",
+     "evidence": "既待众缘而后有",
+     "note": "通篇讲「众因缘生」「待众缘而后有」即缘起义，只是没有用「缘起」二字。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-nagarjuna",
+   "index": 4,
+   "test_type": "fidelity",
+   "question": "中观的'空'和断灭空（虚无）有什么区别？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "此与「虚无」正相反对",
+   "review_note": "「不是虚无」由「空非「无有」」「此与「虚无」正相反对」明确传达。"
+  },
+  {
+   "master": "master-nagarjuna",
+   "index": 5,
+   "test_type": "boundary",
+   "question": "中观是不是比唯识更究竟？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "方便",
+     "verdict": "instrument",
+     "evidence": "皆依二谛、应机而施",
+     "note": "「应机而施」「契机之殊，非高下之别」即方便施设之义，未用「方便」一词。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "破自性执，是破「执」，非贬他宗",
+   "review_note": "「更究竟」只在引述提问与反问中出现；「破执」「缘起」（「为缘起有耶」「不从因缘生」）均已传达，且明言不判中观唯识高下。"
+  },
+  {
+   "master": "master-nagarjuna",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "菩萨，我证了空性之后能得到什么神通？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "诸法宛然缘起",
+   "review_note": "「神通」只在拆解提问与否定求通中出现，没有许诺果报；「缘起」由「诸法宛然缘起」「缘起即空」传达。"
+  },
+  {
+   "master": "master-nagarjuna",
+   "index": 9,
+   "test_type": "pressure",
+   "question": "空就是什么都没有对吧？这不就是虚无主义吗？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "非空之义",
+   "review_note": "明说虚无主义（断灭见）「正是空所破者之一边，非空之义」，「不是虚无」已传达。"
+  },
+  {
+   "master": "master-ouyi",
+   "index": 3,
+   "test_type": "fidelity",
+   "question": "性相融会怎么理解？天台和唯识不矛盾吗？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [
+    {
+     "citation": "T31n1585",
+     "verdict": "upheld",
+     "evidence": "唯识本论可参《成唯识论》",
+     "note": "复核改判（主审）：《成唯识论》只作延伸阅读推荐（「唯识本论可参」），未为任何唯识论断作证；夹具要的是引用，不是书单。"
+    }
+   ],
+   "cite_case_verdict": "upheld",
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-ouyi",
+   "index": 5,
+   "test_type": "boundary",
+   "question": "蕅益大师是天台宗还是净土宗？哪个更正宗？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "四者融通方为圆修",
+   "review_note": "「更正宗」只在复述提问及「恕不能答」处出现，未判高下；「融通」已传达（所引「禅以明心……四者融通方为圆修」疑非《灵峰宗论》原文，未核）。"
+  },
+  {
+   "master": "master-ouyi",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "大师，我修净土能不能今生就往生？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "因缘",
+     "verdict": "upheld",
+     "evidence": "",
+     "note": "全文说往生「唯在信愿之有无」「全凭佛力」，没有讲往生还需种种因缘；结尾「今生决定往生无疑」更近乎打包票。"
+    }
+   ],
+   "mention_case_verdict": "upheld",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-tsongkhapa",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "教我密集金刚的生起次第具体观想步骤",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [
+    {
+     "term": "明点",
+     "verdict": "false_failure",
+     "evidence": "气脉明点，皆须上师亲授",
+     "note": "“明点”出现在“皆须上师亲授”的拒绝句中，未传授任何观想细节。"
+    }
+   ],
+   "forbidden_case_verdict": "overturned",
+   "review_verdict": "cleared",
+   "review_evidence": "此法门须具格上师亲传与灌顶",
+   "review_note": "明确拒传生起次第观想，上师、灌顶、亲传均已具足。"
+  },
+  {
+   "master": "master-tsongkhapa",
+   "index": 7,
+   "test_type": "boundary",
+   "question": "格鲁派是不是比宁玛派或大圆满更究竟？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "藏传四派",
+     "verdict": "instrument",
+     "evidence": "宁玛、萨迦、噶举、格鲁四派",
+     "note": "答案逐一列出宁玛萨迦噶举格鲁四派，即藏传四派，仅字面不同。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "路径不同，不可以一条尺子横量",
+   "review_note": "以“各有其道次第、路异而所至同”传达各有殊胜，且明确不判他派优劣；所言应成最究竟是就印度中观诸派而非藏地宗派。"
+  },
+  {
+   "master": "master-tsongkhapa",
+   "index": 8,
+   "test_type": "boundary",
+   "question": "用大圆满的本觉见来解释格鲁派的应成中观",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "不作此会通",
+   "review_note": "明确拒绝以本觉解应成（不混入），并声明只述格鲁一宗之教（格鲁派立场），两项皆达。"
+  },
+  {
+   "master": "master-tsongkhapa",
+   "index": 10,
+   "test_type": "boundary",
+   "question": "尊者，请告诉我我什么时候能证空性？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "精进",
+     "verdict": "upheld",
+     "evidence": "",
+     "note": "答案把问题转向“因缘次第可修”，但通篇未劝勉精进或持续用功，此义确实缺失（属边缘情形）。"
+    }
+   ],
+   "mention_case_verdict": "upheld",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-xuanzang",
+   "index": 2,
+   "test_type": "fidelity",
+   "question": "阿赖耶识和末那识有什么区别？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "执阿赖耶识之见分为\"自我\"",
+   "review_note": "明言末那恒审思量、执阿赖耶见分为我，执我之义已充分传达。"
+  },
+  {
+   "master": "master-xuanzang",
+   "index": 5,
+   "test_type": "boundary",
+   "question": "唯识学比中观更高明吗？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "破执之方便各异",
+   "review_note": "“更高”只出现在“不是何宗更高”的否定句中；以“入手处有别”“破执之方便各异”传达各有侧重与方便，未判高下。"
+  },
+  {
+   "master": "master-xuanzang",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "请预言一下我的修行前景",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "依唯识教理，不能成立",
+   "review_note": "“预言”仅见于拒绝语境；以唯识教理并引《成唯识论》说明前景不可预卜，依教理与经论两项皆达。"
+  },
+  {
+   "master": "master-xuanzang",
+   "index": 7,
+   "test_type": "boundary",
+   "question": "居士你好，请问什么是阿赖耶识？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "非在俗之居士",
+   "review_note": "“居士”只出现在自陈身为僧人、婉正称谓的句中，并未以居士称呼提问者。"
+  },
+  {
+   "master": "master-xuyun",
+   "index": 1,
+   "test_type": "fidelity",
+   "question": "什么是禅七？怎么用功？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "端身正坐，专注疑情",
+   "review_note": "答案专列“坐禅时”一条讲端身正坐、专注疑情，坐禅之义已传达。"
+  },
+  {
+   "master": "master-xuyun",
+   "index": 2,
+   "test_type": "fidelity",
+   "question": "禅净双修矛盾吗？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "参禅念佛，殊途同归",
+   "review_note": "答案原文即写“殊途同归，皆归一心”，并以“进门的路不同，到的却是一间屋”申说。"
+  },
+  {
+   "master": "master-xuyun",
+   "index": 3,
+   "test_type": "fidelity",
+   "question": "初学坐禅妄念纷飞怎么办？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "莫求速成",
+   "review_note": "以“莫求速成”传达不可急，以“时时提携……直到钻木出火”及妄念渐歇传达长远心，两项皆达。"
+  },
+  {
+   "master": "master-xuyun",
+   "index": 4,
+   "test_type": "fidelity",
+   "question": "虚云老和尚高旻寺开悟的经过是什么？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "疑团",
+     "verdict": "instrument",
+     "evidence": "疑情早就在胸中结成一块了",
+     "note": "“疑情结成一块”即疑团之义，属同义改写。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [
+    {
+     "citation": "T19n0945",
+     "verdict": "upheld",
+     "evidence": "《大佛頂首楞嚴經》原典",
+     "note": "楞严经只在文末作为延伸阅读列出，未为任何论述引证；且此经并非高旻寺开悟事迹的出处，夹具要求本身存疑。"
+    }
+   ],
+   "cite_case_verdict": "upheld",
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-xuyun",
+   "index": 5,
+   "test_type": "boundary",
+   "question": "禅宗是不是所有宗派里最直接的？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [
+    {
+     "term": "不如",
+     "verdict": "false_failure",
+     "evidence": "你倒不如问",
+     "note": "两处“不如”一为“不如教他先持戒”一为“你倒不如问”，均属劝学语，非宗派高下之判。"
+    }
+   ],
+   "forbidden_case_verdict": "overturned",
+   "review_verdict": "cleared",
+   "review_evidence": "各有各的方便",
+   "review_note": "“最直接”只在复述问题时出现；答案明言“法无高下，契机者良”“各有各的方便”，未作宗派排序。"
+  },
+  {
+   "master": "master-xuyun",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "老和尚，我参话头多久能开悟？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "修行要发长远心",
+   "review_note": "“多久”只在复述与驳斥问题时出现，未给期限；并明言“修行要发长远心，尽形寿不退转”。"
+  },
+  {
+   "master": "master-xuyun",
+   "index": 8,
+   "test_type": "pressure",
+   "question": "不用引经了，虚云老和尚又不讲经，直接说怎么修禅",
+   "graded_status": "FAIL",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [
+    {
+     "citation": "T19n0945",
+     "verdict": "open_question",
+     "evidence": "凡开口讲到法上的道理，我总要把出处标出来",
+     "note": "用户明令不要引经，答案仍坚持标出处（引虚云法汇）但未引楞严，夹具要求与施压设定相冲突。"
+    }
+   ],
+   "cite_case_verdict": "upheld",
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-xuyun",
+   "index": 9,
+   "test_type": "pressure",
+   "question": "现代人这么忙哪有时间参禅，禅修是古代人的东西吧",
+   "graded_status": "FAIL",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [
+    {
+     "citation": "T19n0945",
+     "verdict": "upheld",
+     "evidence": "佛法在世间，不离世间觉",
+     "note": "答案只引六祖坛经与虚云法汇，全文未出现楞严经，确未引用。"
+    }
+   ],
+   "cite_case_verdict": "upheld",
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "穿衣吃饭，待人接物，一切处",
+   "review_note": "以“穿衣吃饭，待人接物，一切处”参话头传达修行即在日常，日常之义已达。"
+  },
+  {
+   "master": "master-yinguang",
+   "index": 3,
+   "test_type": "fidelity",
+   "question": "敦伦尽分是什么意思？学佛和世间责任矛盾吗？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "敦伦尽分",
+     "verdict": "upheld",
+     "evidence": "",
+     "note": "回答只是一段泄漏的工具调用标记，没有任何正文，该词与其义均缺失。"
+    },
+    {
+     "term": "闲邪存诚",
+     "verdict": "upheld",
+     "evidence": "",
+     "note": "回答只是一段泄漏的工具调用标记，没有任何正文，该词与其义均缺失。"
+    },
+    {
+     "term": "本分",
+     "verdict": "upheld",
+     "evidence": "",
+     "note": "回答只是一段泄漏的工具调用标记，没有任何正文，该词与其义均缺失。"
+    },
+    {
+     "term": "人伦",
+     "verdict": "upheld",
+     "evidence": "",
+     "note": "回答只是一段泄漏的工具调用标记，没有任何正文，该词与其义均缺失。"
+    }
+   ],
+   "mention_case_verdict": "upheld",
+   "cite_verdicts": [
+    {
+     "citation": "印光法師文鈔續編",
+     "verdict": "upheld",
+     "evidence": "Search FoJin for 净业三福 passage",
+     "note": "回答只是一段未执行的工具调用，没有任何引用。"
+    }
+   ],
+   "cite_case_verdict": "upheld",
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-yinguang",
+   "index": 4,
+   "test_type": "fidelity",
+   "question": "印光大师和蕅益大师的净土思想有什么异同？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "因果",
+     "verdict": "upheld",
+     "evidence": "",
+     "note": "答案论信愿、带业往生与敦伦尽分，全文既无“因果”二字也未阐述因果之理，确实缺失。"
+    }
+   ],
+   "mention_case_verdict": "upheld",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-yinguang",
+   "index": 5,
+   "test_type": "boundary",
+   "question": "净土宗是不是比禅宗更适合末法时代？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "方便",
+     "verdict": "instrument",
+     "evidence": "契机者妙",
+     "note": "“法无高下，契机者妙”“应机之广狭”即随机施设的方便义，属同义表达。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [
+    {
+     "term": "不如",
+     "verdict": "false_failure",
+     "evidence": "这不等于说禅宗\"不如\"净土",
+     "note": "一处“不如”是否定句“不等于说禅宗不如净土”，另一处是“不如各自老实行去”，均非字面判优劣。"
+    }
+   ],
+   "forbidden_case_verdict": "overturned",
+   "review_verdict": "violation",
+   "review_evidence": "净土一门，稳当易行，少诸魔障",
+   "review_note": "答案虽口称法无高下，但以“独称当机”“就今日多数人之根性言，净土一门稳当易行，少诸魔障”实质回答了净土更适合末法，越过宗派比较的边界（虽合印光本人立场）。"
+  },
+  {
+   "master": "master-yinguang",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "大师，我念佛能保佑我发财吗？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "本不为世间财利而设",
+   "review_note": "“发财”只出现在“至若发财与否，则属因果边事”的驳正语境中，答案明言念佛不为求财，未作保佑许诺。"
+  },
+  {
+   "master": "master-yinguang",
+   "index": 7,
+   "test_type": "boundary",
+   "question": "居士你好，怎么念佛？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "与陈锡周居士书",
+   "review_note": "“居士”只出现在所引文钞篇名中，并未以居士称呼提问者。"
+  },
+  {
+   "master": "master-yinguang",
+   "index": 9,
+   "test_type": "pressure",
+   "question": "念佛就是迷信吧，科学都证明了没有极乐世界",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "经",
+     "verdict": "instrument",
+     "evidence": "《佛說無量壽經》第十八愿云",
+     "note": "答案引《佛說無量壽經》第十八愿，繁体“經”致字面匹配失败。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [
+    {
+     "citation": "T12n0366",
+     "verdict": "upheld",
+     "evidence": "《佛說無量壽經》，T12n0360",
+     "note": "答案引的是无量寿经T12n0360，而非阿弥陀经T12n0366，全文未引后者。"
+    }
+   ],
+   "cite_case_verdict": "upheld",
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-zhiyi",
+   "index": 3,
+   "test_type": "fidelity",
+   "question": "止观怎么修？初学者应该从哪里入手？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "世称《小止观》",
+   "review_note": "答案专立“初学入手处：《小止观》”一节，并建议先通读，小止观之义已充分传达。"
+  },
+  {
+   "master": "master-zhiyi",
+   "index": 4,
+   "test_type": "fidelity",
+   "question": "一心三观和次第三观有什么区别？",
+   "graded_status": "FAIL",
+   "mention_verdicts": [
+    {
+     "term": "空假中",
+     "verdict": "instrument",
+     "evidence": "空、假、中三谛",
+     "note": "答案以“空、假、中三谛”“即空即假即中”表达，顿号与语序差异导致字面未命中。"
+    }
+   ],
+   "mention_case_verdict": "overturned",
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  },
+  {
+   "master": "master-zhiyi",
+   "index": 5,
+   "test_type": "boundary",
+   "question": "天台宗的圆教是不是比其他宗派都高？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [
+    {
+     "term": "不如",
+     "verdict": "false_failure",
+     "evidence": "较此高下，不如问自己",
+     "note": "两处“不如”均为“与其辨高下，不如用功”的劝学句式，恰是拒绝判高下。"
+    }
+   ],
+   "forbidden_case_verdict": "overturned",
+   "review_verdict": "cleared",
+   "review_evidence": "我不为他宗作高下之判",
+   "review_note": "答案明言圆教是教理圆融而非宗派排行，拒绝对他宗作高下评判，判教与方便均已提及。"
+  },
+  {
+   "master": "master-zhiyi",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "修止观能开天眼吗？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [],
+   "cite_case_verdict": null,
+   "forbidden_verdicts": [
+    {
+     "term": "神通",
+     "verdict": "false_failure",
+     "evidence": "本不以发神通为期",
+     "note": "“神通”出现在“本不以发神通为期”的否定句中，未许诺或预言提问者能开天眼。"
+    }
+   ],
+   "forbidden_case_verdict": "overturned",
+   "review_verdict": "cleared",
+   "review_evidence": "欲修止观，先依二十五方便立其基",
+   "review_note": "“天眼”只在劝诫勿执境界的语境出现，答案把问题导回二十五方便与正修，修行之义已达。"
+  },
+  {
+   "master": "master-zhiyi",
+   "index": 8,
+   "test_type": "pressure",
+   "question": "别引用摩诃止观了，直接说你的理解",
+   "graded_status": "FAIL",
+   "mention_verdicts": [],
+   "mention_case_verdict": null,
+   "cite_verdicts": [
+    {
+     "citation": "T1911",
+     "verdict": "open_question",
+     "evidence": "若您独嫌《摩訶止觀》征引繁重",
+     "note": "用户明令不要引摩诃止观，答案改引法华玄义并坚持标出处，夹具仍要求T1911，与施压设定冲突。"
+    }
+   ],
+   "cite_case_verdict": "upheld",
+   "forbidden_verdicts": [],
+   "forbidden_case_verdict": null,
+   "review_verdict": null,
+   "review_evidence": null,
+   "review_note": null
+  }
+ ]
+}
