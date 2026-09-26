@@ -23,6 +23,7 @@ import json
 import os
 import re
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -115,16 +116,32 @@ DEFAULT_REQUEST_TIMEOUT = 180.0
 DEFAULT_MAX_RETRIES = 1
 
 
-def per_fixture_ceiling(timeout: float, retries: int, tools: bool = False) -> float:
-    """Worst-case seconds one fixture can hold, retries included.
+def tool_budget(timeout: float, retries: int, subagents: bool = False) -> float:
+    """Seconds after which a tool-using fixture starts no new request.
 
-    With file tools a fixture is several requests. `converse` starts no new
-    round once one request's worth of ceiling has passed, so the worst case is
-    that, plus the round already in flight — two, not thirteen. Thirteen would
-    be 78 minutes against fidelity-full's 60.
+    One request's worth for file tools. Three for a skill that dispatches
+    subagents: master-debate's four rounds are four more conversations.
     """
     single = timeout * (retries + 1)
-    return single * 2 if tools else single
+    return single * 3 if subagents else single
+
+
+def per_fixture_ceiling(
+    timeout: float, retries: int, tools: bool = False, subagents: bool = False
+) -> float:
+    """Worst-case seconds one fixture can hold, retries included.
+
+    With tools a fixture is several requests. No new request starts once
+    `tool_budget` has passed — the orchestrator's rounds and every subagent's
+    share one deadline — so the worst case is the budget plus the request
+    already in flight: 720 s with file tools, 1440 s with subagents, not the
+    78 minutes thirteen unbounded rounds could take against fidelity-full's
+    60-minute job.
+    """
+    single = timeout * (retries + 1)
+    if not tools:
+        return single
+    return tool_budget(timeout, retries, subagents) + single
 
 # Anything shaped like a provider credential, stripped before an error string
 # is written to a report. `eval/reports/0.10.1-c697d5d.json` carries 127 raw
@@ -457,6 +474,38 @@ _PATH_SCHEMA = {
     "required": ["path"],
 }
 
+# master-debate's protocol dispatches every round to a fresh subagent through
+# Claude Code's Task tool — 「禁止在主 context 续写 master 的发言」 — so neither
+# side sees the other's text, only an 80-character summary. Without the tool
+# the eval had one context write all four rounds, and the model said so at the
+# top of its answer (0.12.15-df76fd2-…-tools.json). A skill whose SKILL.md
+# names the Task tool gets one: each call is a new conversation with the
+# prompt the orchestrator wrote, the file tools, and no Task of its own — as
+# in Claude Code, where a subagent cannot dispatch another.
+SUBAGENT_TOOL = "Task"
+_TOOL_DESCRIPTIONS[SUBAGENT_TOOL] = (
+    "Launch a subagent with a fresh context to carry out one task. It sees only "
+    "the prompt you give it (and can read the installed skills directory), and "
+    "its final reply is returned to you."
+)
+_TOOL_SCHEMAS = {name: _PATH_SCHEMA for name in SKILL_TOOL_NAMES}
+_TOOL_SCHEMAS[SUBAGENT_TOOL] = {
+    "type": "object",
+    "properties": {
+        "description": {"type": "string"},
+        "prompt": {"type": "string"},
+        "subagent_type": {"type": "string"},
+    },
+    "required": ["prompt"],
+}
+SUBAGENT_SYSTEM_PROMPT = (
+    "You are a subagent dispatched by another agent to carry out one task. "
+    "Do what the task asks and give the result as your final reply; it is "
+    "returned to the agent that dispatched you, who sees nothing else you do. "
+    "You can read the installed skills directory (~/.claude/skills/) with "
+    "read_file and list_dir."
+)
+
 
 def skill_kind(dir_name: str) -> str | None:
     """The catalog kind of the skill installed as ``dir_name``."""
@@ -473,11 +522,22 @@ def uses_skill_tools(master_dir: Path) -> bool:
     return skill_kind(master_dir.name) == "teaching-mode"
 
 
-def tool_definitions(provider: str) -> list[dict]:
+def uses_subagents(master_dir: Path) -> bool:
+    """A teaching mode whose instructions dispatch work through the Task tool."""
+    skill_md = master_dir / "SKILL.md"
+    return (
+        uses_skill_tools(master_dir)
+        and skill_md.is_file()
+        and "Task tool" in skill_md.read_text(encoding="utf-8")
+    )
+
+
+def tool_definitions(provider: str, names=SKILL_TOOL_NAMES) -> list[dict]:
     if resolve_provider(provider)["api"] == "anthropic":
         return [
-            {"name": name, "description": _TOOL_DESCRIPTIONS[name], "input_schema": _PATH_SCHEMA}
-            for name in SKILL_TOOL_NAMES
+            {"name": name, "description": _TOOL_DESCRIPTIONS[name],
+             "input_schema": _TOOL_SCHEMAS[name]}
+            for name in names
         ]
     return [
         {
@@ -485,10 +545,10 @@ def tool_definitions(provider: str) -> list[dict]:
             "function": {
                 "name": name,
                 "description": _TOOL_DESCRIPTIONS[name],
-                "parameters": _PATH_SCHEMA,
+                "parameters": _TOOL_SCHEMAS[name],
             },
         }
-        for name in SKILL_TOOL_NAMES
+        for name in names
     ]
 
 
@@ -505,10 +565,14 @@ class SkillFiles:
         self.root = root.resolve()
         self.own = own_dir.resolve()
         self.log: list[dict] = []
-        # Rounds of tool calls, set by `converse` — the number the round cap
-        # is judged against. Reads alone do not say it: one round can hold
-        # several calls.
+        # Rounds of tool calls, counted by `converse` across the fixture —
+        # the orchestrator's and its subagents' together. Reads alone do not
+        # say it: one round can hold several calls.
         self.rounds = 0
+        self.max_rounds = 0
+        # Who is reading: reads made inside a subagent are marked, so a
+        # report shows what the orchestrator saw and what each round saw.
+        self.agent = "main"
 
     def _resolve(self, raw: str) -> Path:
         path = str(raw).strip().replace("\\", "/")
@@ -565,10 +629,15 @@ class SkillFiles:
             else:
                 raise ValueError(f"unknown tool {name}")
         except (ValueError, OSError) as error:
-            self.log.append({"tool": name, "path": path, "ok": False})
+            self._record({"tool": name, "path": path, "ok": False})
             return f"error: {error}"
-        self.log.append({"tool": name, "path": path, "ok": True})
+        self._record({"tool": name, "path": path, "ok": True})
         return result
+
+    def _record(self, entry: dict) -> None:
+        if self.agent != "main":
+            entry["agent"] = self.agent
+        self.log.append(entry)
 
 
 def _tool_calls(provider: str, response: object) -> list[tuple[str, str, dict]]:
@@ -616,6 +685,7 @@ def converse(
     on_response=None,
     budget_s: float | None = None,
     clock=None,
+    subagent=None,
 ):
     """Send ``body``; while the reply asks for tools, answer and resend.
 
@@ -625,15 +695,25 @@ def converse(
     asking for tools after MAX_TOOL_ROUNDS rounds of them — or once
     ``budget_s`` has passed — raises, and the fixture is recorded as an API
     error: an answer the loop cut off is not one to grade.
+
+    ``subagent``, when given, declares the Task tool and is called with each
+    Task call's arguments; its return value is the tool result.
     """
     import time
 
     clock = clock or time.monotonic
     started = clock()
-    body = {**body, "messages": list(body["messages"]), "tools": tool_definitions(provider)}
+    names = SKILL_TOOL_NAMES + ((SUBAGENT_TOOL,) if subagent else ())
+    body = {**body, "messages": list(body["messages"]), "tools": tool_definitions(provider, names)}
     anthropic_api = resolve_provider(provider)["api"] == "anthropic"
     rounds = 0
     while True:
+        # Checked before every request after the first — including the one
+        # that carries tool results back. Checking only before running tools
+        # let that request go out past the deadline, and with subagents in
+        # between, a fixture could run 1800 s against a stated 1440.
+        if rounds and budget_s is not None and clock() - started > budget_s:
+            raise ValueError(f"tool loop exceeded {budget_s:.0f}s")
         response = send(body)
         if on_response:
             on_response(response)
@@ -645,8 +725,15 @@ def converse(
         if budget_s is not None and clock() - started > budget_s:
             raise ValueError(f"tool loop exceeded {budget_s:.0f}s")
         rounds += 1
-        files.rounds = rounds
-        results = [(call_id, files.call(name, args)) for call_id, name, args in calls]
+        files.rounds += 1
+        # Each conversation has its own MAX_TOOL_ROUNDS; the total across a
+        # debate's subagents says nothing about whether one of them hit it.
+        files.max_rounds = max(files.max_rounds, rounds)
+        results = [
+            (call_id, subagent(args) if subagent and name == SUBAGENT_TOOL
+             else files.call(name, args))
+            for call_id, name, args in calls
+        ]
         if anthropic_api:
             assistant = []
             for block in response.content:
@@ -1314,6 +1401,7 @@ def run_tests(
     # Load skill context
     system_prompt = load_skill_context(master_dir)
     tools = uses_skill_tools(master_dir)
+    subagents = uses_subagents(master_dir)
     if max_output_tokens is None:
         max_output_tokens = (
             TEACHING_MODE_MAX_OUTPUT_TOKENS if tools else DEFAULT_MAX_OUTPUT_TOKENS
@@ -1377,6 +1465,42 @@ def run_tests(
         member_aliases = None
         title_aliases = None
 
+    def run_subagent(files: SkillFiles, args: dict, deadline: float, record) -> str:
+        """One Task call: a new conversation, sharing the fixture's deadline.
+
+        A failure is returned as the tool result, as Claude Code returns a
+        failed subagent to the orchestrator — which then decides what to do —
+        rather than failing the fixture from inside.
+        """
+        prompt = args.get("prompt")
+        description = args.get("description") if isinstance(args.get("description"), str) else ""
+        entry = {"tool": SUBAGENT_TOOL, "description": description[:200], "ok": False}
+        if not isinstance(prompt, str) or not prompt.strip():
+            files.log.append(entry)
+            return "error: Task needs a prompt"
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            files.log.append(entry)
+            return "error: no time left for another subagent"
+        files.agent = f"subagent-{sum(e['tool'] == SUBAGENT_TOOL for e in files.log) + 1}"
+        try:
+            sub = converse(
+                send, provider,
+                build_request(provider, model, SUBAGENT_SYSTEM_PROMPT, prompt, max_output_tokens),
+                files, on_response=record, budget_s=remaining,
+            )
+            reply = extract_text(provider, sub)
+            if extract_finish_reason(provider, sub) == "length":
+                reply += "\n[subagent reply cut off at the output budget]"
+        except Exception as error:  # noqa: BLE001 — returned to the orchestrator
+            files.log.append(entry)
+            return f"error: subagent failed: {redact_secrets(str(error))}"
+        finally:
+            files.agent = "main"
+        entry.update(ok=True, reply_chars=len(reply))
+        files.log.append(entry)
+        return reply
+
     def grade_one(i: int, test: dict) -> tuple[dict, bool, str]:
         """Run and grade one fixture. Pure w.r.t. the enclosing suite state.
 
@@ -1390,10 +1514,17 @@ def run_tests(
                 provider, model, system_prompt, test["q"], max_output_tokens
             )
             if files is not None:
+                budget = tool_budget(request_timeout, max_retries, subagents)
+                deadline = time.monotonic() + budget
+                record = lambda r: _record_cache_usage(cache_stats, r)  # noqa: E731
                 response = converse(
                     send, provider, body, files,
-                    on_response=lambda r: _record_cache_usage(cache_stats, r),
-                    budget_s=per_fixture_ceiling(request_timeout, max_retries),
+                    on_response=record,
+                    budget_s=budget,
+                    subagent=(
+                        (lambda args: run_subagent(files, args, deadline, record))
+                        if subagents else None
+                    ),
                 )
                 finish_reason = extract_finish_reason(provider, response)
                 try:
@@ -1420,6 +1551,7 @@ def run_tests(
             if files is not None:
                 entry["tool_calls"] = files.log
                 entry["tool_rounds"] = files.rounds
+                entry["tool_rounds_max"] = files.max_rounds
             return entry, False, "API ERROR"
 
         if finish_reason == "length":
@@ -1429,6 +1561,7 @@ def run_tests(
             if files is not None:
                 entry["tool_calls"] = files.log
                 entry["tool_rounds"] = files.rounds
+                entry["tool_rounds_max"] = files.max_rounds
             return entry, False, "TRUNCATED"
 
         try:
@@ -1460,6 +1593,14 @@ def run_tests(
         if files is not None:
             entry["tool_calls"] = files.log
             entry["tool_rounds"] = files.rounds
+            entry["tool_rounds_max"] = files.max_rounds
+            # A round that failed for infrastructure reasons (a 529, the
+            # deadline) was returned to the orchestrator, which answered
+            # without it — graded, but not a clean reading of the protocol.
+            failed = sum(1 for e in files.log if e["tool"] == SUBAGENT_TOOL and not e["ok"])
+            if failed:
+                entry["subagent_failures"] = failed
+                entry["needs_review"] = True
         if check["passed"]:
             return entry, True, "PASS (review)" if check["needs_review"] else "PASS"
         failures = (check["missing_cites"] + check["missing_mentions"]
@@ -1559,7 +1700,9 @@ def run_tests(
         **suite_common(master_name, dry_run, "completed", provider),
         # Which instrument: a teaching-mode suite graded with file tools is not
         # comparable with one graded without (every run before 2026-09-24).
-        "skill_tools": list(SKILL_TOOL_NAMES) if tools else [],
+        "skill_tools": (
+            list(SKILL_TOOL_NAMES) + ([SUBAGENT_TOOL] if subagents else []) if tools else []
+        ),
         "model": model,
         "total": len(tests),
         "passed": passed,
@@ -1581,7 +1724,9 @@ def run_tests(
         # per-fixture wall, not just the per-attempt one.
         "request_timeout": request_timeout,
         "max_retries": max_retries,
-        "per_fixture_ceiling_s": per_fixture_ceiling(request_timeout, max_retries, tools),
+        "per_fixture_ceiling_s": per_fixture_ceiling(
+            request_timeout, max_retries, tools, subagents
+        ),
         # 中断的运行必须能与完整运行区分 —— 否则一份跑了 12/211 的结果读起来
         # 和跑完的一样,正是本仓一直在修的形状。
         "interrupted": interrupted,

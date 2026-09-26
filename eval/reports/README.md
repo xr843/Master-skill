@@ -65,6 +65,18 @@ lists what was read in `tool_calls`; each suite says `skill_tools`. **A teaching
 with `skill_tools` is a different instrument from one without** — every committed run
 before 2026-09-24 is without — and the two are not compared. Persona suites are unchanged.
 
+A teaching mode whose SKILL.md dispatches work through the Task tool — master-debate, whose
+protocol runs every round in a fresh subagent so neither side sees the other's text — also
+gets `Task` (since 2026-09-26). Each call is a new conversation: a generic subagent system
+prompt, the orchestrator's prompt as the only message, the file tools, and no `Task` of its
+own. Reads made inside a subagent carry `"agent": "subagent-N"` in `tool_calls`; each Task
+call is logged with its description and reply length. The orchestrator and its subagents
+share one deadline (1080 s before no new request starts; `per_fixture_ceiling_s` 1440).
+`tool_rounds` sums every conversation's rounds; `tool_rounds_max` is the most any one
+conversation used, which is what the 12-round cap applies to. A fixture graded after a
+subagent failed carries `subagent_failures` and `needs_review`: the orchestrator answered
+without that round.
+
 ### What the fabrication check covers now
 
 1. **It runs for every graded response.** When a non-empty declared source set is
@@ -108,8 +120,11 @@ BASELINE.md for what was actually spent on the first, partial run: ~84 completed
 before the account ran out of API credit, on the order of $2-4).
 
 Teaching-mode fixtures now make several requests each — one per round of file reads, up to
-12 rounds within a 360 s budget — and each round re-sends the conversation so far. Expect those 44 fixtures to cost a
-multiple of what they did; the persona fixtures are unaffected.
+12 rounds per conversation within a 360 s budget (1080 s for master-debate, whose rounds are
+subagents — each a conversation of its own) — and each round re-sends the conversation so
+far. Expect those 44 fixtures to cost a multiple of what they did; the persona fixtures are
+unaffected. A subagent's system prompt is too short to cache, so master-debate's
+`input_tokens_saved` is not comparable with runs before 2026-09-26.
 
 ## Report size
 
