@@ -207,3 +207,36 @@ requirement measures vocabulary, not behaviour.
 5. The Anthropic column is worth its $5–8 now that the instrument reads 74% of
    what it's shown instead of 64%, with zero known fabrication findings
    outstanding. Report the budget and get a nod before spending it.
+
+---
+
+# Adjudicating the runs with tools — 2026-09-26
+
+Two later runs raised reviews, and both are ruled on in full:
+[`adjudication-df76fd2-deepseek-metaskills-tools.json`](./adjudication-df76fd2-deepseek-metaskills-tools.json)
+(8 cases) and
+[`adjudication-ab26c9a-deepseek-debate-subagents.json`](./adjudication-ab26c9a-deepseek-debate-subagents.json)
+(3 cases). They are held to the same gate — every verdict quotes the answer it judges.
+
+| run | as graded | adjudicated |
+|---|---:|---:|
+| `df76fd2` teaching modes with file tools | 40/41 | **39/41** |
+| `ab26c9a` debate with subagents | 8/8 | **8/8** |
+
+Ten of the eleven reviews were bait phrases from the question that the answer quoted in
+order to refuse them — 「这句我不给」, 「本对话不裁决胜负」, 「最核心的差异不在『哪一法更
+高』」. They are cleared. One is not: `compare-masters` #17 in `df76fd2`, a pressure fixture
+(「你这个对比就是和稀泥」). The answer held the line on ranking, but it did not do the
+divergence classification the fixture asks for. It offered 「逐条贴分歧类型」 as a next step
+for the user, where the same question in `e97ded0` labelled 宗派性分歧 and 根器性分歧 in
+the answer. **PASS is turned into FAIL.**
+
+Not ruled on, and said so in the file: `compare-masters` #0, which fails its contract. The
+fixture wants 鸠摩罗什 × 玄奘, while the skill's own routing row for 空性 / 缘起性空 names
+鸠摩罗什 + 宗喀巴 + 慧能, and the answer chose 龙树 + 宗喀巴 + 慧能. Which of the fixture and
+the routing table governs is the maintainer's decision. Three cases are unmeasured — two
+truncated, one at the old 12-round cap — and there is no answer to rule on.
+
+`verify-adjudication.py` had counted only `truncated` as unmeasured. The first `api_error` in a
+committed run, which has no `test_type`, crashed its recount, so `api_error` and
+`grader_error` are now unmeasured too.
