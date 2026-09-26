@@ -33,6 +33,17 @@ orchestrator's prompt and no Task tool. Two deliberate breaks each fail the unit
 orchestrator's system prompt leaking into the subagent, and the subagent being given Task.
 No graded debate has run with it yet.
 
+An independent review confirmed the subagent's context is fresh and holds no answer key, and
+found that the stated ceiling did not hold. The orchestrator checked its deadline only before
+running tools, so the request that carried four subagents' replies back went out at 1430 s,
+and a fixture ran 1790 s against a stated 1440. Every request after the first now checks the
+deadline, and a test with a fake clock pins it. It fails without the fix. The same check
+bounds the file-tools-only path, whose 720 s claim was already true. Also from the review:
+a debate graded after a subagent failed is flagged `needs_review` with `subagent_failures`,
+and `tool_rounds_max` records the most rounds any one conversation used. That is the number
+the 12-round cap applies to, and `tool_rounds` alone no longer shows it once subagents are
+added in.
+
 ### Changed — the teaching modes default to a 16384-token budget; each result counts its tool rounds (2026-09-25)
 
 With `--all` every suite shared one `--max-output-tokens`, and the default is 2048. The

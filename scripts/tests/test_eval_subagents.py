@@ -126,3 +126,47 @@ def test_subagents_widen_the_budget_and_the_report_says_so(fidelity):
     assert fidelity.per_fixture_ceiling(180, 1, tools=True) == 720
     assert fidelity.per_fixture_ceiling(180, 1, tools=True, subagents=True) == 1440
     assert fidelity.per_fixture_ceiling(180, 1) == 360
+
+
+def test_no_request_starts_after_the_deadline(fidelity, monkeypatch):
+    # Found by review: the orchestrator checked its budget only before running
+    # tools, so the request carrying four subagents' replies back went out at
+    # 1430 s and the fixture ran 1790 s against a stated 1440.
+    now = [0.0]
+    starts = []
+    monkeypatch.setattr(fidelity.time, "monotonic", lambda: now[0])
+
+    def create(**body):
+        starts.append(now[0])
+        now[0] += 355
+        system = body["system"][0]["text"]
+        if system == fidelity.SUBAGENT_SYSTEM_PROMPT:
+            return _text("一轮")
+        if not _has_tool_result(body):
+            return NS(content=[NS(type="tool_use", id=f"t{i}", name="Task",
+                                  input={"description": f"R{i}", "prompt": f"第 {i} 轮"})
+                               for i in range(1, 5)],
+                      stop_reason="tool_use", usage=None)
+        return _text("### R1｜慧能大师 立论\n见性【T48n2008】")
+
+    client = NS(messages=NS(create=create))
+    monkeypatch.setitem(sys.modules, "anthropic", NS(Anthropic=lambda **_: client))
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-real-key")
+    suite = fidelity.run_tests("master-debate", quiet=True, concurrency=1, max_tests=1)
+
+    budget = fidelity.tool_budget(180, 1, subagents=True)
+    assert max(starts) <= budget, starts
+    assert now[0] <= suite["per_fixture_ceiling_s"] == 1440, now[0]
+    result = suite["results"][0]
+    assert result["status"] == "api_error" and "exceeded" in result["error"]
+    assert [e["ok"] for e in result["tool_calls"] if e["tool"] == "Task"] == [True, True, True, False]
+
+
+def test_a_graded_debate_missing_a_round_is_flagged(fidelity, monkeypatch):
+    def boom():
+        raise RuntimeError("upstream 529")
+
+    suite, _ = _run(fidelity, monkeypatch, "master-debate", boom)
+    result = suite["results"][0]
+    assert result["subagent_failures"] == 1 and result["needs_review"] is True
+    assert result["tool_rounds_max"] == 1

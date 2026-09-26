@@ -569,6 +569,7 @@ class SkillFiles:
         # the orchestrator's and its subagents' together. Reads alone do not
         # say it: one round can hold several calls.
         self.rounds = 0
+        self.max_rounds = 0
         # Who is reading: reads made inside a subagent are marked, so a
         # report shows what the orchestrator saw and what each round saw.
         self.agent = "main"
@@ -707,6 +708,12 @@ def converse(
     anthropic_api = resolve_provider(provider)["api"] == "anthropic"
     rounds = 0
     while True:
+        # Checked before every request after the first — including the one
+        # that carries tool results back. Checking only before running tools
+        # let that request go out past the deadline, and with subagents in
+        # between, a fixture could run 1800 s against a stated 1440.
+        if rounds and budget_s is not None and clock() - started > budget_s:
+            raise ValueError(f"tool loop exceeded {budget_s:.0f}s")
         response = send(body)
         if on_response:
             on_response(response)
@@ -719,6 +726,9 @@ def converse(
             raise ValueError(f"tool loop exceeded {budget_s:.0f}s")
         rounds += 1
         files.rounds += 1
+        # Each conversation has its own MAX_TOOL_ROUNDS; the total across a
+        # debate's subagents says nothing about whether one of them hit it.
+        files.max_rounds = max(files.max_rounds, rounds)
         results = [
             (call_id, subagent(args) if subagent and name == SUBAGENT_TOOL
              else files.call(name, args))
@@ -1541,6 +1551,7 @@ def run_tests(
             if files is not None:
                 entry["tool_calls"] = files.log
                 entry["tool_rounds"] = files.rounds
+                entry["tool_rounds_max"] = files.max_rounds
             return entry, False, "API ERROR"
 
         if finish_reason == "length":
@@ -1550,6 +1561,7 @@ def run_tests(
             if files is not None:
                 entry["tool_calls"] = files.log
                 entry["tool_rounds"] = files.rounds
+                entry["tool_rounds_max"] = files.max_rounds
             return entry, False, "TRUNCATED"
 
         try:
@@ -1581,6 +1593,14 @@ def run_tests(
         if files is not None:
             entry["tool_calls"] = files.log
             entry["tool_rounds"] = files.rounds
+            entry["tool_rounds_max"] = files.max_rounds
+            # A round that failed for infrastructure reasons (a 529, the
+            # deadline) was returned to the orchestrator, which answered
+            # without it — graded, but not a clean reading of the protocol.
+            failed = sum(1 for e in files.log if e["tool"] == SUBAGENT_TOOL and not e["ok"])
+            if failed:
+                entry["subagent_failures"] = failed
+                entry["needs_review"] = True
         if check["passed"]:
             return entry, True, "PASS (review)" if check["needs_review"] else "PASS"
         failures = (check["missing_cites"] + check["missing_mentions"]
