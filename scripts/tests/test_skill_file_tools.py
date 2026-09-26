@@ -196,7 +196,7 @@ def test_a_tool_call_cut_off_by_the_output_budget_is_not_run(tf, files):
 def test_twelve_rounds_run_and_a_thirteenth_request_for_tools_raises(tf, files):
     looping = NS(content=[NS(type="tool_use", id="t", name="list_dir", input={"path": "."})],
                  stop_reason="tool_use", usage=None)
-    with pytest.raises(ValueError, match="after 12 rounds"):
+    with pytest.raises(ValueError, match=f"after {tf.MAX_TOOL_ROUNDS} rounds"):
         tf.converse(lambda b: looping, "anthropic",
                     tf.build_request("anthropic", "m", "s", "q", 10), files)
     assert len(files.log) == tf.MAX_TOOL_ROUNDS
