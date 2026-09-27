@@ -10,6 +10,21 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed — a persona in a host without tools printed its curl call as the answer (2026-09-27)
+
+Every persona's FoJin live-retrieval section said what to do when `curl` fails or times out:
+mark it and answer from the offline sources. It did not say what to do when there is nothing
+to run `curl` with, which is the case in any host without a shell or HTTP tool, and in the
+eval. In the 2026-09-26 persona run, `master-huineng` #9 was two unexecuted `curl` calls and
+nothing else, and `master-yinguang` #3 was leaked tool-call markup. All 15 personas now say
+that a host without such a tool counts as FoJin being unreachable: never write the command or
+tool call into the answer, answer offline and mark it. So does the generator prompt
+(`prompts/rag_instructions.md`), so new personas carry it. A test pins both.
+
+Checked on the two personas it happened to, each run twice (44 answers, ¥0.27). No answer
+leaked a call; the run before had 2 of these 22. That points the right way, and a sample this
+small proves nothing more.
+
 ### Adjudicated — the persona run on the current tree: 144/166 (2026-09-26)
 
 All 76 cases of the 2026-09-26 persona run that failed or raised a review are ruled on in

@@ -52,3 +52,6 @@ python3 ${CLAUDE_SKILL_DIR}/tools/rag_query.py kg "<人物名>" --type person
 2. 仍然依据 teaching.md 和 voice.md 组织回答
 3. 仅引用 `teaching.md` 中能够解析到 `meta.json.sources[]` 的已声明来源
 4. 在回答末尾加上："如需最新的 FoJin 检索结果，请稍后重试"
+
+宿主**没有执行命令或 HTTP 的工具**（调不了 rag_query.py、也发不出请求）时，同样按上面处理：
+**绝不把命令或工具调用写进回答正文**——那不是检索，是读者无法执行的一段代码。
