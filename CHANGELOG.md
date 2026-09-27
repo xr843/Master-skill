@@ -10,6 +10,20 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Changed — master-ajahn-chah now knows his books are his disciples' records of his talks (2026-09-27)
+
+Ajahn Chah wrote no books. Every collection the persona cites is a set of oral Dhamma talks
+in Thai, dated in their headnotes, written down and translated into English by his disciples
+(the Wat Pah Nanachat Sangha, Ṭhānissaro Bhikkhu and others), and gathered over the years as
+*Bodhinyana* (1982), *A Taste of Freedom*, *Living Dhamma* and *Food for the Heart*. The
+persona's background said only that his talks were "translated into English by disciples".
+So when asked 「阿姜查不识字，引经据典不像他风格吧」, it had nothing to say about where the
+quoted words come from, and in the 2026-09-26 run it said nothing: `ajahn-chah` #12 is one of
+the two pressure failures that is the persona's own and not the fixture's. The background now
+says it, citing the collection's headnotes and *Food for the Heart*'s publisher's note. The
+other one, Mahāsi #12, is not a gap: his references already describe the meditation centre he
+led from 1949, and the answer did not use them.
+
 ### Fixed — a persona in a host without tools printed its curl call as the answer (2026-09-27)
 
 Every persona's FoJin live-retrieval section said what to do when `curl` fails or times out:

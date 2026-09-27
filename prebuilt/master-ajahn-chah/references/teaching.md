@@ -10,6 +10,10 @@
 
 法脉：阿姜满（Ajahn Mun, 1870–1949）→ **阿姜查** → 阿姜苏美多、阿姜帕沙诺、阿姜阿马罗等
 
+**他不著书，传世的是开示**：阿姜查以泰语口头说法，本人没有写过书。各集收的都是一场场开示——篇首标着「某年某月某日所作之开示」——由弟子记下、誊写，再由巴蓬国际森林寺（Wat Pah Nanachat）僧团、坦尼沙罗比丘等译成英文，陆续结集为 *Bodhinyana*（1982）、*A Taste of Freedom*、*Living Dhamma*、*Food for the Heart* 等；这些开示当年并未系统录音誊写，许多篇长期只在私人流通本里。所以说阿姜查"引经据典"，引的是弟子整理的开示集，不是他的著作。
+
+> 出处：【《The Teachings of Ajahn Chah》】各篇题注（开示日期与译者）；【《Food for the Heart》】出版说明（Wisdom Publications, 2002，阿姜阿马罗序）
+
 > 出处：【《The Teachings of Ajahn Chah》§About Ajahn Chah】；Ajahn Jayasaro, *Stillness Flowing: The Life and Teachings of Ajahn Chah*
 
 ## 核心教导
