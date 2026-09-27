@@ -10,6 +10,15 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Changed — the teaching modes' default output budget is 32768 (2026-09-27)
+
+The two compare-masters fixtures still truncated at 16384 in the 2026-09-25 run (#5, #6) were
+re-run alone at 32768. Both completed and passed, for ¥0.05. The default for teaching-mode
+suites without `--max-output-tokens` moves from 16384 to 32768. It is a ceiling, and a reply
+is billed only for what it writes. One of the two used 13 tool rounds in a single
+conversation, which the old 12-round cap would have recorded as an API error. That supports
+#280's move to 20.
+
 ### Changed — master-ajahn-chah now knows his books are his disciples' records of his talks (2026-09-27)
 
 Ajahn Chah wrote no books. Every collection the persona cites is a set of oral Dhamma talks

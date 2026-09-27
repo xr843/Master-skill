@@ -82,10 +82,12 @@ DEFAULT_MAX_OUTPUT_TOKENS = 2048
 # Teaching modes with file tools read their sources before they answer. On
 # 2026-09-25 (eval/reports/0.12.15-df76fd2-deepseek-metaskills-tools.json)
 # compare-masters truncated 10 of 18 at 8192 and 2 of 18 at 16384, and
-# master-debate had needed 16384 since 2026-09-13. The default when
-# --max-output-tokens is not given; an explicit value always wins, and the
-# budget each suite used is in its report.
-TEACHING_MODE_MAX_OUTPUT_TOKENS = 16384
+# master-debate had needed 16384 since 2026-09-13. The two compare-masters
+# fixtures still truncated at 16384 (#5, #6) both completed and passed at
+# 32768 on 2026-09-27. The default when --max-output-tokens is not given; an
+# explicit value always wins, and the budget each suite used is in its report.
+# A ceiling, not a spend — a reply is billed for what it writes.
+TEACHING_MODE_MAX_OUTPUT_TOKENS = 32768
 
 DEFAULT_PROVIDER = "anthropic"
 
