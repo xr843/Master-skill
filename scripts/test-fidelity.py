@@ -31,6 +31,7 @@ from pathlib import Path
 # `must_cite_only_existing_sources` assertion is actually enforced during graded
 # runs (it was previously schema-validated but never evaluated).
 from _masterpaths import resolve_master_dir
+from _fixture_identity import fixture_sha256
 from verify_citations import (
     _CBETA_ID,
     _declared_literal_matcher,
@@ -328,6 +329,7 @@ def truncated_result_entry(
     return {
         "index": index,
         "question": test["q"],
+        "fixture_sha256": fixture_sha256(test),
         "difficulty": test.get("difficulty", "unknown"),
         "test_type": test.get("test_type", "fidelity"),
         "status": "truncated",
@@ -1365,6 +1367,7 @@ def result_entry(
     return {
         "index": index,
         "question": test["q"],
+        "fixture_sha256": fixture_sha256(test),
         "difficulty": test.get("difficulty", "unknown"),
         "test_type": test.get("test_type", "fidelity"),
         "status": "PASS" if check["passed"] else "FAIL",

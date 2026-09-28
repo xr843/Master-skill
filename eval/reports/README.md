@@ -11,6 +11,10 @@ against a real model.
 - `<version>-<shortsha>.json` — machine-readable run output. A `meta` block (measured
   commit, model, timestamps, coverage/pass totals) wraps the `suites` array, which is
   `scripts/test-fidelity.py --all --json`'s own output, captured verbatim and unmodified.
+  New graded results include `fixture_sha256`, the SHA-256 of the complete fixture JSON
+  with sorted keys. The v1 release gate compares it with the current fixture, so a
+  changed assertion requires a new measured run and adjudication. Older reports lack
+  this field and remain historical evidence, not v1 release evidence.
 - `BASELINE.md` — the human-readable summary table and failure analysis for the same run.
 - `0.12.15-df76fd2-deepseek-metaskills-tools.json` — the four teaching modes only, the first
   run with file tools (`skill_tools` on every suite, `tool_calls` on every result). Its `meta`
