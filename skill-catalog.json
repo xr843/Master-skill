@@ -154,6 +154,7 @@
     {
       "name": "compare-masters",
       "kind": "teaching-mode",
+      "requires": "all-personas",
       "source": "prebuilt/compare-masters",
       "install_dir": "compare-masters",
       "aliases": [
@@ -163,6 +164,7 @@
     {
       "name": "master-debate",
       "kind": "teaching-mode",
+      "requires": "all-personas",
       "source": "prebuilt/master-debate",
       "install_dir": "master-debate",
       "aliases": [
@@ -172,6 +174,7 @@
     {
       "name": "master-curriculum",
       "kind": "teaching-mode",
+      "requires": "all-personas",
       "source": "prebuilt/master-curriculum",
       "install_dir": "master-curriculum",
       "aliases": [
@@ -203,6 +206,7 @@
         "references",
         "requirements.txt",
         "ETHICS.md",
+        "LICENSE",
         "masters"
       ]
     }

@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/master-skill"><img src="https://img.shields.io/npm/v/master-skill.svg?label=npm&color=cb3837" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/master-skill"><img src="https://img.shields.io/npm/dm/master-skill.svg?color=cb3837" alt="npm downloads"></a>
-  <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
+  <img src="https://img.shields.io/badge/License-MIT%20%2B%20CC-blue.svg" alt="License: MIT code, Creative Commons content">
   <img src="https://img.shields.io/badge/Python-3.9+-green.svg" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/Claude%20Code-Skill-purple.svg" alt="Claude Code Skill">
   <img src="https://img.shields.io/badge/AgentSkills-Standard-orange.svg" alt="AgentSkills Standard">
@@ -159,7 +159,7 @@ This project is built out of respect for Buddhist traditions. All content is gen
 - **Automated fidelity tests**: 211 fixtures (10+ per master, 18 for the `compare-masters` meta-skill) check keyword and citation coverage, and every graded answer also goes through the offline citation audit; CI runs a structural dry-run on every PR and on `main`; graded runs support Anthropic / DeepSeek / Gemini (`--provider`) with the matching API key, as a manual local/pre-release step — the latest full run and its case-by-case adjudication are [below](#fidelity-evaluation-current-data)
 - **One `prebuilt/` tree across platforms**: Claude Code, Cursor, Codex CLI, OpenCode, and Gemini CLI each install it differently (see [docs/install.en.md](docs/install.en.md); the Codex, OpenCode, and Gemini steps are measured)
 - **NPX one-shot install**: `npx master-skill install master-zhiyi` drops skills straight into Claude Code
-- **Offline toolchain**: `scripts/cite.py` (CBETA lookup), `scripts/query.py` (offline semantic search), `scripts/validate.py` (frontmatter linter)
+- **Offline toolchain**: `scripts/cite.py` (CBETA lookup), `scripts/query.py` (offline keyword search), `scripts/validate.py` (frontmatter linter)
 - **FoJin data bridge**: Connected to [fojin.app](https://fojin.app) — 10K+ texts, 678K+ semantic embeddings, a knowledge graph of 110K+ entities, and 600+ registered data sources
 - **AgentSkills standard**: Compliant with [Anthropic Agent Skills](https://github.com/anthropics/skills) — progressive disclosure, decision trees, black-box script pattern
 
@@ -222,7 +222,7 @@ Once installed, invoke `/master-huineng`, `/compare-masters`, etc. directly in c
 
 ## Desktop Manager
 
-A native desktop console (pure Rust, egui, single binary, no Electron) that unifies management of installation status, fidelity evaluation coverage, run tracing, and the quality gate across 18 skills (the 15 masters plus `master-debate`, `master-curriculum` and `master-help`):
+A native desktop console (pure Rust, egui, single binary, no Electron) that unifies management of installation status, fidelity evaluation coverage, run tracing, and the quality gate across the prebuilt skills:
 
 ![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/main/docs/assets/desktop-manager.png)
 
@@ -318,7 +318,7 @@ Before submitting, verify that every source resolves to the persona's declared s
 
 ## License
 
-MIT License
+Code is MIT licensed; original prebuilt skill content is CC BY-NC-SA 4.0; prompt templates are CC BY 4.0. Third-party excerpts retain their source-specific rights. See [LICENSE](LICENSE) and [ETHICS.md](ETHICS.md).
 
 ---
 

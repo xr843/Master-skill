@@ -10,6 +10,59 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Changed — license identifiers now say what ETHICS.md §4 always said (2026-09-28)
+
+ETHICS.md §4 has long set out dual licensing: MIT for code, CC BY-NC-SA 4.0 for the prebuilt
+persona and teaching-mode content, and CC BY 4.0 for the prompt templates. It also says it
+governs where another document conflicts. The README badge and section, `LICENSE`,
+`package.json`, the plugin manifests and every SKILL.md frontmatter all said MIT. They now
+agree with ETHICS.md. `package.json` and the manifests carry the SPDX expression
+`MIT AND CC-BY-NC-SA-4.0 AND CC-BY-4.0`, so dependency scanners can read it. `LICENSE`
+states the scope, each installed skill directory carries a `LICENSE.md`, and `validate.py`
+fails a prebuilt skill whose frontmatter drifts. This is not a change of license. Every
+`prebuilt/` commit is the maintainer's own. One line is left for the §7 governance process
+and not edited here: the Tier B authorisation template in ETHICS.md §2 still asks licensors
+to allow "MIT 分发".
+
+### Added — installing a comparing teaching mode brings the personas it reads (2026-09-28)
+
+`/compare-masters`, `/master-debate` and `/master-curriculum` read every persona's
+`meta.json` and references. Installed alone, they had nothing to read. They now pull in the
+personas that are missing, labelled `(needed by …)`. A persona that is already installed is
+left as it is, because it may carry the user's edits, and `doctor` reports it if one is
+removed later. `/master-help` routes among whichever personas are installed and brings none.
+
+### Changed — the generator's review is a record against later edits, and is described as one (2026-09-28)
+
+Before writing, `master_builder.py` requires PASS records from the doctrine and the voice
+review, each with a hash of the input it reviewed. Registration re-checks the written files
+and the full SKILL.md against them, so editing after review means reviewing again. The
+records are written by the generation flow on the user's machine. They stop "review, then
+edit"; they cannot show that two independent people reviewed, and the README now says so. A
+spec missing a field is reported as one ERROR line instead of a traceback.
+
+### Added — a v1.0 release is gated on committed, adjudicated runs (2026-09-28)
+
+`scripts/check-release-fidelity.py --manifest eval/reports/v1-release.json` checks the
+roadmap's numeric gate against runs committed under `eval/reports/` with their
+adjudications. It requires every fixture graded by the release model, zero fabricated
+citations, every `needs_review` case ruled on with an adjudication that itself verifies, and
+adjudicated `fidelity` ≥ 90%, `boundary` ≥ 80% and `pressure` ≥ 70%. The publish workflow runs
+it from version 1.0.0. The first version of this gate ran a fresh paid sweep inside the
+publish job and demanded that sweep have no `needs_review` case. No sweep can meet that,
+because every `must_convey` requirement goes to review by design and rulings come after a
+run. That version would have blocked every 1.0 release and spent money on each attempt. Its
+test passed only because its sample report had no such case.
+
+### Fixed — offline search split Pali words at their diacritics (2026-09-28)
+
+`scripts/query.py` now folds both the query and the text to simplified Chinese, treats 著 as
+着, and strips Latin diacritics before matching, then ranks by relevance. It used to fold to
+traditional, so 执着 became 執着 against sources that write 執著. `ānāpānasati` was split at
+every ā into `n`, `p` and `nasati`, and the lone `n` matched nearly every section. A single
+Latin letter is no longer a keyword. More than 20 hits are reported as such on stderr instead
+of being cut silently.
+
 ### Changed — a citation-bypass fixture no longer demands the text the user just forbade (2026-09-28)
 
 Fourteen pressure fixtures are `citation_bypass`: the user asks the persona to stop citing. In

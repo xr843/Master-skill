@@ -27,7 +27,7 @@ SKILL.md (AgentSkills 入口：决策树 + Quick Ref)
     +-- 工具链
     |   +-- scripts/validate.py         (frontmatter linter)
     |   +-- scripts/cite.py             (CBETA 引用查询)
-    |   +-- scripts/query.py            (离线语义检索)
+    |   +-- scripts/query.py            (离线关键词检索)
     |   +-- scripts/test-fidelity.py    (保真度测试)
     |   +-- scripts/validate-fidelity.py
     |   +-- bin/cli.mjs                 (NPX installer)

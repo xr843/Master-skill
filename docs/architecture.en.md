@@ -27,7 +27,7 @@ SKILL.md (AgentSkills entry: decision tree + quick reference)
     +-- Offline toolchain
     |   +-- scripts/validate.py         (frontmatter linter)
     |   +-- scripts/cite.py             (CBETA lookup)
-    |   +-- scripts/query.py            (offline semantic search)
+    |   +-- scripts/query.py            (offline keyword search)
     |   +-- scripts/test-fidelity.py    (fidelity runner)
     |   +-- scripts/validate-fidelity.py
     |   +-- bin/cli.mjs                 (NPX installer)

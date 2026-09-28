@@ -29,7 +29,7 @@ tests/persona/
 └── tsongkhapa.promptfooconfig.yaml    # 宗喀巴（藏传 / 格鲁 / 中文）
 ```
 
-这 3 个 master 是三大传统的代表样本 + 中英文双语支持的活文档。**剩余 11
+这 3 个 master 是三大传统的代表样本 + 中英文双语支持的活文档。**剩余 12
 个 master 的 promptfooconfig 按本目录模板由社区贡献**，schema 由
 `scripts/validate-promptfoo-configs.py` 把关。
 
@@ -72,7 +72,7 @@ Opus 调用，单跑约 $0.10-$0.30 量级（视回答长度）。
    - 项目当前政策（见 maintainer 备忘）：不为 LLM-as-judge 付费 CI。等社区
      验证评测价值后再决定是否升级为 hard gate。
 
-## 为剩余 11 个 master 补 config 的步骤
+## 为剩余 12 个 master 补 config 的步骤
 
 1. 在 `shared.yaml` 顶部加新条目，按现有命名 `<slug_underscore>_persona_prompt`
    （例：`zhiyi_persona_prompt`，注意 `master-mahasi-sayadaw` 这种带连字符的

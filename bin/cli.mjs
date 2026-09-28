@@ -77,6 +77,9 @@ function loadCatalog() {
     if (!SKILL_KINDS.has(skill.kind)) {
       invalidCatalog(`skills[${index}].kind must be persona, teaching-mode, or generator`);
     }
+    if (skill.requires !== undefined && (skill.kind !== "teaching-mode" || skill.requires !== "all-personas")) {
+      invalidCatalog(`skills[${index}].requires must be all-personas on a teaching mode`);
+    }
     if (!isSafeRelativePath(skill.source, { allowDot: true })) {
       invalidCatalog(`skills[${index}].source must be a safe relative path`);
     }
@@ -411,7 +414,24 @@ function generatorDependencies(generatorDir) {
 function cmdInstall(names) {
   fs.mkdirSync(SKILLS_DIR, { recursive: true });
   let failed = 0;
+  // A teaching mode that reads every persona (`requires: all-personas`) pulls
+  // in the ones that are missing. Only the missing ones: a persona already
+  // installed may carry the user's own edits, and re-installing it as a side
+  // effect of installing something else would overwrite them silently.
+  const requested = new Set(names);
+  const neededBy = new Map();
   for (const name of names) {
+    const skill = isSafeName(name) ? resolveSkill(name) : null;
+    if (skill?.requires !== "all-personas") continue;
+    for (const persona of CATALOG.skills.filter((entry) => entry.kind === "persona")) {
+      const explicit = names.some((n) => isSafeName(n) && resolveSkill(n)?.name === persona.name);
+      if (explicit || neededBy.has(persona.name)) continue;
+      if (fs.existsSync(path.join(SKILLS_DIR, persona.install_dir, "SKILL.md"))) continue;
+      neededBy.set(persona.name, skill.name);
+      requested.add(persona.name);
+    }
+  }
+  for (const name of requested) {
     if (!isSafeName(name)) {
       console.log(`  ✗ ${name} — invalid name (letters, digits, "-", "_" only)`);
       failed++;
@@ -435,7 +455,8 @@ function cmdInstall(names) {
       fs.rmSync(dest, { recursive: true, force: true });
       cpR(src, dest);
     }
-    console.log(`  ✓ ${name} → ${dest}`);
+    const why = neededBy.has(name) ? ` (needed by ${neededBy.get(name)})` : "";
+    console.log(`  ✓ ${name} → ${dest}${why}`);
     if (deps && !deps.ok) console.log(`    ! ${deps.message}`);
   }
   return failed;
@@ -574,6 +595,18 @@ function expectedInstallFiles(skill) {
 // is a normal choice.
 function installedProblems() {
   const problems = [];
+  for (const skill of CATALOG.skills.filter((entry) => entry.requires === "all-personas")) {
+    if (!fs.existsSync(path.join(SKILLS_DIR, skill.install_dir))) continue;
+    const missing = CATALOG.skills.filter((entry) => entry.kind === "persona" &&
+      !fs.existsSync(path.join(SKILLS_DIR, entry.install_dir, "meta.json")));
+    if (missing.length) {
+      problems.push({
+        code: "missing-dependency",
+        name: skill.name,
+        message: `${skill.name} needs ${missing.length} persona(s), e.g. ${missing[0].name} — run: master-skill install ${skill.name}`,
+      });
+    }
+  }
   for (const skill of catalogSkills()) {
     const dest = path.join(SKILLS_DIR, skill.install_dir);
     if (!fs.existsSync(dest)) continue;

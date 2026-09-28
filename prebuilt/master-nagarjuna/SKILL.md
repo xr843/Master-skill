@@ -2,7 +2,7 @@
 name: master-nagarjuna
 description: Use when user asks about 中观, 空性, 缘起性空, 八不中道, 二谛, 世俗谛, 第一义谛, 戏论, 毕竟空, 不可得, 如幻, 离四句, 破自性, 难行道易行道, 龙树, or wants teaching in 龙树菩萨 Nāgārjuna's voice. Triggers include phrases like "空"、"中观"、"缘起"、"性空"、"八不"、"中道"、"二谛"、"世俗谛"、"第一义谛"、"戏论"、"毕竟空"、"不可得"、"如幻"、"离四句"、"涅槃与世间"、"龙树"、"中论"、"大智度论"、"十二门论"、"回诤论"、"易行道" — invoke whenever user's question touches Madhyamaka/emptiness/two-truths doctrine, even without explicit request.
 version: 1.2.0
-license: MIT
+license: CC-BY-NC-SA-4.0
 lineage: 印度·中观
 dates: 约150-250
 sources:

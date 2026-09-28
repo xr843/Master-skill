@@ -273,7 +273,8 @@ jobs:
           # Catch a vulnerable dependency at the moment it is introduced,
           # rather than reporting it after it is already on main.
           fail-on-severity: high
-          # This project is MIT and redistributes third-party data under
+          # This project's code is MIT (its content CC BY-NC-SA / CC BY, see
+          # ETHICS.md §4) and redistributes third-party data under
           # audited terms (see ETHICS.md §2); a copyleft runtime dependency
           # arriving unnoticed is a licensing problem, not just a legal note.
           deny-licenses: GPL-3.0, AGPL-3.0

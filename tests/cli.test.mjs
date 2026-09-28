@@ -100,7 +100,7 @@ test("skill catalog declares 20 unique installable skills", () => {
   const generator = catalog.skills.find((skill) => skill.name === "create-master");
   assert.deepEqual(generator.bundle_paths, [
     "SKILL.md", "tools", "prompts", "references", "requirements.txt",
-    "ETHICS.md", "masters",
+    "ETHICS.md", "LICENSE", "masters",
   ]);
 });
 
@@ -207,14 +207,14 @@ test("doctor counts only directories this package did not install as other skill
   assert.equal(payload.otherInstalledSkillDirs, 1);
   const catalogSize = JSON.parse(fs.readFileSync(CATALOG_PATH, "utf8")).skills.length;
   assert.equal(payload.catalogSkills, catalogSize);
-  assert.equal(payload.installedCatalogSkills, 2);
+  assert.equal(payload.installedCatalogSkills, 16);
   // The prebuilt/ counts the desktop uses as its denominator: create-master
   // is not under prebuilt/, compare-masters is.
   assert.equal(payload.availableSkills, prebuiltMasters.length);
-  assert.equal(payload.installedKnownSkills, 2);
+  assert.equal(payload.installedKnownSkills, 16);
 
   const { stdout } = run(["doctor"], env);
-  assert.match(stdout, new RegExp(`Installed skills: 2 of ${catalogSize}`));
+  assert.match(stdout, new RegExp(`Installed skills: 16 of ${catalogSize}`));
   assert.match(stdout, /Other installed skill dirs: 1\b/);
 });
 
@@ -483,6 +483,19 @@ test("public compare-masters name installs to its public directory", (t) => {
   const { home, env } = tmpHome(t);
   assert.equal(run(["install", "compare-masters"], env).code, 0);
   assert.ok(fs.existsSync(path.join(skillsDir(home), "compare-masters", "SKILL.md")));
+  for (const name of ["master-huineng", "master-ajahn-chah", "master-tsongkhapa"]) {
+    assert.ok(fs.existsSync(path.join(skillsDir(home), name, "meta.json")), `${name} dependency missing`);
+  }
+  assert.equal(JSON.parse(run(["doctor", "--json"], env).stdout).status, "ok");
+});
+
+test("doctor reports a missing teaching-mode persona dependency", (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "compare-masters"], env).code, 0);
+  fs.rmSync(path.join(skillsDir(home), "master-huineng"), { recursive: true });
+  const report = JSON.parse(run(["doctor", "--json"], env).stdout);
+  assert.equal(report.status, "problems");
+  assert.ok(report.problems.some((problem) => problem.code === "missing-dependency" && problem.name === "compare-masters"));
 });
 
 test("install create-master copies a self-contained generator bundle", (t) => {
@@ -1283,4 +1296,25 @@ test("the tarball ships no test suites of its own", () => {
     (f) => f.startsWith("scripts/tests/") || f.startsWith("hooks/tests/"),
   );
   assert.deepEqual(shippedTests, [], `test files should not ship: ${shippedTests}`);
+});
+
+test("installing a teaching mode does not overwrite a persona the user has edited", (t) => {
+  // Found by review (2026-09-28): dependencies were re-installed like explicit
+  // names, so a line added to master-huineng/SKILL.md vanished when
+  // compare-masters was installed afterwards.
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "huineng"], env).code, 0);
+  const skillMd = path.join(skillsDir(home), "master-huineng", "SKILL.md");
+  fs.appendFileSync(skillMd, "\n<!-- my note -->\n");
+  const { stdout, code } = run(["install", "compare-masters"], env);
+  assert.equal(code, 0);
+  assert.match(fs.readFileSync(skillMd, "utf8"), /my note/);
+  assert.doesNotMatch(stdout, /master-huineng →/);
+  assert.match(stdout, /master-zhiyi → .* \(needed by compare-masters\)/);
+});
+
+test("master-help installs alone: it routes among whatever personas are installed", (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "master-help"], env).code, 0);
+  assert.deepEqual(fs.readdirSync(skillsDir(home)).sort(), ["master-help"]);
 });

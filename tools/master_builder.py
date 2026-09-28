@@ -11,6 +11,7 @@ Flow:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -20,7 +21,7 @@ from typing import Optional
 
 from fojin_bridge import FojinBridge, create_bridge
 from sutra_collector import collect_teacher_data, collect_specific_texts
-from skill_writer import DISCLAIMER, create_teacher, derive_citation_contract
+from skill_writer import DISCLAIMER, create_teacher, derive_citation_contract, sanitize_generated
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "prompts")
@@ -254,7 +255,37 @@ def _offline_smoke_spec() -> dict:
     }
 
 
-def build_from_spec(spec: dict, output_dir: str) -> dict:
+def _review_inputs(teaching_content: str, voice_content: str, sources: list, contract: dict) -> dict:
+    return {
+        "doctrine": {"teaching_content": teaching_content, "sources": sources, "citation_contract": contract},
+        "voice": {"voice_content": voice_content, "teaching_content": teaching_content},
+    }
+
+
+def _review_digest(payload: dict) -> str:
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _check_review(review: object, inputs: dict) -> None:
+    if not isinstance(review, dict):
+        raise ValueError("review must contain doctrine and voice PASS records before writing")
+    reviewers = []
+    for stage, payload in inputs.items():
+        record = review.get(stage)
+        if not isinstance(record, dict) or record.get("verdict") != "PASS":
+            raise ValueError(f"review.{stage} must have a PASS verdict")
+        if record.get("input_sha256") != _review_digest(payload):
+            raise ValueError(f"review.{stage} hash does not match the current inputs")
+        reviewer = record.get("reviewer")
+        if not isinstance(reviewer, str) or not reviewer.strip():
+            raise ValueError(f"review.{stage} must name a reviewer")
+        reviewers.append(reviewer.strip())
+    if len(set(reviewers)) != len(reviewers):
+        raise ValueError("review stages need independent reviewer identifiers")
+
+
+def build_from_spec(spec: dict, output_dir: str, *, offline_smoke: bool = False) -> dict:
     """Prepare review input and persist one persona from an explicit spec."""
     required = (
         "name",
@@ -273,6 +304,11 @@ def build_from_spec(spec: dict, output_dir: str) -> dict:
     context = prepare_generation_context(
         spec["sources"], spec.get("citation_contract")
     )
+    review_inputs = _review_inputs(spec["teaching_content"], spec["voice_content"], context["sources"], context["citation_contract"])
+    if not offline_smoke:
+        _check_review(spec.get("review"), review_inputs)
+        if any(sanitize_generated(spec[field]) != spec[field] for field in ("teaching_content", "voice_content")):
+            raise ValueError("reviewed content would change during sanitization; review the sanitized text")
     review_prompt = build_doctrine_review_prompt(
         spec["teaching_content"], context
     )
@@ -302,6 +338,14 @@ def build_from_spec(spec: dict, output_dir: str) -> dict:
         ),
         encoding="utf-8",
     )
+    if not offline_smoke:
+        review_record = dict(spec["review"])
+        review_record["skill_sha256"] = hashlib.sha256(
+            (Path(teacher_dir) / "SKILL.md").read_bytes()
+        ).hexdigest()
+        (Path(teacher_dir) / "review-record.json").write_text(
+            json.dumps(review_record, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
     return {
         "teacher_dir": str(teacher_dir),
         "meta_path": str(Path(teacher_dir) / "meta.json"),
@@ -328,6 +372,17 @@ def register_teacher(teacher_dir: str, skills_dir: str) -> dict:
     prebuilt master (`master-huineng`) must not overwrite the installed one.
     """
     teacher = Path(teacher_dir).resolve()
+    record_path = teacher / "review-record.json"
+    if not record_path.is_file():
+        raise ValueError("review record missing; an unreviewed draft cannot be registered")
+    meta = json.loads((teacher / "meta.json").read_text(encoding="utf-8"))
+    inputs = _review_inputs(
+        (teacher / "teaching.md").read_text(encoding="utf-8"),
+        (teacher / "voice.md").read_text(encoding="utf-8"),
+        meta["sources"], meta["citation_contract"],
+    )
+    review_record = json.loads(record_path.read_text(encoding="utf-8"))
+    _check_review(review_record, inputs)
     skill_md = teacher / "SKILL.md"
     if not skill_md.is_file():
         raise ValueError(f"{teacher} has no SKILL.md")
@@ -339,6 +394,8 @@ def register_teacher(teacher_dir: str, skills_dir: str) -> dict:
             f"SKILL.md name must equal the directory name {teacher.name!r} — "
             "Claude Code invokes the skill by that name"
         )
+    if review_record.get("skill_sha256") != hashlib.sha256(skill_md.read_bytes()).hexdigest():
+        raise ValueError("reviewed SKILL.md changed after generation")
 
     skills = Path(skills_dir).expanduser()
     created_skills_dir = not skills.is_dir()
@@ -385,6 +442,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     modes = parser.add_mutually_exclusive_group(required=True)
     modes.add_argument("--spec", help="JSON generation spec prepared after review")
+    modes.add_argument("--review-digests", metavar="SPEC", help="print hashes of the current doctrine and voice review inputs")
     modes.add_argument(
         "--offline-smoke",
         action="store_true",
@@ -402,19 +460,29 @@ def main(argv: list[str] | None = None) -> int:
         help="skills directory to register into (with --register; default ~/.claude/skills)",
     )
     args = parser.parse_args(argv)
-    if not args.register and not args.output:
+    if not args.register and not args.review_digests and not args.output:
         parser.error("--output is required with --spec / --offline-smoke")
 
     try:
         if args.register:
             summary = register_teacher(args.register, args.skills_dir)
+        elif args.review_digests:
+            spec = json.loads(Path(args.review_digests).read_text(encoding="utf-8"))
+            context = prepare_generation_context(spec["sources"], spec.get("citation_contract"))
+            inputs = _review_inputs(spec["teaching_content"], spec["voice_content"], context["sources"], context["citation_contract"])
+            summary = {stage: _review_digest(payload) for stage, payload in inputs.items()}
         elif args.offline_smoke:
-            summary = build_from_spec(_offline_smoke_spec(), args.output)
+            summary = build_from_spec(_offline_smoke_spec(), args.output, offline_smoke=True)
         else:
             spec = json.loads(Path(args.spec).read_text(encoding="utf-8"))
             summary = build_from_spec(spec, args.output)
     except (OSError, json.JSONDecodeError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    except KeyError as exc:
+        # A spec missing a required field (`sources`, `teaching_content`, …)
+        # printed a traceback; it is an input error like the others.
+        print(f"ERROR: spec is missing required field {exc}", file=sys.stderr)
         return 1
 
     print(json.dumps(summary, ensure_ascii=False, sort_keys=True))

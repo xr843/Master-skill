@@ -242,6 +242,19 @@ python3 "${CLAUDE_SKILL_DIR}/tools/master_builder.py" --spec generated-master.js
 `languages`、`teaching_content`、`voice_content`、`sources`，并可携带审查所用的同一
 `citation_contract`。若携带的 contract 与来源家族自动派生结果不同，构建立即失败。
 
+先运行 `python3 "${CLAUDE_SKILL_DIR}/tools/master_builder.py" --review-digests generated-master.json`
+获取 `doctrine` 和 `voice` 的输入哈希。两阶段独立审查通过后，补入：
+
+```json
+"review": {
+  "doctrine": {"verdict": "PASS", "reviewer": "doctrine-reviewer", "input_sha256": "<doctrine 哈希>"},
+  "voice": {"verdict": "PASS", "reviewer": "voice-reviewer", "input_sha256": "<voice 哈希>"}
+}
+```
+
+缺记录、未通过或审查后改稿均会阻止写入；注册时还会核对落盘正文。
+`--offline-smoke` 生成的测试草稿不可注册。哈希仅证明审查记录与内容一致，不能证明审查判断正确。
+
 ### 生成后终验
 
 ```bash
