@@ -56,11 +56,21 @@ def fixture_types(root: Path = ROOT) -> dict[str, list[str]]:
     }
 
 
+def fixture_questions(root: Path = ROOT) -> dict[str, list[str]]:
+    return {
+        path.parent.parent.name: [
+            json.loads(line)["q"]
+            for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+        ]
+        for path in (root / "prebuilt").glob("*/tests/fidelity.jsonl")
+    }
+
+
 def _suites(report) -> list[dict]:
     return report["suites"] if isinstance(report, dict) else report
 
 
-def validate(pairs, expected_types, adjudication=None) -> tuple[list[str], dict, int]:
+def validate(pairs, expected_types, expected_questions, adjudication=None) -> tuple[list[str], dict, int]:
     """Return (problems, adjudicated tally by test_type, unparsed-citation count).
 
     ``pairs`` is a list of (report, adjudication) dicts, already loaded.
@@ -112,6 +122,10 @@ def validate(pairs, expected_types, adjudication=None) -> tuple[list[str], dict,
                     continue
                 if isinstance(index, int) and 0 <= index < len(types) and case.get("test_type") != types[index]:
                     problems.append(f"{where}: test_type differs from its fixture")
+                questions = expected_questions.get(name)
+                if questions is not None and isinstance(index, int) and 0 <= index < len(questions):
+                    if case.get("question") != questions[index]:
+                        problems.append(f"{where}: question differs from its fixture")
                 if not case.get("response"):
                     problems.append(f"{where}: empty response")
                 if case.get("fabricated_cites"):
@@ -151,7 +165,9 @@ def main() -> int:
     except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
         print(f"release manifest or a run it names is unreadable: {error}", file=sys.stderr)
         return 1
-    problems, tally, unparsed = validate(pairs, fixture_types())
+    problems, tally, unparsed = validate(
+        pairs, fixture_types(), fixture_questions()
+    )
     for problem in problems:
         print(f"ERROR: {problem}", file=sys.stderr)
     rates = ", ".join(
