@@ -143,3 +143,11 @@ def test_every_prebuilt_skill_has_parseable_frontmatter():
     for skill in skills:
         fm, _, _ = parse_frontmatter(skill)
         assert fm.get("name"), f"{skill.parent.name}: frontmatter has no name"
+
+
+def test_prebuilt_license_drift_is_a_hard_error(tmp_path):
+    skill = tmp_path / "master-demo"
+    skill.mkdir()
+    (skill / "SKILL.md").write_text("---\nname: master-demo\ndescription: demo\nlicense: MIT\n---\n", encoding="utf-8")
+    issues = validate_module.lint_master(skill)
+    assert any("license" in issue and "[ERROR]" in issue for issue in issues)

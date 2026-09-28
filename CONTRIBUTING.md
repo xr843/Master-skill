@@ -334,7 +334,7 @@ prebuilt/master-<slug>/
 name: <slug>              # 小写英文或拼音，作为 `/命令` 触发词
 description: Use when user asks about ..., triggers include ...
 version: 0.1.0
-license: MIT
+license: CC-BY-NC-SA-4.0
 lineage: <宗派>
 dates: 生年-卒年
 sources:

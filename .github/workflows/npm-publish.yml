@@ -88,6 +88,21 @@ jobs:
       - name: Python suites
         run: python -m pytest tests/ scripts/tests/ -v
 
+      - name: v1 fidelity gate (committed runs)
+        # From 1.0.0 a release needs the roadmap's numeric fidelity gate met by
+        # runs already committed under eval/reports/ together with their
+        # adjudication. Not a fresh sweep here: every sweep raises reviews
+        # (must_convey is never auto-decided) that are ruled on after the run,
+        # so a gate that ran one and demanded none outstanding could never pass
+        # — and it would spend on every release attempt.
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "$VERSION" != 1.* ]]; then
+            echo "v1 fidelity gate applies from version 1.0.0"
+            exit 0
+          fi
+          python scripts/check-release-fidelity.py --manifest eval/reports/v1-release.json
+
   publish:
     needs: gate
     runs-on: ubuntu-latest

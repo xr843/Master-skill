@@ -234,6 +234,7 @@ Notes on honesty of measurement:
 
 - The fidelity gate above is met, and the run backing it is committed under `eval/reports/`.
 - `npm test` passes on a clean checkout.
+- v1.0+ npm release workflow runs a fresh `claude-sonnet-4-6` sweep on the release checkout and `scripts/check-release-fidelity.py` verifies every fixture was graded, no citation remains fabricated or unparsed, no case awaits review, and the category thresholds above are met. Missing `ANTHROPIC_API_KEY` blocks the release.
 - `scripts/check-gate-liveness.py` passes — no gate examined an empty set.
 - Documentation uses the framework positioning consistently.
 - No open P0/P1 ethics, citation, or security issues.

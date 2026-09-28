@@ -2,7 +2,7 @@
 name: master-debate
 description: 'Use when user explicitly asks for an adversarial / multi-round dialectic between masters — 祖师辩论, 各执一词, 谁更对, debate, 应成 vs 顿悟, 顿渐之争. Differs from /compare-masters (parallel single-round) by being adversarial multi-round via fresh-subagent orchestration. Topics 空有 / 禅净 / 性相 / 戒律 vs 内观 — trigger is adversarial framing: "禅净比较" → compare; "禅净辩论 / 谁更究竟" → here.'
 version: 0.8.0
-license: MIT
+license: CC-BY-NC-SA-4.0
 kind: meta-skill
 verified_by: xr843
 verified_at: 2026-06-09

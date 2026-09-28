@@ -92,6 +92,10 @@ def lint_master(master_dir: Path, strict: bool = False) -> list[str]:
             continue
         if field not in fm:
             issues.append(f"[WARN]  {name}: missing recommended field '{field}'")
+    if fm.get("license") != "CC-BY-NC-SA-4.0":
+        issues.append(f"[ERROR] {name}: license must be CC-BY-NC-SA-4.0 for prebuilt content")
+    if not (master_dir / "LICENSE.md").is_file():
+        issues.append(f"[ERROR] {name}: missing standalone LICENSE.md")
 
     # --- Description length ---
     desc = fm.get("description", "")

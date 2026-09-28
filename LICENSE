@@ -1,4 +1,15 @@
-MIT License
+License scope
+
+Code in bin/, scripts/, tools/, hooks/, desktop/, and .github/ is MIT licensed.
+Original persona and teaching-mode content under prebuilt/ is CC BY-NC-SA 4.0.
+Original prompt templates under prompts/ are CC BY 4.0.
+Third-party source excerpts retain their source-specific rights. See ETHICS.md
+for the attribution and source policy. Copyright (c) 2026 xr843.
+
+CC BY-NC-SA 4.0: https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+CC BY 4.0: https://creativecommons.org/licenses/by/4.0/legalcode
+
+MIT License (code)
 
 Copyright (c) 2026 xr843
 

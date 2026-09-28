@@ -2,7 +2,7 @@
 name: master-help
 description: 'Use ONLY when the user says they do not know which master or which teaching mode to use — 不知道问谁, 该找哪位祖师, 该用哪个模式, 有哪些法师, which master should I ask, help me choose. This is a router, not a teacher: it names a destination and stops. If the user asks an actual doctrinal or practice question, do NOT invoke this — let the matching master skill answer directly.'
 version: 0.11.1
-license: MIT
+license: CC-BY-NC-SA-4.0
 kind: meta-skill
 verified_by: xr843
 verified_at: 2026-07-20

@@ -8,7 +8,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/master-skill"><img src="https://img.shields.io/npm/v/master-skill.svg?label=npm&color=cb3837" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/master-skill"><img src="https://img.shields.io/npm/dm/master-skill.svg?color=cb3837" alt="npm downloads"></a>
-  <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
+  <img src="https://img.shields.io/badge/License-MIT%20%2B%20CC-blue.svg" alt="License: MIT code, Creative Commons content">
   <img src="https://img.shields.io/badge/Python-3.9+-green.svg" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/Claude%20Code-Skill-purple.svg" alt="Claude Code Skill">
   <img src="https://img.shields.io/badge/AgentSkills-Standard-orange.svg" alt="AgentSkills Standard">
@@ -137,11 +137,11 @@ Master-skill 是由 [FoJin](https://fojin.app) 驱动的佛教 AI 祖师人格�
 - **离线经文片段**：`sources/` 目录收录核心经典关键段落，FoJin 不可用时仍可离线引用
 - **渐进式披露**：SKILL.md 以决策树 + Quick Ref 为主，`references/`、`sources/` 按需加载，Context 随查随取
 - **HARD-GATE 铁律**：`/create-master` 与预置法师内置红线——教义断言、修行指导与文本解释必须引用该 persona 声明的来源（CBETA / BDRC / Toh / SuttaCentral / PTS / 合规编纂开示），不得捏造来源 ID，不得为虚构人物建角色
-- **二阶段独立审查**：生成管线在写入前强制经过"教义准确性 → 风格一致性"两轮独立审查，FAIL 自动修复最多 2 轮
+- **二阶段审查**：生成流程要求先审教义、再审风格；写入端要求两份审查阶段不同的 PASS 记录，并核对它们记下的输入哈希与当前内容一致，所以审查之后改稿必须重审。这些记录由生成流程在本机写下，能防止「审完再改」，证明不了审查确由两个独立的人完成——审查判断本身由审查者负责
 - **自动化保真度测试**：211 条夹具（每位祖师 10+ 条，`compare-masters` 元技能 18 条）检查关键词与引用覆盖，每条评分回答另经离线引文审计；CI 在每个 PR 与 main 上做结构校验（dry-run）；实跑评分支持 Anthropic / DeepSeek / Gemini（`--provider`），需要对应的 API key，作为本地/发版前手动步骤执行——最近一次全量运行与逐条裁定见[下文](#保真度评测当前数据)
 - **多平台共用一份 `prebuilt/`**：Claude Code、Cursor、Codex CLI、OpenCode、Gemini CLI 各有装法（见 [docs/install.md](docs/install.md)，Codex / OpenCode / Gemini 三端均为实测过的步骤）
 - **NPX 一键安装**：`npx master-skill install master-zhiyi` 直接部署到 Claude Code
-- **离线工具链**：`scripts/cite.py`（CBETA 引用查询）、`scripts/query.py`（离线语义检索）、`scripts/validate.py`（frontmatter linter）
+- **离线工具链**：`scripts/cite.py`（CBETA 引用查询）、`scripts/query.py`（繁简归一的离线关键词检索）、`scripts/validate.py`（frontmatter linter）
 - **FoJin 数据桥**：接入 [fojin.app](https://fojin.app) 的 10K+ 篇文本、678K+ 条语义向量与 110K+ 实体的知识图谱（另登记 600+ 个数据源）
 - **AgentSkills 标准**：遵循 [Anthropic Agent Skills](https://github.com/anthropics/skills) 规范，渐进式披露、决策树、黑盒脚本模式
 
@@ -174,6 +174,8 @@ Master-skill 的核心不是"角色扮演提示词集合"，而是一个可验�
 
 **这一列不能推进 v1.0 门禁。** 门禁定义在 Anthropic（`claude-sonnet-4-6`）那一列上，两个模型是两把尺子，不混算。Anthropic 那一列至今只有 2026-08-18 的一次部分运行（84 / 211 条，因账户余额耗尽中断），当时的「零伪造引文」已于 2026-08-31 撤回——那次审计实际一条都没有运行。
 
+**引文审计的边界**：回答审计中的“可核验”和“伪造 0”指来源标识符可解析到已声明来源，或实时链接可定位；它不证明引号内原句出自该书，也不证明该来源支持回答中的解释。静态 `sources/` 摘录另有原文核对流程，生成回答的原句与论断仍需逐条复核。`citation_contract.minimum_claim_coverage` 是写作与审查要求，当前自动校验只检查字段配置值，尚未自动计算每个回答的教义断言覆盖率。
+
 **上表的数字属于 `06b8142` 那棵树。** 此后人设内容与夹具都改过（见 CHANGELOG 的 0.12.x 各条）。**2026-09-26 在当前的树上重跑了全部 15 位人设**（167 条，DeepSeek `deepseek-v4-flash`，¥1.51，报告 [`0.12.15-0e7d97e-deepseek-personas.json`](eval/reports/0.12.15-0e7d97e-deepseek-personas.json)）：判分器直出 131 / 166 = 78.9%，1 条截断；**逐条裁定后 144 / 166 = 86.7%**（教理 92.8% · 守边界 87.0% · 抗压守引用 69.0%；推翻 14 条失败，1 条 PASS 改判 FAIL，76 条全部裁定，见 [`ADJUDICATION.md`](eval/reports/ADJUDICATION.md)）；**681 条引文可核对，伪造 0**。同一把尺子的对照：当前判分器重评 `06b8142` 的存档回答直出为 132 / 160 = 82.5%。有 2 条回答是没有执行的工具调用——人设提示要求离线不足时实时检索 FoJin，而人设评测不给工具。
 
 **当时的判分器漏查了元技能的输出契约。** 44 条元技能夹具里有七类断言（必备章节、选对祖师、辩论轮次、每轮 / 每位祖师有出处、推荐的技能须存在）从未被评分，2026-09-23 起才评分。用现在的判分器离线重评上表那批存档回答：`master-debate` 另有 2 条由 PASS 变 FAIL（#0 没有分轮次，#2 最后一轮 R4 没有任何出处），它们当时判为通过，没有进入人工裁定，上表的数字没有算进去。2026-09-13 那次元技能复测里，`compare-masters` 的 11 条 PASS 中有 5 条、`master-debate` 的 4 条 PASS 中有 1 条，其实是模型吐出的伪造工具调用，不是回答；现在这 6 条都判为 FAIL。
@@ -204,7 +206,7 @@ npx master-skill update --all           # 升级：重装全部并清掉旧文�
 
 ## 桌面管理器
 
-原生桌面控制台(纯 Rust,egui,单二进制,无 Electron),统一管理 18 个技能（15 位祖师与 `master-debate` / `master-curriculum` / `master-help`）的安装状态、fidelity 评测覆盖率、运行追踪与质量门禁:
+原生桌面控制台(纯 Rust,egui,单二进制,无 Electron),统一查看预置技能的安装状态、fidelity 评测覆盖率、运行追踪与质量门禁:
 
 ![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/main/docs/assets/desktop-manager.png)
 
@@ -307,7 +309,7 @@ Master-skill 通过 `tools/fojin_bridge.py` 接入 FoJin API，实现：
 
 ## 许可证
 
-MIT License
+代码采用 MIT；预置技能内容采用 CC BY-NC-SA 4.0；提示词模板采用 CC BY 4.0。第三方原文遵循各自来源的授权。详见 [LICENSE](LICENSE) 与 [ETHICS.md](ETHICS.md#4-内容授权条款-content-license)。
 
 ---
 

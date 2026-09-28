@@ -11,7 +11,7 @@
 
 **NPX 一键安装（推荐，无需常驻）**
 
-`npx master-skill install --all` 一次安装全部 20 个 Skill：15 位祖师、4 个教学模式（含 `/master-help` 路由），以及 `create-master` 生成器。`create-master` 会复制自包含的运行时，因此临时 npx 包目录被清理后仍可使用；重新安装或 `update --all` 会更新运行时，但保留 `create-master/masters/` 中用户生成的 persona；`uninstall create-master` 在那里有 persona 时会拒绝执行并列出它们，确要连同删除须加 `--force`（同时移除为它们注册的链接）。
+`npx master-skill install --all` 一次安装全部 20 个 Skill：15 位祖师、4 个教学模式（含 `/master-help` 路由），以及 `create-master` 生成器。单独安装 `/compare-masters`、`/master-debate` 或 `/master-curriculum` 时，会补装它们需要读取、而你尚未安装的祖师（已安装的不会被覆盖，输出里标明 needed by）；之后卸载其中一位，`doctor` 会报告依赖缺失。`/master-help` 只在已安装的祖师之间路由，单独安装时不带依赖。`create-master` 会复制自包含的运行时，因此临时 npx 包目录被清理后仍可使用；重新安装或 `update --all` 会更新运行时，但保留 `create-master/masters/` 中用户生成的 persona；`uninstall create-master` 在那里有 persona 时会拒绝执行并列出它们，确要连同删除须加 `--force`（同时移除为它们注册的链接）。
 
 ```bash
 # 安装指定祖师

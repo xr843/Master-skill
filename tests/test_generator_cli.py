@@ -17,6 +17,7 @@ BUNDLE_MEMBERS = (
     "references",
     "requirements.txt",
     "ETHICS.md",
+    "LICENSE",
     "masters",
 )
 

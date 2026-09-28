@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 
 import master_builder
+import pytest
 
 
 SOURCES = [
@@ -155,8 +157,74 @@ import pytest  # noqa: E402
 
 
 def _built(tmp_path: Path) -> Path:
-    summary = master_builder.build_from_spec(master_builder._offline_smoke_spec(), str(tmp_path / "masters"))
+    spec = master_builder._offline_smoke_spec()
+    spec["review"] = _review_for(spec)
+    summary = master_builder.build_from_spec(spec, str(tmp_path / "masters"))
     return Path(summary["teacher_dir"])
+
+
+def _review_for(spec):
+    contract = master_builder.prepare_generation_context(spec["sources"])["citation_contract"]
+    doctrine = {"teaching_content": spec["teaching_content"], "sources": spec["sources"], "citation_contract": contract}
+    voice = {"voice_content": spec["voice_content"], "teaching_content": spec["teaching_content"]}
+    digest = lambda value: hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    return {"doctrine": {"verdict": "PASS", "reviewer": "doctrine-reviewer", "input_sha256": digest(doctrine)}, "voice": {"verdict": "PASS", "reviewer": "voice-reviewer", "input_sha256": digest(voice)}}
+
+
+def test_builder_rejects_unreviewed_spec_before_writing(tmp_path):
+    with pytest.raises(ValueError, match="review"):
+        master_builder.build_from_spec(master_builder._offline_smoke_spec(), str(tmp_path / "masters"))
+    assert not (tmp_path / "masters").exists()
+
+
+def test_builder_rejects_review_for_older_content(tmp_path):
+    spec = master_builder._offline_smoke_spec()
+    spec["review"] = _review_for(spec)
+    spec["teaching_content"] += " unreviewed edit"
+    with pytest.raises(ValueError, match="hash"):
+        master_builder.build_from_spec(spec, str(tmp_path / "masters"))
+    assert not (tmp_path / "masters").exists()
+
+
+def test_builder_requires_independent_reviewers(tmp_path):
+    spec = master_builder._offline_smoke_spec()
+    spec["review"] = _review_for(spec)
+    spec["review"]["voice"]["reviewer"] = "doctrine-reviewer"
+    with pytest.raises(ValueError, match="independent"):
+        master_builder.build_from_spec(spec, str(tmp_path / "masters"))
+
+
+def test_builder_rejects_content_that_writer_would_change_after_review(tmp_path):
+    spec = master_builder._offline_smoke_spec()
+    spec["teaching_content"] += "\u202e"
+    spec["review"] = _review_for(spec)
+    with pytest.raises(ValueError, match="sanitiz"):
+        master_builder.build_from_spec(spec, str(tmp_path / "masters"))
+
+
+def test_review_digests_cli_prepares_both_current_stage_inputs(tmp_path, capsys):
+    spec = master_builder._offline_smoke_spec()
+    source = tmp_path / "spec.json"
+    source.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+    assert master_builder.main(["--review-digests", str(source)]) == 0
+    assert json.loads(capsys.readouterr().out) == {
+        stage: record["input_sha256"] for stage, record in _review_for(spec).items()
+    }
+
+
+def test_registration_rejects_content_changed_after_review(tmp_path):
+    teacher = _built(tmp_path)
+    (teacher / "teaching.md").write_text("replaced after review", encoding="utf-8")
+    with pytest.raises(ValueError, match="review"):
+        master_builder.register_teacher(str(teacher), str(tmp_path / "skills"))
+
+
+def test_registration_rejects_skill_body_changed_after_review(tmp_path):
+    teacher = _built(tmp_path)
+    skill = teacher / "SKILL.md"
+    skill.write_text(skill.read_text(encoding="utf-8") + "\nUnreviewed rule.\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="review"):
+        master_builder.register_teacher(str(teacher), str(tmp_path / "skills"))
 
 
 def test_register_links_the_persona_one_level_below_the_skills_dir(tmp_path):
@@ -236,3 +304,13 @@ def test_the_generator_instructions_run_the_register_step():
     assert 'master_builder.py --register "${CLAUDE_SKILL_DIR}/masters/master-{slug}"' in skill
     assert "--register" in details
     assert "skillDirs" not in details.replace("没有 `skillDirs`", "")
+
+
+def test_review_digests_reports_a_missing_spec_field_as_an_error(tmp_path, capsys):
+    # Found by review (2026-09-28): a spec without `sources` raised KeyError and
+    # printed a traceback instead of one ERROR line.
+    import json as _json
+    spec = tmp_path / "spec.json"
+    spec.write_text(_json.dumps({"teaching_content": "t", "voice_content": "v"}), encoding="utf-8")
+    assert master_builder.main(["--review-digests", str(spec)]) == 1
+    assert "missing required field 'sources'" in capsys.readouterr().err

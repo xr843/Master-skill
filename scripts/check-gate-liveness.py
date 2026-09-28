@@ -154,6 +154,10 @@ def check_every_skill_has_fixtures(prebuilt_dir: Path) -> list[str]:
 # outliving the job, but nothing can force a new *shape* to be noticed. If you
 # add a gate that can pass without working, put it here yourself.
 ADVISORY_GATES = {
+    "Full suite (publish gate)": (
+        "its v1 fidelity step checks committed, adjudicated runs only from "
+        "version 1.0.0; on a 0.x release it passes without checking any run"
+    ),
     "Fidelity smoke (1 master × 1 fixture)": (
         "grades nothing when ANTHROPIC_API_KEY is unset (it always has been) — "
         "the green tick means structure validation passed, not that a model "
@@ -182,6 +186,11 @@ ADVISORY_GATES = {
 # that triggers on `pull_request`, or be declared here with the reason it is not.
 # `check_every_gate_runs_on_a_pr` keeps this true in both directions.
 NOT_A_PR_GATE = {
+    "check-release-fidelity.py": (
+        "checks the committed runs eval/reports/v1-release.json names, which exists "
+        "only once a v1.0 release is prepared; unit tests exercise it on built runs "
+        "and on the committed 0e7d97e pair"
+    ),
     "cite.py": (
         "a reader-facing offline lookup tool, documented in README.md and in the "
         "personas' own SKILL.md; not a gate over repository content"

@@ -6,6 +6,9 @@ import json
 import os
 import re
 import sys
+import unicodedata
+
+from opencc import OpenCC
 
 from _masterpaths import resolve_master_dir
 
@@ -13,6 +16,20 @@ from _masterpaths import resolve_master_dir
 # like "../../etc" can never read files outside prebuilt/. Mirrors the
 # isSafeName guard in bin/cli.mjs.
 _SAFE_MASTER = re.compile(r"^[A-Za-z0-9_-]+$")
+# Both sides are folded the same way before matching. To simplified, not to
+# traditional: s2t turns 执着 into 執着 while the sources write 執著, and 里
+# into 裏 against 裡. 著/着 are then treated as one character, which is how
+# the canon's own editions disagree. Latin text loses its diacritics — a
+# query for ānāpānasati was split at every ā into n, p, nasati, and the lone
+# `n` matched nearly every section.
+_TO_SIMPLIFIED = OpenCC("t2s")
+MAX_RESULTS = 20
+
+
+def _fold(text: str) -> str:
+    text = _TO_SIMPLIFIED.convert(text).replace("著", "着").lower()
+    decomposed = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
 
 
 def parse_sections(text):
@@ -28,7 +45,18 @@ def parse_sections(text):
 
 
 def search(master_dir, query, brief=False):
-    keywords = query.split()
+    normalized_query = _fold(query)
+    keywords = set()
+    for token in re.findall(r"[\u3400-\u9fff]+|[a-z0-9]+", normalized_query):
+        if re.fullmatch(r"[\u3400-\u9fff]+", token):
+            if len(token) == 1:
+                keywords.add(token)
+            for length in range(2, min(4, len(token)) + 1):
+                keywords.update(token[i:i + length] for i in range(len(token) - length + 1))
+        elif len(token) > 1:
+            keywords.add(token)
+    if not keywords:
+        return []
     results = []
 
     for subdir in ("sources", "references"):
@@ -42,8 +70,9 @@ def search(master_dir, query, brief=False):
             content = open(fpath, encoding="utf-8").read()
             for title, body in parse_sections(content):
                 full = title + "\n" + body
-                # OR 匹配：任一关键词命中即可
-                if not any(kw in full for kw in keywords):
+                normalized_full = _fold(full)
+                matched = [kw for kw in keywords if kw in normalized_full]
+                if not matched:
                     continue
                 # 清理 body 前 200 字
                 clean = re.sub(r'\n{2,}', '\n', body).strip()
@@ -52,8 +81,11 @@ def search(master_dir, query, brief=False):
                     "section": title,
                     "preview": preview,
                     "file": os.path.join(subdir, fname),
+                    "_score": (max(map(len, matched)), len(matched)),
                 })
-
+    results.sort(key=lambda row: row["_score"], reverse=True)
+    for row in results:
+        del row["_score"]
     return results
 
 
@@ -76,6 +108,11 @@ def main():
         sys.exit(2)
 
     results = search(master_dir, args.q, args.brief)
+    total = len(results)
+    results = results[:MAX_RESULTS]
+    if total > MAX_RESULTS:
+        # Said on stderr so --json stays a clean array.
+        print(f"共 {total} 段命中，按相关度显示前 {MAX_RESULTS} 段。", file=sys.stderr)
 
     if not results:
         print(f"未找到包含「{args.q}」的段落。")

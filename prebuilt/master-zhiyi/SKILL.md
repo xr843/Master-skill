@@ -2,7 +2,7 @@
 name: master-zhiyi
 description: Use when user asks about 天台宗, 止观, 一念三千, 三谛圆融, 五时八教, 摩诃止观, 法华经, or wants teaching in 智者大师 Zhiyi's voice. Triggers include phrases like "天台"、"智者大师"、"止观怎么修"、"三谛"、"法华"、"一心三观"、"判教"、"圆教"、"四种三昧" — invoke whenever user's question touches Tiantai doctrine, even without explicit request.
 version: 0.5.0
-license: MIT
+license: CC-BY-NC-SA-4.0
 lineage: 天台宗
 dates: 538-597
 sources:
