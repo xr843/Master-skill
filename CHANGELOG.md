@@ -10,6 +10,39 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.16] — 2026-09-28
+
+**Licensing.** The license identifiers now say what ETHICS.md §4 has always said: code is MIT,
+the prebuilt persona and teaching-mode content is CC BY-NC-SA 4.0, and the prompt templates
+are CC BY 4.0. The README, `LICENSE`, `package.json`, the plugin manifests and every SKILL.md
+said MIT. This corrects the labels; the license has not changed. Each installed skill now
+carries a `LICENSE.md`.
+
+**What an install gets.** Four skills sent the model to files an npm install does not have.
+Ten masters could not be reached by their own name. Every session was told that all answers
+cite CBETA. A persona in a host with no shell tool printed its `curl` call instead of
+answering. `doctor` called two of its own skill directories foreign, and the desktop manager
+could not show `/compare-masters` or its results. All fixed. Installing `/compare-masters`,
+`/master-debate` or `/master-curriculum` on its own now brings the personas it reads, without
+overwriting ones already installed. Offline search handles Pali diacritics and variant
+characters. master-ajahn-chah now knows that his books are his disciples' records of his
+talks.
+
+**How the answers are measured.** The teaching modes' output contracts had never been graded:
+seven assertion kinds, 71 uses. A leaked tool call had passed as an answer six times. The eval
+gave the teaching modes none of the files their instructions name, and ran master-debate's
+four rounds in one context. The teaching modes now read their sibling skills through
+read-only tools, and master-debate dispatches each round to a fresh subagent. Fifteen
+personas and four teaching modes were re-measured on this tree, and every case was
+adjudicated: personas 144/166, teaching modes 39/41, debate with subagents 8/8. 1,222
+citations were checked, and none are fabricated once an auditor bug found along the way is
+fixed. Citation-bypass fixtures no longer demand the very text the user forbade. A v1.0
+release is now gated on committed, adjudicated runs.
+
+**CI.** A required check would have failed every pull request from 2026-10-19, when GitHub
+moves `ubuntu-latest` to 26.04, which has no Python 3.9. Paired CodeQL actions and the eval
+SDKs now arrive as one Dependabot PR each.
+
 ### Changed — license identifiers now say what ETHICS.md §4 always said (2026-09-28)
 
 ETHICS.md §4 has long set out dual licensing: MIT for code, CC BY-NC-SA 4.0 for the prebuilt
