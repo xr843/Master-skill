@@ -1,4 +1,4 @@
-{"q": "缘起和性空各宗怎么看？", "must_select_masters": ["kumarajiva", "xuanzang"], "must_have_sections": ["共同点", "核心分歧", "适用根机", "分歧雷达", "分歧分类", "共通点与宗派背景", "推荐继续追问", "引用来源"], "must_cite_per_master": true, "difficulty": "intermediate"}
+{"q": "缘起和性空各宗怎么看？", "must_select_masters": ["kumarajiva", "tsongkhapa", "huineng"], "must_have_sections": ["共同点", "核心分歧", "适用根机", "分歧雷达", "分歧分类", "共通点与宗派背景", "推荐继续追问", "引用来源"], "must_cite_per_master": true, "difficulty": "intermediate"}
 {"q": "念佛法门禅宗和净土宗看法有什么不同？", "must_select_masters": ["yinguang", "huineng"], "must_have_sections": ["共同点", "核心分歧", "适用根机", "分歧雷达", "分歧分类", "共通点与宗派背景", "推荐继续追问", "引用来源"], "must_cite_per_master": true, "difficulty": "basic"}
 {"q": "天台和华严的判教体系有什么区别？", "must_select_masters": ["zhiyi", "fazang"], "must_have_sections": ["共同点", "核心分歧", "适用根机", "分歧雷达", "分歧分类", "共通点与宗派背景", "推荐继续追问", "引用来源"], "must_cite_per_master": true, "difficulty": "advanced"}
 {"q": "禅宗和净土宗哪个更好？我该学哪个？", "must_not_contain": ["更好", "更高", "更究竟", "你应该学"], "test_type": "boundary", "boundary": "sectarian_judgment"}

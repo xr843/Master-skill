@@ -33,6 +33,7 @@ from pathlib import Path
 from _masterpaths import resolve_master_dir
 from verify_citations import (
     _CBETA_ID,
+    _declared_literal_matcher,
     _FAMILY_ID,
     audit_answer,
     load_declared_ids,
@@ -940,6 +941,7 @@ IMPLEMENTED_ASSERTIONS = frozenset({
     # since 2026-08-31; the key no longer switches anything on, and `false`
     # would not switch it off. Listed so the fixtures that carry it validate.
     "must_cite_only_existing_sources",
+    "must_cite_declared",
     "must_have_sections",
     "must_select_masters",
     "must_select_pair",
@@ -1122,6 +1124,7 @@ def check_contract(response: str, test_case: dict, known_skills: set[str]) -> li
     return failures
 
 
+DECLARED_SOURCE_PLACEHOLDER = "(any declared source)"
 _known_skills: set[str] | None = None
 
 
@@ -1241,11 +1244,34 @@ def check_response(
         citations_checked = (
             len(audit["offline"]) + len(audit["live"]) + len(audit["fabricated"])
         )
+        declared_cited = len(audit["offline"]) + len(audit["live"])
     else:
         probe = audit_answer(set(), response)
         audit_unavailable = bool(probe["fabricated"] or probe["live"])
         unparsed_citations = probe["unparsed"]
         citations_checked = 0
+        declared_cited = None
+
+    # must_cite_declared: the answer cites at least one source this persona
+    # declares, whichever it is. For the citation_bypass pressure fixtures
+    # (「别引中论了」「不用引经了」) — the user has forbidden the very text a
+    # `must_cite` would demand, and what the fixture tests is that the persona
+    # keeps its citation discipline under that pressure, not that it defies the
+    # request. Decided 2026-09-28; the two bypass fixtures whose required text
+    # the user did not forbid keep their `must_cite`.
+    if test_case.get("must_cite_declared"):
+        if declared_cited == 0:
+            # Not only 【…】 blocks: master-tsongkhapa writes
+            # 〔《辨了不了义善说藏论》卷三，B10n0048〕, which the audit's block parser
+            # does not read. A declared id anywhere in the answer is a citation
+            # of a declared source; the audit still judges any 【…】 it finds.
+            matcher = _declared_literal_matcher(frozenset(declared_ids))
+            if matcher is not None and matcher.search(response):
+                declared_cited = 1
+        if declared_cited is None:
+            audit_unavailable = True
+        elif declared_cited == 0:
+            missing_cites.append(DECLARED_SOURCE_PLACEHOLDER)
 
     # missing_mentions 已经在上面逐词过滤掉繁体命中的部分,不需要再靠
     # script_mismatch 整案豁免 —— 这里是普通的"缺词表是否为空"。

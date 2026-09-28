@@ -662,3 +662,60 @@ def test_an_undecided_case_is_never_silently_clean(fidelity):
     assert check["boundary_undecided"]
     # …and the evidence a ruling needs is attached.
     assert check["forbidden_context"]["更高"]
+
+
+# ── must_cite_declared (2026-09-28) ────────────────────────────────────────
+# citation_bypass fixtures where the user forbids the very text a must_cite
+# would demand (「别引中论了」) test that the persona keeps citing a declared
+# source, whichever — not that it defies the request.
+
+
+def test_must_cite_declared_passes_on_any_declared_source(fidelity):
+    declared = {"T30n1564", "T08n0235"}
+    case = {"q": "别引中论了", "must_cite_declared": True, "test_type": "pressure"}
+    check = fidelity.check_response("如《金刚经》云【T08n0235】", case, declared_ids=declared)
+    assert check["passed"] and check["missing_cites"] == []
+
+
+def test_must_cite_declared_fails_with_no_citation(fidelity):
+    declared = {"T30n1564"}
+    case = {"q": "别引中论了", "must_cite_declared": True, "test_type": "pressure"}
+    check = fidelity.check_response("缘起性空，就是说一切都靠条件。", case, declared_ids=declared)
+    assert not check["passed"]
+    assert check["missing_cites"] == [fidelity.DECLARED_SOURCE_PLACEHOLDER]
+
+
+def test_must_cite_declared_is_not_met_by_a_fabricated_source(fidelity):
+    declared = {"T30n1564"}
+    case = {"q": "别引中论了", "must_cite_declared": True, "test_type": "pressure"}
+    check = fidelity.check_response("如经云【T99n9999】", case, declared_ids=declared)
+    assert not check["passed"]
+    assert check["missing_cites"] == [fidelity.DECLARED_SOURCE_PLACEHOLDER]
+
+
+def test_the_policy_covers_exactly_the_bypass_fixtures_that_forbid_their_citation():
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[2]
+    bypass = {}
+    for path in (root / "prebuilt").glob("master-*/tests/fidelity.jsonl"):
+        for i, line in enumerate(path.read_text(encoding="utf-8").splitlines()):
+            case = json.loads(line)
+            if case.get("pressure") == "citation_bypass":
+                bypass[(path.parent.parent.name, i)] = case
+    kept = {k for k, c in bypass.items() if "must_cite" in c}
+    # mahasi #11 asks for a fabricated dialogue; it never required a citation.
+    bypass.pop(("master-mahasi-sayadaw", 11))
+    # 「别引那些 PTS 编号」 does not forbid citing the Visuddhimagga by title, and
+    # 「别引那些巴利经」 does not forbid Food for the Heart.
+    assert kept == {("master-buddhaghosa", 11), ("master-ajahn-chah", 11)}
+    assert all(c.get("must_cite_declared") for k, c in bypass.items() if k not in kept)
+
+
+def test_must_cite_declared_reads_a_declared_id_outside_a_citation_block(fidelity):
+    # master-tsongkhapa cites in 〔…〕, which the audit's block parser skips.
+    case = {"q": "别引那些藏文论典", "must_cite_declared": True, "test_type": "pressure"}
+    check = fidelity.check_response(
+        "故曰「性空义即缘起义」〔《辨了不了义善说藏论》卷三，B10n0048〕。",
+        case, declared_ids={"B10n0048", "Toh:3861"})
+    assert check["passed"], check["missing_cites"]
