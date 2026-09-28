@@ -21,6 +21,7 @@ checker = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(checker)
 
 TYPES = {"master-demo": ["fidelity", "boundary", "pressure"]}
+QUESTIONS = {"master-demo": ["q0", "q1", "q2"]}
 
 
 def _case(index, kind, **changes):
@@ -62,7 +63,7 @@ def _finish(report, adjudication):
 
 
 def _problems(report, adjudication):
-    return checker.validate([_finish(report, adjudication)], TYPES)[0]
+    return checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS)[0]
 
 
 def test_a_run_with_reviews_passes_once_they_are_ruled_on():
@@ -90,7 +91,7 @@ def test_a_fabricated_citation_blocks_release():
 def test_unparsed_citations_are_reported_not_gated():
     report, adjudication = _run()
     report["suites"][0]["results"][2]["unparsed_citations"] = ["《无可核对》"]
-    problems, _, unparsed = checker.validate([_finish(report, adjudication)], TYPES)
+    problems, _, unparsed = checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS)
     assert problems == [] and unparsed == 1
 
 
@@ -106,7 +107,16 @@ def test_coverage_model_and_categories_are_checked():
     bad["suites"][0]["results"][1]["test_type"] = "fidelity"
     assert any("test_type" in p for p in _problems(bad, copy.deepcopy(adjudication)))
     assert any("missing suite" in p for p in checker.validate(
-        [_finish(*_run())], {**TYPES, "master-other": ["fidelity"]})[0])
+        [_finish(*_run())], {**TYPES, "master-other": ["fidelity"]}, QUESTIONS)[0])
+
+
+def test_replaced_question_cannot_reuse_an_old_run():
+    report, adjudication = _run()
+    report["suites"][0]["results"][1]["question"] = "an older question"
+    problems = checker.validate(
+        [_finish(report, adjudication)], TYPES, QUESTIONS,
+    )[0]
+    assert any("master-demo #1: question differs from its fixture" in p for p in problems)
 
 
 def test_an_adjudication_that_does_not_verify_blocks_release():
@@ -125,7 +135,9 @@ def test_it_reads_the_committed_runs_as_they_are_stored():
             json.loads((ROOT / "eval/reports" / report).read_text(encoding="utf-8")),
             json.loads((ROOT / "eval/reports" / adj).read_text(encoding="utf-8")),
         ))
-    problems, tally, _ = checker.validate(pairs, checker.fixture_types())
+    problems, tally, _ = checker.validate(
+        pairs, checker.fixture_types(), checker.fixture_questions()
+    )
     assert tally["fidelity"]["graded"] == 83
     assert any("release model" in p for p in problems)
     assert not any(p.startswith("adjudication:") for p in problems)
