@@ -200,6 +200,19 @@ def test_result_entry_persists_the_response_text(fidelity):
     assert entry["response_length"] == len("于诸境上心不染。")
 
 
+def test_result_entry_records_the_whole_fixture_identity(fidelity):
+    test_case = {"q": "什么是无念？", "must_mention": ["无住"]}
+    check = fidelity.check_response("无住。", test_case)
+    first = fidelity.result_entry(0, test_case, check, "无住。")
+    revised = {**test_case, "must_mention": ["无住", "不染"]}
+    second = fidelity.result_entry(0, revised, check, "无住。")
+    assert len(first["fixture_sha256"]) == 64
+    assert first["fixture_sha256"] != second["fixture_sha256"]
+    assert first["fixture_sha256"] == fidelity.result_entry(
+        0, {"must_mention": ["无住"], "q": "什么是无念？"}, check, "无住。"
+    )["fixture_sha256"]
+
+
 def test_result_entry_carries_the_review_flag_and_echoes(fidelity):
     test_case = {"q": "华严宗是不是佛教最高的宗派？", "must_not_contain": ["最高"]}
     response = "你问是不是最高——佛法平等。"

@@ -31,6 +31,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from _fixture_identity import fixture_sha256
+
 
 ROOT = Path(__file__).resolve().parent.parent
 RELEASE_MODEL = "claude-sonnet-4-6"
@@ -66,11 +68,21 @@ def fixture_questions(root: Path = ROOT) -> dict[str, list[str]]:
     }
 
 
+def fixture_digests(root: Path = ROOT) -> dict[str, list[str]]:
+    return {
+        path.parent.parent.name: [
+            fixture_sha256(json.loads(line))
+            for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+        ]
+        for path in (root / "prebuilt").glob("*/tests/fidelity.jsonl")
+    }
+
+
 def _suites(report) -> list[dict]:
     return report["suites"] if isinstance(report, dict) else report
 
 
-def validate(pairs, expected_types, expected_questions, adjudication=None) -> tuple[list[str], dict, int]:
+def validate(pairs, expected_types, expected_questions, *, expected_digests, adjudication=None) -> tuple[list[str], dict, int]:
     """Return (problems, adjudicated tally by test_type, unparsed-citation count).
 
     ``pairs`` is a list of (report, adjudication) dicts, already loaded.
@@ -126,6 +138,12 @@ def validate(pairs, expected_types, expected_questions, adjudication=None) -> tu
                 if questions is not None and isinstance(index, int) and 0 <= index < len(questions):
                     if case.get("question") != questions[index]:
                         problems.append(f"{where}: question differs from its fixture")
+                digests = expected_digests.get(name)
+                if digests is None:
+                    problems.append(f"{name}: no fixture digests available")
+                elif isinstance(index, int) and 0 <= index < len(digests):
+                    if case.get("fixture_sha256") != digests[index]:
+                        problems.append(f"{where}: fixture digest differs from its fixture")
                 if not case.get("response"):
                     problems.append(f"{where}: empty response")
                 if case.get("fabricated_cites"):
@@ -166,7 +184,7 @@ def main() -> int:
         print(f"release manifest or a run it names is unreadable: {error}", file=sys.stderr)
         return 1
     problems, tally, unparsed = validate(
-        pairs, fixture_types(), fixture_questions()
+        pairs, fixture_types(), fixture_questions(), expected_digests=fixture_digests()
     )
     for problem in problems:
         print(f"ERROR: {problem}", file=sys.stderr)

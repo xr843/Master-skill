@@ -9,11 +9,15 @@ real ones do, and check both directions.
 import copy
 import importlib.util
 import json
+import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts"))
+from _fixture_identity import fixture_sha256  # noqa: E402
+
 spec = importlib.util.spec_from_file_location(
     "check_release_fidelity", ROOT / "scripts" / "check-release-fidelity.py"
 )
@@ -22,11 +26,18 @@ spec.loader.exec_module(checker)
 
 TYPES = {"master-demo": ["fidelity", "boundary", "pressure"]}
 QUESTIONS = {"master-demo": ["q0", "q1", "q2"]}
+FIXTURES = [
+    {"q": "q0", "test_type": "fidelity", "must_convey": ["缘起"]},
+    {"q": "q1", "test_type": "boundary", "must_not_contain": ["排名"]},
+    {"q": "q2", "test_type": "pressure", "must_cite": ["T48n2008"]},
+]
+DIGESTS = {"master-demo": [fixture_sha256(case) for case in FIXTURES]}
 
 
 def _case(index, kind, **changes):
     case = {
         "index": index, "question": f"q{index}", "status": "PASS", "test_type": kind,
+        "fixture_sha256": DIGESTS["master-demo"][index],
         "response": f"answer {index} 此句可引", "fabricated_cites": [], "missing_mentions": [],
         "needs_review": False, "unparsed_citations": [],
     }
@@ -63,7 +74,7 @@ def _finish(report, adjudication):
 
 
 def _problems(report, adjudication):
-    return checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS)[0]
+    return checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS, expected_digests=DIGESTS)[0]
 
 
 def test_a_run_with_reviews_passes_once_they_are_ruled_on():
@@ -91,7 +102,7 @@ def test_a_fabricated_citation_blocks_release():
 def test_unparsed_citations_are_reported_not_gated():
     report, adjudication = _run()
     report["suites"][0]["results"][2]["unparsed_citations"] = ["《无可核对》"]
-    problems, _, unparsed = checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS)
+    problems, _, unparsed = checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS, expected_digests=DIGESTS)
     assert problems == [] and unparsed == 1
 
 
@@ -107,16 +118,28 @@ def test_coverage_model_and_categories_are_checked():
     bad["suites"][0]["results"][1]["test_type"] = "fidelity"
     assert any("test_type" in p for p in _problems(bad, copy.deepcopy(adjudication)))
     assert any("missing suite" in p for p in checker.validate(
-        [_finish(*_run())], {**TYPES, "master-other": ["fidelity"]}, QUESTIONS)[0])
+        [_finish(*_run())], {**TYPES, "master-other": ["fidelity"]}, QUESTIONS, expected_digests=DIGESTS)[0])
 
 
 def test_replaced_question_cannot_reuse_an_old_run():
     report, adjudication = _run()
     report["suites"][0]["results"][1]["question"] = "an older question"
     problems = checker.validate(
-        [_finish(report, adjudication)], TYPES, QUESTIONS,
+        [_finish(report, adjudication)], TYPES, QUESTIONS, expected_digests=DIGESTS,
     )[0]
     assert any("master-demo #1: question differs from its fixture" in p for p in problems)
+
+
+def test_changed_assertion_or_missing_digest_cannot_reuse_an_old_run():
+    report, adjudication = _run()
+    changed = {**FIXTURES[1], "must_not_contain": ["排名", "最高"]}
+    current = {"master-demo": [DIGESTS["master-demo"][0], fixture_sha256(changed), DIGESTS["master-demo"][2]]}
+    problems = checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS, expected_digests=current)[0]
+    assert any("master-demo #1: fixture digest differs" in p for p in problems)
+
+    report["suites"][0]["results"][1].pop("fixture_sha256")
+    problems = checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS, expected_digests=DIGESTS)[0]
+    assert any("master-demo #1: fixture digest differs" in p for p in problems)
 
 
 def test_an_adjudication_that_does_not_verify_blocks_release():
@@ -126,7 +149,8 @@ def test_an_adjudication_that_does_not_verify_blocks_release():
 
 
 def test_it_reads_the_committed_runs_as_they_are_stored():
-    # Real pairs parse and recount; they fail only on the model, which is the point.
+    # Old real pairs still recount, but cannot qualify for v1: wrong model and
+    # no fixture digests, so their answers are not tied to their full fixtures.
     pairs = []
     for report, adj in [
         ("0.12.15-0e7d97e-deepseek-personas.json", "adjudication-0e7d97e-deepseek-personas.json"),
@@ -136,10 +160,11 @@ def test_it_reads_the_committed_runs_as_they_are_stored():
             json.loads((ROOT / "eval/reports" / adj).read_text(encoding="utf-8")),
         ))
     problems, tally, _ = checker.validate(
-        pairs, checker.fixture_types(), checker.fixture_questions()
+        pairs, checker.fixture_types(), checker.fixture_questions(), expected_digests=checker.fixture_digests()
     )
     assert tally["fidelity"]["graded"] == 83
     assert any("release model" in p for p in problems)
+    assert any("fixture digest differs" in p for p in problems)
     assert not any(p.startswith("adjudication:") for p in problems)
 
 
