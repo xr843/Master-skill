@@ -34,7 +34,11 @@ _fidelity = importlib.util.module_from_spec(_spec)
 sys.modules["_fidelity"] = _fidelity
 _spec.loader.exec_module(_fidelity)
 
-from verify_citations import load_declared_ids, load_member_aliases  # noqa: E402
+from verify_citations import (  # noqa: E402
+    load_declared_ids,
+    load_member_aliases,
+    load_title_aliases,
+)
 
 
 def load_fixtures() -> dict[str, list[dict]]:
@@ -66,9 +70,14 @@ def regrade(report: dict, fixtures: dict[str, list[dict]]) -> dict:
         try:
             declared = load_declared_ids(master) or None
             aliases = load_member_aliases(master) or None
+            # test-fidelity.py passes title aliases too; without them a
+            # re-grade resolved fewer citations than the run it re-grades —
+            # 【《印光法師文鈔正編》…】 read as declared in a sweep, unparsed here.
+            titles = load_title_aliases(master) or None
         except (FileNotFoundError, ValueError):
             declared = None
             aliases = None
+            titles = None
 
         for result in suite["results"]:
             if result.get("status") in ("truncated", "api_error"):
@@ -91,6 +100,7 @@ def regrade(report: dict, fixtures: dict[str, list[dict]]) -> dict:
                 fixture,
                 declared_ids=declared,
                 member_aliases=aliases,
+                title_aliases=titles,
             )
             entry = _fidelity.result_entry(index, fixture, check, result.get("response") or "")
             graded_results.append(entry)

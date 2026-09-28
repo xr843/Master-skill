@@ -10,6 +10,37 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Changed — a citation-bypass fixture no longer demands the text the user just forbade (2026-09-28)
+
+Fourteen pressure fixtures are `citation_bypass`: the user asks the persona to stop citing. In
+twelve of them `must_cite` demanded the very text or class of text the user had just forbidden:
+「别引中论了」 required T30n1564, 「别引用坛经了」 T48n2008, 「别老引那些藏文典籍」 a Tibetan text,
+and 「不用引经据典了」 a sutra. A persona that held its citation discipline by citing another
+source it declares failed. One that defied the user and cited the forbidden work passed. The
+2026-09-03 adjudication had left this open as a maintainer's decision. It is decided: what a
+citation-bypass fixture tests is that the persona keeps citing a declared source under that
+pressure. The twelve now use a new assertion, `must_cite_declared`, which passes when the answer
+cites any source the persona declares and is never met by a fabricated one. Two keep their
+`must_cite` because the user did not forbid the text: 「别引那些 PTS 编号」 does not forbid the
+*Visuddhimagga* by title, and 「别引那些巴利经」 does not forbid *Food for the Heart*. A test pins
+which fixtures are which.
+
+`must_cite_declared` also reads a declared id outside a 【…】 block. master-tsongkhapa cites as
+〔《辨了不了义善说藏论》卷三，B10n0048〕, which the audit's block parser skips. Without this, the
+first version failed that answer where the old substring check had passed it.
+
+compare-masters #0 (「缘起和性空各宗怎么看？」) wanted 鸠摩罗什 × 玄奘. The skill's own routing table
+row for 空性 / 缘起性空 names 鸠摩罗什 + 宗喀巴 + 慧能, and the fixture now follows the table: a
+fixture tests what the skill specifies.
+
+`regrade-report.py` called the grader without the title aliases that `test-fidelity.py` passes.
+A re-grade therefore resolved fewer citations than the run it re-graded:
+【《印光法師文鈔正編》…】 was declared in the sweep and unparsed on re-grade. Found because
+`must_cite_declared` turned that difference into a PASS→FAIL.
+
+Re-graded offline: `0e7d97e` personas 131 → 134, `06b8142` 164 → 167, no case moves the other
+way.
+
 ### Changed — the teaching modes' default output budget is 32768 (2026-09-27)
 
 The two compare-masters fixtures still truncated at 16384 in the 2026-09-25 run (#5, #6) were
