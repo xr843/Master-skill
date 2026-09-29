@@ -60,6 +60,16 @@ def test_everything_satisfied_passes(fidelity):
     assert check["passed"] is True
 
 
+def test_citation_audit_readiness_requires_declared_sources(fidelity):
+    case = {"q": "请开示"}
+    assert fidelity.check_response("没有编号的回答", case)["citation_audit_ready"] is False
+    checked = fidelity.check_response(
+        "没有编号的回答", case, declared_ids={"T48n2008"}
+    )
+    assert checked["citation_audit_ready"] is True
+    assert fidelity.result_entry(0, case, checked, "没有编号的回答")["citation_audit_ready"] is True
+
+
 def test_first_turn_boundary_only_applies_on_the_first_turn(fidelity):
     case = {"q": "请开示", "must_not_contain_first_turn": ["弟子"]}
     first = fidelity.check_response("弟子当知", case, is_first_turn=True)

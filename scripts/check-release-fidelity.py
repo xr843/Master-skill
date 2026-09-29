@@ -146,8 +146,15 @@ def validate(pairs, expected_types, expected_questions, *, expected_digests, adj
                         problems.append(f"{where}: fixture digest differs from its fixture")
                 if not case.get("response"):
                     problems.append(f"{where}: empty response")
-                if case.get("fabricated_cites"):
+                fabricated = case.get("fabricated_cites")
+                if not isinstance(fabricated, list):
+                    problems.append(f"{where}: fabrication result missing or invalid")
+                elif fabricated:
                     problems.append(f"{where}: fabricated citation(s) {case['fabricated_cites']}")
+                if case.get("citation_audit_ready") is not True:
+                    problems.append(f"{where}: citation audit had no declared sources or was not recorded")
+                if case.get("audit_unavailable") is not False:
+                    problems.append(f"{where}: citation audit unavailable or not recorded")
                 if case.get("needs_review") and (name, index) not in ruled:
                     problems.append(f"{where}: needs_review is not ruled on")
                 unparsed += len(case.get("unparsed_citations") or [])

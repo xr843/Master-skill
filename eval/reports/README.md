@@ -15,6 +15,9 @@ against a real model.
   with sorted keys. The v1 release gate compares it with the current fixture, so a
   changed assertion requires a new measured run and adjudication. Older reports lack
   this field and remain historical evidence, not v1 release evidence.
+  New graded results also record `citation_audit_ready`: whether the runner had a
+  nonempty declared source set for that answer. The v1 gate rejects missing or false
+  readiness and any `audit_unavailable` result, even if its answer review was cleared.
 - `BASELINE.md` — the human-readable summary table and failure analysis for the same run.
 - `0.12.15-df76fd2-deepseek-metaskills-tools.json` — the four teaching modes only, the first
   run with file tools (`skill_tools` on every suite, `tool_calls` on every result). Its `meta`
