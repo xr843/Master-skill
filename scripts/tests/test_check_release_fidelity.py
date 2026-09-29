@@ -100,6 +100,17 @@ def test_a_fabricated_citation_blocks_release():
     assert any("fabricated" in p for p in _problems(report, adjudication))
 
 
+@pytest.mark.parametrize("bad_value", [None, {}, "", "missing"])
+def test_missing_or_invalid_fabrication_result_is_not_zero(bad_value):
+    report, adjudication = _run()
+    result = report["suites"][0]["results"][1]
+    if bad_value == "missing":
+        result.pop("fabricated_cites")
+    else:
+        result["fabricated_cites"] = bad_value
+    assert any("fabrication result missing or invalid" in p for p in _problems(report, adjudication))
+
+
 def test_audit_unavailable_cannot_be_cleared_by_an_answer_review():
     report, adjudication = _run()
     # #0 has a valid review ruling. It does not turn an unperformed citation
