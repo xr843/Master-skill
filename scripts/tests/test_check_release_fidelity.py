@@ -39,7 +39,8 @@ def _case(index, kind, **changes):
         "index": index, "question": f"q{index}", "status": "PASS", "test_type": kind,
         "fixture_sha256": DIGESTS["master-demo"][index],
         "response": f"answer {index} 此句可引", "fabricated_cites": [], "missing_mentions": [],
-        "needs_review": False, "unparsed_citations": [],
+        "needs_review": False, "audit_unavailable": False,
+        "citation_audit_ready": True, "unparsed_citations": [],
     }
     case.update(changes)
     return case
@@ -97,6 +98,26 @@ def test_a_fabricated_citation_blocks_release():
     report, adjudication = _run()
     report["suites"][0]["results"][1]["fabricated_cites"] = ["T99n9999"]
     assert any("fabricated" in p for p in _problems(report, adjudication))
+
+
+def test_audit_unavailable_cannot_be_cleared_by_an_answer_review():
+    report, adjudication = _run()
+    # #0 has a valid review ruling. It does not turn an unperformed citation
+    # audit into an audit with zero fabrications.
+    report["suites"][0]["results"][0]["audit_unavailable"] = True
+    assert any("citation audit unavailable" in p for p in _problems(report, adjudication))
+
+    report["suites"][0]["results"][0].pop("audit_unavailable")
+    assert any("citation audit unavailable" in p for p in _problems(report, adjudication))
+
+
+def test_missing_source_set_cannot_look_like_a_clean_audit():
+    report, adjudication = _run()
+    report["suites"][0]["results"][1]["citation_audit_ready"] = False
+    assert any("citation audit had no declared sources" in p for p in _problems(report, adjudication))
+
+    report["suites"][0]["results"][1].pop("citation_audit_ready")
+    assert any("citation audit had no declared sources" in p for p in _problems(report, adjudication))
 
 
 def test_unparsed_citations_are_reported_not_gated():

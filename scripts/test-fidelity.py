@@ -1346,6 +1346,7 @@ def check_response(
         # 会把它和繁体、审计不可用等混在一起,而那些不需要人看原文。
         "boundary_undecided": sorted(set(forbidden_found) | set(boundary_violations)),
         "fabricated_cites": fabricated_cites,
+        "citation_audit_ready": bool(declared_ids),
         "audit_unavailable": audit_unavailable,
         # 抽不出可核对 id 的引文块。不判失败 —— 但空的 fabricated 从此不再等于
         # 「查过、干净」,报告可以算出审计器实际覆盖了多少条引用。
@@ -1385,6 +1386,7 @@ def result_entry(
         "mention_requirements": len(test.get("must_mention", [])),
         "script_mismatch": check["script_mismatch"],
         "fabricated_cites": check["fabricated_cites"],
+        "citation_audit_ready": check["citation_audit_ready"],
         "needs_review": check["needs_review"],
         "audit_unavailable": check["audit_unavailable"],
         "unparsed_citations": check["unparsed_citations"],
