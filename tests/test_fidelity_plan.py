@@ -88,6 +88,8 @@ def test_plan_text_does_not_present_an_ungraded_pass_rate():
     (["--master", "huineng", "--max-output-tokens", "0"], "must be positive"),
     (["--master", "missing-persona"], "not found"),
     (["--all", "--dry-run"], "not allowed with argument"),
+    (["--master", "huineng", "--request-timeout", "nan"], "must be positive and finite"),
+    (["--master", "huineng", "--request-timeout", "inf"], "must be positive and finite"),
 ])
 def test_invalid_plan_fails_before_any_paid_call(args, reason):
     result = run_plan(*args)

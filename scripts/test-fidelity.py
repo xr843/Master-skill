@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import sys
@@ -2007,8 +2008,8 @@ def main() -> int:
         # A negative count is accepted by the SDKs and would put a negative
         # "worst-case seconds" into the report.
         parser.error("--max-retries cannot be negative")
-    if args.request_timeout <= 0:
-        parser.error("--request-timeout must be positive")
+    if not math.isfinite(args.request_timeout) or args.request_timeout <= 0:
+        parser.error("--request-timeout must be positive and finite")
     if args.max_output_tokens is not None and args.max_output_tokens <= 0:
         parser.error("--max-output-tokens must be positive")
 

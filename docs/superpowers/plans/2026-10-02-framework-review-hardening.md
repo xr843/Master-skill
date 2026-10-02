@@ -92,3 +92,9 @@ tokens, excluding all follow-up requests. Only master-debate lacks a request bou
 Independent review finds no material issue. `npm test` passes all structural gates,
 102 CLI tests and 1364 Python tests; the 2 CI-only Promptfoo integrations are
 skipped locally. Existing graded-run and structural-preview regression tests pass.
+Two additional CLI regressions exposed NaN/infinite timeout values bypassing the
+positive-number check; finite timeout validation now rejects both before planning
+or paid execution. Regenerate the plan after this grader change.
+Final local verification: 12 plan CLI tests pass; full `npm test` passes its gates,
+102 CLI tests and 1366 Python tests (2 CI-only integrations skipped). The keyless
+whole-tree plan was regenerated against the final grading code.
