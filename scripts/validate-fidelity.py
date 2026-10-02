@@ -86,10 +86,12 @@ def validate_master(master_dir: Path) -> list[str]:
         return [f"{master_dir.name}: no fidelity.jsonl found"]
 
     errors = []
-    lines = fidelity_path.read_text(encoding="utf-8").strip().splitlines()
+    lines = fidelity_path.read_text(encoding="utf-8").splitlines()
+    case_count = sum(bool(line.strip()) for line in lines)
+    has_boundary = False
 
-    if len(lines) < 5:
-        errors.append(f"{master_dir.name}: fewer than 5 test cases ({len(lines)})")
+    if case_count < 5:
+        errors.append(f"{master_dir.name}: fewer than 5 test cases ({case_count})")
 
     for i, line in enumerate(lines, 1):
         if not line.strip():
@@ -100,9 +102,33 @@ def validate_master(master_dir: Path) -> list[str]:
             errors.append(f"{master_dir.name}:{i}: invalid JSON — {e}")
             continue
 
+        if not isinstance(test, dict):
+            errors.append(f"{master_dir.name}:{i}: expected a JSON object")
+            continue
+
         # Every test must have "q"
         if "q" not in test:
             errors.append(f"{master_dir.name}:{i}: missing 'q' field")
+            continue
+        if not isinstance(test["q"], str) or not test["q"].strip():
+            errors.append(f"{master_dir.name}:{i}: 'q' must be a non-empty string")
+            continue
+
+        # Check shape before semantic checks iterate fields or construct sets.
+        invalid_lists = False
+        for field in (
+            "must_cite", "must_mention", "must_convey", "must_not_contain",
+            "must_not_contain_first_turn", "must_select_pair", "must_have_rounds",
+            "must_select_masters", "must_have_sections",
+        ):
+            if field in test and (
+                not isinstance(test[field], list)
+                or not all(isinstance(item, str) for item in test[field])
+            ):
+                errors.append(f"{master_dir.name}:{i}: '{field}' must be a list of strings")
+                invalid_lists = True
+        if invalid_lists:
+            continue
 
         # Every must_* key has to be one the grader reads; anything else is
         # an assertion that looks enforced and is not.
@@ -135,39 +161,32 @@ def validate_master(master_dir: Path) -> list[str]:
 
         # Validate test_type if present
         test_type = test.get("test_type")
-        if test_type and test_type not in VALID_TEST_TYPES:
+        if "test_type" in test and (
+            not isinstance(test_type, str) or test_type not in VALID_TEST_TYPES
+        ):
             errors.append(
                 f"{master_dir.name}:{i}: invalid test_type '{test_type}' "
                 f"(valid: {VALID_TEST_TYPES})"
             )
+            continue
 
         # Validate boundary/pressure subtypes
         if test_type == "boundary":
             boundary = test.get("boundary")
             if not boundary:
                 errors.append(f"{master_dir.name}:{i}: boundary test missing 'boundary' field")
-            elif boundary not in VALID_BOUNDARIES:
+            elif not isinstance(boundary, str) or boundary not in VALID_BOUNDARIES:
                 errors.append(
                     f"{master_dir.name}:{i}: unknown boundary '{boundary}' "
                     f"(valid: {VALID_BOUNDARIES})"
                 )
+            else:
+                has_boundary = True
 
         if test_type == "pressure":
             pressure = test.get("pressure")
             if not pressure:
                 errors.append(f"{master_dir.name}:{i}: pressure test missing 'pressure' field")
-
-        # List fields must be lists
-        for field in [
-            "must_cite",
-            "must_mention",
-            "must_not_contain",
-            "must_not_contain_first_turn",
-            "must_select_pair",
-            "must_have_rounds",
-        ]:
-            if field in test and not isinstance(test[field], list):
-                errors.append(f"{master_dir.name}:{i}: '{field}' must be a list")
 
         if master_dir.name == "compare-masters" and test_type not in {"boundary", "pressure"}:
             sections = set(test.get("must_have_sections", []))
@@ -179,11 +198,6 @@ def validate_master(master_dir: Path) -> list[str]:
                 )
 
     # Check coverage: should have at least one boundary test
-    has_boundary = any(
-        json.loads(l).get("test_type") == "boundary"
-        for l in lines
-        if l.strip()
-    )
     if not has_boundary:
         errors.append(f"{master_dir.name}: no boundary tests found (need at least one)")
 

@@ -10,6 +10,10 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- Fidelity fixture validation reports malformed JSON, non-object cases and invalid
+  question / assertion shapes without crashing, retains physical line numbers,
+  and continues checking later cases and suites. Boundary coverage uses the
+  validated cases rather than reparsing invalid JSON.
 - Evaluation validates skill catalog structure, supported kinds and unique names /
   install directories before selecting runtime tools. Missing catalog entries now
   fail explicitly instead of silently running teaching modes without tools; batch

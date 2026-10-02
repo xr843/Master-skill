@@ -153,3 +153,27 @@ material issues and reproduced a standard-library-only plan for 19 suites / 211
 fixtures. Catalog fields unrelated to runtime kind/name/directory selection are
 left to their existing validators; dry-run behavior and recommendation-name cache
 remain unchanged. Active-run edits remain governed by the end-of-run fingerprint.
+
+## Keep fixture validation reportable for malformed input
+
+Inspection reproduced a validator failure: its initial loop recorded malformed
+JSON, but the final boundary coverage calculation parsed the same line again and
+raised instead of reporting the accumulated diagnostics. Non-object cases and
+unhashable field shapes also raised; invalid questions were accepted. Nine focused
+regressions first failed against these paths, including a later unsupported
+assertion and a valid boundary after the malformed line.
+
+Validate object / question / list shapes before semantic checks, guard test-type
+and boundary membership, accumulate valid boundary coverage once, and preserve
+physical line numbers rather than stripping leading blank lines. Count nonblank
+case lines for the minimum-suite-size check. A CLI regression also checks that
+errors in two different suites are both reported with exit 1. Existing assertion
+semantics remain in place; no fixture content or historical report is rewritten.
+
+Verification: 14 focused validator tests pass; all 19 real suites validate under
+python -S. Full npm test passes all gates, 102 CLI tests and 1408 Python tests
+(2 CI-only integrations skipped). Independent review found no material issues.
+Pressure subtype expansion, boolean assertion schema changes and pathological
+JSON resource limits remain outside this bounded validator correction; existing
+success-count display is unchanged. The keyless plan was regenerated after the
+grader fingerprint changed.
