@@ -16,6 +16,7 @@ def test_only_original_blocks_support_quotes_in_the_cited_work(tmp_path: Path):
     )
     evidence = load_quote_evidence(tmp_path, {"T48n2008", "T08n0235"})
     assert unsupported_quotes('经云：“菩提自性，本来清净。”【《坛经》，T48n2008】', evidence) == []
+    assert unsupported_quotes('> 菩提自性，本来清净。\n> 【《坛经》，T48n2008】', evidence) == []
     assert unsupported_quotes('经云：“菩提自性，本来清净。”【《金刚经》，T08n0235】', evidence)
     assert unsupported_quotes('经云：“量子电脑可令人人即刻成佛。”【《坛经》，T48n2008】', evidence)
 
@@ -42,6 +43,8 @@ def test_other_direct_quote_formats_cannot_bypass_review():
         '经云：\n> 量子电脑可令人人即刻成佛。\n【《坛经》，T48n2008】',
         '经云：“量子电脑\n可令人人即刻成佛。”【《坛经》，T48n2008】',
         '经云：“量子成佛。”【《坛经》，T48n2008】',
+        '> 量子电脑可令人人即刻成佛。\n> 【《坛经》，T48n2008】',
+        '> 量子电脑可令人人即刻成佛。【《坛经》，T48n2008】',
     ):
         assert unsupported_quotes(text, {}, {"T48n2008"})
 

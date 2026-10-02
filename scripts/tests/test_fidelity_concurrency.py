@@ -53,6 +53,33 @@ def _install_fake_anthropic(monkeypatch, *, on_create):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-real-key")
 
 
+@pytest.mark.parametrize("mutate", [False, True])
+def test_input_changes_in_flight_preserve_answers_but_invalidate_run(
+    fidelity, monkeypatch, tmp_path, mutate
+):
+    directory = tmp_path / "prebuilt" / "master-demo"
+    (directory / "tests").mkdir(parents=True)
+    skill = directory / "SKILL.md"
+    skill.write_text("Original persona", encoding="utf-8")
+    (directory / "tests" / "fidelity.jsonl").write_text('{"q":"question"}\n')
+    monkeypatch.setattr(fidelity, "PREBUILT_DIR", directory.parent)
+    monkeypatch.setattr(fidelity, "uses_skill_tools", lambda _: False)
+    monkeypatch.setattr(fidelity, "uses_subagents", lambda _: False)
+
+    def create(**_):
+        if mutate:
+            skill.write_text("Changed persona", encoding="utf-8")
+        return _answer("answer")
+
+    _install_fake_anthropic(monkeypatch, on_create=create)
+    suite = fidelity.run_tests("demo", quiet=True, concurrency=1)
+    assert len(suite["results"]) == 1
+    assert suite["inputs_stable"] is (not mutate)
+    assert suite["outcome"] == ("inputs_changed" if mutate else "completed")
+    if mutate:
+        assert fidelity.results_failed([suite], dry_run=False)
+
+
 def test_results_come_back_in_fixture_order_regardless_of_completion_order(
     fidelity, monkeypatch
 ):

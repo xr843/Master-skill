@@ -116,6 +116,8 @@ def validate(pairs, expected_types, expected_questions, *, expected_digests, exp
         }
         for suite in suites:
             name = suite.get("master")
+            if suite.get("inputs_stable") is not True or suite.get("outcome") != "completed":
+                problems.append(f"{name}: evaluation inputs were not stable between start and end")
             if not expected_identities.get(name) or suite.get("evaluation_identity") != expected_identities.get(name):
                 problems.append(f"{name}: evaluation identity differs from current runtime or grader")
             if name in seen:

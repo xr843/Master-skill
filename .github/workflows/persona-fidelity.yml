@@ -116,6 +116,11 @@ jobs:
             echo "::endgroup::"
           done
 
+      - name: Verify real runtime prompts (local provider, no API calls)
+        env:
+          MASTER_SKILL_REQUIRE_PROMPTFOO: '1'
+        run: python -m pytest scripts/tests/test_persona_runtime_prompt.py -q
+
       - name: Detect ANTHROPIC_API_KEY
         id: key
         env:

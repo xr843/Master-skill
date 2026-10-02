@@ -52,6 +52,7 @@ def _run():
     report = {"suites": [{
         "master": "master-demo", "mode": "graded", "provider": "anthropic",
         "evaluation_identity": IDENTITIES["master-demo"],
+        "outcome": "completed", "inputs_stable": True,
         "model": "claude-sonnet-4-6", "total": 3,
         "results": [
             # A must_convey requirement: PASS as graded, held for a ruling.
@@ -230,3 +231,11 @@ def test_link_and_quote_evidence_cannot_be_silently_dropped():
     report, adjudication = _run()
     report["suites"][0]["results"][1].pop("unverified_live_citations")
     assert any("citation evidence result missing" in p for p in _problems(report, adjudication))
+
+
+def test_run_must_record_unchanged_inputs():
+    report, adjudication = _run()
+    report["suites"][0]["inputs_stable"] = False
+    assert any("inputs were not stable" in p for p in _problems(report, adjudication))
+    report["suites"][0].pop("inputs_stable")
+    assert any("inputs were not stable" in p for p in _problems(report, adjudication))

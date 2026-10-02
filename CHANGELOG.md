@@ -14,8 +14,11 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
   by local original excerpts require review; paraphrases are not quotation evidence.
 - Release evidence binds graded suites to runtime sources and grading code through
   file fingerprints. Historical reports cannot be relabelled as current measurements.
+  A changed end-of-run fingerprint preserves answers but invalidates release evidence.
 - RAW/SPE/CUS and citation configs cover all 15 personas using the fidelity runner's
   real context loader instead of separately maintained miniature persona prompts.
+  CI exercises actual Promptfoo loading with a local provider and a failing control,
+  without model API calls.
 - Installation stages every replacement and restores the old install on failure.
   File inventories protect local changes; `--dry-run` previews and `--force` explicitly
   replaces them. Legacy installs require explicit replacement after backing up.

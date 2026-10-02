@@ -1762,10 +1762,15 @@ def run_tests(
         pool.shutdown(wait=True, cancel_futures=True)
 
     results = [by_index[i] for i in sorted(by_index)]
+    try:
+        inputs_stable = evaluation_identity(master_dir) == identity
+    except (OSError, ValueError):
+        inputs_stable = False
 
     return {
-        **suite_common(master_name, dry_run, "completed", provider),
+        **suite_common(master_name, dry_run, "completed" if inputs_stable else "inputs_changed", provider),
         "evaluation_identity": identity,
+        "inputs_stable": inputs_stable,
         # Which instrument: a teaching-mode suite graded with file tools is not
         # comparable with one graded without (every run before 2026-09-24).
         "skill_tools": (
@@ -1881,6 +1886,7 @@ def results_failed(results: list[dict], dry_run: bool) -> bool:
         return any("error" in suite for suite in results)
     return any(
         "error" in suite
+        or suite.get("inputs_stable") is False
         or suite.get("failed", 0) > 0
         or any(
             case.get("status") in {"FAIL", "api_error", "truncated"}

@@ -45,14 +45,15 @@ def unsupported_quotes(answer: str, evidence: dict[str, list[str]],
     candidates += [(match.start(), match.end(), re.sub(r"(?m)^[ \t]*>\s?", "", match.group()))
                    for match in _BLOCKQUOTES.finditer(answer)]
     for start, end, quote in candidates:
-        normalized = normalize_quote(quote)
+        embedded = re.search(r"【[^】]+】", quote)
+        normalized = normalize_quote(re.sub(r"【[^】]+】", "", quote))
         if not normalized:
             continue
         tail = answer[end:end + 400]
-        citation = re.search(r"【[^】]+】", tail)
+        citation = embedded or re.search(r"【[^】]+】", tail)
         preceding = answer[max(0, start - 400):start]
         previous = list(re.finditer(r"【[^】]+】", preceding))
-        if previous:
+        if previous and not embedded:
             gap = preceding[previous[-1].end():]
             if len(gap) <= 32 and re.fullmatch(r"\s*(?:(?:经)?(?:云|曰|说|言)|原文|经文|写道|记载)?\s*[:：]?\s*", gap):
                 citation = previous[-1]

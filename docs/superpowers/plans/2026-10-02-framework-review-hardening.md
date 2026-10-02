@@ -38,3 +38,16 @@ rejecting unsupported uninstall previews and preserving generated-persona links.
 - `cargo +1.95.0 test --locked` in `desktop/`: 133 tests passed.
 - No paid model sweep was launched, no historical measurement was rewritten, and
   no package was published. The new 15-persona rubrics remain advisory until calibrated.
+
+## Follow-up quality checks
+
+- Added start/end input fingerprint comparison: preserve collected answers, fail the
+  run and release gate on changed inputs or missing stability evidence.
+- Exercise the pinned Promptfoo CLI against every persona's real fixture questions
+  with a local provider comparing exact system/user messages. An intentionally
+  reduced prompt must fail. Persona CI requires this integration check; no API key
+  or paid model is involved.
+- Final verification: `npm test` gates and 102 CLI tests pass; the full Python suite
+  with pinned Promptfoo available passes 1339 tests without skips. Hooks pass 36,
+  desktop passes 133. Independent review's embedded-blockquote citation bypass is
+  closed; focused quotation/response/identity verification passes 65 tests.

@@ -16,6 +16,12 @@ endings are normalized; README-only changes do not invalidate a run. The v1 gate
 rejects missing or changed fingerprints. Do not add them to old reports after the
 fact: that would claim a measurement that never happened.
 
+The runner compares input fingerprints again after all requests finish and records
+`inputs_stable`. A changed or unreadable input produces `outcome: inputs_changed`
+and a failing exit while preserving collected answers. Release evidence requires
+`inputs_stable: true` and `outcome: completed`. Keep evaluation inputs unchanged:
+this start/end check does not detect edits reverted before the final fingerprint.
+
 Source-ID resolution is not quotation verification. New results separately record
 `unverified_live_citations` and `unverified_quotes`. A numeric FoJin link without
 retrieval/online evidence requires review, as does a cited direct quotation not
