@@ -73,3 +73,22 @@ of this continuation. Keep all changes on the existing review branch.
 Verification: 147 citation tests pass, including 16 new cases; independent
 review finds no material issue. `npm test` gates and 102 CLI tests pass, with
 1354 Python tests passing and the 2 CI-only Promptfoo integrations skipped locally.
+
+## Keyless evaluation planning
+
+Continue toward the release measurement by adding `--plan` to the existing runner.
+Use its actual fixture selection and runtime context preparation; report model,
+digests, initial context bytes, configured output/concurrency/retry/time limits,
+initial request counts and maximum SDK attempts where the implementation bounds
+them. Represent Task fanout as unknown rather than inventing a paid-call ceiling.
+Plans must not load SDKs, read keys, make API requests or claim graded evidence.
+No price estimate or monetary cap is part of this bounded change.
+
+Seven initial CLI regressions first failed for the missing flag. Added file-tool
+request accounting, plan/preview fixture-selection agreement and human-output
+checks. Ten focused tests pass in a `python -S` subprocess. The current whole-tree
+plan covers 19 suites and 211 fixtures; the initial output limits sum to 1,783,808
+tokens, excluding all follow-up requests. Only master-debate lacks a request bound.
+Independent review finds no material issue. `npm test` passes all structural gates,
+102 CLI tests and 1364 Python tests; the 2 CI-only Promptfoo integrations are
+skipped locally. Existing graded-run and structural-preview regression tests pass.

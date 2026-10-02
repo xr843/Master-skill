@@ -59,6 +59,28 @@ checks work identity, not whether an online passage entails the answer's claim.
 
 ## How to regenerate
 
+Prepare a keyless plan before launching a sweep:
+
+```bash
+python3 scripts/test-fidelity.py --all --plan --json > /tmp/evaluation-plan.json
+python3 scripts/test-fidelity.py --master huineng --plan --max-tests 2
+```
+
+`--plan` uses the same fixture selection and runtime context preparation as the
+real runner. It records per-fixture digests, runtime/grader fingerprints, UTF-8
+context sizes, output limits, concurrency, retries and configured time ceilings.
+The plan requires only Python's standard library and never loads a provider SDK
+or reads an API key. It uses `mode: plan`, has no graded results or pass rate, and
+cannot satisfy the release gate. `--plan` and `--dry-run` are mutually exclusive.
+
+Request ceilings include retries and bounded file-tool conversations. For debate
+subagents, total request attempts are `null`: the model controls Task fanout and a
+tool-round cap alone does not bound it. Initial output-limit totals exclude later
+tool and subagent responses; bytes are not token counts. These are planning inputs,
+not price estimates, billed token predictions or enforced financial caps. Provider
+pricing, token counts, cache behavior and model-dependent tool use must be reviewed
+before setting and authorizing a paid evaluation budget.
+
 ```bash
 export ANTHROPIC_API_KEY="..."   # never commit this
 python3 scripts/test-fidelity.py --all --json --model claude-sonnet-4-6 > /tmp/run.json

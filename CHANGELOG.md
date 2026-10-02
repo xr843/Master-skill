@@ -10,6 +10,10 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- `test-fidelity.py --plan` inspects the exact selected fixtures, runtime/grader
+  fingerprints, context sizes and configured request limits without SDKs or API
+  calls. Subagent fanout remains explicitly unknown; plans are not graded evidence
+  or monetary spending caps.
 - Online citation verification keeps malformed JSON, incomplete work metadata and
   unavailable title comparison pending, instead of treating them as verified.
 - Citation evidence: unverified live links and cited direct quotations unsupported

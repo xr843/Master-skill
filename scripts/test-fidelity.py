@@ -377,11 +377,13 @@ def suite_common(
 
 
 def suite_error(
-    master_name: str, dry_run: bool, message: str, provider: str = DEFAULT_PROVIDER
+    master_name: str, dry_run: bool, message: str, provider: str = DEFAULT_PROVIDER,
+    plan: bool = False,
 ) -> dict:
     """Return a fidelity JSON v1 suite for a precondition or execution error."""
     return {
         **suite_common(master_name, dry_run, "error", provider),
+        **({"mode": "plan"} if plan else {}),
         "total": 0,
         "results": [],
         "error": message,
@@ -1401,6 +1403,7 @@ def run_tests(
     concurrency: int = DEFAULT_CONCURRENCY,
     request_timeout: float = DEFAULT_REQUEST_TIMEOUT,
     max_retries: int = DEFAULT_MAX_RETRIES,
+    plan: bool = False,
 ) -> dict:
     """Run fidelity tests for a master. Returns summary."""
     # 目录叫 `master-<slug>`,而公开写在 README / package.json 里的调用形式是短名
@@ -1409,7 +1412,7 @@ def run_tests(
     resolved = resolve_master_dir(master_name, base=str(PREBUILT_DIR))
     if resolved is None:
         return suite_error(
-            master_name, dry_run, f"Master '{master_name}' not found", provider
+            master_name, dry_run, f"Master '{master_name}' not found", provider, plan=plan
         )
     master_dir = Path(resolved)
 
@@ -1417,11 +1420,11 @@ def run_tests(
         tests = load_tests(master_dir)
     except (OSError, ValueError) as error:
         return suite_error(
-            master_name, dry_run, f"Unable to load fidelity suite: {error}", provider
+            master_name, dry_run, f"Unable to load fidelity suite: {error}", provider, plan=plan
         )
     if not tests:
         return suite_error(
-            master_name, dry_run, f"No fidelity.jsonl found for '{master_name}'", provider
+            master_name, dry_run, f"No fidelity.jsonl found for '{master_name}'", provider, plan=plan
         )
 
     if max_tests is not None and max_tests > 0:
@@ -1473,7 +1476,40 @@ def run_tests(
         spec = resolve_provider(provider)
         model = resolve_model(provider, model)
     except ValueError as error:
-        return suite_error(master_name, dry_run, str(error), provider)
+        return suite_error(master_name, dry_run, str(error), provider, plan=plan)
+
+    if plan:
+        # One request per persona fixture; file conversations have <=21 sends.
+        # Task fanout per tool response is model-dependent, so no request ceiling
+        # can be honestly inferred for subagent suites from the round cap alone.
+        requests_per_fixture = MAX_TOOL_ROUNDS + 1 if tools else 1
+        maximum_attempts = None if subagents else len(tests) * requests_per_fixture * (max_retries + 1)
+        return {
+            **suite_common(master_name, False, "completed", provider),
+            "mode": "plan", "model": model, "total": len(tests), "results": [],
+            "evaluation_identity": identity,
+            "fixtures": [{"index": i, "question": test["q"],
+                          "test_type": test.get("test_type", "fidelity"),
+                          "fixture_sha256": fixture_sha256(test)}
+                         for i, test in enumerate(tests)],
+            "initial_system_utf8_bytes": len(system_prompt.encode("utf-8")),
+            "initial_questions_utf8_bytes": sum(len(test["q"].encode("utf-8")) for test in tests),
+            "skill_tools": list(SKILL_TOOL_NAMES) + ([SUBAGENT_TOOL] if subagents else []) if tools else [],
+            "max_output_tokens": max_output_tokens,
+            "concurrency": min(concurrency, len(tests)),
+            "request_timeout": request_timeout, "max_retries": max_retries,
+            "configured_per_fixture_ceiling_s": per_fixture_ceiling(request_timeout, max_retries, tools, subagents),
+            "request_plan": {
+                "initial_requests": len(tests),
+                "maximum_sdk_attempts": maximum_attempts,
+                "initial_output_token_limits_sum": len(tests) * max_output_tokens,
+                "additional_calls": "model-dependent subagent fanout" if subagents else "bounded file-tool rounds" if tools else "SDK retries only",
+            },
+            "limitations": ["UTF-8 bytes are not token counts or billed input",
+                            "Output limits describe initial requests, not total tool-loop output",
+                            "Request planning is not a monetary spending cap",
+                            "Timeout configuration is not an exact elapsed-time guarantee"],
+        }
 
     api_key = os.environ.get(spec["env"])
     if not api_key:
@@ -1900,7 +1936,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Master-skill fidelity test runner")
     parser.add_argument("--master", type=str, help="Test a specific master")
     parser.add_argument("--all", action="store_true", help="Test all masters with fidelity.jsonl")
-    parser.add_argument("--dry-run", action="store_true", help="Show test cases without calling API")
+    preview = parser.add_mutually_exclusive_group()
+    preview.add_argument("--dry-run", action="store_true", help="Show test cases without calling API")
+    preview.add_argument("--plan", action="store_true", help="Plan scope and request limits without API calls or SDKs")
     parser.add_argument(
         "--provider", type=str, default=DEFAULT_PROVIDER, choices=sorted(PROVIDERS),
         help="Which API to grade against (default: anthropic). Non-anthropic "
@@ -1971,6 +2009,8 @@ def main() -> int:
         parser.error("--max-retries cannot be negative")
     if args.request_timeout <= 0:
         parser.error("--request-timeout must be positive")
+    if args.max_output_tokens is not None and args.max_output_tokens <= 0:
+        parser.error("--max-output-tokens must be positive")
 
     if not args.master and not args.all:
         parser.error("Specify --master <name> or --all")
@@ -2003,6 +2043,7 @@ def main() -> int:
             concurrency=args.concurrency,
             request_timeout=args.request_timeout,
             max_retries=args.max_retries,
+            plan=args.plan,
         )
         all_results.append(result)
 
@@ -2011,7 +2052,12 @@ def main() -> int:
             # 而不是失败。付费跑分时错误必须看得见。
             print(f"ERROR: {result['error']}", file=sys.stderr)
 
-        if not args.json and "error" not in result:
+        if not args.json and args.plan and "error" not in result:
+            print(f"Plan: {result['total']} fixtures; model={result['model']}; "
+                  f"maximum SDK attempts={result['request_plan']['maximum_sdk_attempts']}")
+            for limitation in result["limitations"]:
+                print(f"  Note: {limitation}")
+        if not args.json and not args.plan and "error" not in result:
             print(f"\nResult: {result.get('passed', 0)}/{result['total']} passed "
                   f"({result.get('pass_rate', 'N/A')})")
             pending = (result.get("boundary") or {}).get("cases_awaiting_ruling", 0)
@@ -2033,10 +2079,12 @@ def main() -> int:
         for r in all_results:
             if "error" in r:
                 print(f"  {r.get('master', '?')}: {r['error']}")
+            elif args.plan:
+                print(f"  {r['master']}: {r['total']} planned fixtures ({r['model']})")
             else:
                 print(f"  {r['master']}: {r.get('passed', 0)}/{r['total']} ({r.get('pass_rate', 'N/A')})")
 
-    return 1 if results_failed(all_results, args.dry_run) else 0
+    return 1 if results_failed(all_results, args.dry_run or args.plan) else 0
 
 
 if __name__ == "__main__":
