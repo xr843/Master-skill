@@ -200,8 +200,22 @@ function installedFiles(dest, skill) {
   return files;
 }
 
+function readRegularFile(file, encoding) {
+  // NONBLOCK prevents opening a FIFO from hanging; NOFOLLOW rejects links
+  // where supported. fstat and read use the same descriptor, so pathname
+  // replacements cannot swap a checked ordinary file for a special node.
+  const flags = fs.constants.O_RDONLY | (fs.constants.O_NONBLOCK ?? 0) | (fs.constants.O_NOFOLLOW ?? 0);
+  const descriptor = fs.openSync(file, flags);
+  try {
+    if (!fs.fstatSync(descriptor).isFile()) throw new Error("Installation input is not a regular file");
+    return fs.readFileSync(descriptor, encoding);
+  } finally {
+    fs.closeSync(descriptor);
+  }
+}
+
 function fileHash(file) {
-  return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+  return createHash("sha256").update(readRegularFile(file)).digest("hex");
 }
 
 function localModifications(skill, dest) {
@@ -210,8 +224,7 @@ function localModifications(skill, dest) {
     if (!entry) return [];
     if (entry.isSymbolicLink()) return ["linked installation"];
     const recordPath = path.join(dest, INSTALL_RECORD);
-    if (!fs.lstatSync(recordPath, { throwIfNoEntry: false })?.isFile()) return ["missing or unreadable installation record"];
-    const record = JSON.parse(fs.readFileSync(recordPath, "utf8"));
+    const record = JSON.parse(readRegularFile(recordPath, "utf8"));
     if (record.schema !== 1 || record.name !== skill.name || !record.files || typeof record.files !== "object" || Array.isArray(record.files)) return ["invalid installation record"];
     const actual = new Set(installedFiles(dest, skill));
     const changed = [];

@@ -52,3 +52,18 @@ regressions and the existing internal-link case. Full npm test passes all gates,
 Windows junction behavior will be verified by the PR's Windows CLI job. The
 absolute-target requirement is documented in Node's official filesystem API:
 https://nodejs.org/api/fs.html#fssymlinktarget-path-type-callback
+
+PR #297's first Windows run passed. Its CodeQL alert identified a check/read
+race in the record path check, so file and record reads now share a descriptor:
+nonblocking/no-follow open flags where supported, fstat regular-file validation,
+readFileSync of the same descriptor, and close in finally. A new regression
+replaces the record pathname with a FIFO immediately after open and confirms the
+old regular descriptor is still read. Restoring unsafe pathname reads first
+reproduced a three-second timeout; descriptor reads pass. Re-run all gates and
+CodeQL after this correction before declaring the PR green.
+
+Descriptor follow-up verification: full npm test passes all gates, 110 CLI tests
+and 1408 Python tests (two CI-only integrations skipped). Independent read-only
+review found no material issue in descriptor closure, FIFO flags or race-test
+behavior. Parent-directory replacement and concurrent content edits remain beyond
+the targeted pathname-read correction. Eight new CLI regressions are now included.

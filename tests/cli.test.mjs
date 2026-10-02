@@ -692,6 +692,36 @@ test("force can replace a generator installation that is a regular file", (t) =>
   assert.ok(fs.existsSync(path.join(dest, "SKILL.md")));
 });
 
+test("record pathname replacement after opening cannot redirect the read to a pipe", { skip: process.platform === "win32" }, (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "zhiyi"], env).code, 0);
+  const record = path.join(skillsDir(home), "master-zhiyi", ".master-skill-install.json");
+  const preload = path.join(home, "replace-open-record.cjs");
+  const marker = path.join(home, "record-replaced.txt");
+  fs.writeFileSync(preload, `
+    const fs=require('fs'); const cp=require('child_process');
+    const open=fs.openSync;
+    const record=${JSON.stringify(record)};
+    let replaced=false;
+    fs.openSync=(file,...args)=>{
+      const fd=open(file,...args);
+      if(file===record && !replaced) {
+        replaced=true; fs.unlinkSync(record); cp.execFileSync('mkfifo',[record]);
+        fs.writeFileSync(${JSON.stringify(marker)}, 'swapped');
+      }
+      return fd;
+    };
+  `);
+  const result = spawnSync(process.execPath, [CLI, "install", "zhiyi"], {
+    encoding: "utf8", timeout: 3000,
+    env: { ...process.env, ...env, NODE_OPTIONS: `--require=${preload}` },
+  });
+  assert.equal(result.status, 0, String(result.error || result.stderr));
+  assert.equal(fs.readFileSync(marker, "utf8"), "swapped");
+  assert.ok(fs.lstatSync(record).isFile());
+  assert.equal(JSON.parse(fs.readFileSync(record, "utf8")).name, "master-zhiyi");
+});
+
 test("a dangling installed skill link requires force and can be replaced explicitly", (t) => {
   const { home, env } = tmpHome(t);
   const dest = path.join(skillsDir(home), "master-zhiyi");
