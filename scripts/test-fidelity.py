@@ -13,13 +13,14 @@ Usage:
 
 Requires:
     - ANTHROPIC_API_KEY environment variable
-    - pip install anthropic
+    - pip install -r requirements.txt -r requirements-eval.txt (graded runs)
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import sys
@@ -32,6 +33,9 @@ from pathlib import Path
 # runs (it was previously schema-validated but never evaluated).
 from _masterpaths import resolve_master_dir
 from _fixture_identity import fixture_sha256
+from _citation_evidence import load_quote_evidence, unsupported_quotes
+from _evaluation_identity import evaluation_identity
+from _skill_context import load_skill_context
 from verify_citations import (
     _CBETA_ID,
     _declared_literal_matcher,
@@ -374,40 +378,17 @@ def suite_common(
 
 
 def suite_error(
-    master_name: str, dry_run: bool, message: str, provider: str = DEFAULT_PROVIDER
+    master_name: str, dry_run: bool, message: str, provider: str = DEFAULT_PROVIDER,
+    plan: bool = False,
 ) -> dict:
     """Return a fidelity JSON v1 suite for a precondition or execution error."""
     return {
         **suite_common(master_name, dry_run, "error", provider),
+        **({"mode": "plan"} if plan else {}),
         "total": 0,
         "results": [],
         "error": message,
     }
-
-
-def load_skill_context(master_dir: Path) -> str:
-    """Load SKILL.md + references as a combined system prompt."""
-    parts: list[str] = []
-
-    skill = master_dir / "SKILL.md"
-    if skill.exists():
-        parts.append(skill.read_text(encoding="utf-8"))
-
-    # Load references (voice.md, teaching.md)
-    refs_dir = master_dir / "references"
-    if refs_dir.exists():
-        for f in sorted(refs_dir.glob("*.md")):
-            parts.append(f"\n\n---\n# {f.stem}\n\n{f.read_text(encoding='utf-8')}")
-
-    # Load source excerpts
-    sources_dir = master_dir / "sources"
-    if sources_dir.exists():
-        for f in sorted(sources_dir.glob("*.md")):
-            if f.name == "INDEX.md":
-                continue
-            parts.append(f"\n\n---\n# Source: {f.stem}\n\n{f.read_text(encoding='utf-8')}")
-
-    return "\n".join(parts)
 
 
 def load_tests(master_dir: Path) -> list[dict]:
@@ -539,15 +520,36 @@ SUBAGENT_SYSTEM_PROMPT = (
 )
 
 
-def skill_kind(dir_name: str) -> str | None:
-    """The catalog kind of the skill installed as ``dir_name``."""
+def load_skill_catalog() -> list[dict]:
+    """Validate the catalog before it determines runtime tools or recommendations."""
     catalog = json.loads(
         (PREBUILT_DIR.parent / "skill-catalog.json").read_text(encoding="utf-8")
     )
-    for skill in catalog["skills"]:
+    if not isinstance(catalog, dict) or not isinstance(catalog.get("skills"), list):
+        raise ValueError("Invalid skill catalog: expected a skills array")
+    names: set[str] = set()
+    directories: set[str] = set()
+    for index, skill in enumerate(catalog["skills"]):
+        if not isinstance(skill, dict):
+            raise ValueError(f"Invalid skill catalog entry {index}: expected an object")
+        for field in ("name", "install_dir", "kind"):
+            if not isinstance(skill.get(field), str) or not skill[field].strip():
+                raise ValueError(f"Invalid skill catalog entry {index}: expected nonempty {field}")
+        if skill["kind"] not in {"persona", "teaching-mode", "generator"}:
+            raise ValueError(f"Invalid skill catalog entry {index}: unsupported kind")
+        if skill["name"] in names or skill["install_dir"] in directories:
+            raise ValueError(f"Invalid skill catalog entry {index}: duplicate name or install_dir")
+        names.add(skill["name"])
+        directories.add(skill["install_dir"])
+    return catalog["skills"]
+
+
+def skill_kind(dir_name: str) -> str:
+    """The catalog kind of the skill installed as ``dir_name``; never guess."""
+    for skill in load_skill_catalog():
         if skill["install_dir"] == dir_name:
             return skill["kind"]
-    return None
+    raise ValueError(f"Skill directory '{dir_name}' is missing from the skill catalog")
 
 
 def uses_skill_tools(master_dir: Path) -> bool:
@@ -1133,10 +1135,7 @@ _known_skills: set[str] | None = None
 def known_skill_names() -> set[str]:
     global _known_skills
     if _known_skills is None:
-        catalog = json.loads(
-            (PREBUILT_DIR.parent / "skill-catalog.json").read_text(encoding="utf-8")
-        )
-        _known_skills = {skill["name"] for skill in catalog["skills"]}
+        _known_skills = {skill["name"] for skill in load_skill_catalog()}
     return _known_skills
 
 
@@ -1147,6 +1146,7 @@ def check_response(
     declared_ids: set[str] | None = None,
     member_aliases: dict[str, str] | None = None,
     title_aliases: dict[str, str] | None = None,
+    quote_evidence: dict[str, list[str]] | None = None,
 ) -> dict:
     """Check a response against expected citations, mentions, and boundaries.
 
@@ -1236,12 +1236,20 @@ def check_response(
     # 空的声明集与 None 同样「查不了」:拿空集合当标尺,会把每一条**正确**引用
     # 都判成伪造(master-debate 的 meta.json 里 sources 就是空的)。
     fabricated_cites = []
+    # An offline source ID does not validate an accompanying URL. Record bare
+    # links and links beside declared IDs as well as undeclared-ID candidates.
+    unverified_live_citations = [
+        {"text_id": tid, "cited_id": None, "title": None}
+        for tid in sorted(set(re.findall(r"https?://fojin\.app/texts/([0-9]+)(?![0-9])", response)))
+    ]
     audit_unavailable = False
     if declared_ids:
         audit = audit_answer(
             declared_ids, response, member_aliases, title_aliases
         )
         fabricated_cites = audit["fabricated"]
+        details = {c["text_id"]: c for c in audit["live_detail"]}
+        unverified_live_citations = [details.get(c["text_id"], c) for c in unverified_live_citations]
         unparsed_citations = audit["unparsed"]
         citations_checked = (
             len(audit["offline"]) + len(audit["live"]) + len(audit["fabricated"])
@@ -1319,6 +1327,7 @@ def check_response(
         and len(contract_failures) == 0
     )
 
+    unverified_quotes = unsupported_quotes(response, quote_evidence or {}, declared_ids)
     return {
         "passed": passed,
         "missing_cites": missing_cites,
@@ -1333,7 +1342,9 @@ def check_response(
         "unverified_mentions": unverified_mentions,
         "script_mismatch": script_mismatch,
         "needs_review": bool(
-            forbidden_found
+            unverified_live_citations
+            or unverified_quotes
+            or forbidden_found
             or boundary_violations
             or forbidden_echoed
             or boundary_echoed
@@ -1346,6 +1357,8 @@ def check_response(
         # 会把它和繁体、审计不可用等混在一起,而那些不需要人看原文。
         "boundary_undecided": sorted(set(forbidden_found) | set(boundary_violations)),
         "fabricated_cites": fabricated_cites,
+        "unverified_live_citations": unverified_live_citations,
+        "unverified_quotes": unverified_quotes,
         "citation_audit_ready": bool(declared_ids),
         "audit_unavailable": audit_unavailable,
         # 抽不出可核对 id 的引文块。不判失败 —— 但空的 fabricated 从此不再等于
@@ -1386,6 +1399,8 @@ def result_entry(
         "mention_requirements": len(test.get("must_mention", [])),
         "script_mismatch": check["script_mismatch"],
         "fabricated_cites": check["fabricated_cites"],
+        "unverified_live_citations": check["unverified_live_citations"],
+        "unverified_quotes": check["unverified_quotes"],
         "citation_audit_ready": check["citation_audit_ready"],
         "needs_review": check["needs_review"],
         "audit_unavailable": check["audit_unavailable"],
@@ -1407,6 +1422,7 @@ def run_tests(
     concurrency: int = DEFAULT_CONCURRENCY,
     request_timeout: float = DEFAULT_REQUEST_TIMEOUT,
     max_retries: int = DEFAULT_MAX_RETRIES,
+    plan: bool = False,
 ) -> dict:
     """Run fidelity tests for a master. Returns summary."""
     # 目录叫 `master-<slug>`,而公开写在 README / package.json 里的调用形式是短名
@@ -1415,7 +1431,7 @@ def run_tests(
     resolved = resolve_master_dir(master_name, base=str(PREBUILT_DIR))
     if resolved is None:
         return suite_error(
-            master_name, dry_run, f"Master '{master_name}' not found", provider
+            master_name, dry_run, f"Master '{master_name}' not found", provider, plan=plan
         )
     master_dir = Path(resolved)
 
@@ -1423,11 +1439,11 @@ def run_tests(
         tests = load_tests(master_dir)
     except (OSError, ValueError) as error:
         return suite_error(
-            master_name, dry_run, f"Unable to load fidelity suite: {error}", provider
+            master_name, dry_run, f"Unable to load fidelity suite: {error}", provider, plan=plan
         )
     if not tests:
         return suite_error(
-            master_name, dry_run, f"No fidelity.jsonl found for '{master_name}'", provider
+            master_name, dry_run, f"No fidelity.jsonl found for '{master_name}'", provider, plan=plan
         )
 
     if max_tests is not None and max_tests > 0:
@@ -1459,9 +1475,15 @@ def run_tests(
         }
 
     # Load skill context
-    system_prompt = load_skill_context(master_dir)
-    tools = uses_skill_tools(master_dir)
-    subagents = uses_subagents(master_dir)
+    try:
+        identity = evaluation_identity(master_dir)
+        system_prompt = load_skill_context(master_dir)
+        tools = uses_skill_tools(master_dir)
+        subagents = uses_subagents(master_dir)
+    except (OSError, ValueError) as error:
+        return suite_error(master_name, dry_run,
+                           f"Unable to prepare evaluation inputs: {redact_secrets(str(error))}",
+                           provider, plan=plan)
     if max_output_tokens is None:
         max_output_tokens = (
             TEACHING_MODE_MAX_OUTPUT_TOKENS if tools else DEFAULT_MAX_OUTPUT_TOKENS
@@ -1478,7 +1500,40 @@ def run_tests(
         spec = resolve_provider(provider)
         model = resolve_model(provider, model)
     except ValueError as error:
-        return suite_error(master_name, dry_run, str(error), provider)
+        return suite_error(master_name, dry_run, str(error), provider, plan=plan)
+
+    if plan:
+        # One request per persona fixture; file conversations have <=21 sends.
+        # Task fanout per tool response is model-dependent, so no request ceiling
+        # can be honestly inferred for subagent suites from the round cap alone.
+        requests_per_fixture = MAX_TOOL_ROUNDS + 1 if tools else 1
+        maximum_attempts = None if subagents else len(tests) * requests_per_fixture * (max_retries + 1)
+        return {
+            **suite_common(master_name, False, "completed", provider),
+            "mode": "plan", "model": model, "total": len(tests), "results": [],
+            "evaluation_identity": identity,
+            "fixtures": [{"index": i, "question": test["q"],
+                          "test_type": test.get("test_type", "fidelity"),
+                          "fixture_sha256": fixture_sha256(test)}
+                         for i, test in enumerate(tests)],
+            "initial_system_utf8_bytes": len(system_prompt.encode("utf-8")),
+            "initial_questions_utf8_bytes": sum(len(test["q"].encode("utf-8")) for test in tests),
+            "skill_tools": list(SKILL_TOOL_NAMES) + ([SUBAGENT_TOOL] if subagents else []) if tools else [],
+            "max_output_tokens": max_output_tokens,
+            "concurrency": min(concurrency, len(tests)),
+            "request_timeout": request_timeout, "max_retries": max_retries,
+            "configured_per_fixture_ceiling_s": per_fixture_ceiling(request_timeout, max_retries, tools, subagents),
+            "request_plan": {
+                "initial_requests": len(tests),
+                "maximum_sdk_attempts": maximum_attempts,
+                "initial_output_token_limits_sum": len(tests) * max_output_tokens,
+                "additional_calls": "model-dependent subagent fanout" if subagents else "bounded file-tool rounds" if tools else "SDK retries only",
+            },
+            "limitations": ["UTF-8 bytes are not token counts or billed input",
+                            "Output limits describe initial requests, not total tool-loop output",
+                            "Request planning is not a monetary spending cap",
+                            "Timeout configuration is not an exact elapsed-time guarantee"],
+        }
 
     api_key = os.environ.get(spec["env"])
     if not api_key:
@@ -1524,6 +1579,12 @@ def run_tests(
         declared_ids = None
         member_aliases = None
         title_aliases = None
+
+    quote_evidence = load_quote_evidence(master_dir, declared_ids or set())
+    if tools:
+        for persona in sorted(PREBUILT_DIR.glob("master-*")):
+            for cid, passages in load_quote_evidence(persona, declared_ids or set()).items():
+                quote_evidence.setdefault(cid, []).extend(passages)
 
     def run_subagent(files: SkillFiles, args: dict, deadline: float, record) -> str:
         """One Task call: a new conversation, sharing the fixture's deadline.
@@ -1634,6 +1695,7 @@ def run_tests(
                 declared_ids=declared_ids,
                 member_aliases=member_aliases,
                 title_aliases=title_aliases,
+                quote_evidence=quote_evidence,
             )
         except Exception as e:  # noqa: BLE001 — 判分器崩溃也是数据,不是终止条件
             # grade_one 的 docstring 承诺「一条坏 fixture 不会掀翻整个池」,
@@ -1760,9 +1822,15 @@ def run_tests(
         pool.shutdown(wait=True, cancel_futures=True)
 
     results = [by_index[i] for i in sorted(by_index)]
+    try:
+        inputs_stable = evaluation_identity(master_dir) == identity
+    except (OSError, ValueError):
+        inputs_stable = False
 
     return {
-        **suite_common(master_name, dry_run, "completed", provider),
+        **suite_common(master_name, dry_run, "completed" if inputs_stable else "inputs_changed", provider),
+        "evaluation_identity": identity,
+        "inputs_stable": inputs_stable,
         # Which instrument: a teaching-mode suite graded with file tools is not
         # comparable with one graded without (every run before 2026-09-24).
         "skill_tools": (
@@ -1878,6 +1946,7 @@ def results_failed(results: list[dict], dry_run: bool) -> bool:
         return any("error" in suite for suite in results)
     return any(
         "error" in suite
+        or suite.get("inputs_stable") is False
         or suite.get("failed", 0) > 0
         or any(
             case.get("status") in {"FAIL", "api_error", "truncated"}
@@ -1891,7 +1960,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Master-skill fidelity test runner")
     parser.add_argument("--master", type=str, help="Test a specific master")
     parser.add_argument("--all", action="store_true", help="Test all masters with fidelity.jsonl")
-    parser.add_argument("--dry-run", action="store_true", help="Show test cases without calling API")
+    preview = parser.add_mutually_exclusive_group()
+    preview.add_argument("--dry-run", action="store_true", help="Show test cases without calling API")
+    preview.add_argument("--plan", action="store_true", help="Plan scope and request limits without API calls or SDKs")
     parser.add_argument(
         "--provider", type=str, default=DEFAULT_PROVIDER, choices=sorted(PROVIDERS),
         help="Which API to grade against (default: anthropic). Non-anthropic "
@@ -1960,8 +2031,10 @@ def main() -> int:
         # A negative count is accepted by the SDKs and would put a negative
         # "worst-case seconds" into the report.
         parser.error("--max-retries cannot be negative")
-    if args.request_timeout <= 0:
-        parser.error("--request-timeout must be positive")
+    if not math.isfinite(args.request_timeout) or args.request_timeout <= 0:
+        parser.error("--request-timeout must be positive and finite")
+    if args.max_output_tokens is not None and args.max_output_tokens <= 0:
+        parser.error("--max-output-tokens must be positive")
 
     if not args.master and not args.all:
         parser.error("Specify --master <name> or --all")
@@ -1994,6 +2067,7 @@ def main() -> int:
             concurrency=args.concurrency,
             request_timeout=args.request_timeout,
             max_retries=args.max_retries,
+            plan=args.plan,
         )
         all_results.append(result)
 
@@ -2002,7 +2076,12 @@ def main() -> int:
             # 而不是失败。付费跑分时错误必须看得见。
             print(f"ERROR: {result['error']}", file=sys.stderr)
 
-        if not args.json and "error" not in result:
+        if not args.json and args.plan and "error" not in result:
+            print(f"Plan: {result['total']} fixtures; model={result['model']}; "
+                  f"maximum SDK attempts={result['request_plan']['maximum_sdk_attempts']}")
+            for limitation in result["limitations"]:
+                print(f"  Note: {limitation}")
+        if not args.json and not args.plan and "error" not in result:
             print(f"\nResult: {result.get('passed', 0)}/{result['total']} passed "
                   f"({result.get('pass_rate', 'N/A')})")
             pending = (result.get("boundary") or {}).get("cases_awaiting_ruling", 0)
@@ -2024,10 +2103,12 @@ def main() -> int:
         for r in all_results:
             if "error" in r:
                 print(f"  {r.get('master', '?')}: {r['error']}")
+            elif args.plan:
+                print(f"  {r['master']}: {r['total']} planned fixtures ({r['model']})")
             else:
                 print(f"  {r['master']}: {r.get('passed', 0)}/{r['total']} ({r.get('pass_rate', 'N/A')})")
 
-    return 1 if results_failed(all_results, args.dry_run) else 0
+    return 1 if results_failed(all_results, args.dry_run or args.plan) else 0
 
 
 if __name__ == "__main__":

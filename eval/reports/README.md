@@ -8,6 +8,42 @@ against a real model.
 
 ## Files
 
+Measured suites now carry `evaluation_identity.skill_sha256` and
+`evaluation_identity.grader_sha256`. These bind the run to the actual instructions,
+declared sources, excerpts and reference files, and to the grading implementation
+and dependency pins. Teaching-mode fingerprints include all files and directories
+visible to their file tools under `prebuilt/`, including sibling teaching modes,
+generator skills and auxiliary files. Any case variant of `tests/` remains excluded
+because the file tools cannot read or list it. Personas retain their context-file
+scope. Input symlinks, including linked ancestor directories, are rejected; special
+filesystem nodes are recorded by entry kind/path without opening them. Context
+loading rejects nonregular files before reading. Line endings are normalized;
+root README-only changes do not invalidate a run. The v1 gate
+rejects missing or changed fingerprints. Do not add them to old reports after the
+fact: that would claim a measurement that never happened.
+
+The runner compares input fingerprints again after all requests finish and records
+`inputs_stable`. A changed or unreadable input produces `outcome: inputs_changed`
+and a failing exit while preserving collected answers. Release evidence requires
+`inputs_stable: true` and `outcome: completed`. Keep evaluation inputs unchanged:
+this start/end check does not detect edits reverted before the final fingerprint.
+
+Source-ID resolution is not quotation verification. New results separately record
+`unverified_live_citations` and `unverified_quotes`. A numeric FoJin link without
+retrieval/online evidence requires review, as does a cited direct quotation not
+matched in a labelled local original block. Teaching paraphrases do not count as
+original evidence; absent local evidence is unknown rather than fabricated. Each
+flagged answer requires an evidence-backed adjudication before release. This is a
+conservative excerpt check, not a full-corpus quotation or doctrinal entailment audit.
+
+The standalone `verify_citations.py` command uses exit code 0 for resolved evidence,
+1 for a detected invalid citation, and 2 for evidence requiring review (including
+unverified links without `--online`). It no longer presents an unknown as verified.
+Online verification also requires recognized text metadata and the fields needed
+to compare a cited work's number/title. Missing metadata or an unavailable title
+comparison remains unknown; a definite number/title mismatch still fails. This
+checks work identity, not whether an online passage entails the answer's claim.
+
 - `<version>-<shortsha>.json` — machine-readable run output. A `meta` block (measured
   commit, model, timestamps, coverage/pass totals) wraps the `suites` array, which is
   `scripts/test-fidelity.py --all --json`'s own output, captured verbatim and unmodified.
@@ -28,6 +64,28 @@ against a real model.
   adjudicated. Its stored `fabricated_cites` still lists one citation the audit fixed in #282.
 
 ## How to regenerate
+
+Prepare a keyless plan before launching a sweep:
+
+```bash
+python3 scripts/test-fidelity.py --all --plan --json > /tmp/evaluation-plan.json
+python3 scripts/test-fidelity.py --master huineng --plan --max-tests 2
+```
+
+`--plan` uses the same fixture selection and runtime context preparation as the
+real runner. It records per-fixture digests, runtime/grader fingerprints, UTF-8
+context sizes, output limits, concurrency, retries and configured time ceilings.
+The plan requires only Python's standard library and never loads a provider SDK
+or reads an API key. It uses `mode: plan`, has no graded results or pass rate, and
+cannot satisfy the release gate. `--plan` and `--dry-run` are mutually exclusive.
+
+Request ceilings include retries and bounded file-tool conversations. For debate
+subagents, total request attempts are `null`: the model controls Task fanout and a
+tool-round cap alone does not bound it. Initial output-limit totals exclude later
+tool and subagent responses; bytes are not token counts. These are planning inputs,
+not price estimates, billed token predictions or enforced financial caps. Provider
+pricing, token counts, cache behavior and model-dependent tool use must be reviewed
+before setting and authorizing a paid evaluation budget.
 
 ```bash
 export ANTHROPIC_API_KEY="..."   # never commit this

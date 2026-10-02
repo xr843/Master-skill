@@ -6,10 +6,12 @@
 
 规则:抽取答案中每个 `【…，<cbeta_id>】` 引文,判定——
   - `cbeta_id` ∈ 本 master 声明的离线源(meta.json sources[].id) → offline,放行;
-  - 否则其后近邻出现 `fojin.app/texts/{N}` 数字链接 → live,放行(`--online` 再验 N 可解析);
+  - 否则其后近邻出现 `fojin.app/texts/{N}` 数字链接 → live,待 --online 核验;
   - 两者都不满足 → fabricated(幻觉引文),exit 1。
 
-离线判定纯确定性、零网络、零 LLM,可作 CI 硬门。`--online` 为可选增强,网络不可达时仅告警。
+编号解析与引文证据分开记录。未验证链接、未解析引文及缺少本地原典的直接引语
+退出 2;明确无效退出 1;没有待核验项才退出 0。--online 缺少可比较的文本
+元数据或网络不可达时保持待核验,不能算作通过。
 
 用法:
     python scripts/verify_citations.py --master huineng --answer-file ans.md
@@ -26,6 +28,7 @@ import re
 import sys
 import threading
 import unicodedata
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import NamedTuple
 
@@ -717,8 +720,8 @@ def audit_answer(
 
 # 每个 id 的核验结果是**三态**,不是布尔:
 #   True  → 200 + 有 JSON 正文,确实解析得到
-#   False → 404,平台明确说没有这个 id —— 唯一该硬失败的信号
-#   None  → 5xx / 连接失败 / 返回的不是 JSON,不知道
+#   False → 404 或文本身份与引文明确冲突
+#   None  → 5xx / 连接失败 / 非文本 JSON / 缺少比较证据,不知道
 # 旧版把这三种压成一个布尔,再让任何一次异常 `return {"_unreachable": True}`,
 # 于是一次网络抖动就把**已经验成功的全部结果丢掉**,整轮降级成一条警告。
 # "查不出来" 和 "查过了,没问题" 从此长得一样 —— 正是本仓一直在修的那个形状。
@@ -746,8 +749,8 @@ def _titles_agree(cited: str, linked: str) -> bool | None:
     return titles_agree(cited, linked)
 
 
-def _live_link_mismatch(citation: dict, payload: dict) -> str | None:
-    """一个解析得到的 FoJin 文本,为什么仍不是这条 live 引文所说的那部书;可能是则 None。
+def _live_link_check(citation: dict, payload: dict) -> tuple[bool | None, str]:
+    """核对所引之书:匹配 True,明确冲突 False,缺少可比较的身份信息 None。
 
     只验「打得开」时,【《伪经》,T99n9999】→ texts/20 能过:texts/20 是
     《佛說阿彌陀經》。master-yinguang 的存档引文更隐蔽:X62n1182 → texts/12977,
@@ -759,15 +762,25 @@ def _live_link_mismatch(citation: dict, payload: dict) -> str | None:
     cited = citation.get("cited_id") or ""
     linked_id = payload.get("cbeta_id")
     cited_key = _cbeta_key(cited)
-    if cited_key and linked_id and _cbeta_key(str(linked_id)) != cited_key:
-        return f"texts/{tid} 是 {linked_id},不是引文写的 {cited}"
+    pending = ""
+    if cited_key:
+        linked_key = _cbeta_key(linked_id) if isinstance(linked_id, str) else None
+        if linked_key is None:
+            pending = f"texts/{tid} 缺少可核对的 cbeta_id"
+        elif linked_key != cited_key:
+            return False, f"texts/{tid} 是 {linked_id},不是引文写的 {cited}"
     title = citation.get("title")
     linked_title = payload.get("title_zh")
-    if title and linked_title:
+    if title:
         book = re.split(r"[·・‧〈<]", title, maxsplit=1)[0].strip()
-        if book and _titles_agree(book, str(linked_title)) is False:
-            return f"引文题名《{title}》对不上 texts/{tid} 的《{linked_title}》"
-    return None
+        agreed = _titles_agree(book, linked_title) if book and isinstance(linked_title, str) and linked_title.strip() else None
+        if agreed is False:
+            return False, f"引文题名《{title}》对不上 texts/{tid} 的《{linked_title}》"
+        if agreed is None:
+            pending = pending or f"texts/{tid} 缺少可比较的书名信息"
+    if not cited_key and not title:
+        pending = f"texts/{tid} 无可核对的经号或题名"
+    return (None, pending) if pending else (True, "")
 
 
 def _check_one_text_id(
@@ -776,7 +789,7 @@ def _check_one_text_id(
     """核验单个 text_id,返回 (三态结果, 说明)。异常一律收敛成 None,不外抛。
 
     `citations` 是用这个 text_id 作链接的 live 引文;给了就还要核对链接是不是
-    它们所说的那部书(见 `_live_link_mismatch`),对不上判 False。
+    它们所说的那部书(见 `_live_link_check`),对不上判 False,缺少证据判 None。
     """
     try:
         resp = session_factory().get(f"{base_url}/api/texts/{tid}", timeout=timeout)
@@ -792,12 +805,22 @@ def _check_one_text_id(
         # 200 却不是 JSON:通常是网关错误页,不能据此断定 id 不存在。
         return None, "200 但正文不是 JSON"
     if payload:
-        if isinstance(payload, dict):
-            for citation in citations:
-                mismatch = _live_link_mismatch(citation, payload)
-                if mismatch:
-                    return False, mismatch
-        return True, ""
+        if not isinstance(payload, dict) or payload.get("error"):
+            return None, "200 但正文不是文本元数据"
+        text_id = payload.get("id")
+        has_identity = (isinstance(text_id, int) and not isinstance(text_id, bool) and text_id > 0
+                        or any(isinstance(payload.get(key), str) and payload[key].strip()
+                               for key in ("cbeta_id", "title_zh")))
+        if not has_identity:
+            return None, "200 但缺少文本身份信息"
+        pending = ""
+        for citation in citations:
+            verdict, reason = _live_link_check(citation, payload)
+            if verdict is False:
+                return False, reason
+            if verdict is None:
+                pending = pending or reason
+        return (None, pending) if pending else (True, "")
     # 200 + 空正文归 None,不归 False —— 上面刚写下「404 是唯一该硬失败的信号」,
     # 这里返回 False 就是在自己的契约上开口子。空信封可能来自 FoJin 换了外层结构、
     # 一次读半截、或 CDN 改写了 body;拿它判伪造,会在平台抖动时把**正确**引用
@@ -815,7 +838,7 @@ class OnlineVerification(NamedTuple):
     当成一个永远核验通过的引文,静静地混进统计里。
     """
 
-    #: tid -> True(解析得到) / False(404,确定不存在) / None(查不出来)
+    #: tid -> True(证据足够) / False(404 或明确身份冲突) / None(证据不足)
     verdicts: dict
     #: tid -> 说明,只对 False / None 有值
     reasons: dict
@@ -824,7 +847,7 @@ class OnlineVerification(NamedTuple):
 
     @property
     def fabricated(self) -> list:
-        """平台明确回 404 的 —— 唯一该判失败的。"""
+        """明确无效的链接:404 或所引之书与链接文本身份冲突。"""
         return sorted(t for t, ok in self.verdicts.items() if ok is False)
 
     @property
@@ -914,6 +937,16 @@ def main() -> int:
 
     answer = open(args.answer_file, encoding="utf-8").read() if args.answer_file else sys.stdin.read()
     report = audit_answer(declared, answer, member_aliases, title_aliases)
+    from _citation_evidence import load_quote_evidence, unsupported_quotes
+
+    directory = resolve_master_dir(args.master)
+    evidence = load_quote_evidence(Path(directory), declared) if directory else {}
+    quotes = unsupported_quotes(answer, evidence, declared)
+    pending = bool(quotes or report["unparsed"])
+    tids = sorted(set(re.findall(r"https?://fojin\.app/texts/([0-9]+)(?![0-9])", answer)))
+    # Resolve declared-ID URL pairs too: offline ID membership says nothing
+    # about whether the adjacent numeric link opens the cited work.
+    details = audit_answer(set(), answer, member_aliases, title_aliases)["live_detail"]
 
     print(f"offline 引文: {len(report['offline'])}  live 引文: {len(report['live'])}  "
           f"fabricated: {len(report['fabricated'])}")
@@ -923,16 +956,24 @@ def main() -> int:
         print(f"✗ 幻觉引文(既非声明源,又无 live 链接): {sorted(set(report['fabricated']))}", file=sys.stderr)
         exit_code = 1
 
-    if args.online and report["live"]:
+    if tids and not args.online:
+        pending = True
+        print(f"⚠ {len(tids)} 条 FoJin 链接尚未核验（需 --online）", file=sys.stderr)
+    if quotes:
+        print(f"⚠ {len(quotes)} 处直接引语缺少匹配的本地原典片段，需复核", file=sys.stderr)
+    if report["unparsed"]:
+        print(f"⚠ {len(report['unparsed'])} 处引文未能解析，需复核", file=sys.stderr)
+
+    if args.online and tids:
         res = verify_online(
-            [tid for _, tid in report["live"]], citations=report["live_detail"]
+            tids, citations=details
         )
         if res.unreachable:
-            print(f"⚠ --online 跳过:FoJin 不可达({res.unreachable})", file=sys.stderr)
+            pending = True
+            print(f"⚠ --online 未能核验({res.unreachable})", file=sys.stderr)
         else:
-            # 只有平台明确回 404 才算伪造 —— 5xx / 超时 / 网关错误页说明的是
-            # 网络状况,不是引文真伪,拿它判 fabricated 会在 FoJin 抖动时把正确
-            # 引用打成伪造,那比漏检更糟。
+            # 404 或明确的文本身份冲突才算无效。5xx / 超时 / 缺失元数据
+            # 说明证据不可用,不能据此把正确引用打成伪造。
             if res.fabricated:
                 detail = "; ".join(
                     f"{t}({res.reasons.get(t, '?')})" for t in res.fabricated
@@ -940,6 +981,7 @@ def main() -> int:
                 print(f"✗ live 引文链接无法解析或不是所引之书: {detail}", file=sys.stderr)
                 exit_code = 1
             if res.unknown:
+                pending = True
                 # 报出来而不是静默算过 —— 「没查成」必须与「查过没问题」可区分。
                 detail = ", ".join(
                     f"{t}({res.reasons.get(t, '?')})" for t in res.unknown
@@ -949,8 +991,10 @@ def main() -> int:
                     file=sys.stderr,
                 )
 
+    if exit_code == 0 and pending:
+        exit_code = 2
     if exit_code == 0:
-        print("✓ 全部引文可核验")
+        print("✓ 来源编号已解析，未发现待核验的链接或直接引语")
     return exit_code
 
 

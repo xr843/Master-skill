@@ -38,7 +38,12 @@ Status: implemented in v0.10.1; fidelity coverage continues in Phase 3.
 
 ## Phase 3: Full Persona-Fidelity Coverage
 
-Current representative promptfoo coverage exists for a subset of masters. v1.0 should cover all 15.
+Persona-fidelity configuration coverage must include all 15; real-model measurements
+and calibrated rubrics are separate from the existence of these configurations.
+
+As of 2026-10-02, configurations cover all 15 and load the actual runtime context
+through a shared Python prompt function. RAW/SPE/CUS and citation configuration
+coverage is checked offline; this does not claim a new paid model measurement.
 
 Minimum per master:
 
@@ -233,6 +238,9 @@ Notes on honesty of measurement:
 ### Release checklist
 
 - The fidelity gate above is met, and the run backing it is committed under `eval/reports/`.
+- Every measured suite's runtime and grader fingerprints match the release tree;
+  older reports without these fingerprints cannot qualify. Unverified live links
+  and direct quotations require explicit adjudication, separate from ID resolution.
 - `npm test` passes on a clean checkout.
 - v1.0+ npm release workflow checks the already committed `claude-sonnet-4-6` runs named in `eval/reports/v1-release.json` and their adjudications. `scripts/check-release-fidelity.py` verifies that every graded answer records the SHA-256 digest of its complete current fixture (question and assertions), its citation audit was available and recorded no fabricated citation, every `needs_review` case was ruled on, and the category thresholds above are met. Reports made before fixture digests were recorded cannot qualify. It reports unparsed citations separately; they do not block release. The workflow does not launch a paid sweep or require `ANTHROPIC_API_KEY`.
 - `scripts/check-gate-liveness.py` passes — no gate examined an empty set.

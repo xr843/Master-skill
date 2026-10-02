@@ -32,6 +32,7 @@ from collections import Counter
 from pathlib import Path
 
 from _fixture_identity import fixture_sha256
+from _evaluation_identity import evaluation_identity
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -82,7 +83,12 @@ def _suites(report) -> list[dict]:
     return report["suites"] if isinstance(report, dict) else report
 
 
-def validate(pairs, expected_types, expected_questions, *, expected_digests, adjudication=None) -> tuple[list[str], dict, int]:
+def runtime_identities(root: Path = ROOT) -> dict[str, dict[str, str]]:
+    return {path.parent.parent.name: evaluation_identity(path.parent.parent)
+            for path in (root / "prebuilt").glob("*/tests/fidelity.jsonl")}
+
+
+def validate(pairs, expected_types, expected_questions, *, expected_digests, expected_identities, adjudication=None) -> tuple[list[str], dict, int]:
     """Return (problems, adjudicated tally by test_type, unparsed-citation count).
 
     ``pairs`` is a list of (report, adjudication) dicts, already loaded.
@@ -110,6 +116,10 @@ def validate(pairs, expected_types, expected_questions, *, expected_digests, adj
         }
         for suite in suites:
             name = suite.get("master")
+            if suite.get("inputs_stable") is not True or suite.get("outcome") != "completed":
+                problems.append(f"{name}: evaluation inputs were not stable between start and end")
+            if not expected_identities.get(name) or suite.get("evaluation_identity") != expected_identities.get(name):
+                problems.append(f"{name}: evaluation identity differs from current runtime or grader")
             if name in seen:
                 problems.append(f"{name}: graded in more than one run")
             seen.add(name)
@@ -157,6 +167,11 @@ def validate(pairs, expected_types, expected_questions, *, expected_digests, adj
                     problems.append(f"{where}: citation audit unavailable or not recorded")
                 if case.get("needs_review") and (name, index) not in ruled:
                     problems.append(f"{where}: needs_review is not ruled on")
+                for field in ("unverified_live_citations", "unverified_quotes"):
+                    if not isinstance(case.get(field), list):
+                        problems.append(f"{where}: citation evidence result missing ({field})")
+                    elif case[field] and (name, index) not in ruled:
+                        problems.append(f"{where}: {field} is not ruled on")
                 unparsed += len(case.get("unparsed_citations") or [])
         for kind, counts in va.recount(adj, report if isinstance(report, dict) else {"suites": suites}).items():
             bucket = tally.setdefault(kind, Counter())
@@ -191,7 +206,8 @@ def main() -> int:
         print(f"release manifest or a run it names is unreadable: {error}", file=sys.stderr)
         return 1
     problems, tally, unparsed = validate(
-        pairs, fixture_types(), fixture_questions(), expected_digests=fixture_digests()
+        pairs, fixture_types(), fixture_questions(), expected_digests=fixture_digests(),
+        expected_identities=runtime_identities(),
     )
     for problem in problems:
         print(f"ERROR: {problem}", file=sys.stderr)

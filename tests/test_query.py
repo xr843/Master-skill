@@ -3,6 +3,9 @@
 from pathlib import Path
 
 import query
+import json
+import subprocess
+import sys
 
 
 def test_chinese_question_without_spaces_finds_a_traditional_excerpt(tmp_path: Path):
@@ -48,3 +51,13 @@ def test_a_pali_term_with_diacritics_is_one_keyword():
 def test_variant_characters_match_across_scripts():
     assert query._fold("执着") == query._fold("執著")
     assert query._fold("里") == query._fold("裡") == query._fold("裏")
+
+
+def test_json_cli_returns_empty_array_on_zero_hits():
+    script = Path(__file__).resolve().parents[1] / "scripts" / "query.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "--master", "huineng", "--q", "zxqvnonexistentphrase", "--json"],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+    assert json.loads(result.stdout) == []

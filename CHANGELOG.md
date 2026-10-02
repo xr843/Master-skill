@@ -10,6 +10,40 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- Fidelity fixture validation reports malformed JSON, non-object cases and invalid
+  question / assertion shapes without crashing, retains physical line numbers,
+  and continues checking later cases and suites. Boundary coverage uses the
+  validated cases rather than reparsing invalid JSON.
+- Evaluation validates skill catalog structure, supported kinds and unique names /
+  install directories before selecting runtime tools. Missing catalog entries now
+  fail explicitly instead of silently running teaching modes without tools; batch
+  planning keeps completed suites alongside configuration errors.
+- Teaching-mode evaluation fingerprints cover every tool-readable skill file and
+  visible directory, including auxiliary files and non-persona skills. Input
+  symlinks are rejected through parent directories; special filesystem nodes are
+  recorded without opening them. Context loading rejects nonregular files rather
+  than blocking on named pipes. Input preparation errors remain reportable suites.
+- `test-fidelity.py --plan` inspects the exact selected fixtures, runtime/grader
+  fingerprints, context sizes and configured request limits without SDKs or API
+  calls. Subagent fanout remains explicitly unknown; plans are not graded evidence
+  or monetary spending caps.
+- Online citation verification keeps malformed JSON, incomplete work metadata and
+  unavailable title comparison pending, instead of treating them as verified.
+- Citation evidence: unverified live links and cited direct quotations unsupported
+  by local original excerpts require review; paraphrases are not quotation evidence.
+- Release evidence binds graded suites to runtime sources and grading code through
+  file fingerprints. Historical reports cannot be relabelled as current measurements.
+  A changed end-of-run fingerprint preserves answers but invalidates release evidence.
+  Structural dry-runs remain usable with Python's standard library alone.
+- RAW/SPE/CUS and citation configs cover all 15 personas using the fidelity runner's
+  real context loader instead of separately maintained miniature persona prompts.
+  CI exercises actual Promptfoo loading with a local provider and a failing control,
+  without model API calls.
+- Installation stages every replacement and restores the old install on failure.
+  File inventories protect local changes; `--dry-run` previews and `--force` explicitly
+  replaces them. Legacy installs require explicit replacement after backing up.
+- Offline `query.py --json` returns an empty array for zero results.
+
 ## [0.12.16] — 2026-09-28
 
 **Licensing.** The license identifiers now say what ETHICS.md §4 has always said: code is MIT,

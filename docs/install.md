@@ -61,6 +61,20 @@ $ master-skill recommend "十六观智是什么"
 
 **全局安装（频繁使用 / 离线场景）**
 
+安装和更新先在临时目录备好文件，再替换旧目录；复制或替换失败时保留旧安装。
+安装记录保存各文件的哈希，更新前会检测用户修改、删除和新增的文件。发现改动时，
+整批更新会停止。没有安装记录的旧版或手动链接安装也需先确认；备份后加 `--force`
+才能覆盖。生成器 `masters/` 下的自建 persona 始终保留；缓存不算用户改动。
+
+```bash
+npx master-skill update --all --dry-run # 预览目标和冲突，不写文件
+npx master-skill update --all           # 更新未被用户修改的安装
+npx master-skill install zhiyi --force  # 备份后明确覆盖指定技能
+```
+
+`update --all` 仍会安装全部 20 项。`--force` 会删除技能目录中的用户改动，
+包括新增笔记；只在备份并核对预览之后使用。
+
 ```bash
 npm install -g master-skill            # 一次性装到 $PATH
 master-skill install master-zhiyi      # 之后省掉 npx，直接调

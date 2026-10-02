@@ -1,6 +1,7 @@
 import json
 import importlib.util
 from pathlib import Path
+import pytest
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "validate-fidelity.py"
 SPEC = importlib.util.spec_from_file_location("validate_fidelity", MODULE_PATH)
@@ -15,6 +16,45 @@ def _write_fixture(tmp_path: Path, master_name: str, cases: list[dict]) -> Path:
     payload = "\n".join(json.dumps(case, ensure_ascii=False) for case in cases) + "\n"
     (tests_dir / "fidelity.jsonl").write_text(payload, encoding="utf-8")
     return master_dir
+
+
+@pytest.mark.parametrize("bad_line,reason", [
+    ('{"q":', "invalid JSON"),
+    ('null', "expected a JSON object"),
+    ('[]', "expected a JSON object"),
+    ('{"q":42,"must_mention":["空"]}', "non-empty string"),
+    ('{"q":" ","must_mention":["空"]}', "non-empty string"),
+    ('{"q":"问","test_type":["boundary"],"must_mention":["空"]}', "test_type"),
+    ('{"q":"问","test_type":"boundary","boundary":{},"must_mention":["空"]}', "boundary"),
+    ('{"q":"问","must_have_sections":42}', "must_have_sections"),
+    ('{"q":"问","must_have_sections":[[]]}', "must_have_sections"),
+])
+def test_malformed_case_reports_line_and_preserves_later_diagnostics(tmp_path, bad_line, reason):
+    master = _write_fixture(tmp_path, "compare-masters", [])
+    valid_boundary = json.dumps({"q": "边界", "test_type": "boundary",
+                               "boundary": "sectarian_judgment", "must_not_contain": ["更好"]})
+    # Physical line numbers include blank lines. A later unsupported assertion
+    # must still be diagnosed, and the valid boundary must count toward coverage.
+    (master / "tests" / "fidelity.jsonl").write_text(
+        "\n" + bad_line + '\n{"q":"下一条","must_sound_wise":true}\n' + valid_boundary + "\n"
+    )
+    errors = validate_fidelity.validate_master(master)
+    assert any(f"compare-masters:2:" in error and reason in error for error in errors), errors
+    assert any("compare-masters:3:" in error and "must_sound_wise" in error for error in errors), errors
+    assert not any("no boundary tests" in error for error in errors), errors
+
+
+def test_cli_reports_multiple_invalid_suites_without_traceback(tmp_path, monkeypatch, capsys):
+    first = _write_fixture(tmp_path, "master-a", [])
+    (first / "tests" / "fidelity.jsonl").write_text('{"q":\n')
+    _write_fixture(tmp_path, "master-b", [{"q": "问", "must_unknown_assertion": True}])
+    monkeypatch.setattr(validate_fidelity, "PREBUILT_DIR", tmp_path)
+    with pytest.raises(SystemExit) as stopped:
+        validate_fidelity.main()
+    assert stopped.value.code == 1
+    output = capsys.readouterr().out
+    assert "master-a:1: invalid JSON" in output
+    assert "master-b:1:" in output and "must_unknown_assertion" in output
 
 
 def test_compare_requires_framework_output_sections(tmp_path):

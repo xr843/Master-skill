@@ -18,11 +18,23 @@ import sys
 import threading
 import time
 import types
+import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_dry_run_needs_only_python_standard_library():
+    result = subprocess.run(
+        [sys.executable, "-S", str(ROOT / "scripts/test-fidelity.py"),
+         "--all", "--dry-run", "--json"], capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    suites = json.loads(result.stdout)
+    assert suites and all(suite["mode"] == "dry_run" for suite in suites)
 
 
 @pytest.fixture
@@ -51,6 +63,33 @@ def _install_fake_anthropic(monkeypatch, *, on_create):
     module = types.SimpleNamespace(Anthropic=lambda **_: client)
     monkeypatch.setitem(sys.modules, "anthropic", module)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-real-key")
+
+
+@pytest.mark.parametrize("mutate", [False, True])
+def test_input_changes_in_flight_preserve_answers_but_invalidate_run(
+    fidelity, monkeypatch, tmp_path, mutate
+):
+    directory = tmp_path / "prebuilt" / "master-demo"
+    (directory / "tests").mkdir(parents=True)
+    skill = directory / "SKILL.md"
+    skill.write_text("Original persona", encoding="utf-8")
+    (directory / "tests" / "fidelity.jsonl").write_text('{"q":"question"}\n')
+    monkeypatch.setattr(fidelity, "PREBUILT_DIR", directory.parent)
+    monkeypatch.setattr(fidelity, "uses_skill_tools", lambda _: False)
+    monkeypatch.setattr(fidelity, "uses_subagents", lambda _: False)
+
+    def create(**_):
+        if mutate:
+            skill.write_text("Changed persona", encoding="utf-8")
+        return _answer("answer")
+
+    _install_fake_anthropic(monkeypatch, on_create=create)
+    suite = fidelity.run_tests("demo", quiet=True, concurrency=1)
+    assert len(suite["results"]) == 1
+    assert suite["inputs_stable"] is (not mutate)
+    assert suite["outcome"] == ("inputs_changed" if mutate else "completed")
+    if mutate:
+        assert fidelity.results_failed([suite], dry_run=False)
 
 
 def test_results_come_back_in_fixture_order_regardless_of_completion_order(

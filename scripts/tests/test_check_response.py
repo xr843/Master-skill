@@ -742,3 +742,29 @@ def test_must_cite_declared_reads_a_declared_id_outside_a_citation_block(fidelit
         "故曰「性空义即缘起义」〔《辨了不了义善说藏论》卷三，B10n0048〕。",
         case, declared_ids={"B10n0048", "Toh:3861"})
     assert check["passed"], check["missing_cites"]
+def test_unverified_live_link_is_not_a_clean_citation(fidelity):
+    check = fidelity.check_response(
+        '【《伪造经》，T99n9999】→ https://fojin.app/texts/999999999',
+        {"q": "讲一句经文"}, declared_ids={"T48n2008"},
+    )
+    assert check["needs_review"] is True
+    assert check["unverified_live_citations"]
+
+
+def test_unverified_links_also_require_review_with_declared_or_no_id(fidelity):
+    for text in (
+        '无念为宗。【《坛经》，T48n2008】→ https://fojin.app/texts/999999999',
+        '详情见 https://fojin.app/texts/999999999',
+    ):
+        check = fidelity.check_response(text, {"q": "解释无念"}, declared_ids={"T48n2008"})
+        assert check["needs_review"] is True
+        assert check["unverified_live_citations"]
+
+
+def test_valid_source_id_does_not_prove_a_direct_quote(fidelity):
+    check = fidelity.check_response(
+        '经云：“量子电脑可令人人即刻成佛。”【《六祖坛经》，T48n2008】',
+        {"q": "讲一句经文"}, declared_ids={"T48n2008"},
+    )
+    assert check["needs_review"] is True
+    assert check["unverified_quotes"]
