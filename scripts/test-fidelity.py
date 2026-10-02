@@ -520,15 +520,36 @@ SUBAGENT_SYSTEM_PROMPT = (
 )
 
 
-def skill_kind(dir_name: str) -> str | None:
-    """The catalog kind of the skill installed as ``dir_name``."""
+def load_skill_catalog() -> list[dict]:
+    """Validate the catalog before it determines runtime tools or recommendations."""
     catalog = json.loads(
         (PREBUILT_DIR.parent / "skill-catalog.json").read_text(encoding="utf-8")
     )
-    for skill in catalog["skills"]:
+    if not isinstance(catalog, dict) or not isinstance(catalog.get("skills"), list):
+        raise ValueError("Invalid skill catalog: expected a skills array")
+    names: set[str] = set()
+    directories: set[str] = set()
+    for index, skill in enumerate(catalog["skills"]):
+        if not isinstance(skill, dict):
+            raise ValueError(f"Invalid skill catalog entry {index}: expected an object")
+        for field in ("name", "install_dir", "kind"):
+            if not isinstance(skill.get(field), str) or not skill[field].strip():
+                raise ValueError(f"Invalid skill catalog entry {index}: expected nonempty {field}")
+        if skill["kind"] not in {"persona", "teaching-mode", "generator"}:
+            raise ValueError(f"Invalid skill catalog entry {index}: unsupported kind")
+        if skill["name"] in names or skill["install_dir"] in directories:
+            raise ValueError(f"Invalid skill catalog entry {index}: duplicate name or install_dir")
+        names.add(skill["name"])
+        directories.add(skill["install_dir"])
+    return catalog["skills"]
+
+
+def skill_kind(dir_name: str) -> str:
+    """The catalog kind of the skill installed as ``dir_name``; never guess."""
+    for skill in load_skill_catalog():
         if skill["install_dir"] == dir_name:
             return skill["kind"]
-    return None
+    raise ValueError(f"Skill directory '{dir_name}' is missing from the skill catalog")
 
 
 def uses_skill_tools(master_dir: Path) -> bool:
@@ -1114,10 +1135,7 @@ _known_skills: set[str] | None = None
 def known_skill_names() -> set[str]:
     global _known_skills
     if _known_skills is None:
-        catalog = json.loads(
-            (PREBUILT_DIR.parent / "skill-catalog.json").read_text(encoding="utf-8")
-        )
-        _known_skills = {skill["name"] for skill in catalog["skills"]}
+        _known_skills = {skill["name"] for skill in load_skill_catalog()}
     return _known_skills
 
 

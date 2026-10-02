@@ -129,3 +129,27 @@ was then exercised separately: all 4 runtime-loading tests pass, including the
 negative control. The keyless plan was regenerated: 19 completed suites and 211
 fixtures. The independent review's only material finding was the loader FIFO hang
 addressed above.
+
+## Validate runtime catalog before evaluation
+
+Continued inspection found that skill_kind directly indexed catalog entries and
+returned None for a missing selected directory. Malformed entries could abort the
+batch; missing or unsupported kinds could silently remove teaching-mode tools.
+Eighteen plan/graded regressions first failed for these shapes. Validate the root,
+skills list, required string fields, supported kinds and unique names/directories;
+reject a missing selected directory through the existing input-error suite path.
+The recommendation-name consumer shares this validation. Keep dry-run independent
+of runtime configuration and avoid API calls for these checks.
+
+A CLI batch regression checks that a completed plan remains in JSON output when
+a later selected skill lacks a catalog record, with a nonzero overall exit code.
+Focused runtime-tool, planning and exit tests pass 77 cases. Keep this continuation
+on the existing PR branch; perform independent review and full npm test before
+committing. Regenerate the keyless plan after grader changes.
+
+Verification complete: npm test passes all structural gates, 102 CLI tests and
+1398 Python tests (2 CI-only integrations skipped). Independent review found no
+material issues and reproduced a standard-library-only plan for 19 suites / 211
+fixtures. Catalog fields unrelated to runtime kind/name/directory selection are
+left to their existing validators; dry-run behavior and recommendation-name cache
+remain unchanged. Active-run edits remain governed by the end-of-run fingerprint.

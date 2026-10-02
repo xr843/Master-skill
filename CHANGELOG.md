@@ -10,6 +10,10 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- Evaluation validates skill catalog structure, supported kinds and unique names /
+  install directories before selecting runtime tools. Missing catalog entries now
+  fail explicitly instead of silently running teaching modes without tools; batch
+  planning keeps completed suites alongside configuration errors.
 - Teaching-mode evaluation fingerprints cover every tool-readable skill file and
   visible directory, including auxiliary files and non-persona skills. Input
   symlinks are rejected through parent directories; special filesystem nodes are

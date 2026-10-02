@@ -32,6 +32,50 @@ def test_dry_run_results_do_not_fail(runner):
 
 
 @pytest.mark.parametrize("plan", [False, True])
+@pytest.mark.parametrize("catalog", [
+    [], {}, {"skills": {}}, {"skills": [None]},
+    {"skills": [{"name": "master-demo", "kind": "persona"}]},
+    {"skills": [{"name": "master-demo", "install_dir": "master-demo"}]},
+    {"skills": [{"name": "master-demo", "install_dir": "master-demo", "kind": "typo"}]},
+    {"skills": []},
+    {"skills": [
+        {"name": "master-demo", "install_dir": "master-demo", "kind": "persona"},
+        {"name": "other", "install_dir": "master-demo", "kind": "teaching-mode"},
+    ]},
+])
+def test_invalid_catalog_returns_error_before_api_setup(runner, monkeypatch, tmp_path, plan, catalog):
+    master = tmp_path / "prebuilt" / "master-demo"
+    (master / "tests").mkdir(parents=True)
+    (master / "SKILL.md").write_text("Persona instructions")
+    (master / "tests" / "fidelity.jsonl").write_text('{"q":"Question"}\n')
+    (tmp_path / "skill-catalog.json").write_text(json.dumps(catalog))
+    monkeypatch.setattr(runner, "PREBUILT_DIR", master.parent)
+    suite = runner.run_tests("demo", plan=plan, quiet=True)
+    assert suite["outcome"] == "error"
+    assert suite["mode"] == ("plan" if plan else "graded")
+    assert "catalog" in suite["error"]
+    assert suite["results"] == []
+
+
+def test_batch_catalog_error_preserves_completed_plan(runner, monkeypatch, tmp_path, capsys):
+    prebuilt = tmp_path / "prebuilt"
+    for name in ("master-a-valid", "master-b-missing"):
+        master = prebuilt / name
+        (master / "tests").mkdir(parents=True)
+        (master / "SKILL.md").write_text("Persona instructions")
+        (master / "tests" / "fidelity.jsonl").write_text('{"q":"Question"}\n')
+    (tmp_path / "skill-catalog.json").write_text(json.dumps({"skills": [
+        {"name": "master-a-valid", "install_dir": "master-a-valid", "kind": "persona"},
+    ]}))
+    monkeypatch.setattr(runner, "PREBUILT_DIR", prebuilt)
+    monkeypatch.setattr(sys, "argv", [str(RUNNER_PATH), "--all", "--plan", "--json"])
+    assert runner.main() == 1
+    good, bad = json.loads(capsys.readouterr().out)
+    assert good["outcome"] == "completed" and good["total"] == 1
+    assert bad["outcome"] == "error" and "catalog" in bad["error"]
+
+
+@pytest.mark.parametrize("plan", [False, True])
 def test_untrusted_runtime_input_returns_error_suite_before_api_setup(runner, monkeypatch, tmp_path, plan):
     master = tmp_path / "prebuilt" / "master-demo"
     (master / "tests").mkdir(parents=True)
