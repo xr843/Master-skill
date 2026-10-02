@@ -67,3 +67,8 @@ and 1408 Python tests (two CI-only integrations skipped). Independent read-only
 review found no material issue in descriptor closure, FIFO flags or race-test
 behavior. Parent-directory replacement and concurrent content edits remain beyond
 the targeted pathname-read correction. Eight new CLI regressions are now included.
+
+The second CodeQL run no longer reported the production record read; it caught
+the test's final pathname type-check/read assertion. That assertion now opens,
+checks and reads its own descriptor too, without suppressing the scan. The second
+Windows run passed the descriptor implementation.

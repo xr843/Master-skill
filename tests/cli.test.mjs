@@ -718,8 +718,13 @@ test("record pathname replacement after opening cannot redirect the read to a pi
   });
   assert.equal(result.status, 0, String(result.error || result.stderr));
   assert.equal(fs.readFileSync(marker, "utf8"), "swapped");
-  assert.ok(fs.lstatSync(record).isFile());
-  assert.equal(JSON.parse(fs.readFileSync(record, "utf8")).name, "master-zhiyi");
+  const descriptor = fs.openSync(record, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK | fs.constants.O_NOFOLLOW);
+  try {
+    assert.ok(fs.fstatSync(descriptor).isFile());
+    assert.equal(JSON.parse(fs.readFileSync(descriptor, "utf8")).name, "master-zhiyi");
+  } finally {
+    fs.closeSync(descriptor);
+  }
 });
 
 test("a dangling installed skill link requires force and can be replaced explicitly", (t) => {
