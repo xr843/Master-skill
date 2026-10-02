@@ -1457,10 +1457,15 @@ def run_tests(
         }
 
     # Load skill context
-    identity = evaluation_identity(master_dir)
-    system_prompt = load_skill_context(master_dir)
-    tools = uses_skill_tools(master_dir)
-    subagents = uses_subagents(master_dir)
+    try:
+        identity = evaluation_identity(master_dir)
+        system_prompt = load_skill_context(master_dir)
+        tools = uses_skill_tools(master_dir)
+        subagents = uses_subagents(master_dir)
+    except (OSError, ValueError) as error:
+        return suite_error(master_name, dry_run,
+                           f"Unable to prepare evaluation inputs: {redact_secrets(str(error))}",
+                           provider, plan=plan)
     if max_output_tokens is None:
         max_output_tokens = (
             TEACHING_MODE_MAX_OUTPUT_TOKENS if tools else DEFAULT_MAX_OUTPUT_TOKENS

@@ -10,6 +10,11 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- Teaching-mode evaluation fingerprints cover every tool-readable skill file and
+  visible directory, including auxiliary files and non-persona skills. Input
+  symlinks are rejected through parent directories; special filesystem nodes are
+  recorded without opening them. Context loading rejects nonregular files rather
+  than blocking on named pipes. Input preparation errors remain reportable suites.
 - `test-fidelity.py --plan` inspects the exact selected fixtures, runtime/grader
   fingerprints, context sizes and configured request limits without SDKs or API
   calls. Subagent fanout remains explicitly unknown; plans are not graded evidence

@@ -11,8 +11,14 @@ against a real model.
 Measured suites now carry `evaluation_identity.skill_sha256` and
 `evaluation_identity.grader_sha256`. These bind the run to the actual instructions,
 declared sources, excerpts and reference files, and to the grading implementation
-and dependency pins. Teaching-mode fingerprints include sibling personas. Line
-endings are normalized; README-only changes do not invalidate a run. The v1 gate
+and dependency pins. Teaching-mode fingerprints include all files and directories
+visible to their file tools under `prebuilt/`, including sibling teaching modes,
+generator skills and auxiliary files. Any case variant of `tests/` remains excluded
+because the file tools cannot read or list it. Personas retain their context-file
+scope. Input symlinks, including linked ancestor directories, are rejected; special
+filesystem nodes are recorded by entry kind/path without opening them. Context
+loading rejects nonregular files before reading. Line endings are normalized;
+root README-only changes do not invalidate a run. The v1 gate
 rejects missing or changed fingerprints. Do not add them to old reports after the
 fact: that would claim a measurement that never happened.
 

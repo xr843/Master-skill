@@ -98,3 +98,34 @@ or paid execution. Regenerate the plan after this grader change.
 Final local verification: 12 plan CLI tests pass; full `npm test` passes its gates,
 102 CLI tests and 1366 Python tests (2 CI-only integrations skipped). The keyless
 whole-tree plan was regenerated against the final grading code.
+
+## Complete teaching-mode input coverage
+
+Continued inspection found that SkillFiles permits more files than the original
+fingerprint whitelist: auxiliary text files, non-persona skills and empty directory
+entries can affect tool responses without invalidating the measurement. Three
+initial regressions reproduced missing coverage and linked-source-directory
+bypasses. Teaching-mode fingerprints now bind the complete tool-visible prebuilt
+tree; tests/ stays excluded with the same casefold rule as file tools. Persona
+context scope is retained. Directory types are framed separately from file bodies.
+
+Reject symlinks along each input's ancestor path; do not open FIFOs or device nodes
+while fingerprinting their visible names. A subprocess regression reproduced the
+FIFO hang with unsafe reading enabled, then passed with the read guard restored.
+Runtime input preparation errors return an error suite before API initialization,
+preserving batch reporting. Two such regressions failed before this error handling.
+Historical reports remain unchanged; regenerate planning artifacts after this code
+change. No paid evaluation, merge or package publish was performed.
+
+Independent review reproduced a second FIFO hang in context loading after the
+fingerprint had completed. Context reads now reject nonregular files. Six full
+preparation subprocess cases cover SKILL.md, sources and references in plan and
+graded modes; the SKILL.md case first timed out before the loader guard, then all
+six returned structured errors without initializing an API client.
+
+Final local verification: full npm test gates and 102 CLI tests pass; 1379 Python
+tests pass with 2 CI-only integrations skipped. The actual pinned Promptfoo CLI
+was then exercised separately: all 4 runtime-loading tests pass, including the
+negative control. The keyless plan was regenerated: 19 completed suites and 211
+fixtures. The independent review's only material finding was the loader FIFO hang
+addressed above.
