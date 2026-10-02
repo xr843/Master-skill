@@ -18,11 +18,23 @@ import sys
 import threading
 import time
 import types
+import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_dry_run_needs_only_python_standard_library():
+    result = subprocess.run(
+        [sys.executable, "-S", str(ROOT / "scripts/test-fidelity.py"),
+         "--all", "--dry-run", "--json"], capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    suites = json.loads(result.stdout)
+    assert suites and all(suite["mode"] == "dry_run" for suite in suites)
 
 
 @pytest.fixture

@@ -15,6 +15,7 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - Release evidence binds graded suites to runtime sources and grading code through
   file fingerprints. Historical reports cannot be relabelled as current measurements.
   A changed end-of-run fingerprint preserves answers but invalidates release evidence.
+  Structural dry-runs remain usable with Python's standard library alone.
 - RAW/SPE/CUS and citation configs cover all 15 personas using the fidelity runner's
   real context loader instead of separately maintained miniature persona prompts.
   CI exercises actual Promptfoo loading with a local provider and a failing control,

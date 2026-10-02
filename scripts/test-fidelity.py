@@ -13,7 +13,7 @@ Usage:
 
 Requires:
     - ANTHROPIC_API_KEY environment variable
-    - pip install anthropic
+    - pip install -r requirements.txt -r requirements-eval.txt (graded runs)
 """
 
 from __future__ import annotations

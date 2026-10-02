@@ -6,18 +6,24 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from functools import lru_cache
 from pathlib import Path
 
-from opencc import OpenCC
 from verify_citations import audit_answer
 
-_SIMPLIFIED = OpenCC("t2s")
+@lru_cache(maxsize=1)
+def _simplifier():
+    # Structural dry-runs are also used by the desktop baseline on plain Python.
+    # The converter is required only when actual quotation evidence is checked.
+    from opencc import OpenCC
+    return OpenCC("t2s")
+
 _QUOTES = re.compile(r'“([^“”]+)”|「([^「」]+)」|"([^"]+)"|‘([^‘’]+)’|『([^『』]+)』')
 _BLOCKQUOTES = re.compile(r"(?m)(?:^[ \t]*>[^\n]*(?:\n|$))+")
 
 
 def normalize_quote(text: str) -> str:
-    text = _SIMPLIFIED.convert(unicodedata.normalize("NFKC", text)).casefold()
+    text = _simplifier().convert(unicodedata.normalize("NFKC", text)).casefold()
     return "".join(c for c in text if c.isalnum())
 
 

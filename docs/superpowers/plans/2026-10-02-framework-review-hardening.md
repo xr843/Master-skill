@@ -51,3 +51,8 @@ rejecting unsupported uninstall previews and preserving generated-persona links.
   with pinned Promptfoo available passes 1339 tests without skips. Hooks pass 36,
   desktop passes 133. Independent review's embedded-blockquote citation bypass is
   closed; focused quotation/response/identity verification passes 65 tests.
+- Remote desktop CI exposed eager OpenCC loading during structural dry-runs.
+  Reproduced with `python -S`, moved conversion initialization to actual quotation
+  checking, and added a standard-library-only all-suite dry-run regression.
+  Focused tests pass 83; the Rust baseline passes all 3 tests with a `python -S`
+  interpreter wrapper. Graded quotation checking still requires OpenCC.
