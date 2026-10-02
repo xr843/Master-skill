@@ -10,6 +10,17 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- Citation evidence: unverified live links and cited direct quotations unsupported
+  by local original excerpts require review; paraphrases are not quotation evidence.
+- Release evidence binds graded suites to runtime sources and grading code through
+  file fingerprints. Historical reports cannot be relabelled as current measurements.
+- RAW/SPE/CUS and citation configs cover all 15 personas using the fidelity runner's
+  real context loader instead of separately maintained miniature persona prompts.
+- Installation stages every replacement and restores the old install on failure.
+  File inventories protect local changes; `--dry-run` previews and `--force` explicitly
+  replaces them. Legacy installs require explicit replacement after backing up.
+- Offline `query.py --json` returns an empty array for zero results.
+
 ## [0.12.16] — 2026-09-28
 
 **Licensing.** The license identifiers now say what ETHICS.md §4 has always said: code is MIT,

@@ -64,6 +64,21 @@ $ master-skill recommend "十六观智是什么"
 
 **Global install (frequent use / offline-friendly)**
 
+Every replacement is staged before swapping directories. Copy or swap failures
+preserve the previous installation. A file-hash inventory detects local edits,
+deletions and added files; a conflicting batch stops before replacing any skill.
+Legacy installs without an inventory and manually linked installs require explicit
+`--force`. Back up first: force removes local edits and notes. Generated personas
+under the generator's `masters/` are preserved; caches are ignored.
+
+```bash
+npx master-skill update --all --dry-run # Preview targets/conflicts; no writes
+npx master-skill update --all           # Update unmodified installations
+npx master-skill install zhiyi --force  # Explicitly replace after backing up
+```
+
+`update --all` continues to install all 20 skills.
+
 ```bash
 npm install -g master-skill            # Adds the binary to $PATH
 master-skill install master-zhiyi      # No more npx prefix

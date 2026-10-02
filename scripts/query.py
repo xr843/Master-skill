@@ -114,7 +114,7 @@ def main():
         # Said on stderr so --json stays a clean array.
         print(f"共 {total} 段命中，按相关度显示前 {MAX_RESULTS} 段。", file=sys.stderr)
 
-    if not results:
+    if not results and not args.as_json:
         print(f"未找到包含「{args.q}」的段落。")
         return
 

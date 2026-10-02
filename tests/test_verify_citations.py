@@ -3,6 +3,7 @@
 import importlib
 import json
 import time
+import sys
 
 import pytest
 from pathlib import Path
@@ -562,6 +563,22 @@ def test_cli_resolves_a_collection_member_the_same_way_the_live_judge_does():
     )
     assert result.returncode == 0, result.stderr
     assert "fabricated: 1" not in result.stdout
+
+
+def test_cli_reports_unverified_evidence_instead_of_claiming_verification():
+    import subprocess
+
+    for answer in (
+        '【《伪造经》，T99n9999】→ https://fojin.app/texts/999999999',
+        '经云：“量子电脑可令人人即刻成佛。”【《坛经》，T48n2008】',
+    ):
+        result = subprocess.run(
+            [sys.executable, 'scripts/verify_citations.py', '--master', 'huineng'],
+            input=answer, capture_output=True, text=True,
+            cwd=Path(__file__).resolve().parents[1],
+        )
+        assert result.returncode == 2
+        assert '全部引文可核验' not in result.stdout
 
 
 # ---------------------------------------------------------------------------

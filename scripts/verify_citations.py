@@ -26,6 +26,7 @@ import re
 import sys
 import threading
 import unicodedata
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import NamedTuple
 
@@ -914,6 +915,16 @@ def main() -> int:
 
     answer = open(args.answer_file, encoding="utf-8").read() if args.answer_file else sys.stdin.read()
     report = audit_answer(declared, answer, member_aliases, title_aliases)
+    from _citation_evidence import load_quote_evidence, unsupported_quotes
+
+    directory = resolve_master_dir(args.master)
+    evidence = load_quote_evidence(Path(directory), declared) if directory else {}
+    quotes = unsupported_quotes(answer, evidence, declared)
+    pending = bool(quotes or report["unparsed"])
+    tids = sorted(set(re.findall(r"https?://fojin\.app/texts/([0-9]+)(?![0-9])", answer)))
+    # Resolve declared-ID URL pairs too: offline ID membership says nothing
+    # about whether the adjacent numeric link opens the cited work.
+    details = audit_answer(set(), answer, member_aliases, title_aliases)["live_detail"]
 
     print(f"offline 引文: {len(report['offline'])}  live 引文: {len(report['live'])}  "
           f"fabricated: {len(report['fabricated'])}")
@@ -923,11 +934,20 @@ def main() -> int:
         print(f"✗ 幻觉引文(既非声明源,又无 live 链接): {sorted(set(report['fabricated']))}", file=sys.stderr)
         exit_code = 1
 
-    if args.online and report["live"]:
+    if tids and not args.online:
+        pending = True
+        print(f"⚠ {len(tids)} 条 FoJin 链接尚未核验（需 --online）", file=sys.stderr)
+    if quotes:
+        print(f"⚠ {len(quotes)} 处直接引语缺少匹配的本地原典片段，需复核", file=sys.stderr)
+    if report["unparsed"]:
+        print(f"⚠ {len(report['unparsed'])} 处引文未能解析，需复核", file=sys.stderr)
+
+    if args.online and tids:
         res = verify_online(
-            [tid for _, tid in report["live"]], citations=report["live_detail"]
+            tids, citations=details
         )
         if res.unreachable:
+            pending = True
             print(f"⚠ --online 跳过:FoJin 不可达({res.unreachable})", file=sys.stderr)
         else:
             # 只有平台明确回 404 才算伪造 —— 5xx / 超时 / 网关错误页说明的是
@@ -940,6 +960,7 @@ def main() -> int:
                 print(f"✗ live 引文链接无法解析或不是所引之书: {detail}", file=sys.stderr)
                 exit_code = 1
             if res.unknown:
+                pending = True
                 # 报出来而不是静默算过 —— 「没查成」必须与「查过没问题」可区分。
                 detail = ", ".join(
                     f"{t}({res.reasons.get(t, '?')})" for t in res.unknown
@@ -949,8 +970,10 @@ def main() -> int:
                     file=sys.stderr,
                 )
 
+    if exit_code == 0 and pending:
+        exit_code = 2
     if exit_code == 0:
-        print("✓ 全部引文可核验")
+        print("✓ 来源编号已解析，未发现待核验的链接或直接引语")
     return exit_code
 
 

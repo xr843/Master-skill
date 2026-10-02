@@ -8,6 +8,26 @@ against a real model.
 
 ## Files
 
+Measured suites now carry `evaluation_identity.skill_sha256` and
+`evaluation_identity.grader_sha256`. These bind the run to the actual instructions,
+declared sources, excerpts and reference files, and to the grading implementation
+and dependency pins. Teaching-mode fingerprints include sibling personas. Line
+endings are normalized; README-only changes do not invalidate a run. The v1 gate
+rejects missing or changed fingerprints. Do not add them to old reports after the
+fact: that would claim a measurement that never happened.
+
+Source-ID resolution is not quotation verification. New results separately record
+`unverified_live_citations` and `unverified_quotes`. A numeric FoJin link without
+retrieval/online evidence requires review, as does a cited direct quotation not
+matched in a labelled local original block. Teaching paraphrases do not count as
+original evidence; absent local evidence is unknown rather than fabricated. Each
+flagged answer requires an evidence-backed adjudication before release. This is a
+conservative excerpt check, not a full-corpus quotation or doctrinal entailment audit.
+
+The standalone `verify_citations.py` command uses exit code 0 for resolved evidence,
+1 for a detected invalid citation, and 2 for evidence requiring review (including
+unverified links without `--online`). It no longer presents an unknown as verified.
+
 - `<version>-<shortsha>.json` — machine-readable run output. A `meta` block (measured
   commit, model, timestamps, coverage/pass totals) wraps the `suites` array, which is
   `scripts/test-fidelity.py --all --json`'s own output, captured verbatim and unmodified.

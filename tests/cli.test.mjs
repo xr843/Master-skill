@@ -513,7 +513,7 @@ test("reinstall clears stale files from a previous version", (t) => {
   run(["install", "zhiyi"], env);
   const stale = path.join(skillsDir(home), "master-zhiyi", "sources", "removed-in-new-version.md");
   fs.writeFileSync(stale, "stale content");
-  const { code } = run(["install", "zhiyi"], env);
+  const { code } = run(["install", "zhiyi", "--force"], env);
   assert.equal(code, 0);
   assert.ok(!fs.existsSync(stale), "stale file survived reinstall");
   assert.ok(fs.existsSync(path.join(skillsDir(home), "master-zhiyi", "SKILL.md")));
@@ -534,7 +534,7 @@ test("updating create-master preserves user-generated personas", (t) => {
   const staleRuntime = path.join(generatorRoot, "stale-runtime.txt");
   fs.writeFileSync(staleRuntime, "old package content\n");
 
-  const result = run(["update", "--all"], env);
+  const result = run(["update", "--all", "--force"], env);
   assert.equal(result.code, 0, result.stdout);
   assert.equal(
     fs.readFileSync(path.join(customMaster, "SKILL.md"), "utf8"),
@@ -629,7 +629,7 @@ test("update --all reinstalls every master and clears stale files", (t) => {
   const stale = path.join(skillsDir(home), "master-zhiyi", "stale.md");
   fs.writeFileSync(stale, "stale");
 
-  const { stdout, code } = run(["update", "--all"], env);
+  const { stdout, code } = run(["update", "--all", "--force"], env);
   assert.equal(code, 0);
   assert.match(stdout, /Updating all 20 skills/);
   assert.ok(!fs.existsSync(stale), "stale file survived update --all");
@@ -647,6 +647,91 @@ test("update requires --all", (t) => {
   assert.equal(code, 1);
   assert.match(stdout, /Usage: master-skill update --all/);
 });
+
+test("update protects edited files and --force explicitly replaces them", (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "zhiyi"], env).code, 0);
+  const file = path.join(skillsDir(home), "master-zhiyi", "SKILL.md");
+  fs.appendFileSync(file, "\nUser customization.\n");
+  const blocked = run(["update", "--all"], env);
+  assert.equal(blocked.code, 1);
+  assert.match(blocked.stdout, /local modifications/);
+  assert.match(fs.readFileSync(file, "utf8"), /User customization/);
+  assert.ok(!fs.existsSync(path.join(skillsDir(home), "master-fazang")), "blocked batch changed other installs");
+  assert.equal(run(["update", "--all", "--force"], env).code, 0);
+  assert.doesNotMatch(fs.readFileSync(file, "utf8"), /User customization/);
+});
+
+test("install --dry-run creates no installation directories", (t) => {
+  const { home, env } = tmpHome(t);
+  const result = run(["install", "zhiyi", "--dry-run"], env);
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, /Would install/);
+  assert.ok(!fs.existsSync(skillsDir(home)));
+});
+
+test("unsupported uninstall --dry-run refuses without deleting files", (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "zhiyi"], env).code, 0);
+  assert.equal(run(["uninstall", "zhiyi", "--dry-run"], env).code, 1);
+  assert.ok(fs.existsSync(path.join(skillsDir(home), "master-zhiyi", "SKILL.md")));
+});
+
+test("legacy installations require --force and preserve user-added files", (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "zhiyi"], env).code, 0);
+  const dest = path.join(skillsDir(home), "master-zhiyi");
+  fs.rmSync(path.join(dest, ".master-skill-install.json"), { force: true });
+  fs.writeFileSync(path.join(dest, "notes.md"), "my notes");
+  assert.equal(run(["install", "zhiyi"], env).code, 1);
+  assert.equal(fs.readFileSync(path.join(dest, "notes.md"), "utf8"), "my notes");
+});
+
+function replacementFixture(t) {
+  const catalog = { version: 1, skills: [{ name: "demo", kind: "persona", source: "prebuilt/demo", install_dir: "demo", aliases: [] }] };
+  return catalogFixture(t, catalog, (root) => {
+    fs.mkdirSync(path.join(root, "prebuilt", "demo"), { recursive: true });
+    fs.writeFileSync(path.join(root, "prebuilt", "demo", "SKILL.md"), "old instruction\n");
+  });
+}
+
+test("upstream changes update clean installs without --force", (t) => {
+  const { home, env } = tmpHome(t);
+  const { root, cli } = replacementFixture(t);
+  assert.equal(run(["install", "demo"], env, cli).code, 0);
+  fs.writeFileSync(path.join(root, "prebuilt", "demo", "SKILL.md"), "new instruction\n");
+  assert.equal(run(["update", "--all"], env, cli).code, 0);
+  assert.equal(fs.readFileSync(path.join(skillsDir(home), "demo", "SKILL.md"), "utf8"), "new instruction\n");
+});
+
+test("generator updates preserve links inside user-generated personas", (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "create-master"], env).code, 0);
+  const directory = path.join(skillsDir(home), "create-master", "masters", "custom");
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(path.join(directory, "SKILL.md"), "User persona.");
+  try { fs.symlinkSync("SKILL.md", path.join(directory, "original.md"), "file"); }
+  catch (err) { if (err.code === "EPERM") { t.skip("symlinks unavailable"); return; } throw err; }
+  assert.equal(run(["update", "--all"], env).code, 0);
+  assert.equal(fs.readlinkSync(path.join(directory, "original.md")), "SKILL.md");
+});
+
+for (const failure of ["copy", "swap"]) {
+  test(`failed ${failure} preserves the previous ordinary-skill install`, (t) => {
+    const { home, env } = tmpHome(t);
+    const { root, cli } = replacementFixture(t);
+    assert.equal(run(["install", "demo"], env, cli).code, 0);
+    fs.writeFileSync(path.join(root, "prebuilt", "demo", "SKILL.md"), "new instruction\n");
+    const preload = path.join(root, "fail.cjs");
+    fs.writeFileSync(preload, failure === "copy"
+      ? "const fs=require('fs'); const copy=fs.copyFileSync; fs.copyFileSync=(s,d,...rest)=>{if(String(d).includes('-staging-')) throw Error('simulated copy failure'); return copy(s,d,...rest);};"
+      : "const fs=require('fs'); const rename=fs.renameSync; fs.renameSync=(s,d)=>{if(String(s).includes('-staging-')) throw Error('simulated swap failure'); return rename(s,d);};");
+    const result = run(["update", "--all"], { ...env, NODE_OPTIONS: `--require=${preload}` }, cli);
+    assert.equal(result.code, 1);
+    assert.equal(fs.readFileSync(path.join(skillsDir(home), "demo", "SKILL.md"), "utf8"), "old instruction\n");
+    assert.deepEqual(fs.readdirSync(skillsDir(home)), ["demo"]);
+  });
+}
 
 test("unknown command exits non-zero", () => {
   const { code } = run(["frobnicate"]);

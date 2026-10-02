@@ -113,6 +113,7 @@ def _allowed_contains_values(slug: str, meta: dict) -> set[str]:
     if isinstance(phrases, list):
         allowed.update(p for p in phrases if isinstance(p, str) and p.strip())
     allowed.update(EXTRA_ALLOWED_CONTAINS.get(slug, set()))
+    allowed.update(s["id"] for s in meta.get("sources", []) if isinstance(s.get("id"), str))
     return allowed
 
 
@@ -140,6 +141,17 @@ def _normalise(text: str) -> str:
 
 def _check_prompt_sync(slug: str, cfg: dict, shared: dict) -> list[str]:
     errors: list[str] = []
+    if "prompt_loader" in shared:
+        loader = "file://../../scripts/persona_prompt.py:create_prompt"
+        if shared["prompt_loader"] != loader or cfg.get("prompts") != [loader]:
+            errors.append(f"{slug}: prompt must use the shared runtime loader {loader}")
+        if cfg.get("defaultTest", {}).get("vars", {}).get("master") != f"master-{slug}":
+            errors.append(f"{slug}: defaultTest.vars.master must match the config persona")
+        if any("master" in test.get("vars", {}) for test in cfg.get("tests", [])):
+            errors.append(f"{slug}: a test must not override its persona")
+        if not any(t.get("metadata", {}).get("citation_case") is True for t in cfg.get("tests", [])):
+            errors.append(f"{slug}: a citation_case is required")
+        return errors
     key = SHARED_KEY_MAP.get(slug)
     if key is None:
         # Unknown master — we still require it appears in shared.yaml under
@@ -339,6 +351,12 @@ def validate(persona_dir: Path = PERSONA_DIR) -> list[str]:
             errors.append(f"shared.yaml: failed to parse — {exc}")
             shared = {}
     configs = sorted(persona_dir.glob("*.promptfooconfig.yaml"))
+    if "prompt_loader" in shared:
+        expected = {p.name.removeprefix("master-") for p in PREBUILT_DIR.glob("master-*")
+                    if (p / "meta.json").is_file() and _load_master_meta(p.name.removeprefix("master-")).get("signature_phrases")}
+        present = {p.name.removesuffix(".promptfooconfig.yaml") for p in configs}
+        for slug in sorted(expected - present):
+            errors.append(f"{slug}: missing persona fidelity config")
     if not configs:
         errors.append(
             "tests/persona/: no *.promptfooconfig.yaml files found"

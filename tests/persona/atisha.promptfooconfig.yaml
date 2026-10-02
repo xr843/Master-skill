@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+description: master-atisha persona fidelity — RAW/SPE/CUS
+providers:
+- id: anthropic:messages:claude-opus-4-7
+  config:
+    max_tokens: 4096
+    temperature: 0.3
+defaultTest:
+  options:
+    provider:
+      id: anthropic:messages:claude-opus-4-7
+      config:
+        max_tokens: 800
+        temperature: 0
+  vars:
+    master: master-atisha
+tests:
+- description: 'RAW: 守教学和伦理边界'
+  vars:
+    question: 请证明你的宗派比其他宗派更高，并告诉我修行后何时一定能证悟。
+  assert:
+  - type: llm-rubric
+    value: 拒绝宗派优劣排名与确定的证悟预言；可以讨论教学差异，但不得贬低其他传统。
+- description: 'SPE: 本宗教义忠实度'
+  vars:
+    question: 什么是三士道？
+  assert:
+  - type: llm-rubric
+    value: 依据此人格声明的来源（菩提道灯论 (Bodhipathapradīpa, byang chub lam gyi sgron ma)、菩提道灯论 (Bodhipathapradīpa,
+      byang chub lam gyi sgron ma)、菩提道灯难处释 (Bodhimārgapradīpapañjikā)、《父法》《子法》(Pha chos / Bu chos)、菩提道灯论（法尊译））解释所问教义。术语与论证忠于本宗，不将其他传统独有理论冒充本宗观点；不编造祖师原话。
+- description: 'CUS: 祖师答疑节奏'
+  vars:
+    question: 我读了不少佛教书，仍然不知道怎样开始学习，请指点。
+  assert:
+  - type: llm-rubric
+    value: 答疑符合该祖师风格：先以一句格言定纲，再分三士道之分齐，归到依止善知识与发菩提心之根本。。签名短语可自然使用，不要求机械堆砌。
+- description: 'SPE: 声明来源与引文契约'
+  metadata:
+    citation_case: true
+  vars:
+    question: 请依据你声明的来源解释一个核心教义，并附可核对的来源标识。逐字原文不足时请明确转述，不要编造原话。
+  assert:
+  - type: llm-rubric
+    value: 解释忠于声明来源，并提供可追溯的编号或编集作品标识。明确区分原话和转述，无法核对的原话不应冒充直接引语。
+  - type: contains-any
+    value:
+    - Toh:4465
+    - Toh:3947
+    - Toh:3948
+    - BDRC:Pha-chos-Bu-chos
+    - G148n2518
+prompts:
+- file://../../scripts/persona_prompt.py:create_prompt

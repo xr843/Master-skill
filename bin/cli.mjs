@@ -5,6 +5,7 @@ import path from "path";
 import os from "os";
 import { fileURLToPath } from "url";
 import { spawnSync } from "child_process";
+import { createHash } from "node:crypto";
 
 // fileURLToPath (not new URL().pathname) — on Windows the URL pathname is
 // "/C:/…", which fs cannot resolve, so every command saw an empty prebuilt/.
@@ -182,21 +183,69 @@ function copyGeneratorBundle(skill, src, dest) {
   }
 }
 
-function replaceGeneratorInstall(skill, src, dest) {
+const INSTALL_RECORD = ".master-skill-install.json";
+
+function installedFiles(dest, skill) {
+  const files = [];
+  const walk = (rel) => {
+    const abs = path.join(dest, rel);
+    if (rel === INSTALL_RECORD || path.basename(rel) === "__pycache__" || rel.endsWith(".pyc")) return;
+    if (skill.kind === "generator" && (rel === "masters" || rel.startsWith(`masters${path.sep}`))) return;
+    if (fs.lstatSync(abs).isSymbolicLink()) { files.push(rel); return; }
+    if (fs.statSync(abs).isDirectory()) {
+      for (const name of fs.readdirSync(abs)) walk(rel ? path.join(rel, name) : name);
+    } else files.push(rel);
+  };
+  walk("");
+  return files;
+}
+
+function fileHash(file) {
+  return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+}
+
+function localModifications(skill, dest) {
+  if (!fs.existsSync(dest)) return [];
+  try {
+    if (fs.lstatSync(dest).isSymbolicLink()) return ["linked installation"];
+    const record = JSON.parse(fs.readFileSync(path.join(dest, INSTALL_RECORD), "utf8"));
+    if (record.schema !== 1 || record.name !== skill.name || !record.files || typeof record.files !== "object" || Array.isArray(record.files)) return ["invalid installation record"];
+    const actual = new Set(installedFiles(dest, skill));
+    const changed = [];
+    for (const [rel, digest] of Object.entries(record.files)) {
+      const portable = rel.split(path.sep).join("/");
+      if (!isSafeRelativePath(portable) || typeof digest !== "string") return ["invalid installation record"];
+      const file = path.join(dest, rel);
+      if (!actual.delete(rel) || fs.lstatSync(file).isSymbolicLink() || fileHash(file) !== digest) changed.push(rel);
+    }
+    return [...changed, ...actual];
+  } catch {
+    return ["missing or unreadable installation record"];
+  }
+}
+
+function replaceSkillInstall(skill, src, dest) {
   const staging = fs.mkdtempSync(
     path.join(SKILLS_DIR, `.${skill.install_dir}-staging-`)
   );
   let backup = null;
 
   try {
-    copyGeneratorBundle(skill, src, staging);
+    if (skill.kind === "generator") copyGeneratorBundle(skill, src, staging);
+    else cpR(src, staging);
+
+    const record = { schema: 1, name: skill.name, version: pkgVersion(), files: {} };
+    for (const rel of installedFiles(staging, skill)) record.files[rel] = fileHash(path.join(staging, rel));
+    fs.writeFileSync(path.join(staging, INSTALL_RECORD), JSON.stringify(record, null, 2));
 
     // Generated personas are user data, not package runtime. Merge them into
     // the staged bundle before replacing the old install so reinstall/update
     // can still remove stale runtime files without erasing masters/*.
     const existingMasters = path.join(dest, "masters");
-    if (fs.existsSync(existingMasters)) {
-      cpR(existingMasters, path.join(staging, "masters"));
+    if (skill.kind === "generator" && fs.existsSync(existingMasters)) {
+      fs.cpSync(existingMasters, path.join(staging, "masters"), {
+        recursive: true, dereference: false, verbatimSymlinks: true,
+      });
     }
 
     if (fs.existsSync(dest)) {
@@ -211,8 +260,12 @@ function replaceGeneratorInstall(skill, src, dest) {
       fs.renameSync(staging, dest);
     } catch (err) {
       if (backup && fs.existsSync(backup) && !fs.existsSync(dest)) {
-        fs.renameSync(backup, dest);
-        backup = null;
+        try {
+          fs.renameSync(backup, dest);
+          backup = null;
+        } catch (restoreError) {
+          throw new Error(`Replacement failed (${err.message}); restore failed (${restoreError.message}). Previous install preserved at ${backup}`);
+        }
       }
       throw err;
     }
@@ -223,7 +276,7 @@ function replaceGeneratorInstall(skill, src, dest) {
     }
   } finally {
     fs.rmSync(staging, { recursive: true, force: true });
-    if (backup) fs.rmSync(backup, { recursive: true, force: true });
+    // A failed rollback leaves the backup for recovery, never deletes it.
   }
 }
 
@@ -411,8 +464,7 @@ function generatorDependencies(generatorDir) {
   }
 }
 
-function cmdInstall(names) {
-  fs.mkdirSync(SKILLS_DIR, { recursive: true });
+function cmdInstall(names, { force = false, dryRun = false } = {}) {
   let failed = 0;
   // A teaching mode that reads every persona (`requires: all-personas`) pulls
   // in the ones that are missing. Only the missing ones: a persona already
@@ -431,6 +483,14 @@ function cmdInstall(names) {
       requested.add(persona.name);
     }
   }
+  const blocked = [...requested].map((name) => resolveSkill(name)).filter(Boolean)
+    .map((skill) => ({ skill, edits: localModifications(skill, path.join(SKILLS_DIR, skill.install_dir)) }))
+    .filter(({ edits }) => edits.length);
+  for (const { skill, edits } of blocked) {
+    console.log(`  ! ${skill.name}: local modifications (${edits.slice(0, 3).join(", ")}) — review/backup first; --force explicitly replaces them`);
+  }
+  if (blocked.length && !force && !dryRun) return blocked.length;
+  if (!dryRun) fs.mkdirSync(SKILLS_DIR, { recursive: true });
   for (const name of requested) {
     if (!isSafeName(name)) {
       console.log(`  ✗ ${name} — invalid name (letters, digits, "-", "_" only)`);
@@ -445,15 +505,18 @@ function cmdInstall(names) {
     }
     const src = path.join(PACKAGE_ROOT, skill.source);
     const dest = path.join(SKILLS_DIR, skill.install_dir);
+    if (dryRun) {
+      console.log(`  Would install ${name} → ${dest}`);
+      continue;
+    }
     let deps = null;
-    if (skill.kind === "generator") {
-      replaceGeneratorInstall(skill, src, dest);
-      deps = generatorDependencies(dest);
-    } else {
-      // Clear any previous install first: files renamed or removed upstream
-      // must not linger as stale skill content under ~/.claude/skills/.
-      fs.rmSync(dest, { recursive: true, force: true });
-      cpR(src, dest);
+    try {
+      replaceSkillInstall(skill, src, dest);
+      if (skill.kind === "generator") deps = generatorDependencies(dest);
+    } catch (err) {
+      console.error(`  ✗ ${name} — ${err.message}`);
+      failed++;
+      continue;
     }
     const why = neededBy.has(name) ? ` (needed by ${neededBy.get(name)})` : "";
     console.log(`  ✓ ${name} → ${dest}${why}`);
@@ -462,14 +525,14 @@ function cmdInstall(names) {
   return failed;
 }
 
-function cmdInstallAll(label = "Installing") {
+function cmdInstallAll(label = "Installing", options = {}) {
   const all = catalogSkills().map((skill) => skill.name);
   if (!all.length) {
     console.log("No skills available.");
     return 1;
   }
   console.log(`${label} all ${all.length} skills...\n`);
-  return cmdInstall(all);
+  return cmdInstall(all, options);
 }
 
 // Directories under create-master/masters/ — personas the user generated. `update`
@@ -1054,6 +1117,10 @@ Usage:
   master-skill install <name...>   Install skills to ~/.claude/skills/
   master-skill install --all       Install all ${CATALOG.skills.length} available skills
   master-skill update --all        Reinstall all skills, clearing stale files
+  master-skill update --all --dry-run
+                                 Preview replacements without writing files
+  master-skill install <name...> --force
+                                 Explicitly replace local changes or legacy installs
   master-skill list                List available skills
   master-skill list --json         Print available skills as JSON
   master-skill inspect <name>      Show source/runtime metadata for one master
@@ -1093,10 +1160,14 @@ if (CATALOG) {
   const args = process.argv.slice(2);
   const json = args.includes("--json");
   const force = args.includes("--force");
-  const positionalArgs = args.filter((arg) => arg !== "--json" && arg !== "--force");
+  const dryRun = args.includes("--dry-run");
+  const positionalArgs = args.filter((arg) => !["--json", "--force", "--dry-run"].includes(arg));
   const cmd = positionalArgs[0];
 
-  if (!cmd || cmd === "--help" || cmd === "-h") {
+  if (dryRun && !["install", "update"].includes(cmd)) {
+    console.error("--dry-run is supported only for install/update; no action taken.");
+    process.exitCode = 1;
+  } else if (!cmd || cmd === "--help" || cmd === "-h") {
     showHelp();
   } else if (cmd === "--version" || cmd === "-v") {
     console.log(pkgVersion());
@@ -1113,17 +1184,17 @@ if (CATALOG) {
   } else if (cmd === "install") {
     const rest = positionalArgs.slice(1);
     if (rest.includes("--all")) {
-      if (cmdInstallAll("Installing") > 0) process.exitCode = 1;
+      if (cmdInstallAll("Installing", { force, dryRun }) > 0) process.exitCode = 1;
     } else if (rest.length === 0) {
       console.log("Usage: master-skill install <name...> | --all");
       process.exitCode = 1;
     } else {
-      if (cmdInstall(rest) > 0) process.exitCode = 1;
+      if (cmdInstall(rest, { force, dryRun }) > 0) process.exitCode = 1;
     }
   } else if (cmd === "update") {
     const rest = positionalArgs.slice(1);
     if (rest.length === 1 && rest[0] === "--all") {
-      if (cmdInstallAll("Updating") > 0) process.exitCode = 1;
+      if (cmdInstallAll("Updating", { force, dryRun }) > 0) process.exitCode = 1;
     } else {
       console.log("Usage: master-skill update --all");
       process.exitCode = 1;

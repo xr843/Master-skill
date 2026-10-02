@@ -31,6 +31,7 @@ FIXTURES = [
     {"q": "q1", "test_type": "boundary", "must_not_contain": ["排名"]},
     {"q": "q2", "test_type": "pressure", "must_cite": ["T48n2008"]},
 ]
+IDENTITIES = {"master-demo": {"skill_sha256": "runtime", "grader_sha256": "grader"}}
 DIGESTS = {"master-demo": [fixture_sha256(case) for case in FIXTURES]}
 
 
@@ -41,6 +42,7 @@ def _case(index, kind, **changes):
         "response": f"answer {index} 此句可引", "fabricated_cites": [], "missing_mentions": [],
         "needs_review": False, "audit_unavailable": False,
         "citation_audit_ready": True, "unparsed_citations": [],
+        "unverified_live_citations": [], "unverified_quotes": [],
     }
     case.update(changes)
     return case
@@ -49,6 +51,7 @@ def _case(index, kind, **changes):
 def _run():
     report = {"suites": [{
         "master": "master-demo", "mode": "graded", "provider": "anthropic",
+        "evaluation_identity": IDENTITIES["master-demo"],
         "model": "claude-sonnet-4-6", "total": 3,
         "results": [
             # A must_convey requirement: PASS as graded, held for a ruling.
@@ -75,7 +78,7 @@ def _finish(report, adjudication):
 
 
 def _problems(report, adjudication):
-    return checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS, expected_digests=DIGESTS)[0]
+    return checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS, expected_identities=IDENTITIES, expected_digests=DIGESTS)[0]
 
 
 def test_a_run_with_reviews_passes_once_they_are_ruled_on():
@@ -134,7 +137,7 @@ def test_missing_source_set_cannot_look_like_a_clean_audit():
 def test_unparsed_citations_are_reported_not_gated():
     report, adjudication = _run()
     report["suites"][0]["results"][2]["unparsed_citations"] = ["《无可核对》"]
-    problems, _, unparsed = checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS, expected_digests=DIGESTS)
+    problems, _, unparsed = checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS, expected_identities=IDENTITIES, expected_digests=DIGESTS)
     assert problems == [] and unparsed == 1
 
 
@@ -150,14 +153,14 @@ def test_coverage_model_and_categories_are_checked():
     bad["suites"][0]["results"][1]["test_type"] = "fidelity"
     assert any("test_type" in p for p in _problems(bad, copy.deepcopy(adjudication)))
     assert any("missing suite" in p for p in checker.validate(
-        [_finish(*_run())], {**TYPES, "master-other": ["fidelity"]}, QUESTIONS, expected_digests=DIGESTS)[0])
+        [_finish(*_run())], {**TYPES, "master-other": ["fidelity"]}, QUESTIONS, expected_identities=IDENTITIES, expected_digests=DIGESTS)[0])
 
 
 def test_replaced_question_cannot_reuse_an_old_run():
     report, adjudication = _run()
     report["suites"][0]["results"][1]["question"] = "an older question"
     problems = checker.validate(
-        [_finish(report, adjudication)], TYPES, QUESTIONS, expected_digests=DIGESTS,
+        [_finish(report, adjudication)], TYPES, QUESTIONS, expected_identities=IDENTITIES, expected_digests=DIGESTS,
     )[0]
     assert any("master-demo #1: question differs from its fixture" in p for p in problems)
 
@@ -166,11 +169,11 @@ def test_changed_assertion_or_missing_digest_cannot_reuse_an_old_run():
     report, adjudication = _run()
     changed = {**FIXTURES[1], "must_not_contain": ["排名", "最高"]}
     current = {"master-demo": [DIGESTS["master-demo"][0], fixture_sha256(changed), DIGESTS["master-demo"][2]]}
-    problems = checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS, expected_digests=current)[0]
+    problems = checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS, expected_identities=IDENTITIES, expected_digests=current)[0]
     assert any("master-demo #1: fixture digest differs" in p for p in problems)
 
     report["suites"][0]["results"][1].pop("fixture_sha256")
-    problems = checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS, expected_digests=DIGESTS)[0]
+    problems = checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS, expected_identities=IDENTITIES, expected_digests=DIGESTS)[0]
     assert any("master-demo #1: fixture digest differs" in p for p in problems)
 
 
@@ -192,7 +195,7 @@ def test_it_reads_the_committed_runs_as_they_are_stored():
             json.loads((ROOT / "eval/reports" / adj).read_text(encoding="utf-8")),
         ))
     problems, tally, _ = checker.validate(
-        pairs, checker.fixture_types(), checker.fixture_questions(), expected_digests=checker.fixture_digests()
+        pairs, checker.fixture_types(), checker.fixture_questions(), expected_identities=checker.runtime_identities(), expected_digests=checker.fixture_digests()
     )
     assert tally["fidelity"]["graded"] == 83
     assert any("release model" in p for p in problems)
@@ -211,3 +214,19 @@ def test_the_publish_workflow_checks_committed_runs_and_spends_nothing():
     assert "check-release-fidelity.py --manifest eval/reports/v1-release.json" in gate["run"]
     assert "test-fidelity.py" not in json.dumps(workflow)
     assert "ANTHROPIC_API_KEY" not in json.dumps(workflow["jobs"]["gate"])
+
+
+def test_runtime_or_grader_change_requires_new_measurement():
+    report, adjudication = _run()
+    changed = {"master-demo": {**IDENTITIES["master-demo"], "skill_sha256": "new runtime"}}
+    problems = checker.validate([_finish(report, adjudication)], TYPES, QUESTIONS,
+        expected_digests=DIGESTS, expected_identities=changed)[0]
+    assert any("evaluation identity differs" in p for p in problems)
+    report["suites"][0].pop("evaluation_identity")
+    assert any("evaluation identity differs" in p for p in _problems(report, adjudication))
+
+
+def test_link_and_quote_evidence_cannot_be_silently_dropped():
+    report, adjudication = _run()
+    report["suites"][0]["results"][1].pop("unverified_live_citations")
+    assert any("citation evidence result missing" in p for p in _problems(report, adjudication))

@@ -32,6 +32,9 @@ from pathlib import Path
 # runs (it was previously schema-validated but never evaluated).
 from _masterpaths import resolve_master_dir
 from _fixture_identity import fixture_sha256
+from _citation_evidence import load_quote_evidence, unsupported_quotes
+from _evaluation_identity import evaluation_identity
+from _skill_context import load_skill_context
 from verify_citations import (
     _CBETA_ID,
     _declared_literal_matcher,
@@ -383,31 +386,6 @@ def suite_error(
         "results": [],
         "error": message,
     }
-
-
-def load_skill_context(master_dir: Path) -> str:
-    """Load SKILL.md + references as a combined system prompt."""
-    parts: list[str] = []
-
-    skill = master_dir / "SKILL.md"
-    if skill.exists():
-        parts.append(skill.read_text(encoding="utf-8"))
-
-    # Load references (voice.md, teaching.md)
-    refs_dir = master_dir / "references"
-    if refs_dir.exists():
-        for f in sorted(refs_dir.glob("*.md")):
-            parts.append(f"\n\n---\n# {f.stem}\n\n{f.read_text(encoding='utf-8')}")
-
-    # Load source excerpts
-    sources_dir = master_dir / "sources"
-    if sources_dir.exists():
-        for f in sorted(sources_dir.glob("*.md")):
-            if f.name == "INDEX.md":
-                continue
-            parts.append(f"\n\n---\n# Source: {f.stem}\n\n{f.read_text(encoding='utf-8')}")
-
-    return "\n".join(parts)
 
 
 def load_tests(master_dir: Path) -> list[dict]:
@@ -1147,6 +1125,7 @@ def check_response(
     declared_ids: set[str] | None = None,
     member_aliases: dict[str, str] | None = None,
     title_aliases: dict[str, str] | None = None,
+    quote_evidence: dict[str, list[str]] | None = None,
 ) -> dict:
     """Check a response against expected citations, mentions, and boundaries.
 
@@ -1236,12 +1215,20 @@ def check_response(
     # 空的声明集与 None 同样「查不了」:拿空集合当标尺,会把每一条**正确**引用
     # 都判成伪造(master-debate 的 meta.json 里 sources 就是空的)。
     fabricated_cites = []
+    # An offline source ID does not validate an accompanying URL. Record bare
+    # links and links beside declared IDs as well as undeclared-ID candidates.
+    unverified_live_citations = [
+        {"text_id": tid, "cited_id": None, "title": None}
+        for tid in sorted(set(re.findall(r"https?://fojin\.app/texts/([0-9]+)(?![0-9])", response)))
+    ]
     audit_unavailable = False
     if declared_ids:
         audit = audit_answer(
             declared_ids, response, member_aliases, title_aliases
         )
         fabricated_cites = audit["fabricated"]
+        details = {c["text_id"]: c for c in audit["live_detail"]}
+        unverified_live_citations = [details.get(c["text_id"], c) for c in unverified_live_citations]
         unparsed_citations = audit["unparsed"]
         citations_checked = (
             len(audit["offline"]) + len(audit["live"]) + len(audit["fabricated"])
@@ -1319,6 +1306,7 @@ def check_response(
         and len(contract_failures) == 0
     )
 
+    unverified_quotes = unsupported_quotes(response, quote_evidence or {}, declared_ids)
     return {
         "passed": passed,
         "missing_cites": missing_cites,
@@ -1333,7 +1321,9 @@ def check_response(
         "unverified_mentions": unverified_mentions,
         "script_mismatch": script_mismatch,
         "needs_review": bool(
-            forbidden_found
+            unverified_live_citations
+            or unverified_quotes
+            or forbidden_found
             or boundary_violations
             or forbidden_echoed
             or boundary_echoed
@@ -1346,6 +1336,8 @@ def check_response(
         # 会把它和繁体、审计不可用等混在一起,而那些不需要人看原文。
         "boundary_undecided": sorted(set(forbidden_found) | set(boundary_violations)),
         "fabricated_cites": fabricated_cites,
+        "unverified_live_citations": unverified_live_citations,
+        "unverified_quotes": unverified_quotes,
         "citation_audit_ready": bool(declared_ids),
         "audit_unavailable": audit_unavailable,
         # 抽不出可核对 id 的引文块。不判失败 —— 但空的 fabricated 从此不再等于
@@ -1386,6 +1378,8 @@ def result_entry(
         "mention_requirements": len(test.get("must_mention", [])),
         "script_mismatch": check["script_mismatch"],
         "fabricated_cites": check["fabricated_cites"],
+        "unverified_live_citations": check["unverified_live_citations"],
+        "unverified_quotes": check["unverified_quotes"],
         "citation_audit_ready": check["citation_audit_ready"],
         "needs_review": check["needs_review"],
         "audit_unavailable": check["audit_unavailable"],
@@ -1459,6 +1453,7 @@ def run_tests(
         }
 
     # Load skill context
+    identity = evaluation_identity(master_dir)
     system_prompt = load_skill_context(master_dir)
     tools = uses_skill_tools(master_dir)
     subagents = uses_subagents(master_dir)
@@ -1524,6 +1519,12 @@ def run_tests(
         declared_ids = None
         member_aliases = None
         title_aliases = None
+
+    quote_evidence = load_quote_evidence(master_dir, declared_ids or set())
+    if tools:
+        for persona in sorted(PREBUILT_DIR.glob("master-*")):
+            for cid, passages in load_quote_evidence(persona, declared_ids or set()).items():
+                quote_evidence.setdefault(cid, []).extend(passages)
 
     def run_subagent(files: SkillFiles, args: dict, deadline: float, record) -> str:
         """One Task call: a new conversation, sharing the fixture's deadline.
@@ -1634,6 +1635,7 @@ def run_tests(
                 declared_ids=declared_ids,
                 member_aliases=member_aliases,
                 title_aliases=title_aliases,
+                quote_evidence=quote_evidence,
             )
         except Exception as e:  # noqa: BLE001 — 判分器崩溃也是数据,不是终止条件
             # grade_one 的 docstring 承诺「一条坏 fixture 不会掀翻整个池」,
@@ -1763,6 +1765,7 @@ def run_tests(
 
     return {
         **suite_common(master_name, dry_run, "completed", provider),
+        "evaluation_identity": identity,
         # Which instrument: a teaching-mode suite graded with file tools is not
         # comparable with one graded without (every run before 2026-09-24).
         "skill_tools": (
