@@ -33,6 +33,10 @@ conservative excerpt check, not a full-corpus quotation or doctrinal entailment 
 The standalone `verify_citations.py` command uses exit code 0 for resolved evidence,
 1 for a detected invalid citation, and 2 for evidence requiring review (including
 unverified links without `--online`). It no longer presents an unknown as verified.
+Online verification also requires recognized text metadata and the fields needed
+to compare a cited work's number/title. Missing metadata or an unavailable title
+comparison remains unknown; a definite number/title mismatch still fails. This
+checks work identity, not whether an online passage entails the answer's claim.
 
 - `<version>-<shortsha>.json` — machine-readable run output. A `meta` block (measured
   commit, model, timestamps, coverage/pass totals) wraps the `suites` array, which is

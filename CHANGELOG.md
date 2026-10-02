@@ -10,6 +10,8 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- Online citation verification keeps malformed JSON, incomplete work metadata and
+  unavailable title comparison pending, instead of treating them as verified.
 - Citation evidence: unverified live links and cited direct quotations unsupported
   by local original excerpts require review; paraphrases are not quotation evidence.
 - Release evidence binds graded suites to runtime sources and grading code through

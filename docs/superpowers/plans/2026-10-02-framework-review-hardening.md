@@ -56,3 +56,20 @@ rejecting unsupported uninstall previews and preserving generated-persona links.
   checking, and added a standard-library-only all-suite dry-run regression.
   Focused tests pass 83; the Rust baseline passes all 3 tests with a `python -S`
   interpreter wrapper. Graded quotation checking still requires OpenCC.
+
+## Continued online citation verification
+
+The continuation closes an evidence gap within Task 1: a nonempty HTTP 200 JSON
+response was sufficient for online success even when it was an error envelope,
+or lacked the metadata needed to compare the cited work. Nine regressions first
+failed on this path. Online checks now preserve missing metadata and unavailable
+title comparison as unknown, while definite mismatches take precedence over
+other pending citations sharing the link. The CLI preserves exit 2 for unknown.
+The live FoJin `api/texts/20` response was checked read-only: it is a dictionary
+with id 20, CBETA id T0366 and the Chinese title of the Amitabha Sutra.
+No paid model call, historical report rewrite, merge or package publish is part
+of this continuation. Keep all changes on the existing review branch.
+
+Verification: 147 citation tests pass, including 16 new cases; independent
+review finds no material issue. `npm test` gates and 102 CLI tests pass, with
+1354 Python tests passing and the 2 CI-only Promptfoo integrations skipped locally.

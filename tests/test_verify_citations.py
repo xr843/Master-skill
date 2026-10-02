@@ -781,6 +781,62 @@ def test_a_transport_exception_maps_to_unknown():
     assert "OSError" in reason
 
 
+@pytest.mark.parametrize("payload", [True, "ok", [1], {"error": "gateway"},
+    {"data": {"id": 20}}, {"id": True}, {"id": 0},
+    {"id": 20, "error": "gateway"}, {"title_zh": []}])
+def test_nontext_json_is_not_online_verification(monkeypatch, payload):
+    _fake_requests(monkeypatch, lambda url: _FakeResponse(200, payload))
+    result = verify_citations.verify_online(["20"])
+    assert result.verdicts["20"] is None
+    assert result.fabricated == []
+
+
+@pytest.mark.parametrize("payload", [
+    {"id": 20}, {"cbeta_id": "T0366"},
+    {"title_zh": "佛說阿彌陀經"},
+])
+def test_missing_work_metadata_keeps_citation_pending(monkeypatch, payload):
+    _fake_requests(monkeypatch, lambda url: _FakeResponse(200, payload))
+    result = verify_citations.verify_online(["20"], citations=[{
+        "cited_id": "T12n0366", "text_id": "20", "title": "佛说阿弥陀经",
+    }])
+    assert result.verdicts["20"] is None
+    assert result.unknown == ["20"]
+
+
+def test_unavailable_title_comparison_does_not_clear_citation(monkeypatch):
+    _fake_requests(monkeypatch, lambda url: _FakeResponse(200, {
+        "cbeta_id": "T0366", "title_zh": "佛說阿彌陀經",
+    }))
+    monkeypatch.setattr(verify_citations, "_titles_agree", lambda *_: None)
+    result = verify_citations.verify_online(["20"], citations=[{
+        "cited_id": "T12n0366", "text_id": "20", "title": "佛说阿弥陀经",
+    }])
+    assert result.verdicts["20"] is None
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_confirmed_mismatch_is_not_hidden_by_another_pending_citation(monkeypatch, reverse):
+    _fake_requests(monkeypatch, lambda url: _FakeResponse(200, {"cbeta_id": "T0366"}))
+    citations = [
+        {"cited_id": "T0366", "text_id": "20", "title": "佛说阿弥陀经"},
+        {"cited_id": "T08n0235", "text_id": "20", "title": None},
+    ]
+    result = verify_citations.verify_online(["20"], citations=citations[::-1] if reverse else citations)
+    assert result.verdicts["20"] is False
+
+
+def test_online_cli_returns_pending_for_incomplete_work_identity(monkeypatch, capsys):
+    import io
+    _fake_requests(monkeypatch, lambda url: _FakeResponse(200, {"cbeta_id": "T2008"}))
+    monkeypatch.setattr(sys, "argv", ["verify_citations.py", "--master", "huineng", "--online"])
+    monkeypatch.setattr(sys, "stdin", io.StringIO('【《坛经》，T48n2008】→ https://fojin.app/texts/20'))
+    assert verify_citations.main() == 2
+    output = capsys.readouterr()
+    assert "未能核验" in output.err or "不可达" in output.err
+    assert "未发现待核验" not in output.out
+
+
 def test_a_404_among_successes_is_reported_as_fabricated(monkeypatch):
     def handler(url):
         return _FakeResponse(404) if url.endswith("/999") else _FakeResponse(200, {"id": 1})
