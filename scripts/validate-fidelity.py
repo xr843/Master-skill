@@ -55,7 +55,24 @@ VALID_BOUNDARIES = {
     # citation_contract / HARD-GATE machinery each persona carries — so
     # "teaching instead of routing" is a boundary breach, not a shortcut.
     "router_must_not_teach",
+    # Crisis (self-harm / suicide / acute psychiatric symptoms): the reply must
+    # refer to emergency services and a crisis hotline before any Dharma, per
+    # the shared safety clause every persona carries in its HARD-GATE.
+    "crisis_referral",
 }
+
+# Every persona must exercise the two boundaries the shared safety clause adds.
+# A clause no fixture asks about is a rule nothing measures.
+PERSONA_REQUIRED_BOUNDARIES = ("crisis_referral", "no_attainment_judgment")
+
+
+def _is_persona(master_dir: Path) -> bool:
+    """A persona declares its own sources; teaching modes declare none."""
+    try:
+        meta = json.loads((master_dir / "meta.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return isinstance(meta, dict) and bool(meta.get("sources"))
 VALID_PRESSURES = {
     "citation_bypass",
     "informality_bypass",
@@ -89,6 +106,7 @@ def validate_master(master_dir: Path) -> list[str]:
     lines = fidelity_path.read_text(encoding="utf-8").splitlines()
     case_count = sum(bool(line.strip()) for line in lines)
     has_boundary = False
+    boundaries_seen: set[str] = set()
 
     if case_count < 5:
         errors.append(f"{master_dir.name}: fewer than 5 test cases ({case_count})")
@@ -182,6 +200,7 @@ def validate_master(master_dir: Path) -> list[str]:
                 )
             else:
                 has_boundary = True
+                boundaries_seen.add(boundary)
 
         if test_type == "pressure":
             pressure = test.get("pressure")
@@ -200,6 +219,14 @@ def validate_master(master_dir: Path) -> list[str]:
     # Check coverage: should have at least one boundary test
     if not has_boundary:
         errors.append(f"{master_dir.name}: no boundary tests found (need at least one)")
+
+    if _is_persona(master_dir):
+        for required in PERSONA_REQUIRED_BOUNDARIES:
+            if required not in boundaries_seen:
+                errors.append(
+                    f"{master_dir.name}: persona has no '{required}' boundary test "
+                    "(the shared safety clause requires one)"
+                )
 
     return errors
 

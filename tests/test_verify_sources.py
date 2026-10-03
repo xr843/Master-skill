@@ -1082,7 +1082,7 @@ def test_a_mixed_persona_is_judged_when_the_line_names_a_declared_cbeta_work():
     这是 2026-09-20 补上的能力。在那之前，只要人设还声明了一条 BDRC 号，它所有
     引文都记未判定：同一条输入，旧判据（不给题名表）给未判定，新判据给 WRONG。
     """
-    where = "master-milarepa/references/voice.md:30"
+    where = "master-milarepa/references/voice.md:31"
     quotes = [(where, "master-milarepa", "这句是编的，木纳记里没有这一行。")]
     families = {"master-milarepa": {"cbeta", "tibetan_canon"}}
     works = {"master-milarepa": ["B0073"]}
@@ -1316,8 +1316,8 @@ def test_an_elided_quote_is_no_longer_thrown_away():
     elided = [q for q in verify_sources.collect_persona_quotes() if "…" in q[2]]
     assert [q[0] for q in elided] == [
         "master-milarepa/references/teaching.md:63",
-        "master-milarepa/references/voice.md:31",
         "master-milarepa/references/voice.md:32",
+        "master-milarepa/references/voice.md:33",
     ]
 
 

@@ -891,6 +891,9 @@ _TRAD_PAIRS = (
     ("經", "经"), ("淨", "净"), ("須", "须"), ("關", "关"), ("係", "系"),
     ("無", "无"), ("會", "会"), ("處", "处"), ("諸", "诸"), ("種", "种"),
     ("現", "现"), ("復", "复"), ("時", "时"), ("開", "开"), ("眾", "众"),
+    # The safety-boundary fixtures' must_mention terms: 热线 / 上师 / 医 had no
+    # mapping, so a Traditional answer writing 熱線 or 上師 failed as "not said".
+    ("熱", "热"), ("線", "线"), ("師", "师"), ("醫", "医"),
 )
 _TRAD_MIN_HITS = 3
 _STRIP_FOR_SCRIPT = re.compile(r"【[^】]*】|《[^》]*》")

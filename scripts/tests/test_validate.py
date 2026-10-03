@@ -151,3 +151,118 @@ def test_prebuilt_license_drift_is_a_hard_error(tmp_path):
     (skill / "SKILL.md").write_text("---\nname: master-demo\ndescription: demo\nlicense: MIT\n---\n", encoding="utf-8")
     issues = validate_module.lint_master(skill)
     assert any("license" in issue and "[ERROR]" in issue for issue in issues)
+
+
+# --- Shared safety clause ---------------------------------------------------
+#
+# ETHICS.md §3 claimed the crisis-referral rule was written into every persona;
+# a grep for 自杀 / 自伤 across prebuilt/ returned nothing. These tests keep the
+# claim and the files from drifting apart again.
+
+check_safety_clause = validate_module.check_safety_clause
+CANONICAL = validate_module.SAFETY_CLAUSE_PATH.read_text(encoding="utf-8")
+PREBUILT = validate_module.PREBUILT_DIR
+
+
+def _persona_text(clause: str = CANONICAL, inside_gate: bool = True, branch: bool = True) -> str:
+    block = (
+        "<!-- safety-clause:begin — 共享安全条款 -->\n"
+        f"{clause.strip()}\n"
+        "<!-- safety-clause:end -->\n"
+    )
+    tree = "## 决策树：加载什么？\n\n用户问题类型 →\n"
+    if branch:
+        tree += "- **危机信号** → 安全条款\n- **问高下 / 问证果 / 求印证** → 安全条款\n"
+    tree += "- **教义** → 读 references\n\n"
+    gate = "<HARD-GATE>\n\n" + (block if inside_gate else "") + "## 铁律\n\n</HARD-GATE>\n"
+    tail = "" if inside_gate else "\n" + block
+    return "---\nname: master-x\n---\n\n" + tree + gate + tail
+
+
+def test_every_persona_carries_the_shared_safety_clause():
+    personas = [
+        d for d in sorted(PREBUILT.iterdir())
+        if (d / "SKILL.md").is_file()
+        and validate_module.parse_frontmatter(d / "SKILL.md")[0].get("kind", "master") != "meta-skill"
+    ]
+    assert len(personas) == 15, [d.name for d in personas]
+    for persona in personas:
+        text = (persona / "SKILL.md").read_text(encoding="utf-8")
+        assert check_safety_clause(text, CANONICAL) == [], persona.name
+
+
+def test_canonical_clause_covers_crisis_certification_and_ranking():
+    for required in ("自杀", "急救", "热线", "不得以念佛", "印证", "授记", "禅病", "转述不等于排名"):
+        assert required in CANONICAL, required
+
+
+def test_missing_clause_is_an_error():
+    text = _persona_text().replace("<!-- safety-clause:begin — 共享安全条款 -->\n", "")
+    text = text.replace("<!-- safety-clause:end -->\n", "")
+    assert check_safety_clause(text, CANONICAL)
+
+
+def test_reworded_clause_is_an_error():
+    reworded = CANONICAL.replace("心理危机干预热线", "求助电话")
+    problems = check_safety_clause(_persona_text(clause=reworded), CANONICAL)
+    assert any("differs" in p for p in problems)
+
+
+def test_clause_outside_hard_gate_is_an_error():
+    problems = check_safety_clause(_persona_text(inside_gate=False), CANONICAL)
+    assert any("HARD-GATE" in p for p in problems)
+
+
+def test_missing_decision_branch_is_an_error():
+    problems = check_safety_clause(_persona_text(branch=False), CANONICAL)
+    assert any("decision tree" in p for p in problems)
+
+
+def test_well_formed_persona_passes():
+    assert check_safety_clause(_persona_text(), CANONICAL) == []
+
+
+def test_lint_master_reports_missing_clause(tmp_path):
+    persona = tmp_path / "master-x"
+    persona.mkdir()
+    (persona / "SKILL.md").write_text(
+        "---\nname: master-x\ndescription: x\n---\n\n<HARD-GATE>\n</HARD-GATE>\n",
+        encoding="utf-8",
+    )
+    issues = validate_module.lint_master(persona)
+    assert any("safety clause" in i for i in issues)
+
+
+def test_teaching_mode_without_clause_is_an_error(tmp_path):
+    """A user in crisis can enter through /compare-masters or /master-help."""
+    mode = tmp_path / "compare-x"
+    mode.mkdir()
+    (mode / "SKILL.md").write_text(
+        "---\nname: compare-x\ndescription: x\nkind: meta-skill\n---\n\nbody\n",
+        encoding="utf-8",
+    )
+    assert any("safety clause" in i for i in validate_module.lint_master(mode))
+
+
+def test_teaching_mode_needs_no_decision_branch():
+    text = _persona_text(branch=False)
+    assert check_safety_clause(text, CANONICAL, require_branch=False) == []
+
+
+def test_clause_after_a_closed_gate_is_outside_it():
+    text = "<HARD-GATE>\n</HARD-GATE>\n" + _persona_text(inside_gate=False).split("## 决策树")[0]
+    text += "<!-- safety-clause:begin x -->\n" + CANONICAL.strip() + "\n<!-- safety-clause:end -->\n<HARD-GATE>\n</HARD-GATE>\n"
+    problems = check_safety_clause(text, CANONICAL, require_branch=False)
+    assert any("HARD-GATE" in p for p in problems)
+
+
+def test_every_teaching_mode_carries_the_clause():
+    modes = [
+        d for d in sorted(PREBUILT.iterdir())
+        if (d / "SKILL.md").is_file()
+        and validate_module.parse_frontmatter(d / "SKILL.md")[0].get("kind") == "meta-skill"
+    ]
+    assert len(modes) == 4, [d.name for d in modes]
+    for mode in modes:
+        text = (mode / "SKILL.md").read_text(encoding="utf-8")
+        assert check_safety_clause(text, CANONICAL, require_branch=False) == [], mode.name

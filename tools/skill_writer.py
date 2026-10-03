@@ -101,6 +101,18 @@ SKILL_MD_TEMPLATE = """{frontmatter}
 
 {disclaimer}
 
+## 决策树：先分流
+
+- **危机信号**（自伤 / 自杀念头、正处危险、急性精神症状）→ 先执行下方「安全条款」CRISIS FIRST，**不进入角色讲法**
+- **问高下 / 问证果 / 求印证**（“哪宗更高”“我何时开悟”“请印证我”）→ 依「安全条款」NO RANKING BY THE AI / NO CERTIFICATION 作答
+- 其余问题 → 按下方「运行规则」
+
+<HARD-GATE>
+
+{safety_block}
+
+</HARD-GATE>
+
 ---
 
 ## PART A — 教义体系
@@ -113,7 +125,7 @@ SKILL_MD_TEMPLATE = """{frontmatter}
 
 ## 运行规则
 
-1. 收到提问后，先依据 voice.md Layer 0 硬规则检查
+1. 收到提问后，先执行上方 HARD-GATE「安全条款」，再依据 voice.md Layer 0 硬规则检查
 2. 依据 voice.md Layer 1-3 确定回答的风格和方式
 3. 依据 teaching.md 检索相关教义内容
 4. 以该法师的风格组织回答
@@ -121,6 +133,26 @@ SKILL_MD_TEMPLATE = """{frontmatter}
 6. live 结果只有在返回的来源类型与标识可解析到上述声明来源时才可引用；否则剥离相关断言
 7. 遇到超出范围的问题，坦诚说明并建议查阅相关传承
 """
+
+# Every persona carries prompts/safety_clause.md verbatim between these
+# markers inside its HARD-GATE; scripts/validate.py compares the text, so a
+# generated persona and a prebuilt one pass the same check.
+SAFETY_CLAUSE_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), os.pardir, "prompts", "safety_clause.md"
+)
+SAFETY_BEGIN = (
+    "<!-- safety-clause:begin — 共享安全条款，逐字同步自 prompts/safety_clause.md，"
+    "由 scripts/validate.py 核对；勿在此单独改写 -->"
+)
+SAFETY_END = "<!-- safety-clause:end -->"
+
+
+def safety_block() -> str:
+    """The shared safety clause wrapped in the markers validate.py checks."""
+    with open(SAFETY_CLAUSE_PATH, encoding="utf-8") as f:
+        clause = f.read().strip()
+    return f"{SAFETY_BEGIN}\n{clause}\n{SAFETY_END}"
+
 
 DISCLAIMER = "本内容依据历史佛教文献生成，仅供参考学习。如需正式修行指导，请亲近善知识。所有回答均须附 persona 已声明且可核验的来源。"
 
@@ -192,7 +224,7 @@ def create_teacher(
         frontmatter=build_frontmatter(slug, name, tradition, school),
         slug=slug, name=name, tradition=tradition, school=school,
         disclaimer=DISCLAIMER, teaching_content=teaching_content,
-        voice_content=voice_content,
+        voice_content=voice_content, safety_block=safety_block(),
     )
     with open(os.path.join(teacher_dir, "SKILL.md"), "w", encoding="utf-8") as f:
         f.write(skill_content)
@@ -252,6 +284,7 @@ def update_teacher(teacher_dir: str, teaching_patch: Optional[str] = None, voice
         slug=meta["slug"], name=meta["name"], tradition=meta["tradition"],
         school=meta["school"], disclaimer=DISCLAIMER,
         teaching_content=teaching_content, voice_content=voice_content,
+        safety_block=safety_block(),
     )
     with open(os.path.join(teacher_dir, "SKILL.md"), "w", encoding="utf-8") as f:
         f.write(skill_content)

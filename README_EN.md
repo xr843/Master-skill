@@ -158,7 +158,7 @@ This project is built out of respect for Buddhist traditions. All content is gen
 - **Progressive disclosure**: SKILL.md is a decision tree + quick reference; `references/` and `sources/` are loaded on demand to keep context lean
 - **HARD-GATE discipline**: Both `/create-master` and every prebuilt master require doctrinal claims, practice guidance, and text interpretation to cite that persona's declared sources (CBETA / BDRC / Toh / SuttaCentral / PTS / compliant compiled teachings); fabricated source IDs and fictional personas are forbidden
 - **Two-stage independent review**: The generation pipeline forces a "doctrinal accuracy → voice consistency" review before write; FAIL triggers up to 2 rounds of automatic repair
-- **Automated fidelity tests**: 211 fixtures (10+ per master, 18 for the `compare-masters` meta-skill) check keyword and citation coverage, and every graded answer also goes through the offline citation audit; CI runs a structural dry-run on every PR and on `main`; graded runs support Anthropic / DeepSeek / Gemini (`--provider`) with the matching API key, as a manual local/pre-release step — the latest full run and its case-by-case adjudication are [below](#fidelity-evaluation-current-data)
+- **Automated fidelity tests**: 240 fixtures (12+ per master, including crisis-referral and no-certification boundaries, 18 for the `compare-masters` meta-skill) check keyword and citation coverage, and every graded answer also goes through the offline citation audit; CI runs a structural dry-run on every PR and on `main`; graded runs support Anthropic / DeepSeek / Gemini (`--provider`) with the matching API key, as a manual local/pre-release step — the latest full run and its case-by-case adjudication are [below](#fidelity-evaluation-current-data)
 - **One `prebuilt/` tree across platforms**: Claude Code, Cursor, Codex CLI, OpenCode, and Gemini CLI each install it differently (see [docs/install.en.md](docs/install.en.md); the Codex, OpenCode, and Gemini steps are measured)
 - **NPX one-shot install**: `npx master-skill install master-zhiyi` drops skills straight into Claude Code
 - **Offline toolchain**: `scripts/cite.py` (CBETA lookup), `scripts/query.py` (offline keyword search), `scripts/validate.py` (frontmatter linter)
@@ -180,7 +180,7 @@ The v1.0 track prioritizes framework stability over adding more masters. See [do
 
 ### Fidelity evaluation (current data)
 
-The 211 fixtures (`prebuilt/*/tests/fidelity.jsonl`) run mechanical checks against real model answers: do the expected keywords and citations appear, and do the forbidden ones stay out. Every graded answer also goes through the offline citation audit. Read each number together with the model and the grading method that produced it:
+The 240 fixtures (`prebuilt/*/tests/fidelity.jsonl`; the runs below graded the earlier 211) run mechanical checks against real model answers: do the expected keywords and citations appear, and do the forbidden ones stay out. Every graded answer also goes through the offline citation audit. Read each number together with the model and the grading method that produced it:
 
 | | Value | Basis |
 |---|---|---|

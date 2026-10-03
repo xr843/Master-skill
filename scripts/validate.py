@@ -21,6 +21,19 @@ import yaml
 
 PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 
+# The one safety clause every persona carries verbatim inside its HARD-GATE:
+# crisis referral first, no certification / prediction / 禅病 diagnosis, and
+# ranking questions answered by 方便根机 without the AI itself ranking.
+# ETHICS.md §3 said this was "已写入每位法师 voice.md Layer 0" for a long time
+# while no persona file mentioned 自杀 / 自伤 at all — a claim nothing checked.
+# The canonical text lives in prompts/ so the generator emits the same words.
+SAFETY_CLAUSE_PATH = Path(__file__).resolve().parent.parent / "prompts" / "safety_clause.md"
+SAFETY_BEGIN = "<!-- safety-clause:begin"
+SAFETY_END = "<!-- safety-clause:end -->"
+# Words the decision-tree branch must route on, so the clause is reachable from
+# the routing the model reads first and not only from the rule block.
+SAFETY_BRANCH_TERMS = ("危机", "高下", "证果", "印证")
+
 # --- Required and recommended fields ---
 
 REQUIRED_FIELDS = {"name", "description"}
@@ -66,6 +79,50 @@ def parse_frontmatter(path: Path) -> tuple[dict, str, list[str]]:
 
     body = "\n".join(lines[end + 1 :])
     return fm, body, lines
+
+
+def check_safety_clause(text: str, canonical: str, require_branch: bool = True) -> list[str]:
+    """Problems with the shared safety clause in one skill's SKILL.md.
+
+    The clause must appear exactly once, inside a <HARD-GATE> block, with the
+    text between the markers identical to prompts/safety_clause.md. A persona's
+    decision tree must also route crisis / 高下 / 证果 / 印证 questions to it;
+    teaching modes (require_branch=False) carry the clause at their top, since
+    a user in crisis can enter through /compare-masters or /master-help too.
+    """
+    problems: list[str] = []
+    begins, ends = text.count(SAFETY_BEGIN), text.count(SAFETY_END)
+    if begins == 0 and ends == 0:
+        return ["missing the shared safety clause (prompts/safety_clause.md) in HARD-GATE"]
+    if begins != 1 or ends != 1:
+        return [f"safety clause markers must appear once each (begin={begins}, end={ends})"]
+    start, end = text.index(SAFETY_BEGIN), text.index(SAFETY_END)
+    if end < start:
+        return ["safety clause end marker precedes its begin marker"]
+    gate_open = text.rfind("<HARD-GATE>", 0, start)
+    gate_close = text.find("</HARD-GATE>", end)
+    closed_between = gate_open != -1 and text.find("</HARD-GATE>", gate_open, start) != -1
+    if gate_open == -1 or gate_close == -1 or closed_between:
+        problems.append("safety clause must sit inside <HARD-GATE> … </HARD-GATE>")
+    body_start = text.find("\n", start)
+    body = text[body_start + 1:end].strip() if body_start != -1 else ""
+    if body != canonical.strip():
+        problems.append(
+            "safety clause text differs from prompts/safety_clause.md — "
+            "edit the canonical file and resync, do not reword one persona"
+        )
+    if not require_branch:
+        return problems
+    tree_start = text.find("## 决策树")
+    tree_end = text.find("\n## ", tree_start + 1) if tree_start != -1 else -1
+    tree = text[tree_start:tree_end] if tree_start != -1 else ""
+    missing = [term for term in SAFETY_BRANCH_TERMS if term not in tree]
+    if missing:
+        problems.append(
+            "decision tree has no branch routing to the safety clause "
+            f"(missing: {'、'.join(missing)})"
+        )
+    return problems
 
 
 def lint_master(master_dir: Path, strict: bool = False) -> list[str]:
@@ -132,6 +189,18 @@ def lint_master(master_dir: Path, strict: bool = False) -> list[str]:
             issues.append(f"[WARN]  {name}: missing sources/ directory")
         elif not list(sources_dir.glob("*.md")):
             issues.append(f"[WARN]  {name}: sources/ directory is empty")
+
+    # --- Shared safety clause (every skill; personas also route to it) ---
+    try:
+        canonical = SAFETY_CLAUSE_PATH.read_text(encoding="utf-8")
+    except OSError as exc:
+        issues.append(f"[ERROR] {name}: cannot read {SAFETY_CLAUSE_PATH.name} ({exc})")
+    else:
+        full_text = skill_path.read_text(encoding="utf-8")
+        for problem in check_safety_clause(
+            full_text, canonical, require_branch=kind != "meta-skill"
+        ):
+            issues.append(f"[ERROR] {name}: {problem}")
 
     # --- Check for tests ---
     tests_dir = master_dir / "tests"
