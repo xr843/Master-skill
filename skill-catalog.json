@@ -154,6 +154,7 @@
     {
       "name": "compare-masters",
       "kind": "teaching-mode",
+      "summary": "多祖师并列对比：同一问题，汉藏南传各给一段 / side-by-side answers from several masters",
       "requires": "all-personas",
       "source": "prebuilt/compare-masters",
       "install_dir": "compare-masters",
@@ -164,6 +165,7 @@
     {
       "name": "master-debate",
       "kind": "teaching-mode",
+      "summary": "祖师对辩：默认 4 轮（部分配对 5 轮）立论→反驳→回应→综合 / multi-round dialectic",
       "requires": "all-personas",
       "source": "prebuilt/master-debate",
       "install_dir": "master-debate",
@@ -174,6 +176,7 @@
     {
       "name": "master-curriculum",
       "kind": "teaching-mode",
+      "summary": "学修路径：按传统与程度给分阶段书单 / staged study path within a tradition",
       "requires": "all-personas",
       "source": "prebuilt/master-curriculum",
       "install_dir": "master-curriculum",
@@ -184,6 +187,7 @@
     {
       "name": "master-help",
       "kind": "teaching-mode",
+      "summary": "不知道该问谁？只做导航，指给你一位祖师或一个模式 / who should I ask?",
       "source": "prebuilt/master-help",
       "install_dir": "master-help",
       "aliases": [
@@ -194,6 +198,7 @@
     {
       "name": "create-master",
       "kind": "generator",
+      "summary": "用 FoJin 文献生成新的祖师角色（需 Python 3.9+）/ generate a new master persona",
       "source": ".",
       "install_dir": "create-master",
       "aliases": [

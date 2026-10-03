@@ -1535,3 +1535,152 @@ test("master-help installs alone: it routes among whatever personas are installe
   assert.equal(run(["install", "master-help"], env).code, 0);
   assert.deepEqual(fs.readdirSync(skillsDir(home)).sort(), ["master-help"]);
 });
+
+// --- first-run UX (2026-10) ---
+
+test("install tells a first-time user what to do next", (t) => {
+  const { env } = tmpHome(t);
+  const one = run(["install", "huineng"], env);
+  assert.equal(one.code, 0, one.stdout);
+  assert.match(one.stdout, /Next \(Claude Code \/ OpenCode\):/);
+  assert.match(one.stdout, /\/master-huineng/);
+  assert.match(one.stdout, /Codex CLI and Gemini CLI do not read/);
+
+  const help = run(["install", "master-help", "zhiyi"], env);
+  assert.match(help.stdout, /Type \/master-help/);
+  assert.match(help.stdout, /\/master-zhiyi/);
+});
+
+test("install prints no next-step hint when nothing was installed", (t) => {
+  const { env } = tmpHome(t);
+  assert.doesNotMatch(run(["install", "no-such-master"], env).stdout, /Next/);
+  assert.doesNotMatch(run(["install", "huineng", "--dry-run"], env).stdout, /Next/);
+});
+
+test("doctor warns, with the install command, when nothing is installed", (t) => {
+  const { env } = tmpHome(t);
+  const human = run(["doctor"], env);
+  assert.equal(human.code, 0, "an empty install is not an error exit");
+  assert.match(human.stdout, /Warnings:/);
+  assert.match(human.stdout, /npx master-skill install --all/);
+  assert.match(human.stdout, /Status: ok, 1 warning/);
+  const { code, payload } = doctorJson(env);
+  assert.equal(code, 0);
+  assert.equal(payload.status, "ok", "status stays the problems gate the desktop reads");
+  assert.deepEqual(payload.warnings.map((w) => w.code), ["nothing-installed"]);
+
+  const installed = installedHome(t, ["zhiyi"]);
+  assert.deepEqual(doctorJson(installed.env).payload.warnings, []);
+  assert.match(run(["doctor"], installed.env).stdout, /Status: ok\n/);
+});
+
+test("frontmatter scalars are unquoted, including folded and escaped ones", (t) => {
+  const { cli } = catalogFixture(t, {
+    version: 1,
+    skills: ["a", "b", "c", "d", "e"].map((x) => ({
+      name: `mode-${x}`, kind: "teaching-mode", source: `prebuilt/mode-${x}`,
+      install_dir: `mode-${x}`, aliases: [`mode-${x}`],
+    })),
+  }, (root) => {
+    const write = (x, body) => {
+      fs.mkdirSync(path.join(root, "prebuilt", `mode-${x}`), { recursive: true });
+      fs.writeFileSync(path.join(root, "prebuilt", `mode-${x}`, "SKILL.md"), `---\nname: mode-${x}\n${body}\nversion: 1.0.0\n---\nbody\n`);
+    };
+    write("a", "description: 'single line, it''s quoted'");
+    write("b", "description: 'folded over\n  two lines'");
+    write("c", 'description: "double \\"escaped\\"\n  and folded"');
+    write("d", "description: >\n  block folded\n  scalar");
+    write("e", "description: plain\n  continued");
+  });
+  const payload = JSON.parse(run(["list", "--json"], {}, cli).stdout);
+  const byName = Object.fromEntries(payload.skills.map((s) => [s.name, s.description]));
+  assert.deepEqual(byName, {
+    "mode-a": "single line, it's quoted",
+    "mode-b": "folded over two lines",
+    "mode-c": 'double "escaped" and folded',
+    "mode-d": "block folded scalar",
+    "mode-e": "plain continued",
+  });
+});
+
+test("list shows people a display summary, not the model-facing trigger text", () => {
+  const { stdout } = run(["list"]);
+  assert.match(stdout, /master-huineng\s+慧能大师 · 汉传 · 禅宗/);
+  assert.match(stdout, /master-debate\s+祖师对辩/);
+  assert.doesNotMatch(stdout, /Use when user/);
+  assert.doesNotMatch(stdout, /\s'Use/, "a single-quoted description leaked its quote");
+});
+
+test("list --json adds displayName and summary without dropping description", () => {
+  const payload = JSON.parse(run(["list", "--json"]).stdout);
+  const huineng = payload.skills.find((s) => s.name === "master-huineng");
+  assert.equal(huineng.displayName, "慧能大师");
+  assert.match(huineng.summary, /^慧能大师 · /);
+  assert.match(huineng.description, /^Use when user asks about/);
+  const debate = payload.skills.find((s) => s.name === "master-debate");
+  assert.ok(debate.description.startsWith("Use when"), "quote stripped from the raw description");
+  assert.equal(debate.displayName, null);
+  assert.ok(debate.summary);
+  const legacy = payload.masters.find((m) => m.name === "master-huineng");
+  assert.ok(legacy.description && legacy.slug === "huineng" && legacy.summary);
+});
+
+test("an unknown skill name suggests the closest one", (t) => {
+  const { env } = tmpHome(t);
+  const install = run(["install", "huineg"], env);
+  assert.equal(install.code, 1);
+  assert.match(install.stdout, /huineg — not found in skill catalog — did you mean huineng\?/);
+  const inspect = run(["inspect", "zhyi"], env);
+  assert.equal(inspect.code, 1);
+  assert.match(inspect.stdout, /did you mean zhiyi\?/);
+  const far = run(["install", "xyzabc"], env);
+  assert.doesNotMatch(far.stdout, /did you mean/);
+  assert.match(far.stdout, /master-skill list/);
+});
+
+test("an unknown command suggests the closest one", () => {
+  const typo = run(["instal"]);
+  assert.equal(typo.code, 1);
+  assert.match(typo.stdout, /Unknown command: instal/);
+  assert.match(typo.stdout, /Did you mean: master-skill install\?/);
+  assert.doesNotMatch(run(["frobnicate"]).stdout, /Did you mean/);
+});
+
+test("recommend routes plain-language anxiety and grief, with a referral line", () => {
+  const anxious = recommendJson("最近焦虑睡不着");
+  assert.equal(anxious.resolvedBy, "situations");
+  assert.ok(anxious.masters.some((m) => m.name === "master-ajahn-chah"));
+  assert.equal(anxious.referral, true);
+  const grief = recommendJson("家人去世很难过");
+  assert.equal(grief.resolvedBy, "situations");
+  assert.ok(grief.masters.some((m) => m.name === "master-yinguang"));
+  assert.match(run(["recommend", "家人去世很难过"]).stdout, /专业帮助/);
+});
+
+test("recommend never names a master for a crisis statement", () => {
+  for (const q of ["我不想活了", "活不下去了，想自杀", "I want to kill myself"]) {
+    const data = recommendJson(q);
+    assert.equal(data.resolvedBy, "crisis", q);
+    assert.deepEqual(data.masters, [], q);
+    assert.equal(data.command, null, q);
+    const { stdout, code } = run(["recommend", q]);
+    assert.equal(code, 0);
+    assert.match(stdout, /12356/);
+    assert.match(stdout, /findahelpline\.com/);
+    assert.doesNotMatch(stdout, /\/master-/);
+  }
+  // Crisis outranks a teaching-mode keyword in the same sentence.
+  assert.equal(recommendJson("想死，入门该读什么").resolvedBy, "crisis");
+});
+
+test("recommend says plainly that an unmatched English query cannot be routed", () => {
+  const data = recommendJson("how do I meditate");
+  assert.equal(data.resolvedBy, "unmatched_non_chinese");
+  assert.deepEqual(data.masters, []);
+  assert.equal(data.command, "/master-help");
+  const { stdout } = run(["recommend", "how do I meditate"]);
+  assert.match(stdout, /Chinese keywords/);
+  assert.match(stdout, /\/master-help/);
+  // English that does hit a keyword still routes.
+  assert.equal(recommendJson("compare Chan and Pure Land").mode, "compare-masters");
+});
