@@ -124,7 +124,10 @@ for ending in lf crlf; do
     else
         tr -d '\r' < "$WRAPPER" > "$tmp_eol/hooks/run-hook.cmd"
     fi
-    out=$(cd "$tmp_eol" && CLAUDE_PLUGIN_ROOT="$tmp_eol" bash hooks/run-hook.cmd session-start 2>/dev/null)
+    # No CLAUDE_PLUGIN_ROOT: Claude Code gets a static pointer that never
+    # reaches session_start.py, and this case is about the wrapper getting
+    # all the way to the python half on both line endings.
+    out=$(cd "$tmp_eol" && bash hooks/run-hook.cmd session-start 2>/dev/null)
     if printf '%s' "$out" | grep -q "master-probe"; then
         printf "  PASS  bash runs the %s wrapper\n" "$ending"
         PASS=$((PASS + 1))

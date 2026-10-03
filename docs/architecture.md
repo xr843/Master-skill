@@ -8,7 +8,7 @@
 用户请求
     |
     v
-session-start hook ──> 注入法师列表（以 Claude Code / Cursor 插件加载时；Gemini CLI 不执行，见 install.md）
+session-start hook ──> Claude Code 插件：一行指引（技能清单由宿主自己列出）；Cursor 插件：完整法师列表；Gemini CLI 不执行，见 install.md
     |
     v
 SKILL.md (AgentSkills 入口：决策树 + Quick Ref)

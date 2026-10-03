@@ -160,8 +160,9 @@ fi
 # Case 11: masters are on their own lines. The bash version built the list
 # with "...\n" inside a plain assignment and printed it with a bare `echo`,
 # so every master landed on ONE line with a literal backslash-n between them
-# — two characters, spliced straight into a system prompt.
-out=$(CLAUDE_PLUGIN_ROOT="$SCRIPT_DIR/../.." bash "$HOOK" 2>/dev/null)
+# — two characters, spliced straight into a system prompt. (Cursor: Claude
+# Code gets only the one-line pointer, see Case 22.)
+out=$(CURSOR_PLUGIN_ROOT="$SCRIPT_DIR/../.." bash "$HOOK" 2>/dev/null)
 if printf '%s' "$out" | python3 -c '
 import json, sys
 ctx = json.load(sys.stdin)
@@ -227,7 +228,7 @@ rm -rf "$tmp_root"
 # wrapper's `|| echo '{}'` turned that into valid JSON, exit 0, and no masters
 # at all — a green contentless result. Windows reaches this through
 # run-hook.cmd's legacy code page.
-out=$(PYTHONIOENCODING=ascii CLAUDE_PLUGIN_ROOT="$SCRIPT_DIR/../.." \
+out=$(PYTHONIOENCODING=ascii CURSOR_PLUGIN_ROOT="$SCRIPT_DIR/../.." \
       bash "$HOOK" 2>/dev/null)
 count=$(printf '%s' "$out" | python3 -c '
 import json, sys
@@ -252,7 +253,7 @@ fi
 # SCRIPT_DIR silently becomes the current directory.
 tmp_hook=$(mktemp -d)
 cp "$HOOK" "$tmp_hook/session-start"
-out=$(cd "$tmp_hook" && CLAUDE_PLUGIN_ROOT=/nonexistent bash ./session-start 2>/dev/null)
+out=$(cd "$tmp_hook" && CURSOR_PLUGIN_ROOT=/nonexistent bash ./session-start 2>/dev/null)
 modes=$(printf '%s' "$out" | python3 -c '
 import json, sys
 ctx = json.load(sys.stdin)
@@ -337,13 +338,16 @@ key = next(iter(ctx))
 body = (ctx.get('hookSpecificOutput', {}).get('additionalContext')
         or ctx.get('additionalContext') or ctx.get('additional_context') or '')
 event_ok = key != 'hookSpecificOutput' or ctx[key].get('hookEventName') == 'SessionStart'
-sys.exit(0 if key == '$expected_key' and event_ok and body.count(chr(10) + '  /') == 5 else 1)
+lines = body.count(chr(10) + '  /')
+# Claude Code gets the one-line pointer, everyone else the five modes.
+want = ('/master-help' in body and lines == 0) if key == 'hookSpecificOutput' else lines == 5
+sys.exit(0 if key == '$expected_key' and event_ok and want else 1)
 " 2>/dev/null
 }
 for spec in "claude:hookSpecificOutput:CLAUDE_PLUGIN_ROOT=$SCRIPT_DIR/../.."             "cursor:additional_context:CURSOR_PLUGIN_ROOT=$SCRIPT_DIR/../.."             "copilot:additionalContext:COPILOT_CLI=1"; do
     label=${spec%%:*}; rest=${spec#*:}; key=${rest%%:*}; envvar=${rest#*:}
     if check_host "$label" "$key" "$envvar"; then
-        printf "  PASS  no python3, %s host: %s with 5 modes\n" "$label" "$key"
+        printf "  PASS  no python3, %s host: %s with its payload\n" "$label" "$key"
         PASS=$((PASS + 1))
     else
         printf "  FAIL  no python3, %s host: wrong key or missing modes\n" "$label"
@@ -422,7 +426,7 @@ stub_dir=$(mktemp -d)
 printf '#!/bin/sh\nexit 9\n' > "$stub_dir/python3"
 chmod +x "$stub_dir/python3"
 ln -sf "$(command -v python3)" "$stub_dir/python"
-out=$(PATH="$stub_dir:/usr/bin:/bin" CLAUDE_PLUGIN_ROOT="$SCRIPT_DIR/../.." bash "$HOOK" 2>/dev/null)
+out=$(PATH="$stub_dir:/usr/bin:/bin" CURSOR_PLUGIN_ROOT="$SCRIPT_DIR/../.." bash "$HOOK" 2>/dev/null)
 if printf '%s' "$out" | grep -q "/master-huineng"; then
     echo "  PASS  a stub python3 falls through to a working interpreter"
     PASS=$((PASS + 1))
@@ -431,6 +435,39 @@ else
     FAIL=$((FAIL + 1))
 fi
 rm -rf "$stub_dir"
+
+# Case 22: Claude Code registers every plugin skill and shows the model their
+# names and descriptions itself, so the hook adds only a pointer. The full list
+# was 1,548 UTF-8 bytes of context at every startup / clear / compact
+# (measured 2026-10-03). The bash and python copies of the pointer must agree,
+# and neither may grow back into a list.
+out=$(CLAUDE_PLUGIN_ROOT="$SCRIPT_DIR/../.." bash "$HOOK" 2>/dev/null)
+if printf '%s' "$out" | python3 -c '
+import importlib.util, json, sys
+spec = importlib.util.spec_from_file_location("ss", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+body = json.load(sys.stdin)["hookSpecificOutput"]["additionalContext"]
+ok = (body == m.CLAUDE_POINTER and len(body.encode()) < 300
+      and "/master-help" in body and chr(10) not in body and "master-huineng" not in body)
+sys.exit(0 if ok else 1)
+' "$SANITIZER"; then
+    echo "  PASS  Claude Code gets the short pointer, identical in bash and python"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL  Claude Code payload is not the pointer: %.80s\n" "$out"
+    FAIL=$((FAIL + 1))
+fi
+
+# Case 23: Cursor keeps the full list — its manifest exposes only ./prebuilt/,
+# so the hook is the one place create-master is announced there.
+out=$(CURSOR_PLUGIN_ROOT="$SCRIPT_DIR/../.." bash "$HOOK" 2>/dev/null)
+if printf '%s' "$out" | grep -q "/create-master" && printf '%s' "$out" | grep -q "/master-huineng"; then
+    echo "  PASS  Cursor still gets the full list, create-master included"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL  Cursor lost the full list"
+    FAIL=$((FAIL + 1))
+fi
 
 printf "Summary: %d passed, %d failed\n" "$PASS" "$FAIL"
 exit $([ "$FAIL" -eq 0 ] && echo 0 || echo 1)
