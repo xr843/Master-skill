@@ -108,11 +108,13 @@ master-skill recommend "<用户原话>" --json
 |---|---|
 | 念佛 / 往生 / 净土 | master-yinguang + master-ouyi |
 | 参禅 / 话头 / 开悟 | master-huineng + master-xuyun |
-| 唯识 / 空有 / 性相 / 法相 | master-xuanzang + master-kumarajiva |
+| 唯识 / 空有 / 性相 / 法相 | master-xuanzang + master-nagarjuna |
 | 判教 / 圆融 / 止观 | master-zhiyi + master-fazang |
 | 修行次第 / 综合法门 | master-ouyi + master-yinguang |
 | 戒律 / 持戒 / 律仪 / 行持 | master-xuyun + master-atisha + master-buddhaghosa |
-| 般若 / 空性 / 中观 / 缘起性空 / 应成 / 毕竟空 | master-kumarajiva + master-tsongkhapa + master-huineng |
+| 空性 / 中观 / 缘起性空 / 应成 / 毕竟空 | master-nagarjuna + master-tsongkhapa + master-huineng |
+| 般若 / 金刚经 | master-kumarajiva + master-huineng |
+| 法华 / 一佛乘 | master-kumarajiva + master-zhiyi |
 | 道次第 / 三士道 / 下士道 / 中士道 / 上士道 / lam rim | master-atisha + master-tsongkhapa |
 | 心识 / 阿赖耶 / 心所 / 末那 | master-xuanzang + master-buddhaghosa + master-huineng |
 | 苦行 / 闭关 / 山中修行 / 头陀 | master-xuyun + master-milarepa |
