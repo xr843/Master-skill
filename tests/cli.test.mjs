@@ -662,6 +662,138 @@ test("update protects edited files and --force explicitly replaces them", (t) =>
   assert.doesNotMatch(fs.readFileSync(file, "utf8"), /User customization/);
 });
 
+for (const replacedFile of ["SKILL.md", ".master-skill-install.json"]) {
+test(`a ${replacedFile} named pipe blocks updates without hanging`, { skip: process.platform === "win32" }, (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "zhiyi"], env).code, 0);
+  const file = path.join(skillsDir(home), "master-zhiyi", replacedFile);
+  fs.unlinkSync(file);
+  execFileSync("mkfifo", [file]);
+  const blocked = spawnSync(process.execPath, [CLI, "update", "--all"], {
+    encoding: "utf8", env: { ...process.env, ...env }, timeout: 3000,
+  });
+  assert.equal(blocked.status, 1, String(blocked.error || blocked.stderr));
+  assert.match(blocked.stdout, /local modifications/);
+  assert.ok(fs.lstatSync(file).isFIFO());
+  assert.ok(!fs.existsSync(path.join(skillsDir(home), "master-fazang")));
+  assert.equal(run(["install", "zhiyi", "--force"], env).code, 0);
+  assert.ok(fs.lstatSync(file).isFile());
+});
+}
+
+test("force can replace a generator installation that is a regular file", (t) => {
+  const { home, env } = tmpHome(t);
+  fs.mkdirSync(skillsDir(home), { recursive: true });
+  const dest = path.join(skillsDir(home), "create-master");
+  fs.writeFileSync(dest, "My old installation placeholder.");
+  assert.equal(run(["install", "create-master"], env).code, 1);
+  assert.equal(fs.readFileSync(dest, "utf8"), "My old installation placeholder.");
+  assert.equal(run(["install", "create-master", "--force"], env).code, 0);
+  assert.ok(fs.existsSync(path.join(dest, "SKILL.md")));
+});
+
+test("record pathname replacement after opening cannot redirect the read to a pipe", { skip: process.platform === "win32" }, (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "zhiyi"], env).code, 0);
+  const record = path.join(skillsDir(home), "master-zhiyi", ".master-skill-install.json");
+  const preload = path.join(home, "replace-open-record.cjs");
+  const marker = path.join(home, "record-replaced.txt");
+  fs.writeFileSync(preload, `
+    const fs=require('fs'); const cp=require('child_process');
+    const open=fs.openSync;
+    const record=${JSON.stringify(record)};
+    let replaced=false;
+    fs.openSync=(file,...args)=>{
+      const fd=open(file,...args);
+      if(file===record && !replaced) {
+        replaced=true; fs.unlinkSync(record); cp.execFileSync('mkfifo',[record]);
+        fs.writeFileSync(${JSON.stringify(marker)}, 'swapped');
+      }
+      return fd;
+    };
+  `);
+  const result = spawnSync(process.execPath, [CLI, "install", "zhiyi"], {
+    encoding: "utf8", timeout: 3000,
+    env: { ...process.env, ...env, NODE_OPTIONS: `--require=${preload}` },
+  });
+  assert.equal(result.status, 0, String(result.error || result.stderr));
+  assert.equal(fs.readFileSync(marker, "utf8"), "swapped");
+  const descriptor = fs.openSync(record, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK | fs.constants.O_NOFOLLOW);
+  try {
+    assert.ok(fs.fstatSync(descriptor).isFile());
+    assert.equal(JSON.parse(fs.readFileSync(descriptor, "utf8")).name, "master-zhiyi");
+  } finally {
+    fs.closeSync(descriptor);
+  }
+});
+
+test("a dangling installed skill link requires force and can be replaced explicitly", (t) => {
+  const { home, env } = tmpHome(t);
+  const dest = path.join(skillsDir(home), "master-zhiyi");
+  fs.mkdirSync(skillsDir(home), { recursive: true });
+  const target = path.join(home, "temporarily-unavailable-skill");
+  try { fs.symlinkSync(target, dest, "dir"); }
+  catch (err) { if (err.code === "EPERM") { t.skip("symlinks unavailable"); return; } throw err; }
+  const blocked = run(["install", "zhiyi"], env);
+  assert.equal(blocked.code, 1);
+  assert.match(blocked.stdout, /local modifications/);
+  assert.equal(fs.readlinkSync(dest), target);
+  assert.equal(run(["install", "zhiyi", "--force"], env).code, 0);
+  assert.ok(fs.lstatSync(dest).isDirectory());
+  assert.ok(fs.existsSync(path.join(dest, "SKILL.md")));
+  assert.ok(!fs.existsSync(target));
+});
+
+test("failed replacement restores a dangling installed skill link", (t) => {
+  const { home, env } = tmpHome(t);
+  const { root, cli } = replacementFixture(t);
+  fs.mkdirSync(skillsDir(home), { recursive: true });
+  const dest = path.join(skillsDir(home), "demo");
+  const target = path.join(home, "temporarily-unavailable-skill");
+  try { fs.symlinkSync(target, dest, "dir"); }
+  catch (err) { if (err.code === "EPERM") { t.skip("symlinks unavailable"); return; } throw err; }
+  const preload = path.join(root, "fail-swap.cjs");
+  fs.writeFileSync(preload,
+    "const fs=require('fs'); const rename=fs.renameSync; fs.renameSync=(s,d)=>{if(String(s).includes('-staging-')) throw Error('simulated swap failure'); return rename(s,d);};");
+  const failed = run(["install", "demo", "--force"], { ...env, NODE_OPTIONS: `--require=${preload}` }, cli);
+  assert.equal(failed.code, 1);
+  assert.match(failed.stdout, /simulated swap failure/);
+  assert.equal(fs.readlinkSync(dest), target);
+  assert.deepEqual(fs.readdirSync(skillsDir(home)), ["demo"]);
+  assert.ok(!fs.existsSync(target));
+});
+
+test("generator updates preserve an available masters directory link and its contents", (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "create-master"], env).code, 0);
+  const masters = path.join(skillsDir(home), "create-master", "masters");
+  fs.rmSync(masters, { recursive: true, force: true });
+  const target = path.join(home, "external-personas");
+  fs.mkdirSync(target);
+  fs.writeFileSync(path.join(target, "my-persona.md"), "My original instructions.");
+  try { fs.symlinkSync(target, masters, process.platform === "win32" ? "junction" : "dir"); }
+  catch (err) { if (err.code === "EPERM") { t.skip("symlinks unavailable"); return; } throw err; }
+  const originalLink = fs.readlinkSync(masters);
+  assert.equal(run(["update", "--all"], env).code, 0);
+  assert.equal(fs.readlinkSync(masters), originalLink);
+  assert.deepEqual(fs.readdirSync(target), ["my-persona.md"]);
+  assert.equal(fs.readFileSync(path.join(target, "my-persona.md"), "utf8"), "My original instructions.");
+});
+
+test("generator updates preserve a dangling masters directory link", (t) => {
+  const { home, env } = tmpHome(t);
+  assert.equal(run(["install", "create-master"], env).code, 0);
+  const masters = path.join(skillsDir(home), "create-master", "masters");
+  fs.rmSync(masters, { recursive: true, force: true });
+  const target = "../temporarily-unavailable-personas";
+  try { fs.symlinkSync(target, masters, process.platform === "win32" ? "junction" : "dir"); }
+  catch (err) { if (err.code === "EPERM") { t.skip("symlinks unavailable"); return; } throw err; }
+  const originalLink = fs.readlinkSync(masters);
+  assert.equal(run(["update", "--all"], env).code, 0);
+  assert.equal(fs.readlinkSync(masters), originalLink);
+  assert.ok(!fs.existsSync(path.resolve(path.dirname(masters), target)));
+});
+
 test("install --dry-run creates no installation directories", (t) => {
   const { home, env } = tmpHome(t);
   const result = run(["install", "zhiyi", "--dry-run"], env);

@@ -200,15 +200,31 @@ function installedFiles(dest, skill) {
   return files;
 }
 
+function readRegularFile(file, encoding) {
+  // NONBLOCK prevents opening a FIFO from hanging; NOFOLLOW rejects links
+  // where supported. fstat and read use the same descriptor, so pathname
+  // replacements cannot swap a checked ordinary file for a special node.
+  const flags = fs.constants.O_RDONLY | (fs.constants.O_NONBLOCK ?? 0) | (fs.constants.O_NOFOLLOW ?? 0);
+  const descriptor = fs.openSync(file, flags);
+  try {
+    if (!fs.fstatSync(descriptor).isFile()) throw new Error("Installation input is not a regular file");
+    return fs.readFileSync(descriptor, encoding);
+  } finally {
+    fs.closeSync(descriptor);
+  }
+}
+
 function fileHash(file) {
-  return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+  return createHash("sha256").update(readRegularFile(file)).digest("hex");
 }
 
 function localModifications(skill, dest) {
-  if (!fs.existsSync(dest)) return [];
   try {
-    if (fs.lstatSync(dest).isSymbolicLink()) return ["linked installation"];
-    const record = JSON.parse(fs.readFileSync(path.join(dest, INSTALL_RECORD), "utf8"));
+    const entry = fs.lstatSync(dest, { throwIfNoEntry: false });
+    if (!entry) return [];
+    if (entry.isSymbolicLink()) return ["linked installation"];
+    const recordPath = path.join(dest, INSTALL_RECORD);
+    const record = JSON.parse(readRegularFile(recordPath, "utf8"));
     if (record.schema !== 1 || record.name !== skill.name || !record.files || typeof record.files !== "object" || Array.isArray(record.files)) return ["invalid installation record"];
     const actual = new Set(installedFiles(dest, skill));
     const changed = [];
@@ -216,7 +232,7 @@ function localModifications(skill, dest) {
       const portable = rel.split(path.sep).join("/");
       if (!isSafeRelativePath(portable) || typeof digest !== "string") return ["invalid installation record"];
       const file = path.join(dest, rel);
-      if (!actual.delete(rel) || fs.lstatSync(file).isSymbolicLink() || fileHash(file) !== digest) changed.push(rel);
+      if (!actual.delete(rel) || !fs.lstatSync(file).isFile() || fileHash(file) !== digest) changed.push(rel);
     }
     return [...changed, ...actual];
   } catch {
@@ -242,13 +258,29 @@ function replaceSkillInstall(skill, src, dest) {
     // the staged bundle before replacing the old install so reinstall/update
     // can still remove stale runtime files without erasing masters/*.
     const existingMasters = path.join(dest, "masters");
-    if (skill.kind === "generator" && fs.existsSync(existingMasters)) {
-      fs.cpSync(existingMasters, path.join(staging, "masters"), {
-        recursive: true, dereference: false, verbatimSymlinks: true,
-      });
+    if (skill.kind === "generator" && fs.statSync(dest, { throwIfNoEntry: false })?.isDirectory()) {
+      const generatedEntry = fs.lstatSync(existingMasters, { throwIfNoEntry: false });
+      if (generatedEntry) {
+        const stagedMasters = path.join(staging, "masters");
+        // A root link, including an unavailable target, is user data. Replace
+        // the package's seed directory so cpSync can preserve the link itself.
+        if (generatedEntry.isSymbolicLink()) {
+          fs.rmSync(stagedMasters, { recursive: true, force: true });
+          // cpSync still stats a dangling root link on supported Node releases.
+          const target = fs.readlinkSync(existingMasters);
+          // Junctions use absolute targets on Windows and need no additional
+          // symlink privilege. Relative directory links retain their spelling.
+          const linkType = process.platform === "win32" && path.isAbsolute(target) ? "junction" : "dir";
+          fs.symlinkSync(target, stagedMasters, linkType);
+        } else {
+          fs.cpSync(existingMasters, stagedMasters, {
+            recursive: true, dereference: false, verbatimSymlinks: true,
+          });
+        }
+      }
     }
 
-    if (fs.existsSync(dest)) {
+    if (fs.lstatSync(dest, { throwIfNoEntry: false })) {
       backup = fs.mkdtempSync(
         path.join(SKILLS_DIR, `.${skill.install_dir}-backup-`)
       );
@@ -259,7 +291,7 @@ function replaceSkillInstall(skill, src, dest) {
     try {
       fs.renameSync(staging, dest);
     } catch (err) {
-      if (backup && fs.existsSync(backup) && !fs.existsSync(dest)) {
+      if (backup && fs.lstatSync(backup, { throwIfNoEntry: false }) && !fs.lstatSync(dest, { throwIfNoEntry: false })) {
         try {
           fs.renameSync(backup, dest);
           backup = null;

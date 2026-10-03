@@ -10,6 +10,12 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- Installation checks treat nonregular replacements as local edits without reading
+  them. Records and hashes read from one checked file descriptor, preventing a
+  pathname replacement from redirecting the read to a pipe. Dangling installation
+  links require explicit force and are restored after
+  failed replacement; generator updates preserve masters directory links even
+  when their targets are unavailable, without copying or changing external data.
 - Fidelity fixture validation reports malformed JSON, non-object cases and invalid
   question / assertion shapes without crashing, retains physical line numbers,
   and continues checking later cases and suites. Boundary coverage uses the
