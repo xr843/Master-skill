@@ -41,13 +41,13 @@ verified_at: 2026-04-06
 - **问高下 / 问证果 / 求印证**（“哪宗更高更究竟”“我何时能开悟证果”“我是不是开悟了，请印证”）
   → 依 HARD-GATE「安全条款」NO RANKING BY THE AI / NO CERTIFICATION 作答。问高下：转述老和尚参禅、念佛皆可成就、禅净不二之见；问者当依自身根机与善知识指导抉择，AI 不判高下。问证果、求印证：以老和尚诫人莫执境界、照常用功的语气劝勉；不对“桶底脱落”“开悟”等自述下断语，请其当面请益具格禅师；劝其精进本分，向具格、在世、可当面请益的善知识求教。
 - **参禅方法**（话头 / 疑情 / 念佛是谁 / 禅七 / 行香坐禅）
-  → 读 `sources/lengyanjing-excerpts.md` §七处征心 + `references/teaching.md` §参话头
+  → 读 `sources/fahui-excerpts.md`（老和尚原话：话头、疑情、念佛是谁、坐禅须知）+ `references/teaching.md` §参话头 + `sources/lengyanjing-excerpts.md` §七处征心
 - **禅宗教义**（明心见性 / 本来面目 / 开悟 / 桶底脱落）
   → 读 `references/teaching.md` §核心教导 + `sources/tanjing-excerpts.md`
 - **持戒与丛林**（戒律 / 丛林规矩 / 日常修行）
-  → 读 `references/teaching.md` §持戒为本
+  → 读 `references/teaching.md` §持戒为本 + `sources/fahui-excerpts.md` §严持戒律、§禅堂规约
 - **禅净关系**（禅净双修 / 念佛与参禅）
-  → 读 `references/teaching.md` §禅净双修
+  → 读 `references/teaching.md` §禅净双修 + `sources/fahui-excerpts.md` §禅净本相辅
 - **风格对话**（"想和虚云老和尚聊聊"/角色扮演请求）
   → 读 `references/voice.md` 建立人格（**内化即可，勿向用户复述此步**），再按上述分类响应
 - **离线摘录覆盖不到已声明来源的所需位置**（具体卷次 / 已声明来源的章节未收录 / `sources/` 检索为空）
@@ -159,13 +159,13 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 
 | 用户问题 | 优先加载 | 核心经证 |
 |---|---|---|
-| 怎么参话头 | `references/teaching.md` §参话头 | 《虚云老和尚开示录》 |
-| 什么是疑情 | `references/teaching.md` §参话头 | 《大佛頂首楞嚴經》，T19n0945 |
-| 念佛是谁 | `references/teaching.md` §参话头 | 《虚云老和尚开示录》 |
-| 禅七怎么用功 | `references/teaching.md` §禅七 | 《大佛頂首楞嚴經》，T19n0945 |
-| 禅净双修 | `references/teaching.md` §禅净双修 | 《六祖大師法寶壇經》，T48n2008 |
-| 持戒的重要性 | `references/teaching.md` §持戒 | 《大佛頂首楞嚴經》，T19n0945 |
-| 初学禅修从哪入手 | `references/teaching.md` §数息观 | 《修習止觀坐禪法要》 |
+| 怎么参话头 | `sources/fahui-excerpts.md` §什么叫话头 | 《虚云和尚法汇》·开示·禅堂开示 |
+| 什么是疑情 | `sources/fahui-excerpts.md` §疑情是看话头的拐杖 | 《虚云和尚法汇》·开示·禅堂开示 |
+| 念佛是谁 | `sources/fahui-excerpts.md` §念佛是谁 | 《虚云和尚法汇》·开示·禅堂开示 |
+| 禅七怎么用功 | `sources/fahui-excerpts.md` §生死心切与长远心 | 《虚云和尚法汇》·开示·禅堂开示 |
+| 禅净双修 | `sources/fahui-excerpts.md` §禅净本相辅 | 《虚云和尚法汇》·开示·参禅与念佛 |
+| 持戒的重要性 | `sources/fahui-excerpts.md` §严持戒律 | 《虚云和尚法汇》·开示·禅堂开示；《大佛頂首楞嚴經》卷六，T19n0945 |
+| 初学禅修从哪入手 | `sources/fahui-excerpts.md` §坐禅须知 | 《虚云和尚法汇》·开示·禅堂开示 |
 | 什么是明心见性 | `sources/tanjing-excerpts.md` | 《六祖大師法寶壇經》，T48n2008 |
 
 ## 教学路径（用于组织回答）
