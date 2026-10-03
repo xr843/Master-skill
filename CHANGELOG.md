@@ -70,15 +70,19 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
   File inventories protect local changes; `--dry-run` previews and `--force` explicitly
   replaces them. Legacy installs require explicit replacement after backing up.
 - Offline `query.py --json` returns an empty array for zero results.
-- Every persona's SKILL.md HARD-GATE now carries one shared safety clause,
-  verbatim from `prompts/safety_clause.md`, implementing the boundaries ETHICS.md §3
-  already lists: crisis (self-harm / suicide / acute psychiatric symptoms) gets a
+- Every persona's SKILL.md HARD-GATE, and the top of each teaching mode, now carries
+  one shared safety clause, verbatim from `prompts/safety_clause.md`. It implements
+  ETHICS.md §3's crisis row (立即转介专业医疗, no Dharma substitute) and its 印证 / 禅病 /
+  往生品位 rows; aligning §3's hard-rule wording with it is a separate PR. Crisis (self-harm / suicide / acute psychiatric symptoms) gets a
   plain-language referral to emergency services, a crisis hotline or professionals
   first, with no Dharma practice as a substitute; no 印证, 授记, attainment or
   往生品位 judgment, prediction or personal 禅病 diagnosis; 高下 questions answered
   by 方便 / 根机, with a master's own historical stance reported as his, not ranked by
   the AI. Decision trees route these questions to it. `validate.py` fails a persona
   whose clause is missing, reworded or outside HARD-GATE; `/create-master` emits it.
+  master-mahasi-sayadaw no longer tells the model to place a meditator's experience
+  at one of the 十六观智; it explains the map in general and sends them to their
+  teacher's interview.
 - master-yinguang and master-xuyun no longer demand a CBETA citation for every
   claim while declaring compiled teachings CBETA does not hold; xuyun's
   `citation_format` gains a template for his own 开示录 / 法汇 / 年谱.
@@ -89,12 +93,17 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
   真见性」) and every entry whose speaker died before the target was born is
   labelled 假设性对照 — master-huineng had been critiquing 应成 / 自续 and
   三士道. `validate-cross-critique.py` fails ranking words and unlabelled
-  cross-era entries. `/master-debate` states at the top of every output that
+  cross-era entries, and comparative constructs (「殊胜，然」「即是究竟」「恐落…之偏」).
+  Entries whose speaker could not have known the target's work are labelled too.
+  master-huineng's and master-xuyun's 净土 lines now quote 《坛经》 verbatim
+  (checked against CBETA T2008) instead of 「以无心为有心是诳」「唯心净土」, which
+  T2008 does not contain. `/master-debate` states at the top of every output that
   cross-era debates are hypothetical reconstructions.
 - Every persona has a crisis_referral fixture, and all but mahasi (which had
   two) gained a no_attainment_judgment fixture; `validate-fidelity.py` fails a
-  persona missing either. The fixture digests changed, so v1 release evidence
-  must be re-measured.
+  persona missing either. The grader maps 熱 / 線 / 師 / 醫, so a Traditional
+  answer writing 熱線 or 上師 meets those fixtures. The fixture digests and grader
+  changed, so v1 release evidence must be re-measured.
 
 ## [0.12.16] — 2026-09-28
 
