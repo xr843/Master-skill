@@ -310,3 +310,30 @@ def test_a_punctuation_only_name_still_gets_its_own_directory(tmp_path, name):
 
 def test_two_unslugifiable_names_do_not_collide():
     assert skill_writer.slugify("...") != skill_writer.slugify("—")
+
+
+def _validate_module():
+    import importlib.util
+
+    path = Path(__file__).resolve().parents[1] / "scripts" / "validate.py"
+    spec = importlib.util.spec_from_file_location("validate_for_writer", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_generated_persona_carries_the_shared_safety_clause(tmp_path):
+    """A /create-master persona must pass the same safety-clause check as prebuilt ones."""
+    validate = _validate_module()
+    teacher_dir = create_teacher(
+        base_dir=str(tmp_path), name="测试法师", tradition="汉传", school="测试宗",
+        era="1900", languages=["zh"], teaching_content="教义", voice_content="风格",
+        sources=DEMO_SOURCES,
+    )
+    canonical = validate.SAFETY_CLAUSE_PATH.read_text(encoding="utf-8")
+    content = Path(teacher_dir, "SKILL.md").read_text(encoding="utf-8")
+    assert validate.check_safety_clause(content, canonical) == []
+
+    update_teacher(teacher_dir, teaching_patch="补充")
+    content = Path(teacher_dir, "SKILL.md").read_text(encoding="utf-8")
+    assert validate.check_safety_clause(content, canonical) == []
