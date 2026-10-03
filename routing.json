@@ -10,6 +10,23 @@
   "crisis": {
     "keywords": ["自杀", "轻生", "不想活", "活不下去", "想死", "寻死", "结束生命", "自残", "自伤", "割腕", "suicide", "suicidal", "kill myself", "end my life", "self-harm", "self harm", "want to die"]
   },
+  "_romanized_comment": "CLI-only query expansion for romanized / English Buddhist terms. Every keyword table is Chinese, so `recommend \"how do I practice nianfo\"` used to find nothing. A matched term (whole word, case-insensitive) appends its Chinese target to the query before any layer runs; master-help needs no copy, the model reads English itself. validate-routing.py requires every target to be a keyword somewhere (persona search_scope.keywords or a routing row), so an expansion can never point at nothing. Plain English words (meditate, anxiety) are deliberately absent: they are not terms of art and would make English look supported when it is not.",
+  "romanized": {
+    "nianfo": "念佛",
+    "pure land": "净土",
+    "amitabha": "阿弥陀佛",
+    "zen": "参禅",
+    "chan buddhism": "参禅",
+    "huatou": "话头",
+    "vipassana": "毗婆舍那",
+    "metta": "慈悲",
+    "lamrim": "道次第",
+    "madhyamaka": "中观",
+    "anapanasati": "出入息念",
+    "yogacara": "唯识",
+    "tiantai": "天台",
+    "huayan": "华严"
+  },
   "mode_rules": [
     {
       "mode": "master-curriculum",

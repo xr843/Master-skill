@@ -43,7 +43,7 @@ python3 ~/.claude/skills/create-master/tools/check_deps.py   # 复查，只用�
 
 **Q：`master-skill recommend` 为什么对英文问题不推荐？**
 
-`recommend` 按中文关键词匹配（外加少数英文模式词，如 compare / debate）。英文问题没有命中时，它会明说无法路由，而不是给一组默认祖师；请在对话里用 `/master-help` 直接描述你的情况。涉及轻生、自伤的表述，`recommend` 不推荐任何祖师，只给出危机求助渠道。
+`recommend` 按中文关键词匹配（外加少数英文模式词如 compare / debate，以及 nianfo / lamrim / huatou / vipassana 等常见罗马字术语）。英文问题没有命中时，它会明说无法路由，而不是给一组默认祖师；请在对话里用 `/master-help` 直接描述你的情况。涉及轻生、自伤的表述，`recommend` 不推荐任何祖师，只给出危机求助渠道。
 
 **Q：CBETA 引用格式是什么样的？来源如何验证？**
 

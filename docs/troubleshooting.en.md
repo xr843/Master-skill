@@ -43,7 +43,7 @@ Yes. Each prebuilt master ships `prebuilt/<name>/sources/` — key passages from
 
 **Q: Why does `master-skill recommend` not recommend anyone for an English question?**
 
-`recommend` matches Chinese keywords (plus a few English mode words such as compare / debate). When an English question hits none, it says so plainly instead of offering a default pair; describe your situation to `/master-help` in the chat instead. For statements about suicide or self-harm, `recommend` names no master and prints crisis-help contacts only.
+`recommend` matches Chinese keywords (plus a few English mode words such as compare / debate, and common romanized terms such as nianfo / lamrim / huatou / vipassana). When an English question hits none, it says so plainly instead of offering a default pair; describe your situation to `/master-help` in the chat instead. For statements about suicide or self-harm, `recommend` names no master and prints crisis-help contacts only.
 
 **Q: What does a valid CBETA citation look like, and how are sources verified?**
 

@@ -1574,33 +1574,42 @@ test("doctor warns, with the install command, when nothing is installed", (t) =>
   assert.match(run(["doctor"], installed.env).stdout, /Status: ok\n/);
 });
 
-test("frontmatter scalars are unquoted, including folded and escaped ones", (t) => {
+// Expected values are PyYAML's (yaml.safe_load) for the same frontmatter,
+// checked when these cases were written.
+const FRONTMATTER_CASES = {
+  a: ["description: 'single line, it''s quoted'", "single line, it's quoted"],
+  b: ["description: 'folded over\n  two lines'", "folded over two lines"],
+  c: ['description: "double \\"escaped\\"\n  and folded"', 'double "escaped" and folded'],
+  d: ["description: >\n  block folded\n  scalar", "block folded scalar\n"],
+  e: ["description: plain\n  continued", "plain continued"],
+  f: ["description: plain value # a comment", "plain value"],
+  g: ['description: "caf\\u00e9 \\x41 tab\\tend"', "café A tab\tend"],
+  h: ['description: "joined \\\n  here"', "joined here"],
+  i: ["description: |\n  top\n    indented\n  back", "top\n  indented\nback\n"],
+  j: ["description: |-\n  keep\n  lines", "keep\nlines"],
+  k: ["description: 'para one\n\n  para two'", "para one\npara two"],
+  l: ["description: >-\n  folded\n\n  para", "folded\npara"],
+  m: ["description: issue#5 stays", "issue#5 stays"],
+};
+
+test("frontmatter scalars follow YAML quoting, escapes, folding and comments", (t) => {
+  const ids = Object.keys(FRONTMATTER_CASES);
   const { cli } = catalogFixture(t, {
     version: 1,
-    skills: ["a", "b", "c", "d", "e"].map((x) => ({
+    skills: ids.map((x) => ({
       name: `mode-${x}`, kind: "teaching-mode", source: `prebuilt/mode-${x}`,
       install_dir: `mode-${x}`, aliases: [`mode-${x}`],
     })),
   }, (root) => {
-    const write = (x, body) => {
+    for (const [x, [body]] of Object.entries(FRONTMATTER_CASES)) {
       fs.mkdirSync(path.join(root, "prebuilt", `mode-${x}`), { recursive: true });
       fs.writeFileSync(path.join(root, "prebuilt", `mode-${x}`, "SKILL.md"), `---\nname: mode-${x}\n${body}\nversion: 1.0.0\n---\nbody\n`);
-    };
-    write("a", "description: 'single line, it''s quoted'");
-    write("b", "description: 'folded over\n  two lines'");
-    write("c", 'description: "double \\"escaped\\"\n  and folded"');
-    write("d", "description: >\n  block folded\n  scalar");
-    write("e", "description: plain\n  continued");
+    }
   });
   const payload = JSON.parse(run(["list", "--json"], {}, cli).stdout);
-  const byName = Object.fromEntries(payload.skills.map((s) => [s.name, s.description]));
-  assert.deepEqual(byName, {
-    "mode-a": "single line, it's quoted",
-    "mode-b": "folded over two lines",
-    "mode-c": 'double "escaped" and folded',
-    "mode-d": "block folded scalar",
-    "mode-e": "plain continued",
-  });
+  const got = Object.fromEntries(payload.skills.map((s) => [s.name, s.description]));
+  const want = Object.fromEntries(ids.map((x) => [`mode-${x}`, FRONTMATTER_CASES[x][1]]));
+  assert.deepEqual(got, want);
 });
 
 test("list shows people a display summary, not the model-facing trigger text", () => {
@@ -1672,7 +1681,8 @@ test("recommend never names a master for a crisis statement", () => {
       stdout.split("\n").some((line) => line.trim() === "· 其他国家和地区：https://findahelpline.com （美国可拨打或发短信 988）"),
       "crisis line link missing"
     );
-    assert.doesNotMatch(stdout, /\/master-/);
+    // The only master named is the trailing pointer for doctrinal questions.
+    assert.doesNotMatch(stdout.split("若你问的是教理")[0], /\/master-/);
   }
   // Crisis outranks a teaching-mode keyword in the same sentence.
   assert.equal(recommendJson("想死，入门该读什么").resolvedBy, "crisis");
@@ -1682,10 +1692,63 @@ test("recommend says plainly that an unmatched English query cannot be routed", 
   const data = recommendJson("how do I meditate");
   assert.equal(data.resolvedBy, "unmatched_non_chinese");
   assert.deepEqual(data.masters, []);
-  assert.equal(data.command, "/master-help");
+  // No command: master-help runs this itself, and "/master-help" would loop.
+  assert.equal(data.command, null);
+  assert.equal(data.kind, "none");
   const { stdout } = run(["recommend", "how do I meditate"]);
   assert.match(stdout, /Chinese keywords/);
   assert.match(stdout, /\/master-help/);
   // English that does hit a keyword still routes.
   assert.equal(recommendJson("compare Chan and Pure Land").mode, "compare-masters");
+});
+
+test("recommend expands romanized terms and matches English words whole", () => {
+  assert.deepEqual(recommendJson("how do I actually practice nianfo").masters.map((m) => m.name),
+    ["master-ouyi", "master-yinguang"]);
+  assert.equal(recommendJson("lamrim stages").masters[0].name, "master-atisha");
+  assert.equal(recommendJson("self-harmony in practice").resolvedBy, "unmatched_non_chinese",
+    "self-harm must not fire inside self-harmony");
+  assert.equal(recommendJson("zenith").resolvedBy, "unmatched_non_chinese");
+  assert.equal(recommendJson("thoughts of self-harm").resolvedBy, "crisis");
+});
+
+test("a doctrinal question about suicide gets the referral first, then a master to ask", () => {
+  const data = recommendJson("佛教怎么看自杀");
+  assert.equal(data.resolvedBy, "crisis");
+  assert.deepEqual(data.masters, []);
+  assert.equal(data.ifDoctrinal.command, "/master-buddhaghosa");
+  const out = run(["recommend", "佛教怎么看自杀"]).stdout;
+  assert.ok(out.indexOf("12356") < out.indexOf("/master-buddhaghosa"), "referral must come first");
+});
+
+test("every documented recommend example routes somewhere", () => {
+  const files = ["README.md", "README_EN.md", ...fs.readdirSync(path.join(REPO, "docs"))
+    .filter((f) => f.endsWith(".md")).map((f) => path.join("docs", f))];
+  const examples = new Set();
+  for (const file of files) {
+    const text = fs.readFileSync(path.join(REPO, file), "utf8");
+    for (const m of text.matchAll(/master-skill recommend "([^"<]+)"/g)) examples.add(m[1]);
+  }
+  for (const m of fs.readFileSync(CLI, "utf8").matchAll(/master-skill recommend "([^"<]+)"/g)) examples.add(m[1]);
+  assert.ok(examples.size >= 4, `found only ${examples.size} examples`);
+  for (const q of examples) {
+    const data = recommendJson(q);
+    assert.ok(!["unmatched_non_chinese", "default_pairing", "crisis"].includes(data.resolvedBy),
+      `documented example "${q}" resolved by ${data.resolvedBy}`);
+  }
+});
+
+test("the install hint names what was asked for, not a pulled-in dependency", (t) => {
+  const { env } = tmpHome(t);
+  const out = run(["install", "compare-masters"], env).stdout;
+  assert.match(out, /Call it in the chat: \/compare-masters/);
+  assert.doesNotMatch(out.split("Next")[1], /master-nagarjuna/);
+});
+
+test("did-you-mean catches transpositions and typos with --dry-run", () => {
+  assert.match(run(["lsit"]).stdout, /Did you mean: master-skill list\?/);
+  const typo = run(["instal", "--dry-run"]);
+  assert.equal(typo.code, 1);
+  assert.match(typo.stdout, /Did you mean: master-skill install\?/);
+  assert.match(run(["list", "--dry-run"]).stdout, /supported only for install\/update/);
 });

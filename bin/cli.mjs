@@ -316,20 +316,87 @@ function replaceSkillInstall(skill, src, dest) {
 }
 
 // YAML flow-scalar line folding: a single line break becomes a space, and each
-// empty line becomes one "\n".
-function foldLines(lines) {
+// empty line becomes one "\n". In a double-quoted scalar a line ending in an
+// unescaped backslash joins the next line with nothing in between.
+function foldLines(lines, { backslashJoins = false } = {}) {
   let out = "";
   let pendingBreaks = 0;
-  for (const line of lines.map((l) => l.trim())) {
-    if (!line) { pendingBreaks += 1; continue; }
-    if (out) out += pendingBreaks ? "\n".repeat(pendingBreaks) : " ";
+  let joinNext = false;
+  lines.forEach((rawLine, index) => {
+    let line = index === 0 ? rawLine.replace(/\s+$/, "") : rawLine.trim();
+    if (!line) { if (index > 0) pendingBreaks += 1; return; }
+    if (index > 0 && !joinNext) out += pendingBreaks ? "\n".repeat(pendingBreaks) : " ";
+    joinNext = false;
+    if (backslashJoins && /(^|[^\\])(\\\\)*\\$/.test(line)) {
+      line = line.slice(0, -1);
+      joinNext = true;
+    }
     out += line;
     pendingBreaks = 0;
+  });
+  return out;
+}
+
+const DOUBLE_QUOTE_ESCAPES = {
+  0: "\0", a: "\x07", b: "\b", t: "\t", "\t": "\t", n: "\n", v: "\v", f: "\f",
+  r: "\r", e: "\x1b", " ": " ", '"': '"', "/": "/", "\\": "\\",
+  N: "\u0085", _: " ", L: " ", P: " ",
+};
+const HEX_ESCAPE_LENGTH = { x: 2, u: 4, U: 8 };
+
+function unescapeDoubleQuoted(raw) {
+  let out = "";
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+    if (ch === '"') break;
+    if (ch !== "\\" || i + 1 >= raw.length) { out += ch; continue; }
+    const next = raw[++i];
+    const width = HEX_ESCAPE_LENGTH[next];
+    if (width) {
+      const hex = raw.slice(i + 1, i + 1 + width);
+      if (/^[0-9A-Fa-f]+$/.test(hex) && hex.length === width) {
+        out += String.fromCodePoint(parseInt(hex, 16));
+        i += width;
+        continue;
+      }
+    }
+    out += DOUBLE_QUOTE_ESCAPES[next] ?? next;
   }
   return out;
 }
 
-const DOUBLE_QUOTE_ESCAPES = { n: "\n", t: "\t", '"': '"', "\\": "\\", "/": "/", "0": "\0", " ": " " };
+// " #" starts a comment after a plain scalar; a "#" inside a word does not.
+function stripComment(line) {
+  if (/^\s*#/.test(line)) return "";
+  const at = line.search(/\s#/);
+  return at === -1 ? line : line.slice(0, at);
+}
+
+function blockScalar(indicator, continuation) {
+  const chomp = indicator.includes("-") ? "strip" : indicator.includes("+") ? "keep" : "clip";
+  const indent = Math.min(
+    ...continuation.filter((l) => l.trim()).map((l) => l.match(/^\s*/)[0].length),
+    Infinity
+  );
+  const body = continuation.map((l) => (l.trim() ? l.slice(indent === Infinity ? 0 : indent) : ""));
+  while (body.length && body[body.length - 1] === "" && chomp !== "keep") body.pop();
+  let text;
+  if (indicator[0] === "|") {
+    text = body.join("\n");
+  } else {
+    // Folded: lines join with a space unless empty or more indented.
+    text = "";
+    body.forEach((line, index) => {
+      if (index === 0) { text = line; return; }
+      const prev = body[index - 1];
+      if (line === "") text += "\n";
+      else if (prev === "") text += line;
+      else text += (/^\s/.test(line) || /^\s/.test(prev) ? "\n" : " ") + line;
+    });
+  }
+  if (!body.length) return "";
+  return chomp === "strip" ? text : text + "\n";
+}
 
 // Only top-level scalars are read — nested keys (sources:, etc.) are skipped.
 // Until 2026-10 every value was taken verbatim from its first line, so a
@@ -337,34 +404,23 @@ const DOUBLE_QUOTE_ESCAPES = { n: "\n", t: "\t", '"': '"', "\\": "\\", "/": "/",
 // still attached, and a folded continuation line was dropped.
 function parseScalar(first, continuation) {
   const quote = first[0];
-  if (quote === "'" || quote === '"') {
+  if (quote === "'") {
     const raw = foldLines([first.slice(1), ...continuation]);
-    if (quote === "'") {
-      // '' is the only escape in a single-quoted scalar.
-      let out = "";
-      for (let i = 0; i < raw.length; i++) {
-        if (raw[i] !== "'") out += raw[i];
-        else if (raw[i + 1] === "'") out += raw[++i];
-        else break;
-      }
-      return out;
-    }
+    // '' is the only escape in a single-quoted scalar.
     let out = "";
     for (let i = 0; i < raw.length; i++) {
-      const ch = raw[i];
-      if (ch === '"') break;
-      if (ch === "\\" && i + 1 < raw.length) {
-        const next = raw[++i];
-        out += DOUBLE_QUOTE_ESCAPES[next] ?? next;
-      } else out += ch;
+      if (raw[i] !== "'") out += raw[i];
+      else if (raw[i + 1] === "'") out += raw[++i];
+      else break;
     }
     return out;
   }
-  if (/^[|>][+-]?$/.test(first)) {
-    const body = continuation.map((l) => l.replace(/^\s+/, ""));
-    return (first[0] === "|" ? body.join("\n") : foldLines(continuation)).trim();
+  if (quote === '"') {
+    return unescapeDoubleQuoted(foldLines([first.slice(1), ...continuation], { backslashJoins: true }));
   }
-  return foldLines([first, ...continuation]);
+  const block = stripComment(first).trim();
+  if (/^[|>][+-]?$/.test(block)) return blockScalar(block, continuation);
+  return foldLines([stripComment(first), ...continuation.map(stripComment)]).trim();
 }
 
 function parseFrontmatter(filepath) {
@@ -467,7 +523,7 @@ function humanSummary(skill, description) {
       };
     }
   }
-  return { displayName: null, summary: skill.summary || description };
+  return { displayName: null, summary: (skill.summary || description).trim() };
 }
 
 function catalogSkills() {
@@ -485,18 +541,21 @@ function resolveSkill(input) {
   ) || null;
 }
 
+// Optimal string alignment distance: Levenshtein plus adjacent transposition
+// as one edit, so `lsit` is one typo away from `list`, not two.
 function editDistance(a, b) {
-  const prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  const d = Array.from({ length: a.length + 1 }, (_, i) =>
+    Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)));
   for (let i = 1; i <= a.length; i++) {
-    let diag = prev[0];
-    prev[0] = i;
     for (let j = 1; j <= b.length; j++) {
-      const above = prev[j];
-      prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, diag + (a[i - 1] === b[j - 1] ? 0 : 1));
-      diag = above;
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
     }
   }
-  return prev[b.length];
+  return d[a.length][b.length];
 }
 
 // Closest candidates within a typo's reach: 1 edit for short words, 2 from
@@ -710,7 +769,10 @@ function cmdInstall(names, { force = false, dryRun = false, hint = false } = {})
     if (deps && !deps.ok) console.log(`    ! ${deps.message}`);
     installed.push(skill);
   }
-  if (hint && installed.length) console.log(nextStepHint(installed));
+  // The example names what the user asked for, not a persona pulled in as a
+  // dependency (`install compare-masters` must not suggest /master-nagarjuna).
+  const asked = installed.filter((skill) => !neededBy.has(skill.name));
+  if (hint && installed.length) console.log(nextStepHint(asked.length ? asked : installed));
   return failed;
 }
 
@@ -1169,11 +1231,26 @@ function expandSlugs(slugs) {
   }));
 }
 
+// Chinese keywords match by containment (Chinese has no word boundaries).
+// An ASCII keyword must match a whole word, allowing a plain inflection:
+// "self-harm" must not fire inside "self-harmony", nor "zen" inside "zenith".
+function keywordHit(text, keyword) {
+  const kw = String(keyword).toLowerCase();
+  if (!/^[\x00-\x7f]+$/.test(kw)) return text.includes(kw);
+  const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![a-z0-9])${escaped}(?:s|es|d|ed|ing)?(?![a-z0-9])`).test(text);
+}
+
 function recommendData(query) {
   const routing = loadRouting();
-  const q = String(query).toLowerCase();
-  const hitsFor = (keywords) =>
-    keywords.filter((kw) => q.includes(String(kw).toLowerCase()));
+  const original = String(query).toLowerCase();
+  // Romanized terms (nianfo, lamrim …) expand to the Chinese keyword they
+  // stand for; see routing.json _romanized_comment.
+  const expanded = Object.entries(routing.romanized || {})
+    .filter(([term]) => keywordHit(original, term))
+    .map(([, target]) => target);
+  const q = expanded.length ? `${original} ${expanded.join(" ")}` : original;
+  const hitsFor = (keywords) => keywords.filter((kw) => keywordHit(q, kw));
 
   // Priority 0 — crisis. No master, no mode: a referral. Persona-level
   // crisis handling exists too, but the router must not hand someone in
@@ -1189,6 +1266,9 @@ function recommendData(query) {
       matched: crisisHits,
       note: "危机表述：不推荐祖师，请立即寻求专业帮助",
       masters: [],
+      // Erring on the safe side means an academic question (佛教怎么看自杀)
+      // also gets the referral first; this is where it can go afterwards.
+      ifDoctrinal: { name: "master-buddhaghosa", command: "/master-buddhaghosa", why: "上座部律藏注释：戒律与伦理" },
     };
   }
 
@@ -1279,15 +1359,20 @@ function recommendData(query) {
   // (plus a handful of English mode words), so for a query with no Han
   // character the default pairing says nothing about the question: say so
   // instead of presenting it as a recommendation.
+  //
+  // kind "none" carries no command on purpose: master-help itself runs this
+  // command, and a "/master-help" answer would send it back to itself. The
+  // caller decides — a person is told to ask /master-help in their own
+  // words; master-help asks the user a clarifying question instead.
   if (!/\p{Script=Han}/u.test(q)) {
     return {
       query,
       resolvedBy: "unmatched_non_chinese",
       kind: "none",
       mode: null,
-      command: "/master-help",
+      command: null,
       matched: [],
-      note: "Keyword matching is Chinese-based; ask /master-help in your own words instead",
+      note: "Keyword matching is Chinese-based; no route for this query",
       masters: [],
     };
   }
@@ -1333,6 +1418,10 @@ function cmdRecommend(query, { json = false } = {}) {
 
   if (data.kind === "crisis") {
     console.log(CRISIS_REFERRAL);
+    console.log(
+      `若你问的是教理或学术问题（例如佛教如何看待自杀），可在对话中直接请教一位祖师，` +
+        `如 ${data.ifDoctrinal.command}（${data.ifDoctrinal.why}），或用 /master-help 描述你的问题。\n`
+    );
     return 0;
   }
 
@@ -1434,7 +1523,10 @@ if (CATALOG) {
   const positionalArgs = args.filter((arg) => !["--json", "--force", "--dry-run"].includes(arg));
   const cmd = positionalArgs[0];
 
-  if (dryRun && !["install", "update"].includes(cmd)) {
+  // An unknown command (a typo such as `instal --dry-run`) falls through to
+  // the did-you-mean branch below rather than this refusal.
+  const knownOrFlag = !cmd || cmd.startsWith("-") || COMMANDS.includes(cmd);
+  if (dryRun && knownOrFlag && !["install", "update"].includes(cmd)) {
     console.error("--dry-run is supported only for install/update; no action taken.");
     process.exitCode = 1;
   } else if (!cmd || cmd === "--help" || cmd === "-h") {

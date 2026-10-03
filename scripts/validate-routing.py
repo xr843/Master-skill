@@ -38,6 +38,7 @@ Checks
   9. `crisis` (checked before every other layer) has a non-empty keyword
      list, and master-help's step 0 lists it verbatim
  10. a situation's optional `referral` flag is a boolean
+ 11. every `romanized` expansion targets an existing keyword
 
 Usage
 -----
@@ -198,6 +199,23 @@ def validate(root: Path = ROOT) -> list:
             isinstance(k, str) and k.strip() for k in kws
         ):
             problems.append("crisis: keywords must be a non-empty list of strings")
+    romanized = routing.get("romanized") or {}
+    if not isinstance(romanized, dict):
+        problems.append("romanized: must be an object of term -> Chinese keyword")
+        romanized = {}
+    all_keywords = {kw for section in (mode_rules, pairings, situations)
+                    for row in section for kw in row.get("keywords", [])}
+    for slug in personas:
+        meta = _read_json(PREBUILT / slug / "meta.json")
+        all_keywords |= set((meta.get("search_scope") or {}).get("keywords") or [])
+    for term, target in romanized.items():
+        if not (isinstance(term, str) and term.isascii() and term == term.lower() and term.strip()):
+            problems.append(f"romanized: {term!r} must be a lowercase ASCII term")
+        if target not in all_keywords:
+            problems.append(
+                f"romanized: {term!r} expands to {target!r}, which is no keyword in "
+                f"routing.json or any persona's search_scope.keywords"
+            )
     for row in situations:
         if "referral" in row and not isinstance(row["referral"], bool):
             problems.append(f"situations: {row.get('id')!r} referral must be true or false")

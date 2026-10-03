@@ -40,14 +40,21 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - `list` shows people a summary (persona name · tradition · school · era from
   `meta.json`; a catalog `summary` for teaching modes and the generator) instead
   of the model-facing "Use when…" text. `--json` adds `displayName` / `summary` and
-  keeps every existing field. The frontmatter reader now unquotes single- and
-  double-quoted scalars and folds continuation lines; three teaching-mode
-  descriptions had reached `list` with a leading `'`.
+  keeps every existing field. The frontmatter reader now follows YAML for quoted
+  scalars (escapes incl. `\uXXXX`, escaped line breaks), folding, `|` / `>` blocks
+  with chomping and indentation, and ` # comments`; three teaching-mode
+  descriptions had reached `list` with a leading `'`. Did-you-mean counts a
+  transposition as one edit and also answers `instal --dry-run`.
 - `recommend`: statements of suicide or self-harm (`自杀`, `不想活`, `kill myself`…)
   are checked first and get crisis-line referrals, never a master. New plain-language
   situations for anxiety / insomnia and grief carry a line pointing to professional
-  help. An English query that matches nothing now says matching is Chinese-keyword
-  based and points to `/master-help` instead of presenting the default pairing.
+  help; an academic question that trips the crisis check (佛教怎么看自杀) gets the
+  referral first, then a master to ask (`ifDoctrinal`). A small `romanized` table
+  expands nianfo / lamrim / huatou / vipassana … to their Chinese keywords, and
+  ASCII keywords match whole words (`self-harmony` no longer hits `self-harm`).
+  An English query that still matches nothing returns `kind: "none"` with no
+  command and says matching is Chinese-keyword based, instead of presenting the
+  default pairing; master-help handles `none` by asking a clarifying question.
   `master-help` mirrors the crisis step and new rows; `validate-routing.py` checks both.
 - SessionStart hook: Claude Code, which lists all 20 plugin skills to the model
   itself, now gets a 175-byte pointer to `/master-help` instead of the 1,548-byte
