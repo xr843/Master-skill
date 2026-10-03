@@ -138,7 +138,7 @@ def build_context(masters: list[tuple[str, str]]) -> str:
         f"{lines}"
         "  /master-help — not sure which master or mode? start here\n"
         "  /compare-masters — multi-tradition comparison\n"
-        "  /master-debate — 4-round adversarial dialectic between masters\n"
+        "  /master-debate — multi-round adversarial dialectic between masters (4 rounds by default, 5 for some pairs)\n"
         "  /master-curriculum — staged learning path within a tradition\n"
         "  /create-master — generate new master from FoJin knowledge graph\n"
         "\n"
@@ -148,6 +148,29 @@ def build_context(masters: list[tuple[str, str]]) -> str:
         # Buddhaghosa PTS, Ajahn Chah compiled teachings.
         + CITATION_LINE
     )
+
+
+# What Claude Code gets instead of build_context(). Claude Code registers all
+# 20 skills from .claude-plugin/plugin.json ("Skills (20)" in `claude plugin
+# details`, measured 2026-09-16 and again 2026-10-03), and puts every skill's
+# name and description in front of the model itself. The full list repeated
+# that at every startup / clear / compact: 1,548 UTF-8 bytes of context
+# (2,134 bytes of JSON) per session, measured 2026-10-03. This line is the one
+# thing the host's own list does not say.
+#
+# Cursor keeps the full list: its manifest points only at ./prebuilt/, so
+# create-master is announced nowhere else, and its skill discovery has never
+# been measured here. Hosts we cannot identify keep it for the same reason.
+CLAUDE_POINTER = (
+    "Master-skill plugin loaded: Buddhist master persona skills (/master-<name>) and "
+    "teaching modes are in your skill list. If the user is unsure whom to ask, "
+    "suggest /master-help."
+)
+
+
+def is_claude_code(env: dict) -> bool:
+    return bool(env.get("CLAUDE_PLUGIN_ROOT")) and not env.get("COPILOT_CLI") \
+        and not env.get("CURSOR_PLUGIN_ROOT")
 
 
 def wrap_for_host(context: str, env: dict) -> dict:
@@ -177,7 +200,10 @@ def main(argv: list[str]) -> int:
         return 0
 
     plugin_root = Path(argv[0]) if argv else Path(__file__).resolve().parent.parent
-    context = build_context(collect_masters(plugin_root))
+    if is_claude_code(os.environ):
+        context = CLAUDE_POINTER
+    else:
+        context = build_context(collect_masters(plugin_root))
     # ensure_ascii=True (the default), NOT False. The payload carries an em
     # dash in its static text and CJK in every lineage; on a non-UTF-8 stdout
     # — a Windows console code page reached through run-hook.cmd, or

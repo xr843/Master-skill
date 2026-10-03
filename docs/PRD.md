@@ -1,5 +1,7 @@
 # Master-skill Product Requirements
 
+> **Status (2026-10-03): historical.** This PRD records the 2026-07-09 v1.0 framework alignment and is no longer kept up to date. The current plan is [v1-framework-roadmap.md](v1-framework-roadmap.md); current behaviour is documented in [architecture.en.md](architecture.en.md), [install.en.md](install.en.md) and the [CHANGELOG](../CHANGELOG.md). Where they disagree with this file, they win (for example, the shipped fidelity minimum is 5 cases per master, not 10, and fojin.app/chat offers single-master conversation only).
+
 **Version**: 1.0 framework alignment  
 **Updated**: 2026-07-09  
 **Project**: Master-skill  

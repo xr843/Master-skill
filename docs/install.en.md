@@ -176,7 +176,7 @@ In any AgentSkills-compatible environment (Claude Code / Cursor / Codex CLI / Op
 ### Teaching Modes (v0.7)
 
 - **`/compare-masters`** — multiple masters answer the same question side-by-side (horizontal, single-turn)
-- **`/master-debate`** — masters from different traditions engage in a 4-round adversarial dialectic (claim → rebut → respond → synthesize + remaining disagreements)
+- **`/master-debate`** — masters from different traditions engage in a multi-round adversarial dialectic (claim → rebut → respond → synthesize + remaining disagreements; 4 rounds by default, 5 for `huineng-vs-tsongkhapa` and `ouyi-vs-tsongkhapa`)
 - **`/master-curriculum`** — given your target tradition and current level (L0-L3), get a time-sequenced study path (foundation → intermediate → advanced + likely blind spots)
 
 **`/compare-masters` usage examples:**

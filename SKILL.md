@@ -55,7 +55,7 @@ allowed-tools:
 ## 教学模式（多祖师协作）
 
 - `/compare-masters` — 多位法师对同一问题的并列对比（横向 / 单轮）
-- `/master-debate` — 祖师就争议议题进行 4 轮交叉辩论（多轮 / 看分歧）
+- `/master-debate` — 祖师就争议议题进行多轮交叉辩论（默认 4 轮，部分配对 5 轮；看分歧）
 - `/master-curriculum` — 按你的传统给出"根基→深入→精研→盲点"学修路径（纵向时序）
 
 > 选择哪个模式？读 `references/teaching-modes.md`（含决策树与示例）。

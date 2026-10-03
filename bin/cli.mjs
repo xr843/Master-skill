@@ -90,6 +90,9 @@ function loadCatalog() {
     if (!Array.isArray(skill.aliases)) {
       invalidCatalog(`skills[${index}].aliases must be an array`);
     }
+    if (skill.summary !== undefined && (typeof skill.summary !== "string" || !skill.summary.trim())) {
+      invalidCatalog(`skills[${index}].summary must be a non-empty string`);
+    }
 
     for (const field of Object.keys(uniqueFields)) {
       if (uniqueFields[field].has(skill[field])) {
@@ -312,6 +315,114 @@ function replaceSkillInstall(skill, src, dest) {
   }
 }
 
+// YAML flow-scalar line folding: a single line break becomes a space, and each
+// empty line becomes one "\n". In a double-quoted scalar a line ending in an
+// unescaped backslash joins the next line with nothing in between.
+function foldLines(lines, { backslashJoins = false } = {}) {
+  let out = "";
+  let pendingBreaks = 0;
+  let joinNext = false;
+  lines.forEach((rawLine, index) => {
+    let line = index === 0 ? rawLine.replace(/\s+$/, "") : rawLine.trim();
+    if (!line) { if (index > 0) pendingBreaks += 1; return; }
+    if (index > 0 && !joinNext) out += pendingBreaks ? "\n".repeat(pendingBreaks) : " ";
+    joinNext = false;
+    if (backslashJoins && /(^|[^\\])(\\\\)*\\$/.test(line)) {
+      line = line.slice(0, -1);
+      joinNext = true;
+    }
+    out += line;
+    pendingBreaks = 0;
+  });
+  return out;
+}
+
+const DOUBLE_QUOTE_ESCAPES = {
+  0: "\0", a: "\x07", b: "\b", t: "\t", "\t": "\t", n: "\n", v: "\v", f: "\f",
+  r: "\r", e: "\x1b", " ": " ", '"': '"', "/": "/", "\\": "\\",
+  N: "\u0085", _: " ", L: " ", P: " ",
+};
+const HEX_ESCAPE_LENGTH = { x: 2, u: 4, U: 8 };
+
+function unescapeDoubleQuoted(raw) {
+  let out = "";
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+    if (ch === '"') break;
+    if (ch !== "\\" || i + 1 >= raw.length) { out += ch; continue; }
+    const next = raw[++i];
+    const width = HEX_ESCAPE_LENGTH[next];
+    if (width) {
+      const hex = raw.slice(i + 1, i + 1 + width);
+      if (/^[0-9A-Fa-f]+$/.test(hex) && hex.length === width) {
+        out += String.fromCodePoint(parseInt(hex, 16));
+        i += width;
+        continue;
+      }
+    }
+    out += DOUBLE_QUOTE_ESCAPES[next] ?? next;
+  }
+  return out;
+}
+
+// " #" starts a comment after a plain scalar; a "#" inside a word does not.
+function stripComment(line) {
+  if (/^\s*#/.test(line)) return "";
+  const at = line.search(/\s#/);
+  return at === -1 ? line : line.slice(0, at);
+}
+
+function blockScalar(indicator, continuation) {
+  const chomp = indicator.includes("-") ? "strip" : indicator.includes("+") ? "keep" : "clip";
+  const indent = Math.min(
+    ...continuation.filter((l) => l.trim()).map((l) => l.match(/^\s*/)[0].length),
+    Infinity
+  );
+  const body = continuation.map((l) => (l.trim() ? l.slice(indent === Infinity ? 0 : indent) : ""));
+  while (body.length && body[body.length - 1] === "" && chomp !== "keep") body.pop();
+  let text;
+  if (indicator[0] === "|") {
+    text = body.join("\n");
+  } else {
+    // Folded: lines join with a space unless empty or more indented.
+    text = "";
+    body.forEach((line, index) => {
+      if (index === 0) { text = line; return; }
+      const prev = body[index - 1];
+      if (line === "") text += "\n";
+      else if (prev === "") text += line;
+      else text += (/^\s/.test(line) || /^\s/.test(prev) ? "\n" : " ") + line;
+    });
+  }
+  if (!body.length) return "";
+  return chomp === "strip" ? text : text + "\n";
+}
+
+// Only top-level scalars are read — nested keys (sources:, etc.) are skipped.
+// Until 2026-10 every value was taken verbatim from its first line, so a
+// single-quoted description reached `list` as "'Use when …" with the quote
+// still attached, and a folded continuation line was dropped.
+function parseScalar(first, continuation) {
+  const quote = first[0];
+  if (quote === "'") {
+    const raw = foldLines([first.slice(1), ...continuation]);
+    // '' is the only escape in a single-quoted scalar.
+    let out = "";
+    for (let i = 0; i < raw.length; i++) {
+      if (raw[i] !== "'") out += raw[i];
+      else if (raw[i + 1] === "'") out += raw[++i];
+      else break;
+    }
+    return out;
+  }
+  if (quote === '"') {
+    return unescapeDoubleQuoted(foldLines([first.slice(1), ...continuation], { backslashJoins: true }));
+  }
+  const block = stripComment(first).trim();
+  if (/^[|>][+-]?$/.test(block)) return blockScalar(block, continuation);
+  return foldLines([stripComment(first), ...continuation.map(stripComment)]).trim();
+}
+
 function parseFrontmatter(filepath) {
   // \r?\n: a CRLF checkout (git autocrlf on Windows) must not blank out
   // every description.
@@ -319,11 +430,20 @@ function parseFrontmatter(filepath) {
   const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!m) return {};
   const fm = {};
-  for (const line of m[1].split(/\r?\n/)) {
+  const lines = m[1].split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const idx = line.indexOf(":");
-    if (idx > 0 && !line.startsWith(" ") && !line.startsWith("-")) {
-      fm[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+    if (idx <= 0 || /^[\s-]/.test(line)) continue;
+    const first = line.slice(idx + 1).trim();
+    const continuation = [];
+    while (i + 1 < lines.length && (/^\s/.test(lines[i + 1]) || lines[i + 1] === "")) {
+      continuation.push(lines[++i]);
     }
+    // A key with nothing after the colon opens a nested block (sources:),
+    // which is not a scalar this reader understands.
+    if (!first) continue;
+    fm[line.slice(0, idx).trim()] = parseScalar(first, continuation);
   }
   return fm;
 }
@@ -382,11 +502,36 @@ try {
   process.exitCode = 1;
 }
 
+// What a person reads in `list`. The frontmatter description is written for
+// the model's skill router ("Use when user asks about …"), so it is the last
+// resort: a persona shows its meta.json name, tradition, school and era (the
+// fields `inspect` prints), a teaching mode or the generator its catalog
+// summary.
+function humanSummary(skill, description) {
+  if (skill.kind === "persona") {
+    const metaPath = path.join(PACKAGE_ROOT, skill.source, "meta.json");
+    let meta = {};
+    try {
+      if (fs.existsSync(metaPath)) meta = readJson(metaPath);
+    } catch {
+      meta = {};
+    }
+    if (meta.name) {
+      return {
+        displayName: meta.name,
+        summary: [meta.name, meta.tradition, meta.school, meta.era].filter(Boolean).join(" · "),
+      };
+    }
+  }
+  return { displayName: null, summary: (skill.summary || description).trim() };
+}
+
 function catalogSkills() {
   return CATALOG.skills.map((skill) => {
     const skillMd = path.join(PACKAGE_ROOT, skill.source, "SKILL.md");
     const fm = fs.existsSync(skillMd) ? parseFrontmatter(skillMd) : {};
-    return { ...skill, description: fm.description || "" };
+    const description = fm.description || "";
+    return { ...skill, description, ...humanSummary(skill, description) };
   });
 }
 
@@ -394,6 +539,48 @@ function resolveSkill(input) {
   return catalogSkills().find(
     (skill) => skill.name === input || skill.aliases.includes(input)
   ) || null;
+}
+
+// Optimal string alignment distance: Levenshtein plus adjacent transposition
+// as one edit, so `lsit` is one typo away from `list`, not two.
+function editDistance(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) =>
+    Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)));
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+  }
+  return d[a.length][b.length];
+}
+
+// Closest candidates within a typo's reach: 1 edit for short words, 2 from
+// five characters, never so many that an unrelated name qualifies.
+function didYouMean(input, candidates) {
+  const needle = String(input).toLowerCase();
+  const limit = needle.length >= 5 ? 2 : 1;
+  return [...new Set(candidates)]
+    .map((candidate) => ({ candidate, d: editDistance(needle, candidate.toLowerCase()) }))
+    .filter(({ d }) => d > 0 && d <= limit)
+    .sort((a, b) => a.d - b.d || a.candidate.localeCompare(b.candidate))
+    .slice(0, 3)
+    .map(({ candidate }) => candidate);
+}
+
+// Every public skill token: the short alias a person types (huineng) as well
+// as the canonical name.
+function skillNameCandidates() {
+  return CATALOG.skills.flatMap((skill) => [skill.name, ...skill.aliases]);
+}
+
+function notFoundLine(name, where) {
+  const near = didYouMean(name, skillNameCandidates());
+  const hint = near.length ? ` — did you mean ${near.join(", ")}?` : " — run: master-skill list";
+  return `  ✗ ${name} — not found in ${where}${hint}`;
 }
 
 // --- commands ---
@@ -409,17 +596,26 @@ function listData() {
     count: masters.length,
     skillCount: skills.length,
     categoryCounts,
-    skills: skills.map(({ name, kind, install_dir, description }) => ({
+    // displayName / summary were added after 0.12.16; every earlier field keeps
+    // its meaning (description is still the raw frontmatter text).
+    skills: skills.map(({ name, kind, install_dir, description, displayName, summary }) => ({
       name,
       kind,
       installDir: install_dir,
       description,
+      displayName,
+      summary,
     })),
-    masters: masters.map((m) => ({
-      name: m.name,
-      slug: m.name.replace(/^master-/, ""),
-      description: m.description,
-    })),
+    masters: masters.map((m) => {
+      const skill = skills.find((entry) => entry.install_dir === m.name);
+      return {
+        name: m.name,
+        slug: m.name.replace(/^master-/, ""),
+        description: m.description,
+        displayName: skill?.displayName ?? null,
+        summary: skill?.summary ?? m.description,
+      };
+    }),
   };
 }
 
@@ -446,12 +642,13 @@ function cmdList({ json = false } = {}) {
     const group = skills.filter((skill) => skill.kind === kind);
     console.log(`\n${label} (${group.length}):`);
     for (const skill of group) {
-      const desc = skill.description.length > 80
-        ? skill.description.slice(0, 77) + "..."
-        : skill.description;
+      const text = skill.summary || "";
+      const desc = [...text].length > 80 ? [...text].slice(0, 77).join("") + "..." : text;
       console.log(`  ${skill.name.padEnd(nameW)}  ${desc}`);
     }
   }
+  console.log(`\nInstall: npx master-skill install <name...>  (or --all)`);
+  console.log(`Not sure whom to ask? npx master-skill recommend "<your question>"`);
   console.log();
 }
 
@@ -496,8 +693,25 @@ function generatorDependencies(generatorDir) {
   }
 }
 
-function cmdInstall(names, { force = false, dryRun = false } = {}) {
+// Printed once after a real install. The CLI writes only ~/.claude/skills/,
+// so the hosts it can speak for are the two that read that directory.
+function nextStepHint(installed) {
+  const has = (name) => installed.some((skill) => skill.name === name);
+  const persona = installed.find((skill) => skill.kind === "persona");
+  const example = persona ? `/${persona.name}` : installed[0] && `/${installed[0].name}`;
+  const lines = ["", "Next (Claude Code / OpenCode):", "  1. Open a new session if a session that was already running does not list the new skills."];
+  if (has("master-help")) {
+    lines.push(`  2. Type /master-help if you are not sure whom to ask${example && example !== "/master-help" ? `, or call one directly: ${example}` : ""}.`);
+  } else {
+    lines.push(`  2. Call it in the chat: ${example}`);
+  }
+  lines.push("  Codex CLI and Gemini CLI do not read ~/.claude/skills/ — see https://github.com/xr843/Master-skill/blob/main/docs/install.md.");
+  return lines.join("\n");
+}
+
+function cmdInstall(names, { force = false, dryRun = false, hint = false } = {}) {
   let failed = 0;
+  const installed = [];
   // A teaching mode that reads every persona (`requires: all-personas`) pulls
   // in the ones that are missing. Only the missing ones: a persona already
   // installed may carry the user's own edits, and re-installing it as a side
@@ -531,7 +745,7 @@ function cmdInstall(names, { force = false, dryRun = false } = {}) {
     }
     const skill = resolveSkill(name);
     if (!skill) {
-      console.log(`  ✗ ${name} — not found in skill catalog`);
+      console.log(notFoundLine(name, "skill catalog"));
       failed++;
       continue;
     }
@@ -553,7 +767,12 @@ function cmdInstall(names, { force = false, dryRun = false } = {}) {
     const why = neededBy.has(name) ? ` (needed by ${neededBy.get(name)})` : "";
     console.log(`  ✓ ${name} → ${dest}${why}`);
     if (deps && !deps.ok) console.log(`    ! ${deps.message}`);
+    installed.push(skill);
   }
+  // The example names what the user asked for, not a persona pulled in as a
+  // dependency (`install compare-masters` must not suggest /master-nagarjuna).
+  const asked = installed.filter((skill) => !neededBy.has(skill.name));
+  if (hint && installed.length) console.log(nextStepHint(asked.length ? asked : installed));
   return failed;
 }
 
@@ -610,7 +829,7 @@ function cmdUninstall(names, { force = false } = {}) {
     }
     const skill = resolveSkill(name);
     if (!skill) {
-      console.log(`  ✗ ${name} — not found in skill catalog`);
+      console.log(notFoundLine(name, "skill catalog"));
       failed++;
       continue;
     }
@@ -808,8 +1027,15 @@ function doctorData() {
     // and create-master, so a clean `install --all` reported two foreign
     // directories, both of them ours.
     otherInstalledSkillDirs: installed.length - installedCatalog.length,
+    // `status` stays a problems gate (exit code, desktop runtime_ok): having
+    // nothing installed yet is not broken, but it is the one state in which a
+    // first-time user most needs the next command, so it is a warning.
     status: problems.length ? "problems" : "ok",
     problems,
+    warnings: installedCatalog.length ? [] : [{
+      code: "nothing-installed",
+      message: `No master-skill skills are installed in ${SKILLS_DIR} — run: npx master-skill install --all (or install <name>; see: npx master-skill list)`,
+    }],
   };
 }
 
@@ -836,6 +1062,12 @@ function cmdDoctor({ json = false } = {}) {
     return 1;
   }
 
+  if (data.warnings.length) {
+    console.log(`\nWarnings:`);
+    for (const warning of data.warnings) console.log(`  ! ${warning.message}`);
+    console.log(`\nStatus: ok, ${data.warnings.length} warning(s)`);
+    return 0;
+  }
   console.log(`\nStatus: ok`);
   return 0;
 }
@@ -879,7 +1111,7 @@ function cmdInspect(name, { json = false } = {}) {
 
   const data = inspectData(name);
   if (!data) {
-    console.log(`  ✗ ${name} — not found in prebuilt/ (tried "${name}" and "master-${name}")`);
+    console.log(notFoundLine(name, `prebuilt/ (tried "${name}" and "master-${name}")`));
     return 1;
   }
 
@@ -999,11 +1231,46 @@ function expandSlugs(slugs) {
   }));
 }
 
+// Chinese keywords match by containment (Chinese has no word boundaries).
+// An ASCII keyword must match a whole word, allowing a plain inflection:
+// "self-harm" must not fire inside "self-harmony", nor "zen" inside "zenith".
+function keywordHit(text, keyword) {
+  const kw = String(keyword).toLowerCase();
+  if (!/^[\x00-\x7f]+$/.test(kw)) return text.includes(kw);
+  const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![a-z0-9])${escaped}(?:s|es|d|ed|ing)?(?![a-z0-9])`).test(text);
+}
+
 function recommendData(query) {
   const routing = loadRouting();
-  const q = String(query).toLowerCase();
-  const hitsFor = (keywords) =>
-    keywords.filter((kw) => q.includes(String(kw).toLowerCase()));
+  const original = String(query).toLowerCase();
+  // Romanized terms (nianfo, lamrim …) expand to the Chinese keyword they
+  // stand for; see routing.json _romanized_comment.
+  const expanded = Object.entries(routing.romanized || {})
+    .filter(([term]) => keywordHit(original, term))
+    .map(([, target]) => target);
+  const q = expanded.length ? `${original} ${expanded.join(" ")}` : original;
+  const hitsFor = (keywords) => keywords.filter((kw) => keywordHit(q, kw));
+
+  // Priority 0 — crisis. No master, no mode: a referral. Persona-level
+  // crisis handling exists too, but the router must not hand someone in
+  // danger a doctrinal recommendation in the first place.
+  const crisisHits = hitsFor(routing.crisis?.keywords || []);
+  if (crisisHits.length) {
+    return {
+      query,
+      resolvedBy: "crisis",
+      kind: "crisis",
+      mode: null,
+      command: null,
+      matched: crisisHits,
+      note: "危机表述：不推荐祖师，请立即寻求专业帮助",
+      masters: [],
+      // Erring on the safe side means an academic question (佛教怎么看自杀)
+      // also gets the referral first; this is where it can go afterwards.
+      ifDoctrinal: { name: "master-buddhaghosa", command: "/master-buddhaghosa", why: "上座部律藏注释：戒律与伦理" },
+    };
+  }
 
   // Priority 1 — teaching mode, short-circuited in declared order.
   for (const rule of [...routing.mode_rules].sort((a, b) => a.order - b.order)) {
@@ -1068,6 +1335,7 @@ function recommendData(query) {
       command: null,
       matched: situation.matched,
       note: situation.row.note || null,
+      referral: situation.row.referral === true,
       masters: expandSlugs(situation.row.masters),
     };
   }
@@ -1087,7 +1355,27 @@ function recommendData(query) {
     };
   }
 
-  // Priority 5 — nothing matched at all.
+  // Priority 5 — nothing matched at all. Every keyword table is Chinese
+  // (plus a handful of English mode words), so for a query with no Han
+  // character the default pairing says nothing about the question: say so
+  // instead of presenting it as a recommendation.
+  //
+  // kind "none" carries no command on purpose: master-help itself runs this
+  // command, and a "/master-help" answer would send it back to itself. The
+  // caller decides — a person is told to ask /master-help in their own
+  // words; master-help asks the user a clarifying question instead.
+  if (!/\p{Script=Han}/u.test(q)) {
+    return {
+      query,
+      resolvedBy: "unmatched_non_chinese",
+      kind: "none",
+      mode: null,
+      command: null,
+      matched: [],
+      note: "Keyword matching is Chinese-based; no route for this query",
+      masters: [],
+    };
+  }
   return {
     query,
     resolvedBy: "default_pairing",
@@ -1100,6 +1388,21 @@ function recommendData(query) {
   };
 }
 
+// Kept in the CLI rather than routing.json: it is output text, not routing
+// data, and it must not depend on a data file being well-formed.
+const CRISIS_REFERRAL = `
+你提到的情况可能意味着你正处在危险或很深的痛苦中。这里不推荐祖师——请先联系能当面帮助你的人：
+
+  · 有立即危险：拨打 110 / 120（中国大陆），或当地急救电话
+  · 中国大陆心理援助热线：12356
+  · 其他国家和地区：https://findahelpline.com （美国可拨打或发短信 988）
+  · 也请告诉一位你信任的家人、朋友或老师
+
+If you are thinking about suicide or self-harm, please contact your local
+emergency number or a crisis line now (US: call or text 988; elsewhere:
+https://findahelpline.com). You do not have to go through this alone.
+`;
+
 function cmdRecommend(query, { json = false } = {}) {
   if (!query || !String(query).trim()) {
     console.log('Usage: master-skill recommend "<你的问题或状况>"');
@@ -1110,6 +1413,25 @@ function cmdRecommend(query, { json = false } = {}) {
 
   if (json) {
     printJson(data);
+    return 0;
+  }
+
+  if (data.kind === "crisis") {
+    console.log(CRISIS_REFERRAL);
+    console.log(
+      `若你问的是教理或学术问题（例如佛教如何看待自杀），可在对话中直接请教一位祖师，` +
+        `如 ${data.ifDoctrinal.command}（${data.ifDoctrinal.why}），或用 /master-help 描述你的问题。\n`
+    );
+    return 0;
+  }
+
+  if (data.kind === "none") {
+    console.log(
+      `\nNo match. recommend matches Chinese keywords (e.g. "念佛怎么念", "禅宗从哪开始学"),` +
+        `\nso an English question cannot be routed here.` +
+        `\nInstead, ask /master-help in your chat in your own words — it reads the question itself.` +
+        `\nOr browse everything: npx master-skill list\n`
+    );
     return 0;
   }
 
@@ -1132,7 +1454,10 @@ function cmdRecommend(query, { json = false } = {}) {
     console.log(`  ${m.command}  [${m.tradition}]  ${why}`);
   }
   if (data.resolvedBy === "default_pairing") {
-    console.log(`\n  没有明确命中，给的是通用入门配对。`);
+    console.log(`\n  没有明确命中，给的是通用入门配对。也可以在对话里用 /master-help 直接描述你的情况。`);
+  }
+  if (data.referral) {
+    console.log(`\n  若这种状态持续、影响睡眠饮食或日常生活，请同时寻求医生或心理咨询师的专业帮助；祖师的开示不能代替它。`);
   }
   console.log(
     `\n（想看多位祖师并列 → /compare-masters；想看对辩 → /master-debate；` +
@@ -1188,6 +1513,8 @@ Examples:
 
 // --- main ---
 
+const COMMANDS = ["install", "update", "list", "inspect", "recommend", "doctor", "uninstall"];
+
 if (CATALOG) {
   const args = process.argv.slice(2);
   const json = args.includes("--json");
@@ -1196,7 +1523,10 @@ if (CATALOG) {
   const positionalArgs = args.filter((arg) => !["--json", "--force", "--dry-run"].includes(arg));
   const cmd = positionalArgs[0];
 
-  if (dryRun && !["install", "update"].includes(cmd)) {
+  // An unknown command (a typo such as `instal --dry-run`) falls through to
+  // the did-you-mean branch below rather than this refusal.
+  const knownOrFlag = !cmd || cmd.startsWith("-") || COMMANDS.includes(cmd);
+  if (dryRun && knownOrFlag && !["install", "update"].includes(cmd)) {
     console.error("--dry-run is supported only for install/update; no action taken.");
     process.exitCode = 1;
   } else if (!cmd || cmd === "--help" || cmd === "-h") {
@@ -1216,12 +1546,12 @@ if (CATALOG) {
   } else if (cmd === "install") {
     const rest = positionalArgs.slice(1);
     if (rest.includes("--all")) {
-      if (cmdInstallAll("Installing", { force, dryRun }) > 0) process.exitCode = 1;
+      if (cmdInstallAll("Installing", { force, dryRun, hint: true }) > 0) process.exitCode = 1;
     } else if (rest.length === 0) {
       console.log("Usage: master-skill install <name...> | --all");
       process.exitCode = 1;
     } else {
-      if (cmdInstall(rest, { force, dryRun }) > 0) process.exitCode = 1;
+      if (cmdInstall(rest, { force, dryRun, hint: true }) > 0) process.exitCode = 1;
     }
   } else if (cmd === "update") {
     const rest = positionalArgs.slice(1);
@@ -1240,7 +1570,9 @@ if (CATALOG) {
       if (cmdUninstall(rest, { force }) > 0) process.exitCode = 1;
     }
   } else {
-    console.log(`Unknown command: ${cmd}\nRun master-skill --help for usage.`);
+    const near = didYouMean(cmd, COMMANDS);
+    const hint = near.length ? `\nDid you mean: master-skill ${near.join(" | ")}?` : "";
+    console.log(`Unknown command: ${cmd}${hint}\nRun master-skill --help for usage.`);
     process.exitCode = 1;
   }
 }

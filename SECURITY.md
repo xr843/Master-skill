@@ -63,6 +63,13 @@ Master-skill 作为 AgentSkill 插件 + NPX CLI，主要关注以下安全面：
 - `bin/cli.mjs` (`npx master-skill install`) 的目录操作是否存在路径穿越
 - 安装到 `~/.claude/skills/` 时的符号链接注入
 
+**安装器的威胁模型（防什么、不防什么）**
+
+安装加固防的是**意外**与**用户自己的数据**，不是已在本机的攻击者：
+
+- **防**：技能名路径穿越（`isSafeName` 拒绝 `/`、`..`）；技能目录里的 FIFO、设备等非普通文件让安装或 `doctor` 卡死（以 `O_NONBLOCK` 打开、对同一描述符 `fstat`，非普通文件一律视为本地修改，不读取）；用户改过的已安装文件被悄悄覆盖（安装记录 + 哈希比对，发现修改即停，`--force` 才替换）；替换中途失败留下半个安装（先 staging 再改名，失败回滚，回滚失败则保留备份并给出路径）；`uninstall create-master` 连带删除用户生成的 persona（默认拒绝）。
+- **明确不在范围内**：已经能写入用户 skills 目录（`~/.claude/skills/` 及其父目录）的攻击者。这样的进程本来就能直接改写任何 `SKILL.md`、往模型上下文里注入任意内容，安装器在检查与改名之间的竞态窗口不会给它任何新能力。因此**不再为这类 TOCTOU / 竞态条件追加加固**；报告此类问题时请说明它在上述前提之外还能取得什么。
+
 ### 5. **Religious-Boundary Violation via Adversarial Input**
 
 - 特别 crafted 的用户问题使法师角色逾越 [`ETHICS.md`](ETHICS.md) §3 的禁止行为

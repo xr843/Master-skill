@@ -54,19 +54,27 @@ PLUGIN_ROOT="$(cd "$SCRIPT_DIR/.." 2>/dev/null && pwd)" || PLUGIN_ROOT=""
 # any stdout encoding, and wrapped in the shape THIS host reads — the earlier
 # literal hardcoded the top-level `additionalContext` key, which Claude Code
 # does not read at all, making it exactly the `{}` it was meant to replace.
-MODES_JSON='"Master-skill plugin loaded.\n  /master-help \u2014 not sure which master or mode? start here\n  /compare-masters \u2014 multi-tradition comparison\n  /master-debate \u2014 4-round adversarial dialectic between masters\n  /master-curriculum \u2014 staged learning path within a tradition\n  /create-master \u2014 generate new master from FoJin knowledge graph"'
+MODES_JSON='"Master-skill plugin loaded.\n  /master-help \u2014 not sure which master or mode? start here\n  /compare-masters \u2014 multi-tradition comparison\n  /master-debate \u2014 multi-round adversarial dialectic between masters (4 rounds by default, 5 for some pairs)\n  /master-curriculum \u2014 staged learning path within a tradition\n  /create-master \u2014 generate new master from FoJin knowledge graph"'
+# Claude Code lists every plugin skill to the model itself, so it gets only a
+# pointer (same text as CLAUDE_POINTER in session_start.py) — and since that
+# is static, it needs neither python nor session_start.py.
+POINTER_JSON='"Master-skill plugin loaded: Buddhist master persona skills (/master-<name>) and teaching modes are in your skill list. If the user is unsure whom to ask, suggest /master-help."'
 
 emit_modes_only() {
     [ -n "${1:-}" ] && echo "master-skill session-start: $1; listing modes only" >&2
     if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
         printf '{"additional_context": %s}\n' "$MODES_JSON"
-    elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -z "${COPILOT_CLI:-}" ]; then
-        # hookEventName is required; without it Claude Code rejects the payload.
-        printf '{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": %s}}\n' "$MODES_JSON"
     else
         printf '{"additionalContext": %s}\n' "$MODES_JSON"
     fi
 }
+
+# Claude Code: the pointer is static, so answer before looking for python at
+# all — no interpreter start on a blocking hook, and nothing left to fail.
+if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -z "${COPILOT_CLI:-}" ] && [ -z "${CURSOR_PLUGIN_ROOT:-}" ]; then
+    printf '{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": %s}}\n' "$POINTER_JSON"
+    exit 0
+fi
 
 # Find an interpreter that actually runs. On Windows `python3` is a Microsoft
 # Store alias stub: it exists, so `command -v python3` succeeds, and running it

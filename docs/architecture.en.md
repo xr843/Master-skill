@@ -8,7 +8,7 @@
 User request
     |
     v
-session-start hook ──> injects master list (when loaded as a Claude Code / Cursor plugin; Gemini CLI never fires it, see install.en.md)
+session-start hook ──> Claude Code plugin: a one-line pointer (the host lists the skills itself); Cursor plugin: the full master list; Gemini CLI never fires it, see install.en.md
     |
     v
 SKILL.md (AgentSkills entry: decision tree + quick reference)

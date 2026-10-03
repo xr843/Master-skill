@@ -33,13 +33,19 @@ verified_at: 2026-07-20
 master-skill recommend "<用户原话>" --json
 ```
 
-能跑就跑它，把结果转述给用户；跑不了再按下面的顺序人工走一遍。
+能跑就跑它，把结果转述给用户；跑不了再按下面的顺序人工走一遍。按 `kind` 处理：
+
+- `teaching-mode` / `persona`：转述 `command` 或 `masters`，然后停手。
+- `crisis`：只做第 0 步的转介（急救 / 心理危机热线 / 身边可信的人），**不推荐祖师**。只有当用户明确表示这是教理或学术问题（如「佛教如何看待自杀」）时，才在转介之后提一句可去问 `ifDoctrinal` 给出的祖师。
+- `none`（英文或无任何命中，`command` 为空）：**不要**回答「请用 /master-help」——你就是 /master-help。直接问用户一个澄清问题（想了解哪个传统？是修行方法、经典义理，还是眼下的某种状态？），或对照下方「状况层」表请用户选一行；用户用英文提问时，你可以自己理解问题再按下面的顺序走。
 
 ## 路由顺序（短路，不可乱序）
 
 与 `routing.json.mode_rules` 的 `order` 一致：
 
 ```
+0. 命中「自杀 / 轻生 / 不想活 / 活不下去 / 想死 / 寻死 / 结束生命 / 自残 / 自伤 / 割腕 / suicide / suicidal / kill myself / end my life / self-harm / self harm / want to die」
+     → 不推荐任何祖师或模式：温和回应，请对方立即联系当地急救 / 心理危机热线或身边可信的人（ETHICS.md：危机转介专业帮助，不以佛法替代）
 1. 命中「学习计划 / 学修次第 / 入门 / 先学什么 / 从哪开始 / 开始学 / 应该读 / 下一步读什么 / 路径推荐 / 按什么顺序 / curriculum / roadmap」
      → /master-curriculum
 2. 命中「辩论 / 各执一词 / 谁更对 / 高下 / 之争 / 之辩 / 分判 / debate」
@@ -70,6 +76,8 @@ master-skill recommend "<用户原话>" --json
 | 看不懂 / 读不懂 / 理不清 / 没有逻辑 | master-xuanzang | 唯识严密分析 |
 | 无力感 / 使不上力 / 没有进步 / 学佛很久 / 提不起劲 | master-yinguang | 老实念佛 |
 | 最朴素 / 朴素 / 最简单的修法 | master-ajahn-chah | 南传森林禅 · 出入息念 |
+| 焦虑 / 睡不着 / 失眠 / 压力大 / 紧张不安 / 烦躁 | master-ajahn-chah + master-mahasi-sayadaw + master-zhiyi | 正念观察 / 标记法 / 止观调心（另附一句：持续影响生活请先看医生或心理专业人员） |
+| 去世 / 过世 / 离世 / 丧亲 / 失去亲人 / 悲伤 / 伤心 / 难过 | master-ajahn-chah + master-yinguang | 观无常与放下 / 为亡者念佛回向（同样附专业求助一句） |
 
 ## 主题配对（第 6 步）与兜底（第 7 步）
 
