@@ -3,9 +3,16 @@ version: 2
 # Dependabot keeps our supply chain fresh:
 #   - github-actions: bumps the SHA-pinned actions in .github/workflows/.
 #     Dependabot writes the new SHA + a comment with the new version.
-#   - npm:            bumps the (currently empty) package.json deps + the
-#     globally-pinned promptfoo@<ver> in persona-fidelity.yml.
-#   - pip:            bumps requirements.txt (Python validators).
+#   - npm (/):        the root package.json, which has no dependencies today;
+#     kept so the first one added is watched from day one.
+#   - npm (/.github/promptfoo): the promptfoo CLI persona-fidelity.yml installs
+#     globally. Dependabot cannot see a version written inside a workflow
+#     `run:` line, so the pin lives in that directory's package.json and the
+#     workflow reads it from there. (Until 2026-10 the workflow comment claimed
+#     the root npm entry bumped it; with no manifest naming promptfoo, nothing
+#     ever did.)
+#   - pip:            bumps requirements.txt (Python validators),
+#     requirements-eval.txt (eval SDKs) and requirements-dev.txt (pytest).
 #   - cargo:          bumps desktop/Cargo.toml + Cargo.lock (408 crates behind
 #     eframe/egui). This was the ecosystem NOT covered until 2026-09-06 — and
 #     the only one whose output is an executable users download and run
@@ -56,6 +63,21 @@ updates:
       time: "08:00"
       timezone: "Asia/Shanghai"
     open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "npm"
+    directory: "/.github/promptfoo"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 2
     labels:
       - "dependencies"
       - "npm"

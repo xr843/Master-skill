@@ -28,15 +28,22 @@
 只有自己的单元测试"。两次都不是代码写错，是**没接线**，而绿灯看起来一模一样。
 
 **反过来也一样：CI 在 PR 上跑什么，`npm test` 就得跑什么。** 它是本文档叫你推送前跑的
-那条命令，存在的意义就是「避免在 CI 才发现」；一旦它比 CI 弱，本地绿、CI 红。要么写进
-`npm test`，要么登记进 `NOT_IN_NPM_TEST` 并写明理由（目前四条：三个评测工具链辅助脚本
-需要 `requirements-eval.txt`，以及 `check-audit-ignores.py` 要拿 cargo-audit 的 JSON 当
-参数、没有 Rust 工具链时裸跑只会以 usage 退出 2）。同样双向校验。
+那条命令，存在的意义就是「避免在 CI 才发现」；一旦它比 CI 弱，本地绿、CI 红。
 
-注意它比的是**命令**而非可达性：`npm test` 跑的是命令，所以 `verify_citations.py` 这类
-"被每个 PR 跑的脚本 import、但从不作为命令出现"的模块不该被拉进来。
+2026-10 起两边共用**一份清单**：`scripts/run-gates.py` 里的 `GATES`。`npm test` 就是
+`python3 scripts/run-gates.py`（跑全部默认门禁），CI 的 validate job 每一步用
+`--only <组>` 跑其中一组；`--list` 打印整张表，每道门禁都报耗时，一道失败不会中断后面的，
+最后汇总全部失败并以非零退出。在此之前 `package.json` 的 20 条 `&&` 链和 CI 各写一份，
+两份已经漂开：`validate-promptfoo-configs.py` 只在 `npm test` 里，hook 测试只在 CI 里。
 
-还有一条连带规矩：**往 `npm test` 里加门禁，就得同时在
+新加门禁就加进 `GATES`，选好组（validate job 已经按组调用，通常不用改 workflow）。
+`check-gate-liveness.py` 双向守住接线：`scripts/` 下每个带 `main` 的脚本要么登记进
+`GATES`，要么写进 `NOT_IN_GATE_REGISTRY` / `NOT_A_PR_GATE` 并说明理由；`GATES` 里每道
+门禁都必须被某个 `on: pull_request` 的 workflow 选中；`npm test` 不得再写成第二份清单。
+不进默认运行的门禁（目前只有 `eval-sdk` 组，它要装 `requirements-eval.txt`）在
+`not_default` 里写明理由，CI 照跑。
+
+还有一条连带规矩：**往 `GATES` 的默认运行里加门禁，就得同时在
 `scripts/tests/test_gates_actually_fire.py` 里给它写一个破坏性用例**，证明它真会红；
 `test_every_gate_in_npm_test_has_a_case_here` 会卡住漏写的。变异要瞄准该门禁自己声明的
 契约——写之前先在真实树上跑一遍，确认它把退出码从 0 变成非零，否则你添的是一个"因错误
@@ -71,7 +78,8 @@ cd Master-skill
 # Python（用于 validate / fidelity / verify-links）
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-pip install -r requirements-eval.txt  # 仅 fidelity 实跑需要（钉版的 anthropic / openai / pytest；**需 Python ≥ 3.10**，两个 SDK 的地板）
+pip install -r requirements-dev.txt   # pytest —— 跑 `npm test` 需要
+pip install -r requirements-eval.txt  # 仅 fidelity 实跑 / eval-sdk 组需要（钉版的 anthropic / openai；**需 Python ≥ 3.10**，两个 SDK 的地板）
 
 # Node（用于 npx installer）
 # 需要 Node.js >= 18
@@ -124,9 +132,10 @@ ANTHROPIC_API_KEY=sk-... python scripts/test-fidelity.py --master master-zhiyi -
 python -m pytest tests/ scripts/tests/ -q
 ```
 
-`npm test` 会把上面这些（除需要 API key 的实跑）串起来跑一遍，**包括 Python 单测**——
-CI 一直单独跑 `pytest`，直到 2026-09-03 本地 `npm test` 才补上这一步；改
-`scripts/**` 前先跑一次，避免在 CI 才发现单测崩了。
+`npm test`（即 `python3 scripts/run-gates.py`）会把上面这些（除需要 API key 的实跑）连同
+hook 测试、CLI 测试一起跑一遍，**包括 Python 单测**——CI 一直单独跑 `pytest`，直到
+2026-09-03 本地 `npm test` 才补上这一步；改 `scripts/**` 前先跑一次，避免在 CI 才发现单测崩了。
+只想跑一部分：`python3 scripts/run-gates.py --only content`（组名或门禁名，`--list` 看全表）。
 
 ---
 
@@ -523,8 +532,8 @@ v0.8 在 `meta.json` 引入 `lore_triggers`，让 runtime 在用户提问命中 
 | 生态 | 监控目标 |
 |------|---------|
 | `github-actions` | `.github/workflows/*.yml` 中所有 SHA-pin 的 actions |
-| `npm` | `package.json` 依赖 + workflow 中 `npm install -g promptfoo@<ver>` |
-| `pip` | `requirements.txt` + `requirements-eval.txt`（validate / fidelity 工具链） |
+| `npm` | 根 `package.json`（目前无依赖）+ `.github/promptfoo/package.json`（`persona-fidelity.yml` 全局安装的 promptfoo 版本从这里读；写在 workflow 里的版本号 Dependabot 看不见） |
+| `pip` | `requirements.txt` + `requirements-eval.txt` + `requirements-dev.txt`（validate / fidelity 工具链 / pytest） |
 | `cargo` | `desktop/Cargo.lock`（408 个 crate；桌面版是**唯一**下载即执行的产物） |
 
 ### ⚠️ `anthropic` / `openai` 的升级 PR：绿灯不算数

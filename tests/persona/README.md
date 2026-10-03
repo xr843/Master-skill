@@ -28,3 +28,8 @@ Automatic keyed CI keeps the original three representative personas; all 15
 configs are validated on every run. A paid all-persona sweep requires a manual
 workflow dispatch with `full_suite=true`, after reviewing its budget. Expanding
 configuration coverage does not automatically expand paid CI scope.
+
+There is no scheduled run. A weekly cron used to run the workflow with no key
+configured and conclude success having evaluated nothing. On a pull request a
+missing key still skips the paid stage (forks never have one); a manual
+dispatch without the key fails, and a failing rubric fails the job.

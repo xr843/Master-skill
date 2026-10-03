@@ -50,12 +50,11 @@ on:
   # admin override. The validate job is pure structural validation (~9s, no
   # API calls); running it on every PR is cheap.
   pull_request:
+  # Manual only. A weekly cron used to start the full fidelity sweep, but the
+  # repo has no ANTHROPIC_API_KEY, so every Monday it logged
+  # `skipped: no_api_key` and went green having graded nothing. A paid sweep is
+  # now something a person starts on purpose, and it fails without the key.
   workflow_dispatch:
-  schedule:
-    # Weekly full fidelity sweep — Mondays 04:00 UTC. Per-PR CI only runs a
-    # 1-fixture smoke; this is the only run that grades all 160+ fixtures and
-    # catches regressions the smoke rotation would take 15 weeks to surface.
-    - cron: '0 4 * * 1'
 
 # Least privilege: this workflow only reads the repo and runs tests. No job
 # needs to write contents, issues, or PRs. Pinning it here (rather than relying
@@ -76,9 +75,9 @@ permissions:
 #
 # `cancel-in-progress: false` on main does NOT mean main runs independently —
 # it means they QUEUE, and GitHub cancels a *pending* run when a newer one
-# queues behind it. A merge landing while the Monday sweep holds the group can
-# therefore still be dropped. main is given its own per-run group instead, so
-# merges never contend at all.
+# queues behind it. A merge landing while a 60-minute manual sweep holds the
+# group could therefore still be dropped. main is given its own per-run group
+# instead, so merges never contend at all.
 concurrency:
   group: >-
     ${{ github.workflow }}-${{
@@ -120,123 +119,50 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             requirements-eval.txt
+            requirements-dev.txt
 
       - name: Install dependencies
         # -r requirements.txt, not a hardcoded list — otherwise dependabot
-        # bumps to the version bounds never reach CI.
-        run: pip install -r requirements.txt -r requirements-eval.txt
+        # bumps to the version bounds never reach CI. requirements-eval.txt is
+        # here only for the keyless eval-SDK smoke; pytest comes from
+        # requirements-dev.txt.
+        run: pip install -r requirements.txt -r requirements-eval.txt -r requirements-dev.txt
+
+      # Every gate below comes from the one list in scripts/run-gates.py; each
+      # step runs one group of it. `npm test` is a bare run of the same list, so
+      # the two can no longer drift apart (they did: validate-promptfoo-configs
+      # ran only locally, the hook tests only here). check-gate-liveness.py fails
+      # if a registered gate is selected by no PR workflow, or an entry script is
+      # neither registered nor declared exempt. `--list` prints the registry.
 
       # The grading path never runs here — no key — so an anthropic/openai bump
       # used to arrive green having exercised nothing. check-eval-sdk-surface.py
       # reads signatures; smoke-eval-sdk.py sends a real request through
       # test-fidelity.py to a local server and checks the reply is parsed,
-      # graded and audited. No key, no network, no cost. `--break` makes the
-      # server drop the answer text and must fail: a smoke that cannot go red
-      # is a green tick, not a check.
+      # graded and audited. No key, no network, no cost. Its `--break` self-test
+      # makes the server drop the answer text and is registered as must-fail: a
+      # smoke that cannot go red is a green tick, not a check.
       - name: Eval SDK smoke (keyless, local server)
-        run: |
-          python scripts/check-eval-sdk-surface.py
-          python scripts/smoke-eval-sdk.py
-          if python scripts/smoke-eval-sdk.py --break; then
-            echo "::error::smoke-eval-sdk.py --break exited 0 — the smoke cannot detect a broken reply"
-            exit 1
-          fi
+        run: python scripts/run-gates.py --only eval-sdk
 
-      - name: Lint SKILL.md frontmatter (includes v0.8 persona-fidelity sub-check)
-        run: python scripts/validate.py --strict
+      # SKILL.md frontmatter, fidelity / persona schemas, citation contracts and
+      # references, quote attribution, section pointers, fixture terms,
+      # adjudications, routing, promptfoo configs, manifest versions — and gate
+      # liveness, which asserts every gate examined a non-empty set.
+      - name: Content gates (validators + gate liveness)
+        run: python scripts/run-gates.py --only content
 
-      - name: Validate fidelity.jsonl structure
-        run: python scripts/validate-fidelity.py
-
-      - name: Validate persona-fidelity schema (v0.8) — explicit
-        run: python scripts/validate-persona-fidelity.py
-
-      - name: Validate citation contracts
-        run: python scripts/validate-citation-contract.py
-
-      # A persona must not instruct a citation its own contract forbids.
-      # validate-citation-contract.py checks meta.json's fields and never reads
-      # SKILL.md — which is how master-tsongkhapa shipped an instruction to cite
-      # Toh 3861 while declaring five sources that do not include it.
-      - name: Validate citation references (SKILL.md / sources / references)
-        run: python scripts/validate-citation-references.py
-
-      # 3h/3i ask whether a quoted line exists in CBETA or in the compiled
-      # teachings; neither asks whether the reader is told which book it came
-      # from. master-nagarjuna's 「宁起我见积若须弥」 is real text, findable in
-      # CBETA, and not his — it is in 《大宝积经》. Offline, so every PR runs it.
-      - name: Validate quote attribution (every quoted line names its work)
-        run: python scripts/validate-quote-attribution.py
-
-      # Persona routing says 读 `references/teaching.md` §参话头 and the model
-      # follows it literally. 18 of 198 such pointers named a section the file
-      # does not have — master-milarepa sent 拙火 questions to a section its
-      # excerpt file deliberately omits. Offline; runs in well under a second.
-      - name: Validate section references (every "read file §section" lands)
-        run: python scripts/validate-section-references.py
-
-      # Both of these existed, were unit-tested, and ran nowhere on a PR: they
-      # appeared only inside `npm test`, which only npm-publish.yml runs, and that
-      # fires on `release: published`. A gate whose first real execution is the
-      # release itself has never guarded a change. Measured 2026-09-16; they cost
-      # 0.0s and 0.1s.
-      - name: Validate citation templates
-        run: python scripts/validate-citation-templates.py
-
-      - name: Validate self-audit sources
-        run: python scripts/validate-self-audit-sources.py
-
-      # A requirement may only be declared undecidable (`must_convey`) if a
-      # committed adjudication ruled it an instrument artifact on real evidence.
-      # Otherwise moving an inconvenient check there turns a red build green.
-      - name: Validate fixture terms
-        run: python scripts/validate-fixture-terms.py
-
-      # A committed adjudication must prove it read the answers it ruled on:
-      # every verdict carries a quote, and the quote must still be in the
-      # stored response. The headline numbers are recomputed from the verdicts
-      # rather than trusted as typed.
-      - name: Verify fidelity adjudications
-        run: python scripts/verify-adjudication.py
-
-      - name: Validate cross_critique schema
-        run: python scripts/validate-cross-critique.py
-
-      - name: Check platform manifest version consistency (v0.8 — hard gate)
-        run: python scripts/check-manifest-versions.py
-
-      - name: Validate lore_triggers content (v0.8 — hard gate)
-        run: python scripts/validate-lore-triggers-content.py --strict
-
-      # Enforces that routing.json keyword sets stay pairwise disjoint. The
-      # pairing table this replaced shipped three collisions (戒律, 道次第,
-      # 中观/空性), which made a match depend on iteration order.
-      - name: Validate routing table (v0.11 — hard gate)
-        run: python scripts/validate-routing.py
-
-      # Three shipped defects were the same shape: a gate examined an empty set
-      # and reported success (pytest.ini testpaths overridden so neither suite
-      # ran the other's cases; test_voice_rules.py parametrized over an empty
-      # glob; the fidelity smoke exiting 0 after grading nothing). A passing
-      # check is indistinguishable from one that did nothing unless something
-      # asserts otherwise — that is what this step is.
-      - name: Check gate liveness (every gate examined a non-empty set)
-        run: python scripts/check-gate-liveness.py
-
-      - name: Test session-start hook lineage sanitization
-        run: bash hooks/tests/test_session_start.sh
-
-      - name: Test run-hook wrapper dispatch (bash + POSIX sh)
-        run: bash hooks/tests/test_run_hook.sh
+      - name: Hook tests (session-start sanitization, run-hook via bash + POSIX sh)
+        run: python scripts/run-gates.py --only hooks
 
       - name: Run Python tests
-        run: python -m pytest tests/ scripts/tests/ -v
+        run: python scripts/run-gates.py --only python-tests
 
       - name: Dry-run fidelity tests
-        run: python scripts/test-fidelity.py --all --dry-run
+        run: python scripts/run-gates.py --only dry-run
 
       - name: Run CLI tests
-        run: node --test tests/cli.test.mjs
+        run: python scripts/run-gates.py --only cli-tests
 
   python-compat:
     name: Generator compatibility (Python 3.9)
@@ -259,6 +185,7 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             requirements-eval.txt
+            requirements-dev.txt
 
       - name: Install generator dependencies
         run: python -m pip install -r requirements.txt
@@ -266,6 +193,7 @@ jobs:
       - name: Run Python 3.9 generator smoke
         run: |
           python -m compileall -q tools scripts
+          python scripts/run-gates.py --list
           python tools/check_deps.py
           TMP_DIR="$(mktemp -d)"
           trap 'rm -rf "$TMP_DIR"' EXIT
@@ -303,18 +231,21 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             requirements-eval.txt
+            requirements-dev.txt
 
       - name: Install generator dependencies
         run: python -m pip install -r requirements.txt
 
       - name: Run CLI tests
-        run: node --test tests/cli.test.mjs
+        run: python scripts/run-gates.py --only cli-tests
 
       # The Unix job runs the same wrapper through bash and sh; only here can
-      # the cmd.exe half execute at all.
+      # the cmd.exe half execute at all. `shell: bash` puts Git bash first on
+      # PATH, which is the bash run-gates.py resolves (it never lets Windows
+      # fall back to System32's WSL launcher).
       - name: Test run-hook wrapper exit codes (cmd.exe)
         shell: bash
-        run: bash hooks/tests/test_run_hook_cmd.sh
+        run: python scripts/run-gates.py --only hooks-cmd
 
   desktop-rust:
     name: Desktop Rust tests
@@ -403,9 +334,12 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             requirements-eval.txt
+            requirements-dev.txt
 
       - name: Install dependencies
-        run: pip install -r requirements.txt -r requirements-eval.txt
+        # requirements-dev.txt for pytest: check-gate-liveness.py, run on any
+        # graded report, collects the test suite.
+        run: pip install -r requirements.txt -r requirements-eval.txt -r requirements-dev.txt
 
       - name: Pick smoke target
         id: pick
@@ -515,10 +449,12 @@ jobs:
           if-no-files-found: ignore
 
   fidelity-full:
-    name: Fidelity tests — full suite (weekly + manual)
+    name: Fidelity tests — full suite (manual)
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    # Not a required check, so the name can say what it is. Only a person
+    # starts this run, and nobody dispatches a paid sweep to watch it skip.
+    if: github.event_name == 'workflow_dispatch'
     needs: validate
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -531,28 +467,23 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             requirements-eval.txt
+            requirements-dev.txt
 
       - name: Install dependencies
-        run: pip install -r requirements.txt -r requirements-eval.txt
+        # requirements-dev.txt for pytest: check-gate-liveness.py, run on any
+        # graded report, collects the test suite.
+        run: pip install -r requirements.txt -r requirements-eval.txt -r requirements-dev.txt
 
       - name: Run fidelity tests
+        # No advisory branch: this job runs only when someone dispatches it, so
+        # a missing key is a misconfiguration, not a fork. The weekly cron that
+        # used to log `skipped: no_api_key` and go green has been removed.
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          FIDELITY_GRADING_REQUIRED: ${{ vars.FIDELITY_GRADING_REQUIRED }}
         run: |
           if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-            if [ "${FIDELITY_GRADING_REQUIRED:-}" = "true" ]; then
-              echo "::error::FIDELITY_GRADING_REQUIRED=true but ANTHROPIC_API_KEY is unset — the weekly sweep must not pass without grading."
-              exit 1
-            fi
-            echo "::warning::ANTHROPIC_API_KEY not configured — full fidelity sweep is advisory (structural validation in the validate job still gates)."
-            echo '{"skipped": true, "reason": "no_api_key"}' > fidelity-results.json
-            {
-              echo "### Fidelity grading skipped — this green tick graded nothing"
-              echo
-              echo "ANTHROPIC_API_KEY is not configured; deterministic validation ran, but **no model response was graded**."
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 0
+            echo "::error::ANTHROPIC_API_KEY is not configured — a manually dispatched full sweep must grade, not skip. Add the secret (and budget the run) first."
+            exit 1
           fi
           set +e
           python scripts/test-fidelity.py --all --json > fidelity-results.json

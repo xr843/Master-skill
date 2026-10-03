@@ -74,21 +74,132 @@ def test_workflow_has_no_softened_steps():
             )
 
 
+def _gate_registry():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_run_gates_for_workflow_test", ROOT / "scripts" / "run-gates.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 @pytest.mark.parametrize(
-    ("step_name", "command"),
+    ("step_name", "gate_name", "argv"),
     [
-        ("Run Python tests", "python -m pytest tests/ scripts/tests/ -v"),
-        ("Validate citation contracts", "python scripts/validate-citation-contract.py"),
+        ("Run Python tests", "pytest", ("-m", "pytest", "tests/", "scripts/tests/")),
         (
-            "Validate lore_triggers content (v0.8 — hard gate)",
-            "python scripts/validate-lore-triggers-content.py --strict",
+            "Content gates (validators + gate liveness)",
+            "validate-citation-contract",
+            ("scripts/validate-citation-contract.py",),
+        ),
+        (
+            "Content gates (validators + gate liveness)",
+            "validate-lore-triggers-content",
+            ("scripts/validate-lore-triggers-content.py", "--strict"),
+        ),
+        (
+            "Content gates (validators + gate liveness)",
+            "validate-promptfoo-configs",
+            ("scripts/validate-promptfoo-configs.py",),
+        ),
+        (
+            "Hook tests (session-start sanitization, run-hook via bash + POSIX sh)",
+            "test-run-hook",
+            ("hooks/tests/test_run_hook.sh",),
         ),
     ],
 )
-def test_validate_job_contains_hard_gate_commands(step_name: str, command: str):
+def test_validate_job_contains_hard_gate_commands(step_name: str, gate_name: str, argv):
+    """The command lives in scripts/run-gates.py; the step must select its group."""
+    registry = _gate_registry()
+    gate = next(g for g in registry.GATES if g.name == gate_name)
+    assert all(token in gate.argv for token in argv), gate.argv
+    assert not gate.expect_failure
     step = _step(WORKFLOW, "validate", step_name)
-    assert step.get("run") == command
+    assert step.get("run") == f"python scripts/run-gates.py --only {gate.group}"
     _assert_hard(step)
+
+
+def test_every_validate_step_that_runs_gates_names_a_real_group():
+    registry = _gate_registry()
+    groups = set(registry.groups())
+    runs = [
+        step["run"] for step in _job(WORKFLOW, "validate")["steps"]
+        if "run-gates.py" in str(step.get("run", ""))
+    ]
+    assert runs, "the validate job runs no gates from the registry"
+    for run in runs:
+        selected = run.split("--only", 1)[1].split()
+        assert set(selected) <= groups, run
+
+
+def test_paid_eval_workflows_have_no_schedule():
+    """A cron with no key configured is a weekly green tick that graded nothing.
+
+    Both workflows ran on a Monday cron, both skipped grading for want of
+    ANTHROPIC_API_KEY, and both concluded success. Paid runs are dispatched by a
+    person now; this keeps a schedule from quietly coming back.
+    """
+    for name in ("validate-and-test.yml", "persona-fidelity.yml"):
+        doc = yaml.safe_load(
+            (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
+        )
+        triggers = doc.get("on") or doc.get(True)
+        assert "schedule" not in triggers, f"{name} has a schedule trigger again"
+        assert "workflow_dispatch" in triggers, f"{name} lost its manual trigger"
+
+
+def test_the_manual_full_sweep_fails_without_a_key():
+    job = _job(WORKFLOW, "fidelity-full")
+    assert job.get("if") == "github.event_name == 'workflow_dispatch'"
+    assert job.get("needs") == "validate"
+    script = _step(WORKFLOW, "fidelity-full", "Run fidelity tests")["run"]
+    import re
+
+    missing = re.split(r"\n\s*fi\b", script.split('if [ -z "${ANTHROPIC_API_KEY:-}" ]; then', 1)[1])[0]
+    assert "exit 1" in missing
+    assert "exit 0" not in script, "a dispatched paid sweep must not have a pass-without-grading path"
+    assert "skipped" not in script
+
+
+def test_persona_eval_fails_on_dispatch_without_key_and_never_swallows_failures():
+    import re
+
+    persona = yaml.safe_load(
+        (ROOT / ".github" / "workflows" / "persona-fidelity.yml").read_text(encoding="utf-8")
+    )
+    steps = {s.get("name"): s for s in persona["jobs"]["fidelity"]["steps"]}
+    detect = steps["Detect ANTHROPIC_API_KEY"]["run"]
+    missing = detect.split('if [ -z "${ANTHROPIC_API_KEY:-}" ]; then', 1)[1]
+    dispatch = missing.split('= "workflow_dispatch"', 1)
+    assert len(dispatch) == 2, "a dispatched run must be distinguished from a PR"
+    assert "exit 1" in re.split(r"\n\s*fi\b", dispatch[1])[0]
+    evaluate = steps["Run llm-rubric eval"]["run"]
+    assert "|| true" not in evaluate
+    assert "exit 1" in evaluate
+    assert steps["Run llm-rubric eval"].get("shell") == "bash"
+
+
+def test_promptfoo_version_comes_from_a_manifest_dependabot_watches():
+    import json
+    import re
+
+    text = (ROOT / ".github" / "workflows" / "persona-fidelity.yml").read_text(encoding="utf-8")
+    assert not re.search(r"promptfoo@\d", text), (
+        "a version written inside a workflow run line is invisible to Dependabot"
+    )
+    manifest = json.loads(
+        (ROOT / ".github" / "promptfoo" / "package.json").read_text(encoding="utf-8")
+    )
+    assert re.fullmatch(r"\d+\.\d+\.\d+", manifest["devDependencies"]["promptfoo"])
+    assert ".github/promptfoo/package.json" in text
+    dependabot = yaml.safe_load((ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8"))
+    assert any(
+        u["package-ecosystem"] == "npm" and u["directory"] == "/.github/promptfoo"
+        for u in dependabot["updates"]
+    )
 
 
 def test_validate_job_lints_workflows_with_verified_pinned_actionlint():
@@ -386,8 +497,9 @@ def test_smoke_git_diff_failure_is_not_masked(tmp_path: Path):
 @pytest.mark.parametrize(
     ("job_name", "step_name"),
     [
+        # fidelity-full has no advisory branch any more: it runs only when
+        # dispatched and fails without a key (test_the_manual_full_sweep_fails_without_a_key).
         ("fidelity-smoke", "Run fidelity smoke"),
-        ("fidelity-full", "Run fidelity tests"),
     ],
 )
 def test_each_fidelity_no_key_branch_records_step_summary(job_name: str, step_name: str):
@@ -409,7 +521,6 @@ def test_each_fidelity_no_key_branch_records_step_summary(job_name: str, step_na
     ("job_name", "step_name"),
     [
         ("fidelity-smoke", "Run fidelity smoke"),
-        ("fidelity-full", "Run fidelity tests"),
     ],
 )
 def test_each_fidelity_no_key_branch_can_be_promoted_to_a_hard_gate(
@@ -473,14 +584,14 @@ def test_concurrency_never_lets_one_merge_cancel_another():
     """`cancel-in-progress: false` does not make main runs independent.
 
     It makes them QUEUE, and GitHub cancels a *pending* run when a newer one
-    queues behind it — so a merge landing while the Monday 60-minute sweep
-    holds the group could be dropped outright, which is the opposite of what
+    queues behind it — so a merge landing while a 60-minute sweep (the Monday
+    cron then, a manual dispatch now) holds the group could be dropped outright, which is the opposite of what
     the first version of this comment asserted. main gets a per-run group.
     """
     group = WORKFLOW["concurrency"]["group"]
     assert "github.run_id" in group, (
         "main needs a per-run group; a shared non-cancelling group queues "
-        "merges behind the cron and drops the pending one"
+        "merges behind a long-running sweep and drops the pending one"
     )
     assert "github.head_ref" in group, (
         "keyed on github.ref alone, a PR's push and pull_request events land in "
@@ -516,24 +627,27 @@ def test_the_eval_sdk_smoke_runs_both_ways_after_the_sdks_are_installed():
 
     Each clause guards a way it could quietly stop meaning anything: removed
     outright; moved above `pip install`, where it would import whatever the
-    runner image happens to carry; or the `--break` branch softened to a warning,
-    after which a smoke that can no longer detect a broken reply stays green.
+    runner image happens to carry; or the `--break` case losing its must-fail
+    flag, after which a smoke that can no longer detect a broken reply stays
+    green. The commands live in scripts/run-gates.py; run-gates' own tests prove
+    a must-fail gate that exits 0 fails the run.
     """
-    import re
-
     steps = WORKFLOW["jobs"]["validate"]["steps"]
     names = [step.get("name") for step in steps]
     assert "Eval SDK smoke (keyless, local server)" in names
     install = names.index("Install dependencies")
     smoke = names.index("Eval SDK smoke (keyless, local server)")
     assert smoke > install, "the smoke runs before the pinned SDKs are installed"
+    assert "requirements-eval.txt" in steps[install]["run"]
+    assert steps[smoke]["run"] == "python scripts/run-gates.py --only eval-sdk"
 
-    run = steps[smoke]["run"]
-    assert re.search(r"^python scripts/smoke-eval-sdk\.py$", run, re.M)
-    assert re.search(
-        r"if python scripts/smoke-eval-sdk\.py --break; then\s+echo[^\n]*\n\s+exit 1",
-        run,
-    ), "`--break` exiting 0 must fail the job"
+    registry = _gate_registry()
+    eval_gates = {g.argv[1:]: g for g in registry.GATES if g.group == "eval-sdk"}
+    assert not eval_gates[("scripts/smoke-eval-sdk.py",)].expect_failure
+    assert eval_gates[("scripts/smoke-eval-sdk.py", "--break")].expect_failure, (
+        "`--break` exiting 0 must fail the job"
+    )
+    assert ("scripts/check-eval-sdk-surface.py",) in eval_gates
 
 
 # --------------------------------------------------------------------------

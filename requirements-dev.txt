@@ -1,0 +1,17 @@
+# Test tooling for contributors and CI's offline jobs — no model SDKs, no key.
+# Kept out of requirements.txt so `npx master-skill` users never install it, and
+# out of requirements-eval.txt so a job that only runs pytest (persona-fidelity's
+# schema stage) does not pull anthropic / openai into its environment.
+#
+#   pip install -r requirements.txt -r requirements-dev.txt   # enough for `npm test`
+#
+# >=9.0.3, not the 8.x line first pinned (in requirements-eval.txt, before
+# the split). PYSEC-2026-1845: pytest through 9.0.2 on UNIX uses the
+# predictable directory name
+# `/tmp/pytest-of-{user}`, which lets a local user cause a denial of service
+# or possibly escalate privileges. `pytest>=8.3,<9` capped *below* the fix.
+#
+# Found by the pip-audit job added alongside this line — on its first run,
+# against a pin written the day before. Which is the argument for the job.
+# Verified: the full suite passes unchanged under pytest 9.1.1.
+pytest>=9.1.1,<10

@@ -69,24 +69,24 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             requirements-eval.txt
+            requirements-dev.txt
 
       - name: Install dependencies
-        run: pip install -r requirements.txt -r requirements-eval.txt
+        run: pip install -r requirements.txt -r requirements-eval.txt -r requirements-dev.txt
 
-      # Validators, the fidelity dry-run, and the node suite — which packs a
+      # Every default gate in scripts/run-gates.py: the validators, the hook
+      # suites, pytest, the fidelity dry-run, and the node suite — which packs a
       # real tarball, installs it, deletes the extracted source and exercises
       # what is left. That is the artifact this workflow is about to publish.
+      # The hook and Python suites used to be separate steps here because
+      # `npm test` lacked them; it no longer does (pytest had been running twice).
       - name: npm test
         run: npm test
 
-      # Not in `npm test`: the hooks ship in the tarball, and the wrapper
-      # hung on every Unix install for all of v0.10.0 with nothing to catch it.
-      - name: Hook suites
-        run: npm run test:hook
-
-      # Not in `npm test` either: scripts/ and tools/ ship too.
-      - name: Python suites
-        run: python -m pytest tests/ scripts/tests/ -v
+      # The one registry group a bare run leaves out, because it needs
+      # requirements-eval.txt — installed above, so the release runs it too.
+      - name: Eval SDK smoke (keyless, local server)
+        run: python scripts/run-gates.py --only eval-sdk
 
       - name: v1 fidelity gate (committed runs)
         # From 1.0.0 a release needs the roadmap's numeric fidelity gate met by

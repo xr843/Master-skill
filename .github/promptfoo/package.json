@@ -1,0 +1,8 @@
+{
+  "name": "master-skill-ci-promptfoo",
+  "private": true,
+  "description": "Pins the promptfoo CLI persona-fidelity.yml installs. Exists so Dependabot's npm ecosystem has a manifest to bump; nothing installs this directory.",
+  "devDependencies": {
+    "promptfoo": "0.121.14"
+  }
+}

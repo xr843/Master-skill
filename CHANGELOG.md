@@ -10,6 +10,27 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- Paid fidelity evaluations no longer run on a schedule. The Monday crons in
+  `validate-and-test.yml` and `persona-fidelity.yml` ran without
+  `ANTHROPIC_API_KEY`, skipped grading and concluded success. Both are manual
+  only; a dispatched run without the key fails. The persona rubric eval no longer
+  masks failures with `|| true`, and its job is renamed
+  `Persona-fidelity schema + rubric eval`; the full sweep's job is
+  `Fidelity tests — full suite (manual)`. Neither is a required check.
+- `scripts/run-gates.py` is the single gate list. `npm test` runs its default
+  gates and each CI validate step runs one group with `--only`; every gate runs
+  with real exit codes, per-gate timing and a summary of all failures.
+  `validate-promptfoo-configs.py` now runs in the validate job and the hook tests
+  in `npm test`. `check-gate-liveness.py` requires every entry script to be
+  registered or declared exempt and every registered gate to be selected by a
+  pull-request workflow. The release gate runs the same list plus the eval-SDK
+  smoke instead of repeating pytest.
+- The promptfoo CLI version is read from `.github/promptfoo/package.json`, which
+  Dependabot's npm ecosystem now watches; the workflow comment claiming the root
+  npm entry bumped it was false.
+- pytest moved from `requirements-eval.txt` to `requirements-dev.txt`, so
+  persona-fidelity's offline stage no longer installs the anthropic / openai SDKs;
+  pip-audit covers the new file.
 - Installation checks treat nonregular replacements as local edits without reading
   them. Records and hashes read from one checked file descriptor, preventing a
   pathname replacement from redirecting the read to a pipe. Dangling installation
