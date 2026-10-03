@@ -58,11 +58,11 @@
 On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bottom-left and pick one of the 15 pre-built masters across four traditions to start chatting.
 
 - No install, no signup
-- Three teaching modes available: `/compare-masters` (side-by-side comparison), `/master-debate` (4-round dialectic), `/master-curriculum` (time-sequenced study path) — all cross-tradition
+- The web version offers **one-on-one conversation** with each of the 15 masters; the three teaching modes (`/compare-masters` side-by-side comparison, `/master-debate` multi-round dialectic, `/master-curriculum` study path) are currently available only after a terminal AgentSkill install — see [Developer Installation](#developer-installation)
 - Live citation retrieval backed by FoJin's 10K+ texts and 678K+ semantic embeddings
 - Answers cite sources in each master's declared format: mostly CBETA IDs for 汉传, Toh / BDRC numbers for 藏传, PTS / SuttaCentral references for 南传 (Theravāda and some Tibetan sources have no per-passage ID, and the citation contract says so)
 
-**Not sure which master to ask?** Start here:
+**Not sure which master to ask?** Start here (on the web, pick the matching master under 法师模式; in a terminal, type the command):
 
 | Your situation | Suggested master |
 |---|---|
@@ -77,7 +77,9 @@ On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bo
 | "I want a complete graduated path of practice" | `/master-atisha` `/master-tsongkhapa` (Kadam three scopes → Gelug Lamrim) |
 | "I want the systematic Theravāda commentarial framework" | `/master-buddhaghosa` (*Visuddhimagga* — sīla / samādhi / paññā + 7 purifications · stages of insight knowledge) |
 | "I want intensive vipassanā with the noting method" | `/master-mahasi-sayadaw` (Burmese · noting · rising-falling) |
-| "I want a cross-tradition perspective" | `/compare-masters` (auto-pairs 汉/藏/南 voices) · `/master-debate` (adversarial dialectic) · `/master-curriculum` (study path by tradition) |
+| "I want a cross-tradition perspective" | `/compare-masters` (auto-pairs 汉/藏/南 voices) · `/master-debate` (adversarial dialectic) · `/master-curriculum` (study path by tradition) — terminal install only |
+
+> If you are having thoughts of suicide or self-harm, please reach out to someone you trust or a crisis line first (US: call or text 988; elsewhere: [findahelpline.com](https://findahelpline.com)). An AI master is no substitute for professional help.
 
 > Developers and Claude Code / Cursor users should skip to [Developer Installation](#developer-installation) to use the masters as terminal AgentSkills.
 
@@ -134,7 +136,7 @@ the original mind appeared yet?
 For further study, consult the original texts at FoJin (fojin.app).
 ```
 
-> ⚠️ The above is **AI-synthesized content**, generated from the *Platform Sutra* and *Diamond Sutra*; it does not represent Master Huineng's actual spoken teachings. The Chinese original is in [README.md](README.md#效果示例). Try the multi-master `/compare-masters` mode directly at [fojin.app/chat](https://fojin.app/chat).
+> ⚠️ The above is **AI-synthesized content**, generated from the *Platform Sutra* and *Diamond Sutra*; it does not represent Master Huineng's actual spoken teachings. The Chinese original is in [README.md](README.md#效果示例). The multi-master `/compare-masters` mode needs a terminal install ([Developer Installation](#developer-installation)); [fojin.app/chat](https://fojin.app/chat) offers single-master conversation.
 
 ---
 
@@ -222,19 +224,7 @@ Once installed, invoke `/master-huineng`, `/compare-masters`, etc. directly in c
 
 ## Desktop Manager
 
-A native desktop console (pure Rust, egui, single binary, no Electron) that unifies management of installation status, fidelity evaluation coverage, run tracing, and the quality gate across the prebuilt skills:
-
-![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/main/docs/assets/desktop-manager.png)
-
-**Download**: [Releases](https://github.com/xr843/Master-skill/releases) provides pre-built binaries for Linux / Windows / macOS; run them from the root of a local clone (they call the repository's `scripts/` and `bin/`). From v0.12.1, on Linux/macOS, prefer the matching `.tar.gz`, which keeps the executable bit when extracted; the raw binaries remain for compatibility and need `chmod +x`. Each release from v0.12.1 carries `SHA256SUMS` — check a download with `sha256sum --check --ignore-missing SHA256SUMS` — and build-provenance attestations, verifiable with `gh attestation verify <file> --repo xr843/Master-skill` (needs a recent gh CLI: 2.51 fails with `unsupported tlog public key type`, 2.100 works). **No working Windows desktop binary exists before v0.12.1** — earlier ones cannot launch Python or npm, and v0.12.0 failed to build one; from v0.12.1 it resolves them per platform, and from v0.12.2 the release workflow runs the packaged binary on Linux, Windows and macOS hosts (`--help` and `--baseline`); if it still fails to find them, set `MASTER_SKILL_PYTHON` / `MASTER_SKILL_NPM`. The Windows binary is a console program, so double-clicking it also opens a console window. A GUI-subsystem build would remove that window, but when tested it crashed as soon as PowerShell redirected or piped its command-line output. The macOS binary is unsigned, so first launch still requires right-click → Open or `xattr -d com.apple.quarantine <file>`.
-
-**Build from source** (Rust 1.95+):
-
-```bash
-cd desktop && cargo build --release
-./target/release/master-skill-desktop            # GUI
-./target/release/master-skill-desktop --baseline # headless fidelity dry-run baseline
-```
+A native evaluation and quality console for maintainers (Rust; needs a local clone plus Python; pre-built for Linux x86_64, Windows x86_64 and macOS Apple Silicon) → **[docs/desktop.en.md](docs/desktop.en.md)**
 
 ---
 

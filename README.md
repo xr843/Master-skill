@@ -56,26 +56,28 @@
 在 AI 问答页面左下角点击「法师模式」，从 15 位四大传统祖师中选一位即可开始对话。
 
 - 无需安装、无需注册
-- 三种教学模式均可用：`/compare-masters` 多祖师对比、`/master-debate` 祖师辩论、`/master-curriculum` 学修路径（含跨传统）
+- 网页版提供 15 位祖师的**单人对话**；三种教学模式（`/compare-masters` 多祖师对比、`/master-debate` 祖师辩论、`/master-curriculum` 学修路径）目前只在终端 AgentSkill 安装后可用，见[开发者安装](#开发者安装)
 - 由 FoJin 的 10K+ 篇文本、678K+ 条语义向量做实时经证检索
 - 回答按各位祖师声明的格式附原典出处：汉传多为 CBETA 经号，藏传为 Toh / BDRC 编号，南传为 PTS / SuttaCentral 出处（南传与部分藏传来源本就没有逐段编号，引文契约里明文如此）
 
-**如果你不确定该找谁问，可以这样开始：**
+**如果你不确定该找谁问，可以这样开始**（网页版在「法师模式」里选对应祖师；终端里输入表中的命令）：
 
 | 你的状况 | 推荐法师 |
 |---|---|
-| "妄念纷飞坐不住" | `/虚云` `/智顗` `/master-ajahn-chah`（参话头 / 止观 / 正念观察） |
-| "读经文看不懂逻辑" | `/玄奘`（唯识严密分析） |
-| "学佛很久但无力感" | `/印光`（老实念佛） |
-| "想了解空性" | `/master-nagarjuna` `/鸠摩罗什` `/慧能` `/master-milarepa` `/master-tsongkhapa`（中观源头 / 中观译师 / 禅直指 / 大手印明空 / 应成中观） |
-| "想系统学华严 / 天台" | `/法藏` `/智顗`（判教与哲学体系） |
-| "在禅与净土之间犹豫" | `/蕅益`（跨宗派融通） |
-| "对苦行 / 闭关好奇" | `/master-milarepa`（雪山闭关 · 噶举派典范） |
-| "想学最朴素的禅修" | `/master-ajahn-chah`（南传森林禅 · 出入息念） |
-| "想学完整的道次第" | `/master-atisha` `/master-tsongkhapa`（噶当三士道 → 格鲁《广论》） |
-| "想了解上座部论藏体系" | `/master-buddhaghosa`（《清净道论》戒定慧 + 七清净与观智次第） |
-| "想做密集内观禅修" | `/master-mahasi-sayadaw`（缅甸内观 · 标记法 · 腹部起伏） |
-| "想跨传统比较看一个问题" | `/compare-masters`（自动配对汉藏南传视角）· `/master-debate`（争议议题辩论）· `/master-curriculum`（按传统给学修路径） |
+| "妄念纷飞坐不住" | 虚云 `/master-xuyun` · 智顗 `/master-zhiyi` · 阿姜查 `/master-ajahn-chah`（参话头 / 止观 / 正念观察） |
+| "读经文看不懂逻辑" | 玄奘 `/master-xuanzang`（唯识严密分析） |
+| "学佛很久但无力感" | 印光 `/master-yinguang`（老实念佛） |
+| "想了解空性" | 龙树 `/master-nagarjuna` · 鸠摩罗什 `/master-kumarajiva` · 慧能 `/master-huineng` · 米拉日巴 `/master-milarepa` · 宗喀巴 `/master-tsongkhapa`（中观源头 / 中观译师 / 禅直指 / 大手印明空 / 应成中观） |
+| "想系统学华严 / 天台" | 法藏 `/master-fazang` · 智顗 `/master-zhiyi`（判教与哲学体系） |
+| "在禅与净土之间犹豫" | 蕅益 `/master-ouyi`（跨宗派融通） |
+| "对苦行 / 闭关好奇" | 米拉日巴 `/master-milarepa`（雪山闭关 · 噶举派典范） |
+| "想学最朴素的禅修" | 阿姜查 `/master-ajahn-chah`（南传森林禅 · 出入息念） |
+| "想学完整的道次第" | 阿底峡 `/master-atisha` · 宗喀巴 `/master-tsongkhapa`（噶当三士道 → 格鲁《广论》） |
+| "想了解上座部论藏体系" | 觉音 `/master-buddhaghosa`（《清净道论》戒定慧 + 七清净与观智次第） |
+| "想做密集内观禅修" | 马哈希 `/master-mahasi-sayadaw`（缅甸内观 · 标记法 · 腹部起伏） |
+| "想跨传统比较看一个问题" | `/compare-masters`（自动配对汉藏南传视角）· `/master-debate`（争议议题辩论）· `/master-curriculum`（按传统给学修路径）——仅终端安装可用 |
+
+> 若你正有轻生、自伤的念头，请先联系身边可信的人或心理危机热线（中国大陆 12356；其他地区见 [findahelpline.com](https://findahelpline.com)），AI 祖师不能代替专业帮助。
 
 > 开发者、Claude Code / Cursor 用户可跳到下方 [开发者安装](#开发者安装) 小节，以 AgentSkill 形式在终端内使用。
 
@@ -114,7 +116,7 @@
 如需深入学习，可在 FoJin (fojin.app) 查阅原典。
 ```
 
-> ⚠️ 以上为 **AI 合成内容**，依据《坛经》《金刚经》文献生成，不代表慧能大师亲口开示。多位法师并列回答的 `/compare-masters` 效果，可直接在 [fojin.app/chat](https://fojin.app/chat) 体验。
+> ⚠️ 以上为 **AI 合成内容**，依据《坛经》《金刚经》文献生成，不代表慧能大师亲口开示。多位法师并列回答的 `/compare-masters` 需在终端安装后使用（[开发者安装](#开发者安装)）；[fojin.app/chat](https://fojin.app/chat) 提供一对一的祖师对话。
 
 ---
 
@@ -206,19 +208,7 @@ npx master-skill update --all           # 升级：重装全部并清掉旧文�
 
 ## 桌面管理器
 
-原生桌面控制台(纯 Rust,egui,单二进制,无 Electron),统一查看预置技能的安装状态、fidelity 评测覆盖率、运行追踪与质量门禁:
-
-![Master-skill Desktop Manager](https://raw.githubusercontent.com/xr843/Master-skill/main/docs/assets/desktop-manager.png)
-
-**下载**：[Releases](https://github.com/xr843/Master-skill/releases) 提供 Linux / Windows / macOS 预编译二进制，需在本仓库克隆的根目录运行（它会调用仓库里的 `scripts/` 与 `bin/`）。v0.12.1 起，Linux / macOS 建议下载对应的 `.tar.gz`，解包后保留可执行位；裸二进制仍保留以兼容旧链接，使用时需先 `chmod +x`。每个 release（v0.12.1 起）附带 `SHA256SUMS`，可用 `sha256sum --check --ignore-missing SHA256SUMS` 核对下载文件，并附构建溯源证明，可用 `gh attestation verify <文件> --repo xr843/Master-skill` 验证（需较新版本的 gh CLI：实测 2.51 报 `unsupported tlog public key type`，2.100 正常）。**v0.12.1 之前没有可用的 Windows 桌面二进制**（更早的版本无法调用 Python 与 npm，v0.12.0 未能构建出 Windows 版）；v0.12.1 起改为按平台解析；v0.12.2 起，发布流水线会在 Linux、Windows、macOS 三个平台上实际运行打包好的桌面端（`--help` 与 `--baseline`），如仍找不到解释器，可用环境变量 `MASTER_SKILL_PYTHON` / `MASTER_SKILL_NPM` 指定。Windows 版是控制台程序，双击启动时会同时出现一个控制台窗口：改成图形界面程序虽可去掉它，但实测会让 PowerShell 下重定向或管道输出命令行结果时崩溃。macOS 二进制未签名，首次运行需右键“打开”或执行 `xattr -d com.apple.quarantine <文件名>` 解除隔离。
-
-**从源码构建**（需要 Rust 1.95+）：
-
-```bash
-cd desktop && cargo build --release
-./target/release/master-skill-desktop            # 图形界面
-./target/release/master-skill-desktop --baseline # 无头跑 fidelity dry-run 基线
-```
+面向维护者的原生评测与质量控制台（Rust，需克隆本仓库 + Python；预编译版本有 Linux x86_64 / Windows x86_64 / macOS Apple Silicon）→ **[docs/desktop.md](docs/desktop.md)**
 
 ---
 
