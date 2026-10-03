@@ -1666,7 +1666,12 @@ test("recommend never names a master for a crisis statement", () => {
     const { stdout, code } = run(["recommend", q]);
     assert.equal(code, 0);
     assert.match(stdout, /12356/);
-    assert.ok(stdout.includes("https://findahelpline.com"), "crisis line link missing");
+    // Whole-line match: CodeQL flags both an unanchored URL regex and a URL
+    // substring check, though neither sanitizes anything here.
+    assert.ok(
+      stdout.split("\n").some((line) => line.trim() === "· 其他国家和地区：https://findahelpline.com （美国可拨打或发短信 988）"),
+      "crisis line link missing"
+    );
     assert.doesNotMatch(stdout, /\/master-/);
   }
   // Crisis outranks a teaching-mode keyword in the same sentence.
