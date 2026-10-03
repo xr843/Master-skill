@@ -7,7 +7,8 @@ Verifies:
   3. citation is a real id in this master's own sources[].id
   4. position length in [10, 300]
   5. Coverage: 8 canonical debate pairs are covered bidirectionally
-  6. No ranking words (不如 / 胜过 / 更究竟 …): a position contrasts stances,
+  6. No ranking words (不如 / 胜过 / 更究竟 …) or comparative constructs
+     (「殊胜，然」「即是究竟」「恐落…之偏」): a position contrasts stances,
      it does not grade them (ETHICS.md §3 派系中立)
   7. A master who died before the target was born may only be set against
      him as a labelled 假设性对照 — he never critiqued a later teacher
@@ -46,6 +47,19 @@ POSITION_MAX = 300
 # not a stance — while ETHICS.md §3 names Mahasi vs Forest as a pair the AI
 # must not rank. Kept to grading words; 「殊胜」 alone describes, it does not rank.
 RANKING_TERMS = ("不如", "胜过", "胜于", "胜读", "更究竟", "更殊胜", "更高明", "低劣", "劣于", "远胜")
+
+# Comparative constructions that grade without a grading word: concede the
+# other side is 殊胜 and then turn (「自然观察殊胜，然……」), declare one's own
+# way 即是究竟, or warn the other 恐落……之偏. Scoped to the construction, so
+# 究竟 as a doctrinal term (究竟即佛, 究竟位) is not caught.
+COMPARATIVE_PATTERNS = (
+    re.compile(r"(?:更|最|方为|即是|才是)究竟"),
+    re.compile(r"非究竟"),
+    re.compile(r"(?:更|最)殊胜"),
+    re.compile(r"殊胜\s*[，,；;]\s*然"),
+    re.compile(r"恐落[^，。；）)]{0,12}之偏"),
+    re.compile(r"唯[^，。；]{1,12}方为"),
+)
 
 # master-huineng (d. 713) was given a critique of 应成 / 自续 and 辨了不了义,
 # fourteenth-century Tsongkhapa topics. /master-debate still pairs masters
@@ -147,6 +161,7 @@ def validate(prebuilt: Path, *, check_coverage: bool = True) -> list[str]:
                 errors.append(f"{prefix}: position length {len(pos)} out of [{POSITION_MIN}, {POSITION_MAX}]")
             if isinstance(pos, str):
                 ranked = [term for term in RANKING_TERMS if term in pos]
+                ranked += [m.group(0) for rx in COMPARATIVE_PATTERNS for m in rx.finditer(pos)]
                 if ranked:
                     errors.append(
                         f"{prefix}: position ranks rather than contrasts ({'、'.join(ranked)})"

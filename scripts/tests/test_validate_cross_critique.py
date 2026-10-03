@@ -210,3 +210,36 @@ def test_life_span_parses_repository_era_shapes(era, span):
 def test_repository_cross_critique_passes():
     vcc = _load_module()
     assert vcc.validate(vcc.PREBUILT_DIR) == []
+
+
+@pytest.mark.parametrize("position, caught", [
+    ("对森林禅：自然观察殊胜，然初学者无所依易散乱。", "殊胜，然"),
+    ("对天台：顿入直指即是究竟，不假阶级。", "即是究竟"),
+    ("对应成：空有未融，恐落'非有非无'之偏。", "之偏"),
+    ("对合修：今人务理而废事，唯老实持名方为稳妥。", "唯老实持名方为"),
+    ("对唯识：立唯识乃方便，非究竟实法。", "非究竟"),
+])
+def test_comparative_ranking_constructs_are_rejected(tmp_path, position, caught):
+    vcc = _load_module()
+    prebuilt = tmp_path / "prebuilt"
+    _write_dated(prebuilt, "b", "1900-1990")
+    _write_dated(prebuilt, "a", "1900-1990", [
+        {"target_master": "b", "citation": "T00n0001", "position": position},
+    ])
+    errors = vcc.validate(prebuilt, check_coverage=False)
+    assert any("ranks rather than contrasts" in e and caught in e for e in errors), errors
+
+
+@pytest.mark.parametrize("position", [
+    "对天台：六即中究竟即佛为果位，此为本宗判位之说。",
+    "对禅宗：事事无碍，殊胜难思，此为华严自宗之见。",
+    "对净土：要解六信极是；然事持理持终归一念。",
+])
+def test_doctrinal_use_of_the_same_words_is_not_ranking(tmp_path, position):
+    vcc = _load_module()
+    prebuilt = tmp_path / "prebuilt"
+    _write_dated(prebuilt, "b", "1900-1990")
+    _write_dated(prebuilt, "a", "1900-1990", [
+        {"target_master": "b", "citation": "T00n0001", "position": position},
+    ])
+    assert vcc.validate(prebuilt, check_coverage=False) == []
