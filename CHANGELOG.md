@@ -147,6 +147,16 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
   answer writing 熱線 or 上師 meets those fixtures. The fixture digests and grader
   changed, so v1 release evidence must be re-measured.
 
+### Ethics — ETHICS.md §3 names where the safety rule lives and words crisis on its own
+
+ETHICS.md §3 said crisis referral was "已写入每位法师 voice.md Layer 0". No persona file
+mentioned 自杀, 自伤 or 危机, and only master-mahasi-sayadaw forbade certifying attainment.
+#300 put the same clause in every persona's SKILL.md HARD-GATE, verbatim from
+`prompts/safety_clause.md`, and made `validate.py` enforce it. ETHICS.md §3 now says where the
+rule lives, gives crisis its own wording instead of the generic "超出 AI 教学角色能力范围"
+reply, and states the reporting-versus-ranking distinction. This changes a hard rule, so it
+follows the §7 process: `ethics-change` label, seven days' public review, maintainer approval.
+
 ## [0.12.16] — 2026-09-28
 
 **Licensing.** The license identifiers now say what ETHICS.md §4 has always said: code is MIT,
