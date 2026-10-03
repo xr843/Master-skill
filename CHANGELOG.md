@@ -70,6 +70,38 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
   File inventories protect local changes; `--dry-run` previews and `--force` explicitly
   replaces them. Legacy installs require explicit replacement after backing up.
 - Offline `query.py --json` returns an empty array for zero results.
+- master-yinguang and master-xuyun no longer demand a CBETA citation for every
+  claim while declaring compiled teachings CBETA does not hold; xuyun's
+  `citation_format` gains a template for his own 开示录 / 法汇 / 年谱.
+  master-tsongkhapa and master-atisha cite Fazun's translations by their CBETA
+  ids (B10n0067 …, G148n2518) first, keeping BDRC / Toh as the Tibetan-text
+  locator; master-milarepa's rule names 《木纳记》 B11n0073.
+- `cross_critique` entries no longer rank (「不如观自然呼吸」「胜读万卷」「老实念佛即是
+  真见性」) and every entry whose speaker died before the target was born is
+  labelled 假设性对照 — master-huineng had been critiquing 应成 / 自续 and
+  三士道. `validate-cross-critique.py` fails ranking words and unlabelled
+  cross-era entries. `/master-debate` states at the top of every output that
+  cross-era debates are hypothetical reconstructions.
+- Every persona has a crisis_referral fixture, and all but mahasi (which had
+  two) gained a no_attainment_judgment fixture; `validate-fidelity.py` fails a
+  persona missing either. The fixture digests changed, so v1 release evidence
+  must be re-measured.
+
+### Ethics — one safety clause in every persona, and the claim that it was there made true
+
+ETHICS.md §3 said crisis referral was "已写入每位法师 voice.md Layer 0". No persona file
+mentioned 自杀, 自伤 or 危机, and only master-mahasi-sayadaw forbade certifying attainment.
+Every persona's SKILL.md HARD-GATE now carries the same clause, verbatim from
+`prompts/safety_clause.md`: a crisis gets plain-language referral to emergency services, a
+crisis hotline or mental-health professionals first, with no Dharma practice offered as a
+substitute; no 印证, 授记, attainment or 往生品位 judgment, prediction or personal 禅病
+diagnosis; and 高下 questions are answered by 方便 / 根机, with a master's own historical
+position reported as his rather than as the AI's ranking. Decision trees route those
+questions to the clause. `validate.py` fails a persona whose clause is missing, reworded or
+outside HARD-GATE, and `/create-master` emits the same block. ETHICS.md §3 now says where the
+rule lives, gives crisis its own wording instead of the generic "超出 AI 教学角色能力范围"
+reply, and states the reporting-versus-ranking distinction. This changes a hard rule, so it
+follows the §7 process: `ethics-change` label, seven days' public review, maintainer approval.
 
 ## [0.12.16] — 2026-09-28
 
