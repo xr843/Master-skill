@@ -1666,7 +1666,7 @@ test("recommend never names a master for a crisis statement", () => {
     const { stdout, code } = run(["recommend", q]);
     assert.equal(code, 0);
     assert.match(stdout, /12356/);
-    assert.match(stdout, /findahelpline\.com/);
+    assert.ok(stdout.includes("https://findahelpline.com"), "crisis line link missing");
     assert.doesNotMatch(stdout, /\/master-/);
   }
   // Crisis outranks a teaching-mode keyword in the same sentence.
