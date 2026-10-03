@@ -23,12 +23,9 @@ import json
 import sys
 from pathlib import Path
 
-import yaml
-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _skill_io import PREBUILT_DIR as PREBUILT, load_frontmatter  # noqa: E402
 from verify_citations import audit_answer  # noqa: E402
-
-PREBUILT = Path(__file__).resolve().parent.parent / "prebuilt"
 
 # The phrase every frontmatter-pointing rule uses. If the wording changes, the
 # gate examines nothing and says so instead of passing.
@@ -41,10 +38,7 @@ _ID_FIELDS = (
 
 
 def _frontmatter_ids(text: str) -> list[str]:
-    parts = text.split("---", 2)
-    if len(parts) < 3 or parts[0].strip():
-        return []
-    front = yaml.safe_load(parts[1]) or {}
+    front = load_frontmatter(text)
     ids: list[str] = []
     for src in front.get("sources") or []:
         if isinstance(src, dict):

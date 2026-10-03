@@ -34,14 +34,11 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+from _skill_io import ROOT, try_read_json
 
 
 def _read_json(p: Path) -> dict | None:
-    try:
-        return json.loads(p.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return None
+    return try_read_json(p)[0]
 
 
 def collect_versions(root: Path = ROOT) -> dict[str, str]:

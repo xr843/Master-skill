@@ -46,7 +46,7 @@ from verify_citations import (
     load_title_aliases,
 )
 
-PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
+from _skill_io import PREBUILT_DIR
 SCHEMA_VERSION = 1
 
 # This project ships one prebuilt/ to five hosts (Claude Code, Cursor, Codex

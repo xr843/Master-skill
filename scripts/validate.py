@@ -17,9 +17,7 @@ import json
 import sys
 from pathlib import Path
 
-import yaml
-
-PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
+from _skill_io import PREBUILT_DIR, ROOT, SCRIPTS_DIR, parse_frontmatter_lines
 
 # The one safety clause every persona carries verbatim inside its HARD-GATE:
 # crisis referral first, no certification / prediction / 禅病 diagnosis, and
@@ -27,7 +25,7 @@ PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
 # ETHICS.md §3 said this was "已写入每位法师 voice.md Layer 0" for a long time
 # while no persona file mentioned 自杀 / 自伤 at all — a claim nothing checked.
 # The canonical text lives in prompts/ so the generator emits the same words.
-SAFETY_CLAUSE_PATH = Path(__file__).resolve().parent.parent / "prompts" / "safety_clause.md"
+SAFETY_CLAUSE_PATH = ROOT / "prompts" / "safety_clause.md"
 SAFETY_BEGIN = "<!-- safety-clause:begin"
 SAFETY_END = "<!-- safety-clause:end -->"
 # Words the decision-tree branch must route on, so the clause is reachable from
@@ -47,38 +45,19 @@ MAX_SKILL_LINES = 500
 def parse_frontmatter(path: Path) -> tuple[dict, str, list[str]]:
     """Parse YAML frontmatter from a SKILL.md file.
 
-    Returns (frontmatter_dict, body, raw_lines).
+    Returns (frontmatter_dict, body, raw_lines). Line-fenced, and raises
+    ValueError naming `path` on invalid YAML or a non-mapping block.
+
+    This was once a hand-rolled parser, from back when pyyaml was not a
+    dependency. It matched list items only as `  - `, so a 4-space
+    continuation line like `    cbeta_id: T48n2008` matched neither that nor
+    the `key:` regex (which is anchored at column 0) and fell through to the
+    list-flush branch — clearing the accumulated list on every continuation
+    and letting the next `  - ` overwrite it. Every master kept exactly one
+    source and no cbeta_id at all, so the sources[] rules below inspected
+    data that was never in the file.
     """
-    text = path.read_text(encoding="utf-8")
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != "---":
-        return {}, text, lines
-
-    end = None
-    for i, line in enumerate(lines[1:], start=1):
-        if line.strip() == "---":
-            end = i
-            break
-    if end is None:
-        return {}, text, lines
-
-    # This was a hand-rolled parser, from back when pyyaml was not a
-    # dependency. It matched list items only as `  - `, so a 4-space
-    # continuation line like `    cbeta_id: T48n2008` matched neither that nor
-    # the `key:` regex (which is anchored at column 0) and fell through to the
-    # list-flush branch — clearing the accumulated list on every continuation
-    # and letting the next `  - ` overwrite it. Every master kept exactly one
-    # source and no cbeta_id at all, so the sources[] rules below inspected
-    # data that was never in the file.
-    try:
-        fm = yaml.safe_load("\n".join(lines[1:end])) or {}
-    except yaml.YAMLError as exc:
-        raise ValueError(f"{path}: invalid YAML frontmatter — {exc}") from exc
-    if not isinstance(fm, dict):
-        raise ValueError(f"{path}: frontmatter is not a mapping")
-
-    body = "\n".join(lines[end + 1 :])
-    return fm, body, lines
+    return parse_frontmatter_lines(path.read_text(encoding="utf-8"), path)
 
 
 def check_safety_clause(text: str, canonical: str, require_branch: bool = True) -> list[str]:
@@ -223,7 +202,7 @@ def _run_persona_fidelity_subcheck() -> list[str]:
     try:
         import importlib.util
 
-        spec_path = Path(__file__).resolve().parent / "validate-persona-fidelity.py"
+        spec_path = SCRIPTS_DIR / "validate-persona-fidelity.py"
         spec = importlib.util.spec_from_file_location("vpf", spec_path)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -243,7 +222,7 @@ def _run_manifest_versions_subcheck() -> list[str]:
         import importlib.util
 
         spec_path = (
-            Path(__file__).resolve().parent / "check-manifest-versions.py"
+            SCRIPTS_DIR / "check-manifest-versions.py"
         )
         spec = importlib.util.spec_from_file_location("cmv", spec_path)
         mod = importlib.util.module_from_spec(spec)
@@ -273,7 +252,7 @@ def _run_lore_triggers_content_subcheck() -> list[str]:
         import importlib.util
 
         spec_path = (
-            Path(__file__).resolve().parent
+            SCRIPTS_DIR
             / "validate-lore-triggers-content.py"
         )
         spec = importlib.util.spec_from_file_location("vltc", spec_path)
@@ -309,7 +288,7 @@ def _run_promptfoo_configs_subcheck() -> list[str]:
     predating v0.8 promptfoo work). Returns a list of error strings.
     """
     persona_dir = (
-        Path(__file__).resolve().parent.parent / "tests" / "persona"
+        ROOT / "tests" / "persona"
     )
     if not persona_dir.exists():
         return []
@@ -317,7 +296,7 @@ def _run_promptfoo_configs_subcheck() -> list[str]:
         import importlib.util
 
         spec_path = (
-            Path(__file__).resolve().parent / "validate-promptfoo-configs.py"
+            SCRIPTS_DIR / "validate-promptfoo-configs.py"
         )
         spec = importlib.util.spec_from_file_location("vppc", spec_path)
         mod = importlib.util.module_from_spec(spec)
@@ -343,7 +322,7 @@ def _run_curriculum_sources_subcheck() -> list[str]:
         import importlib.util
 
         spec_path = (
-            Path(__file__).resolve().parent / "validate-curriculum-sources.py"
+            SCRIPTS_DIR / "validate-curriculum-sources.py"
         )
         spec = importlib.util.spec_from_file_location("vcs", spec_path)
         mod = importlib.util.module_from_spec(spec)

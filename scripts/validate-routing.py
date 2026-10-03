@@ -52,17 +52,16 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+from _skill_io import ROOT, try_read_json
+
 ROUTING_PATH = ROOT / "routing.json"
 CATALOG_PATH = ROOT / "skill-catalog.json"
 PREBUILT = ROOT / "prebuilt"
 
 
 def _read_json(p: Path):
-    try:
-        return json.loads(p.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as err:
-        return {"__error__": f"{p.name}: {err}"}
+    data, err = try_read_json(p)
+    return {"__error__": f"{p.name}: {err}"} if err is not None else data
 
 
 def _disjoint_problems(section: str, rows: list) -> list:

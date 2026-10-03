@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _skill_context import load_skill_context
 
-ROOT = Path(__file__).resolve().parent.parent
+from _skill_io import ROOT
 
 
 def create_prompt(context: dict) -> list[dict[str, str]]:

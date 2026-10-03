@@ -41,7 +41,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+from _skill_io import ROOT
 PREBUILT_DIR = ROOT / "prebuilt"
 
 # The docs the model is told to follow: every persona and mode, and the

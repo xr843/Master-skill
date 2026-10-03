@@ -21,7 +21,7 @@ import re
 import sys
 from pathlib import Path
 
-PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
+from _skill_io import PREBUILT_DIR
 
 # Citation patterns
 _T_NUM = re.compile(r"T\d+n\d+[A-Za-z]?")

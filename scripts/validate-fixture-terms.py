@@ -19,10 +19,10 @@ from __future__ import annotations
 
 import json
 import sys
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-PREBUILT = ROOT / "prebuilt"
+import _skill_io
+from _skill_io import PREBUILT_DIR as PREBUILT, ROOT
+
 REPORTS = ROOT / "eval" / "reports"
 
 # Verdicts that license moving a requirement out of hard grading.
@@ -30,13 +30,7 @@ PERMITTING = {"instrument", "fixture"}
 
 
 def load_fixtures() -> dict[str, list[dict]]:
-    fixtures: dict[str, list[dict]] = {}
-    for path in sorted(PREBUILT.glob("*/tests/fidelity.jsonl")):
-        master = path.parent.parent.name
-        fixtures[master] = [
-            json.loads(line) for line in path.read_text().splitlines() if line.strip()
-        ]
-    return fixtures
+    return _skill_io.load_fixtures(PREBUILT)
 
 
 def load_adjudications() -> list[dict]:

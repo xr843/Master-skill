@@ -48,7 +48,7 @@ import sys
 from difflib import SequenceMatcher
 from pathlib import Path
 
-PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
+from _skill_io import PREBUILT_DIR
 
 # Thresholds — calibrated against the 7 lore_triggers shipped in PR #32.
 # A pass requires EITHER an absolute LCS floor OR a relative LCS coverage

@@ -8,23 +8,12 @@ import re
 import sys
 
 from _masterpaths import resolve_master_dir
+from _skill_io import parse_sections
 
 # master feeds into os.path.join(...); restrict to a slug charset so a value
 # like "../../etc" can never read files outside prebuilt/. Mirrors the
 # isSafeName guard in bin/cli.mjs.
 _SAFE_MASTER = re.compile(r"^[A-Za-z0-9_-]+$")
-
-
-def parse_sections(text):
-    """按 ## 标题分段，返回 [(title, body), ...]"""
-    sections = []
-    parts = re.split(r'^## ', text, flags=re.MULTILINE)
-    for part in parts[1:]:
-        lines = part.split('\n', 1)
-        title = lines[0].strip()
-        body = lines[1] if len(lines) > 1 else ''
-        sections.append((title, body))
-    return sections
 
 
 def find_citations(master_dir, text):

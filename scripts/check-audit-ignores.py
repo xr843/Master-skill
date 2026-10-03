@@ -23,7 +23,7 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+from _skill_io import ROOT
 REGISTRY = ROOT / "desktop" / "audit-ignore.json"
 
 # 一条抑制记录至少要说明白这三件事，否则它只是一行静音。

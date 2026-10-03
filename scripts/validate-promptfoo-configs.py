@@ -34,7 +34,7 @@ import re
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+from _skill_io import ROOT as REPO_ROOT
 PREBUILT_DIR = REPO_ROOT / "prebuilt"
 PERSONA_DIR = REPO_ROOT / "tests" / "persona"
 
