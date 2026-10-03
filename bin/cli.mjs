@@ -646,7 +646,7 @@ function nextStepHint(installed) {
   } else {
     lines.push(`  2. Call it in the chat: ${example}`);
   }
-  lines.push("  Codex CLI and Gemini CLI do not read ~/.claude/skills/ — see docs/install.md for their steps.");
+  lines.push("  Codex CLI and Gemini CLI do not read ~/.claude/skills/ — see https://github.com/xr843/Master-skill/blob/main/docs/install.md.");
   return lines.join("\n");
 }
 
