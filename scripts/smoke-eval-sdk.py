@@ -36,9 +36,8 @@ import os
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+from _skill_io import ROOT as REPO
 ANSWER = "菩提自性，本来清净，但用此心，直了成佛。【《六祖大师法宝坛经》行由品，T48n2008】"
 CACHE_CREATED = 6700
 # The teaching-mode run's first reply asks for this file; the second request

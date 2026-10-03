@@ -36,6 +36,8 @@ from pathlib import Path
 
 import yaml
 
+from _skill_io import ROOT
+
 # A verdict — as opposed to a skip, an error, or a dry run.
 GRADED_STATUSES = {"PASS", "FAIL"}
 
@@ -724,7 +726,7 @@ def run_all(root: Path, fidelity_report: Path | None = None) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent)
+    parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--json", action="store_true", help="machine-readable output")
     parser.add_argument(
         "--fidelity-report",

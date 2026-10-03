@@ -11,6 +11,7 @@ import unicodedata
 from opencc import OpenCC
 
 from _masterpaths import resolve_master_dir
+from _skill_io import parse_sections
 
 # master feeds into os.path.join(...); restrict to a slug charset so a value
 # like "../../etc" can never read files outside prebuilt/. Mirrors the
@@ -30,18 +31,6 @@ def _fold(text: str) -> str:
     text = _TO_SIMPLIFIED.convert(text).replace("著", "着").lower()
     decomposed = unicodedata.normalize("NFKD", text)
     return "".join(c for c in decomposed if not unicodedata.combining(c))
-
-
-def parse_sections(text):
-    """按 ## 标题分段，返回 [(title, body), ...]"""
-    sections = []
-    parts = re.split(r'^## ', text, flags=re.MULTILINE)
-    for part in parts[1:]:
-        lines = part.split('\n', 1)
-        title = lines[0].strip()
-        body = lines[1] if len(lines) > 1 else ''
-        sections.append((title, body))
-    return sections
 
 
 def search(master_dir, query, brief=False):

@@ -105,11 +105,10 @@ def _missing_for(name: str, spec: dict) -> list[str]:
 def _pinned_versions() -> dict[str, str]:
     """What requirements-eval.txt pins, so the check can say whose surface it read."""
     import re
-    from pathlib import Path
 
-    text = (Path(__file__).resolve().parent.parent / "requirements-eval.txt").read_text(
-        encoding="utf-8"
-    )
+    from _skill_io import ROOT
+
+    text = (ROOT / "requirements-eval.txt").read_text(encoding="utf-8")
     return dict(re.findall(r"^([a-z-]+)==([\d.]+)$", text, re.M))
 
 

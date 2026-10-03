@@ -14,7 +14,7 @@ import json
 import sys
 from pathlib import Path
 
-PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
+from _skill_io import PREBUILT_DIR, SCRIPTS_DIR
 
 
 def _implemented_assertions() -> frozenset[str]:
@@ -28,7 +28,7 @@ def _implemented_assertions() -> frozenset[str]:
     """
     import importlib.util
 
-    scripts = Path(__file__).resolve().parent
+    scripts = SCRIPTS_DIR
     if str(scripts) not in sys.path:
         sys.path.insert(0, str(scripts))
     spec = importlib.util.spec_from_file_location("_fidelity_grader", scripts / "test-fidelity.py")

@@ -1515,6 +1515,36 @@ test("the tarball ships no test suites of its own", () => {
   assert.deepEqual(shippedTests, [], `test files should not ship: ${shippedTests}`);
 });
 
+test("CI-only scripts stay out of the tarball, and what ships can still import its siblings", () => {
+  // package.json `files` excludes the gates only this repo's CI runs
+  // (run-gates, check-gate-liveness, regrade/reaudit, ...). Excluding one that
+  // a shipped script imports — `from x import`, or a spec-loaded "x.py" —
+  // would pack clean and fail only when someone ran it.
+  const packed = new Set(packedFiles());
+  for (const name of ["cite.py", "query.py", "validate.py", "test-fidelity.py", "_skill_io.py"]) {
+    assert.ok(packed.has(`scripts/${name}`), `scripts/${name} must ship`);
+  }
+  for (const name of ["run-gates.py", "check-gate-liveness.py", "regrade-report.py"]) {
+    assert.ok(!packed.has(`scripts/${name}`), `scripts/${name} is CI-only and should not ship`);
+  }
+  const scriptsDir = path.join(REPO, "scripts");
+  const missing = [];
+  for (const file of packed) {
+    if (!/^scripts\/[^/]+\.py$/.test(file)) continue;
+    const source = fs.readFileSync(path.join(REPO, file), "utf8");
+    const siblings = [
+      ...[...source.matchAll(/^\s*(?:from|import) (\w+)/gm)].map((m) => `${m[1]}.py`),
+      ...[...source.matchAll(/"([\w-]+\.py)"/g)].map((m) => m[1]),
+    ];
+    for (const sibling of siblings) {
+      if (fs.existsSync(path.join(scriptsDir, sibling)) && !packed.has(`scripts/${sibling}`)) {
+        missing.push(`${file} -> scripts/${sibling}`);
+      }
+    }
+  }
+  assert.deepEqual(missing, [], `shipped scripts reference unshipped siblings: ${missing}`);
+});
+
 test("installing a teaching mode does not overwrite a persona the user has edited", (t) => {
   // Found by review (2026-09-28): dependencies were re-installed like explicit
   // names, so a line added to master-huineng/SKILL.md vanished when

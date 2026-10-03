@@ -38,7 +38,7 @@ from verify_citations import (  # noqa: E402
     load_title_aliases,
 )
 
-PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
+from _skill_io import PREBUILT_DIR
 
 _BLOCK = re.compile(r"【([^】]*)】")
 # Same attribution region verify_citations uses, so a tag documented after the

@@ -38,6 +38,23 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
   vs 法相, armed both ways in cross_critique).
 - These change persona inputs for xuyun and kumarajiva; their fidelity numbers need a
   fresh measured run.
+- `scripts/_skill_io.py` holds what twenty-odd scripts each wrote out: the
+  repo / `prebuilt/` paths, SKILL.md frontmatter reading, the fidelity-fixture
+  loader, JSON reading, and the `## ` section splitter of `cite.py` / `query.py`.
+  The two frontmatter readers stay two (line-fenced for `validate.py`, split on
+  `---` for the `sources:` readers) because they disagree on malformed input;
+  `scripts/tests/test_skill_io.py` pins both on 14 edge cases and checks they
+  agree on every prebuilt SKILL.md. tools/ keeps its own readers: the
+  create-master install copies tools/ without scripts/. No gate output or exit
+  code changed — every validator was run on the tree and on five broken copies
+  before and after, and only crash tracebacks differ. `test-fidelity.py`'s
+  `run_tests` lost its dry-run, plan, SDK-client and audit-input blocks to named
+  helpers.
+- The npm package no longer ships the 18 CI-only scripts (`run-gates.py`,
+  `check-gate-liveness.py`, `regrade-report.py`, the content gates nothing in the
+  package invokes, ...): 246 → 229 files, 562 KB → 510 KB. Everything installed
+  skills, the README or a shipped script references still ships, and a CLI test
+  fails if a shipped script imports a sibling that does not.
 
 - Paid fidelity evaluations no longer run on a schedule. The Monday crons in
   `validate-and-test.yml` and `persona-fidelity.yml` ran without

@@ -46,7 +46,7 @@ from verify_citations import (
     load_title_aliases,
 )
 
-PREBUILT_DIR = Path(__file__).resolve().parent.parent / "prebuilt"
+from _skill_io import PREBUILT_DIR
 SCHEMA_VERSION = 1
 
 # This project ships one prebuilt/ to five hosts (Claude Code, Cursor, Codex
@@ -1414,6 +1414,145 @@ def result_entry(
     }
 
 
+def _cap_tests(tests: list[dict], max_tests: int | None) -> list[dict]:
+    """The first `max_tests` fixtures, easiest first; all of them when uncapped.
+
+    A smoke suite should hit the reliable floor, not the advanced stress cases.
+    """
+    if max_tests is not None and max_tests > 0:
+        return sorted(
+            tests,
+            key=lambda t: {"basic": 0, "intermediate": 1, "advanced": 2}.get(
+                t.get("difficulty", "intermediate"), 1
+            ),
+        )[:max_tests]
+    return tests
+
+
+def _dry_run_suite(master_name: str, dry_run: bool, provider: str, tests: list[dict]) -> dict:
+    """The suite a dry run reports: each fixture listed, nothing sent."""
+    results = [
+        {
+            "index": i,
+            "question": test["q"],
+            "must_cite": test.get("must_cite", []),
+            "must_mention": test.get("must_mention", []),
+            "difficulty": test.get("difficulty", "unknown"),
+            "status": "dry_run",
+        }
+        for i, test in enumerate(tests)
+    ]
+    return {
+        **suite_common(master_name, dry_run, "completed", provider),
+        "total": len(tests),
+        "results": results,
+    }
+
+
+def _plan_suite(
+    master_name: str,
+    provider: str,
+    model: str,
+    tests: list[dict],
+    identity: dict,
+    system_prompt: str,
+    tools: bool,
+    subagents: bool,
+    max_output_tokens: int,
+    concurrency: int,
+    request_timeout: float,
+    max_retries: int,
+) -> dict:
+    """What a graded run would send, without sending it (`--plan`)."""
+    # One request per persona fixture; file conversations have <=21 sends.
+    # Task fanout per tool response is model-dependent, so no request ceiling
+    # can be honestly inferred for subagent suites from the round cap alone.
+    requests_per_fixture = MAX_TOOL_ROUNDS + 1 if tools else 1
+    maximum_attempts = None if subagents else len(tests) * requests_per_fixture * (max_retries + 1)
+    return {
+        **suite_common(master_name, False, "completed", provider),
+        "mode": "plan", "model": model, "total": len(tests), "results": [],
+        "evaluation_identity": identity,
+        "fixtures": [{"index": i, "question": test["q"],
+                      "test_type": test.get("test_type", "fidelity"),
+                      "fixture_sha256": fixture_sha256(test)}
+                     for i, test in enumerate(tests)],
+        "initial_system_utf8_bytes": len(system_prompt.encode("utf-8")),
+        "initial_questions_utf8_bytes": sum(len(test["q"].encode("utf-8")) for test in tests),
+        "skill_tools": list(SKILL_TOOL_NAMES) + ([SUBAGENT_TOOL] if subagents else []) if tools else [],
+        "max_output_tokens": max_output_tokens,
+        "concurrency": min(concurrency, len(tests)),
+        "request_timeout": request_timeout, "max_retries": max_retries,
+        "configured_per_fixture_ceiling_s": per_fixture_ceiling(request_timeout, max_retries, tools, subagents),
+        "request_plan": {
+            "initial_requests": len(tests),
+            "maximum_sdk_attempts": maximum_attempts,
+            "initial_output_token_limits_sum": len(tests) * max_output_tokens,
+            "additional_calls": "model-dependent subagent fanout" if subagents else "bounded file-tool rounds" if tools else "SDK retries only",
+        },
+        "limitations": ["UTF-8 bytes are not token counts or billed input",
+                        "Output limits describe initial requests, not total tool-loop output",
+                        "Request planning is not a monetary spending cap",
+                        "Timeout configuration is not an exact elapsed-time guarantee"],
+    }
+
+
+def _make_sender(spec: dict, api_key: str, max_retries: int, request_timeout: float):
+    """(send, None) for the provider's SDK, or (None, why) when it is not installed."""
+    if spec["api"] == "anthropic":
+        try:
+            import anthropic
+        except ImportError:
+            return None, "anthropic package not installed. Run: pip install anthropic"
+        client = anthropic.Anthropic(api_key=api_key, max_retries=max_retries)
+        send = lambda body: client.messages.create(  # noqa: E731
+            **body, timeout=request_timeout
+        )
+    else:
+        try:
+            import openai
+        except ImportError:
+            return None, "openai package not installed. Run: pip install openai"
+        client = openai.OpenAI(
+            api_key=api_key, base_url=spec["base_url"], max_retries=max_retries
+        )
+        send = lambda body: client.chat.completions.create(  # noqa: E731
+            **body, timeout=request_timeout
+        )
+    return send, None
+
+
+def _load_audit_inputs(master_name: str, master_dir: Path, tools: bool):
+    """(declared_ids, member_aliases, title_aliases, quote_evidence) for grading.
+
+    Declared offline sources feed the must_cite_only_existing_sources B1 check;
+    an unreadable declaration leaves the first three None. A teaching mode
+    quotes any persona, so its quote evidence pools every persona's.
+    """
+    try:
+        declared_ids = load_declared_ids(master_name)
+        member_aliases = load_member_aliases(master_name)
+        title_aliases = load_title_aliases(master_name)
+    except (ValueError, FileNotFoundError):
+        declared_ids = None
+        member_aliases = None
+        title_aliases = None
+
+    quote_evidence = load_quote_evidence(master_dir, declared_ids or set())
+    if tools:
+        for persona in sorted(PREBUILT_DIR.glob("master-*")):
+            for cid, passages in load_quote_evidence(persona, declared_ids or set()).items():
+                quote_evidence.setdefault(cid, []).extend(passages)
+    return declared_ids, member_aliases, title_aliases, quote_evidence
+
+
+def _attach_tool_log(entry: dict, files) -> None:
+    """Record what a file-tool conversation read on its result entry."""
+    entry["tool_calls"] = files.log
+    entry["tool_rounds"] = files.rounds
+    entry["tool_rounds_max"] = files.max_rounds
+
+
 def run_tests(
     master_name: str,
     dry_run: bool = False,
@@ -1449,33 +1588,10 @@ def run_tests(
             master_name, dry_run, f"No fidelity.jsonl found for '{master_name}'", provider, plan=plan
         )
 
-    if max_tests is not None and max_tests > 0:
-        # Prefer easier/basic tests when capping — smoke suite should hit
-        # the reliable floor, not the advanced stress cases.
-        tests = sorted(
-            tests,
-            key=lambda t: {"basic": 0, "intermediate": 1, "advanced": 2}.get(
-                t.get("difficulty", "intermediate"), 1
-            ),
-        )[:max_tests]
-
-    results: list[dict] = []
+    tests = _cap_tests(tests, max_tests)
 
     if dry_run:
-        for i, test in enumerate(tests):
-            results.append({
-                "index": i,
-                "question": test["q"],
-                "must_cite": test.get("must_cite", []),
-                "must_mention": test.get("must_mention", []),
-                "difficulty": test.get("difficulty", "unknown"),
-                "status": "dry_run",
-            })
-        return {
-            **suite_common(master_name, dry_run, "completed", provider),
-            "total": len(tests),
-            "results": results,
-        }
+        return _dry_run_suite(master_name, dry_run, provider, tests)
 
     # Load skill context
     try:
@@ -1506,37 +1622,10 @@ def run_tests(
         return suite_error(master_name, dry_run, str(error), provider, plan=plan)
 
     if plan:
-        # One request per persona fixture; file conversations have <=21 sends.
-        # Task fanout per tool response is model-dependent, so no request ceiling
-        # can be honestly inferred for subagent suites from the round cap alone.
-        requests_per_fixture = MAX_TOOL_ROUNDS + 1 if tools else 1
-        maximum_attempts = None if subagents else len(tests) * requests_per_fixture * (max_retries + 1)
-        return {
-            **suite_common(master_name, False, "completed", provider),
-            "mode": "plan", "model": model, "total": len(tests), "results": [],
-            "evaluation_identity": identity,
-            "fixtures": [{"index": i, "question": test["q"],
-                          "test_type": test.get("test_type", "fidelity"),
-                          "fixture_sha256": fixture_sha256(test)}
-                         for i, test in enumerate(tests)],
-            "initial_system_utf8_bytes": len(system_prompt.encode("utf-8")),
-            "initial_questions_utf8_bytes": sum(len(test["q"].encode("utf-8")) for test in tests),
-            "skill_tools": list(SKILL_TOOL_NAMES) + ([SUBAGENT_TOOL] if subagents else []) if tools else [],
-            "max_output_tokens": max_output_tokens,
-            "concurrency": min(concurrency, len(tests)),
-            "request_timeout": request_timeout, "max_retries": max_retries,
-            "configured_per_fixture_ceiling_s": per_fixture_ceiling(request_timeout, max_retries, tools, subagents),
-            "request_plan": {
-                "initial_requests": len(tests),
-                "maximum_sdk_attempts": maximum_attempts,
-                "initial_output_token_limits_sum": len(tests) * max_output_tokens,
-                "additional_calls": "model-dependent subagent fanout" if subagents else "bounded file-tool rounds" if tools else "SDK retries only",
-            },
-            "limitations": ["UTF-8 bytes are not token counts or billed input",
-                            "Output limits describe initial requests, not total tool-loop output",
-                            "Request planning is not a monetary spending cap",
-                            "Timeout configuration is not an exact elapsed-time guarantee"],
-        }
+        return _plan_suite(
+            master_name, provider, model, tests, identity, system_prompt, tools, subagents,
+            max_output_tokens, concurrency, request_timeout, max_retries,
+        )
 
     api_key = os.environ.get(spec["env"])
     if not api_key:
@@ -1544,50 +1633,13 @@ def run_tests(
             master_name, dry_run, f"{spec['env']} environment variable not set", provider
         )
 
-    if spec["api"] == "anthropic":
-        try:
-            import anthropic
-        except ImportError:
-            return suite_error(
-                master_name, dry_run,
-                "anthropic package not installed. Run: pip install anthropic",
-                provider,
-            )
-        client = anthropic.Anthropic(api_key=api_key, max_retries=max_retries)
-        send = lambda body: client.messages.create(  # noqa: E731
-            **body, timeout=request_timeout
-        )
-    else:
-        try:
-            import openai
-        except ImportError:
-            return suite_error(
-                master_name, dry_run,
-                "openai package not installed. Run: pip install openai",
-                provider,
-            )
-        client = openai.OpenAI(
-            api_key=api_key, base_url=spec["base_url"], max_retries=max_retries
-        )
-        send = lambda body: client.chat.completions.create(  # noqa: E731
-            **body, timeout=request_timeout
-        )
+    send, missing_sdk = _make_sender(spec, api_key, max_retries, request_timeout)
+    if missing_sdk is not None:
+        return suite_error(master_name, dry_run, missing_sdk, provider)
 
-    # Declared offline sources, for the must_cite_only_existing_sources B1 check.
-    try:
-        declared_ids = load_declared_ids(master_name)
-        member_aliases = load_member_aliases(master_name)
-        title_aliases = load_title_aliases(master_name)
-    except (ValueError, FileNotFoundError):
-        declared_ids = None
-        member_aliases = None
-        title_aliases = None
-
-    quote_evidence = load_quote_evidence(master_dir, declared_ids or set())
-    if tools:
-        for persona in sorted(PREBUILT_DIR.glob("master-*")):
-            for cid, passages in load_quote_evidence(persona, declared_ids or set()).items():
-                quote_evidence.setdefault(cid, []).extend(passages)
+    declared_ids, member_aliases, title_aliases, quote_evidence = _load_audit_inputs(
+        master_name, master_dir, tools
+    )
 
     def run_subagent(files: SkillFiles, args: dict, deadline: float, record) -> str:
         """One Task call: a new conversation, sharing the fixture's deadline.
@@ -1675,9 +1727,7 @@ def run_tests(
             }
             # What it read before failing — the case where that matters most.
             if files is not None:
-                entry["tool_calls"] = files.log
-                entry["tool_rounds"] = files.rounds
-                entry["tool_rounds_max"] = files.max_rounds
+                _attach_tool_log(entry, files)
             return entry, False, "API ERROR"
 
         if finish_reason == "length":
@@ -1685,9 +1735,7 @@ def run_tests(
             # api_errors so a run full of them cannot read as a clean result.
             entry = truncated_result_entry(i, test, response_text, max_output_tokens)
             if files is not None:
-                entry["tool_calls"] = files.log
-                entry["tool_rounds"] = files.rounds
-                entry["tool_rounds_max"] = files.max_rounds
+                _attach_tool_log(entry, files)
             return entry, False, "TRUNCATED"
 
         try:
@@ -1721,9 +1769,7 @@ def run_tests(
             for call in files.log:
                 if call["tool"] == SUBAGENT_TOOL and call.get("ok"):
                     call["in_answer"] = share_in_answer(call.get("reply", ""), response_text)
-            entry["tool_calls"] = files.log
-            entry["tool_rounds"] = files.rounds
-            entry["tool_rounds_max"] = files.max_rounds
+            _attach_tool_log(entry, files)
             # A round that failed for infrastructure reasons (a 529, the
             # deadline) was returned to the orchestrator, which answered
             # without it — graded, but not a clean reading of the protocol.

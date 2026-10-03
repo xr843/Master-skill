@@ -26,7 +26,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import importlib.util
 
-ROOT = Path(__file__).resolve().parent.parent
+import _skill_io  # noqa: E402
+from _skill_io import ROOT  # noqa: E402
+
 _spec = importlib.util.spec_from_file_location(
     "_fidelity", ROOT / "scripts" / "test-fidelity.py"
 )
@@ -42,12 +44,7 @@ from verify_citations import (  # noqa: E402
 
 
 def load_fixtures() -> dict[str, list[dict]]:
-    fixtures: dict[str, list[dict]] = {}
-    for path in sorted((ROOT / "prebuilt").glob("*/tests/fidelity.jsonl")):
-        fixtures[path.parent.parent.name] = [
-            json.loads(line) for line in path.read_text().splitlines() if line.strip()
-        ]
-    return fixtures
+    return _skill_io.load_fixtures(ROOT / "prebuilt")
 
 
 def regrade(report: dict, fixtures: dict[str, list[dict]]) -> dict:

@@ -44,7 +44,7 @@ import re
 import sys
 from pathlib import Path
 
-PREBUILT = Path(__file__).resolve().parent.parent / "prebuilt"
+from _skill_io import PREBUILT_DIR as PREBUILT
 
 # A literal citation example: 【…】 with no {placeholder} inside, i.e. a shape
 # the writer intended to be copied rather than filled from a declared format.

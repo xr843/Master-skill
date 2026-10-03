@@ -35,7 +35,7 @@ from _fixture_identity import fixture_sha256
 from _evaluation_identity import evaluation_identity
 
 
-ROOT = Path(__file__).resolve().parent.parent
+from _skill_io import ROOT
 RELEASE_MODEL = "claude-sonnet-4-6"
 MIN_PASS_RATES = {"fidelity": 0.90, "boundary": 0.80, "pressure": 0.70}
 
