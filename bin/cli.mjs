@@ -537,7 +537,7 @@ function listData() {
     count: masters.length,
     skillCount: skills.length,
     categoryCounts,
-    // displayName / summary were added in 0.12.17; every earlier field keeps
+    // displayName / summary were added after 0.12.16; every earlier field keeps
     // its meaning (description is still the raw frontmatter text).
     skills: skills.map(({ name, kind, install_dir, description, displayName, summary }) => ({
       name,
