@@ -233,11 +233,36 @@ def test_lint_master_reports_missing_clause(tmp_path):
     assert any("safety clause" in i for i in issues)
 
 
-def test_lint_master_exempts_teaching_modes(tmp_path):
+def test_teaching_mode_without_clause_is_an_error(tmp_path):
+    """A user in crisis can enter through /compare-masters or /master-help."""
     mode = tmp_path / "compare-x"
     mode.mkdir()
     (mode / "SKILL.md").write_text(
         "---\nname: compare-x\ndescription: x\nkind: meta-skill\n---\n\nbody\n",
         encoding="utf-8",
     )
-    assert not any("safety clause" in i for i in validate_module.lint_master(mode))
+    assert any("safety clause" in i for i in validate_module.lint_master(mode))
+
+
+def test_teaching_mode_needs_no_decision_branch():
+    text = _persona_text(branch=False)
+    assert check_safety_clause(text, CANONICAL, require_branch=False) == []
+
+
+def test_clause_after_a_closed_gate_is_outside_it():
+    text = "<HARD-GATE>\n</HARD-GATE>\n" + _persona_text(inside_gate=False).split("## 决策树")[0]
+    text += "<!-- safety-clause:begin x -->\n" + CANONICAL.strip() + "\n<!-- safety-clause:end -->\n<HARD-GATE>\n</HARD-GATE>\n"
+    problems = check_safety_clause(text, CANONICAL, require_branch=False)
+    assert any("HARD-GATE" in p for p in problems)
+
+
+def test_every_teaching_mode_carries_the_clause():
+    modes = [
+        d for d in sorted(PREBUILT.iterdir())
+        if (d / "SKILL.md").is_file()
+        and validate_module.parse_frontmatter(d / "SKILL.md")[0].get("kind") == "meta-skill"
+    ]
+    assert len(modes) == 4, [d.name for d in modes]
+    for mode in modes:
+        text = (mode / "SKILL.md").read_text(encoding="utf-8")
+        assert check_safety_clause(text, CANONICAL, require_branch=False) == [], mode.name

@@ -81,12 +81,14 @@ def parse_frontmatter(path: Path) -> tuple[dict, str, list[str]]:
     return fm, body, lines
 
 
-def check_safety_clause(text: str, canonical: str) -> list[str]:
-    """Problems with the shared safety clause in one persona's SKILL.md.
+def check_safety_clause(text: str, canonical: str, require_branch: bool = True) -> list[str]:
+    """Problems with the shared safety clause in one skill's SKILL.md.
 
-    The clause must appear exactly once, inside <HARD-GATE>, with the text
-    between the markers identical to prompts/safety_clause.md; and the
-    decision tree must route crisis / 高下 / 证果 / 印证 questions to it.
+    The clause must appear exactly once, inside a <HARD-GATE> block, with the
+    text between the markers identical to prompts/safety_clause.md. A persona's
+    decision tree must also route crisis / 高下 / 证果 / 印证 questions to it;
+    teaching modes (require_branch=False) carry the clause at their top, since
+    a user in crisis can enter through /compare-masters or /master-help too.
     """
     problems: list[str] = []
     begins, ends = text.count(SAFETY_BEGIN), text.count(SAFETY_END)
@@ -97,8 +99,10 @@ def check_safety_clause(text: str, canonical: str) -> list[str]:
     start, end = text.index(SAFETY_BEGIN), text.index(SAFETY_END)
     if end < start:
         return ["safety clause end marker precedes its begin marker"]
-    gate_open, gate_close = text.find("<HARD-GATE>"), text.find("</HARD-GATE>")
-    if not (0 <= gate_open < start and end < gate_close):
+    gate_open = text.rfind("<HARD-GATE>", 0, start)
+    gate_close = text.find("</HARD-GATE>", end)
+    closed_between = gate_open != -1 and text.find("</HARD-GATE>", gate_open, start) != -1
+    if gate_open == -1 or gate_close == -1 or closed_between:
         problems.append("safety clause must sit inside <HARD-GATE> … </HARD-GATE>")
     body_start = text.find("\n", start)
     body = text[body_start + 1:end].strip() if body_start != -1 else ""
@@ -107,6 +111,8 @@ def check_safety_clause(text: str, canonical: str) -> list[str]:
             "safety clause text differs from prompts/safety_clause.md — "
             "edit the canonical file and resync, do not reword one persona"
         )
+    if not require_branch:
+        return problems
     tree_start = text.find("## 决策树")
     tree_end = text.find("\n## ", tree_start + 1) if tree_start != -1 else -1
     tree = text[tree_start:tree_end] if tree_start != -1 else ""
@@ -184,16 +190,17 @@ def lint_master(master_dir: Path, strict: bool = False) -> list[str]:
         elif not list(sources_dir.glob("*.md")):
             issues.append(f"[WARN]  {name}: sources/ directory is empty")
 
-    # --- Shared safety clause (personas only; teaching modes route elsewhere) ---
-    if kind != "meta-skill":
-        try:
-            canonical = SAFETY_CLAUSE_PATH.read_text(encoding="utf-8")
-        except OSError as exc:
-            issues.append(f"[ERROR] {name}: cannot read {SAFETY_CLAUSE_PATH.name} ({exc})")
-        else:
-            full_text = skill_path.read_text(encoding="utf-8")
-            for problem in check_safety_clause(full_text, canonical):
-                issues.append(f"[ERROR] {name}: {problem}")
+    # --- Shared safety clause (every skill; personas also route to it) ---
+    try:
+        canonical = SAFETY_CLAUSE_PATH.read_text(encoding="utf-8")
+    except OSError as exc:
+        issues.append(f"[ERROR] {name}: cannot read {SAFETY_CLAUSE_PATH.name} ({exc})")
+    else:
+        full_text = skill_path.read_text(encoding="utf-8")
+        for problem in check_safety_clause(
+            full_text, canonical, require_branch=kind != "meta-skill"
+        ):
+            issues.append(f"[ERROR] {name}: {problem}")
 
     # --- Check for tests ---
     tests_dir = master_dir / "tests"
