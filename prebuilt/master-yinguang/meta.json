@@ -131,7 +131,7 @@
     "monologue": "文钞式开示先示因果敦伦，次明信愿持名为正行，末以仗佛慈力带业往生为归宿。"
   },
   "cross_critique": [
-    { "target_master": "huineng", "position": "对禅宗：见性须现量证悟，末法众生根机陋劣，难当此任；信愿持名是阿弥陀佛大悲普被，老实念佛即是真见性。", "citation": "Yinguang:WenchaoZhengbian" },
+    { "target_master": "huineng", "position": "对禅宗：见性须亲证，大师以为末法之世能当此任者稀；故自宗主张信愿持名、仗佛慈力，三根普被，稳当易行。此为印光大师判机之见，非贬禅宗。", "citation": "Yinguang:WenchaoZhengbian" },
     { "target_master": "ouyi", "position": "对天台净土合修：要解六信极是；然事持理持终归一念，今人务理而废事，唯老实持名方为稳妥。", "citation": "Yinguang:WenchaoZhengbian" }
   ]
 }

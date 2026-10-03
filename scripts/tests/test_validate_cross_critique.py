@@ -147,3 +147,66 @@ def test_coverage_succeeds_with_full_pairs(fake_tree):
         _write_master(fake_tree, slug, [{"type": "cbeta", "id": "T00n0001", "title": "demo"}], cc)
     errors = vcc.validate(fake_tree, check_coverage=True)
     assert errors == []
+
+
+def _write_dated(prebuilt: Path, slug: str, era: str, cross_critique=None):
+    d = prebuilt / f"master-{slug}"
+    d.mkdir(parents=True, exist_ok=True)
+    data = {"slug": slug, "era": era, "sources": [{"type": "cbeta", "id": "T00n0001"}]}
+    if cross_critique is not None:
+        data["cross_critique"] = cross_critique
+    (d / "meta.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+
+def test_ranking_words_are_rejected(tmp_path):
+    vcc = _load_module()
+    prebuilt = tmp_path / "prebuilt"
+    _write_dated(prebuilt, "mahasi-sayadaw", "1904-1982")
+    _write_dated(prebuilt, "ajahn-chah", "1918-1992", [
+        {"target_master": "mahasi-sayadaw", "citation": "T00n0001",
+         "position": "对标记法：过分细标易成造作，不如观自然呼吸。"},
+    ])
+    errors = vcc.validate(prebuilt, check_coverage=False)
+    assert any("ranks rather than contrasts" in e and "不如" in e for e in errors)
+
+
+def test_earlier_master_on_later_one_needs_hypothetical_label(tmp_path):
+    vcc = _load_module()
+    prebuilt = tmp_path / "prebuilt"
+    _write_dated(prebuilt, "tsongkhapa", "1357-1419")
+    entry = {"target_master": "tsongkhapa", "citation": "T00n0001",
+             "position": "对名言分判：自宗以无念为宗，直下识自本心。"}
+    _write_dated(prebuilt, "huineng", "638-713", [entry])
+    errors = vcc.validate(prebuilt, check_coverage=False)
+    assert any("died before tsongkhapa was born" in e for e in errors)
+
+    entry["position"] += "（假设性对照：宗喀巴晚于惠能六百余年）"
+    _write_dated(prebuilt, "huineng", "638-713", [entry])
+    assert vcc.validate(prebuilt, check_coverage=False) == []
+
+
+def test_later_master_on_earlier_one_needs_no_label(tmp_path):
+    vcc = _load_module()
+    prebuilt = tmp_path / "prebuilt"
+    _write_dated(prebuilt, "huineng", "638-713")
+    _write_dated(prebuilt, "tsongkhapa", "1357-1419", [
+        {"target_master": "huineng", "citation": "T00n0001",
+         "position": "对禅宗顿悟：无次第直指乃极利根所行。"},
+    ])
+    assert vcc.validate(prebuilt, check_coverage=False) == []
+
+
+@pytest.mark.parametrize("era, span", [
+    ("638-713", (638, 713)),
+    ("约150-250", (150, 250)),
+    ("5世纪", (400, 500)),
+    ("", None),
+    (None, None),
+])
+def test_life_span_parses_repository_era_shapes(era, span):
+    assert _load_module().life_span(era) == span
+
+
+def test_repository_cross_critique_passes():
+    vcc = _load_module()
+    assert vcc.validate(vcc.PREBUILT_DIR) == []

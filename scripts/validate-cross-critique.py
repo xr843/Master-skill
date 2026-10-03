@@ -7,6 +7,10 @@ Verifies:
   3. citation is a real id in this master's own sources[].id
   4. position length in [10, 300]
   5. Coverage: 8 canonical debate pairs are covered bidirectionally
+  6. No ranking words (不如 / 胜过 / 更究竟 …): a position contrasts stances,
+     it does not grade them (ETHICS.md §3 派系中立)
+  7. A master who died before the target was born may only be set against
+     him as a labelled 假设性对照 — he never critiqued a later teacher
 
 Pure offline structural check.
 
@@ -16,6 +20,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -36,6 +41,32 @@ REQUIRED_PAIRS = [
 
 POSITION_MIN = 10
 POSITION_MAX = 300
+
+# master-ajahn-chah once said of Mahasi's noting 「不如观自然呼吸」 — a verdict,
+# not a stance — while ETHICS.md §3 names Mahasi vs Forest as a pair the AI
+# must not rank. Kept to grading words; 「殊胜」 alone describes, it does not rank.
+RANKING_TERMS = ("不如", "胜过", "胜于", "胜读", "更究竟", "更殊胜", "更高明", "低劣", "劣于", "远胜")
+
+# master-huineng (d. 713) was given a critique of 应成 / 自续 and 辨了不了义,
+# fourteenth-century Tsongkhapa topics. /master-debate still pairs masters
+# across eras, so such an entry must say it is a hypothetical reconstruction.
+HYPOTHETICAL_MARK = "假设性对照"
+_YEAR = re.compile(r"\d{1,4}")
+_CENTURY = re.compile(r"(\d{1,2})\s*世纪")
+
+
+def life_span(era: object) -> tuple[int, int] | None:
+    """(birth, death) from a meta.json `era` such as 638-713, 约150-250 or 5世纪."""
+    if not isinstance(era, str):
+        return None
+    century = _CENTURY.search(era)
+    if century:
+        n = int(century.group(1))
+        return (n - 1) * 100, n * 100
+    years = [int(y) for y in _YEAR.findall(era)]
+    if len(years) >= 2:
+        return years[0], years[1]
+    return None
 
 
 def _load(meta_path: Path) -> dict:
@@ -78,6 +109,10 @@ def validate(prebuilt: Path, *, check_coverage: bool = True) -> list[str]:
     errors: list[str] = []
     known_slugs = collect_master_slugs(prebuilt)
     sources_by_slug = collect_sources_by_slug(prebuilt)
+    spans = {
+        meta_path.parent.name.removeprefix("master-"): life_span(_load(meta_path).get("era"))
+        for meta_path in prebuilt.glob("master-*/meta.json")
+    }
 
     for meta_path in sorted(prebuilt.glob("master-*/meta.json")):
         slug = meta_path.parent.name.removeprefix("master-")
@@ -110,6 +145,21 @@ def validate(prebuilt: Path, *, check_coverage: bool = True) -> list[str]:
             pos = entry.get("position") or ""
             if pos and not (POSITION_MIN <= len(pos) <= POSITION_MAX):
                 errors.append(f"{prefix}: position length {len(pos)} out of [{POSITION_MIN}, {POSITION_MAX}]")
+            if isinstance(pos, str):
+                ranked = [term for term in RANKING_TERMS if term in pos]
+                if ranked:
+                    errors.append(
+                        f"{prefix}: position ranks rather than contrasts ({'、'.join(ranked)})"
+                    )
+                speaker, target = spans.get(slug), spans.get(tm)
+                if (
+                    speaker and target and speaker[1] < target[0]
+                    and HYPOTHETICAL_MARK not in pos
+                ):
+                    errors.append(
+                        f"{prefix}: {slug} died before {tm} was born — label the "
+                        f"entry 「{HYPOTHETICAL_MARK}」 or drop it"
+                    )
 
     if check_coverage:
         pairs = collect_critique_pairs(prebuilt)
