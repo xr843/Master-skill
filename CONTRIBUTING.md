@@ -193,7 +193,7 @@ hook 测试、CLI 测试一起跑一遍，**包括 Python 单测**——CI 一�
 然后你手动：
 
 - Review 生成结果，补充 `references/teaching.md`、`voice.md` 的细节
-- 起草 5 条 `tests/fidelity.jsonl`（1 basic + 2 intermediate + 2 advanced）
+- 起草至少 5 条 `tests/fidelity.jsonl`（如 1 basic + 2 intermediate + 2 advanced，其中至少 1 条 boundary；这是 `validate-fidelity.py` 的下限，现有每位祖师都有 10 条以上）
 - 跑一次 `test-fidelity.py --master <slug>` 确认 ≥ 4/5 通过
 
 ### FoJin 查不到某部经时
@@ -333,7 +333,7 @@ prebuilt/master-<slug>/
 │   ├── INDEX.md         # 必须。本目录导览
 │   └── *.md             # ≥ 2 篇合规的声明来源核心段落或摘要
 └── tests/
-    └── fidelity.jsonl   # 必须。5 条 Q&A 测试用例
+    └── fidelity.jsonl   # 必须。至少 5 条 Q&A（≥1 条 boundary；现有祖师均 10+）
 ```
 
 **SKILL.md frontmatter 必填字段：**
