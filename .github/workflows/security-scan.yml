@@ -40,7 +40,7 @@ on:
     branches: [main]
   pull_request:
   schedule:
-    # Weekly, Tuesdays 06:00 UTC. Offset from the two Monday fidelity crons so
+    # Weekly, Tuesdays 06:00 UTC. Offset from Monday's link-check cron so
     # a bad week does not arrive as one indistinguishable pile of red.
     - cron: '0 6 * * 2'
   workflow_dispatch:
@@ -233,6 +233,7 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             requirements-eval.txt
+            requirements-dev.txt
 
       - name: Install pip-audit (pinned)
         # 2.10.0 is the version this job was actually verified against — it is
@@ -241,12 +242,14 @@ jobs:
         # shipped with a cargo-audit that cannot parse the advisory database.
         run: pip install pip-audit==2.10.0
 
-      - name: Audit both requirement sets
+      - name: Audit every requirement set
         # requirements-eval.txt is included because those packages are
-        # installed into the job that carries ANTHROPIC_API_KEY.
+        # installed into the job that carries ANTHROPIC_API_KEY;
+        # requirements-dev.txt (pytest) is where PYSEC-2026-1845 was found.
         run: |
           pip-audit --requirement requirements.txt --strict
           pip-audit --requirement requirements-eval.txt --strict
+          pip-audit --requirement requirements-dev.txt --strict
 
   dependency-review:
     name: Dependency review (PR only)

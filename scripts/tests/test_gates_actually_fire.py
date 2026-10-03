@@ -1,4 +1,4 @@
-"""Every gate in `npm test` must be shown to FAIL on something it exists to catch.
+"""Every gate in `npm test` (scripts/run-gates.py) must be shown to FAIL on something it exists to catch.
 
 This repo's recurring defect is a check that reports success having examined
 nothing — `pytest.ini` missing a suite, an empty glob parametrizing zero cases,
@@ -361,14 +361,25 @@ def test_the_gate_fails_when_its_contract_is_broken(
 
 
 def test_every_gate_in_npm_test_has_a_case_here():
-    """A gate added to the chain without one of these is the gap, not an oversight."""
-    package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
-    chain = package["scripts"]["test"]
+    """A gate added to the registry without one of these is the gap, not an oversight.
+
+    Reads scripts/run-gates.py — the list `npm test` runs — rather than
+    package.json, which since 2026-10 only says "run the registry".
+    """
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_run_gates_for_fire_test", ROOT / "scripts" / "run-gates.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
     invoked = {
-        part.split("/")[-1]
-        for part in chain.split()
-        if part.startswith("scripts/") and part.endswith(".py")
+        arg.split("/")[-1]
+        for gate in module.select([])  # the default set: what `npm test` runs
+        for arg in gate.argv
+        if arg.startswith("scripts/") and arg.endswith(".py")
     }
+    assert "validate.py" in invoked, "registry read back empty — this would pass vacuously"
     covered = {c[0] for c in CASES}
     # test-fidelity.py is the paid grader; it is exercised by its own suite and
     # cannot be driven here without an API key.

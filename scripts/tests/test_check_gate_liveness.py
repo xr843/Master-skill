@@ -516,46 +516,145 @@ def test_naming_a_script_in_the_declaration_table_is_not_calling_it(liveness):
 
 
 # --------------------------------------------------------------------------
-# `npm test` must cover what CI runs on a PR.
+# One gate list, wired to both `npm test` and every pull request.
 #
-# CONTRIBUTING tells contributors to run it before touching scripts/, 「避免在 CI
-# 才发现」. It has fallen behind twice: pytest was missing until 2026-09-03, and on
-# 2026-09-16 four content gates the PR job runs were absent, so a contributor could
-# be green locally and still be failed by CI.
+# `npm test` and the CI validate job used to be two hand-written lists. They fell
+# out of step three times: pytest missing locally until 2026-09-03, four content
+# gates missing locally on 2026-09-16, and — the other way round — the hook tests
+# running only in CI while validate-promptfoo-configs.py ran only locally. Both now
+# run scripts/run-gates.py; what these police is the wiring around that list.
 # --------------------------------------------------------------------------
 
 
-def test_npm_test_covers_every_pr_gate(liveness):
-    problems = liveness.check_npm_test_covers_pr_gates(ROOT, liveness.read_workflows(ROOT))
+def test_this_repo_wires_the_gate_registry(liveness):
+    problems = liveness.check_gate_registry_wiring(ROOT, liveness.read_workflows(ROOT))
     assert problems == [], "; ".join(problems)
 
 
-def test_a_pr_gate_absent_from_npm_test_is_reported(liveness, monkeypatch):
-    """把一道门禁从 npm test 里拿掉，就必须报出来 —— 否则本地绿、CI 红。"""
-    monkeypatch.setattr(liveness, "npm_test_scripts", lambda root: set())
-    problems = liveness.check_npm_test_covers_pr_gates(ROOT, liveness.read_workflows(ROOT))
-    assert any("is not in `npm test`" in p for p in problems)
+def test_every_validator_is_registered_or_declared(liveness):
+    """每个 validate-*.py 要么登记进 run-gates.py，要么写明为什么不登记。"""
+    gates = liveness.load_gate_registry(ROOT).GATES
+    registered = liveness.registered_scripts(gates)
+    exempt = set(liveness.NOT_IN_GATE_REGISTRY) | set(liveness.NOT_A_PR_GATE)
+    validators = {p.name for p in (ROOT / "scripts").glob("validate*.py")}
+    assert validators, "no validators found — this test would pass vacuously"
+    assert sorted(validators - registered - exempt) == []
 
 
-def test_a_declaration_for_a_script_npm_test_does_run_is_stale(liveness, monkeypatch):
-    """借口留着、脚本其实已经在 npm test 里跑了 —— 假警告比没有警告更糟。"""
-    monkeypatch.setitem(liveness.NOT_IN_NPM_TEST, "validate-routing.py", "过期借口")
-    problems = liveness.check_npm_test_covers_pr_gates(ROOT, liveness.read_workflows(ROOT))
-    assert any("`npm test` runs it now" in p for p in problems)
+def test_an_unregistered_entry_script_is_reported(liveness, monkeypatch):
+    """撤掉一条豁免，那个脚本就必须被报出来 —— 既不在清单里、也没有理由。"""
+    monkeypatch.delitem(liveness.NOT_IN_GATE_REGISTRY, "select-fidelity-smoke.py")
+    problems = liveness.check_gate_registry_wiring(ROOT, liveness.read_workflows(ROOT))
+    assert any(
+        "select-fidelity-smoke.py is not registered" in p for p in problems
+    ), problems
 
 
-def test_a_declaration_for_a_script_no_pr_workflow_runs_is_stale(liveness, monkeypatch):
-    monkeypatch.setitem(liveness.NOT_IN_NPM_TEST, "no-such-gate.py", "编造的条目")
-    problems = liveness.check_npm_test_covers_pr_gates(ROOT, liveness.read_workflows(ROOT))
-    assert any("no PR workflow runs it" in p for p in problems)
+def test_a_declaration_for_a_registered_script_is_stale(liveness, monkeypatch):
+    """借口留着、脚本其实已经登记了 —— 假警告比没有警告更糟。"""
+    monkeypatch.setitem(liveness.NOT_IN_GATE_REGISTRY, "validate-routing.py", "过期借口")
+    problems = liveness.check_gate_registry_wiring(ROOT, liveness.read_workflows(ROOT))
+    assert any("registers it now" in p for p in problems)
 
 
-def test_npm_test_coverage_counts_commands_not_imports(liveness):
-    """npm test 跑的是命令，所以比的是 CI 直接写出的脚本，不是它们 import 到的东西。
+def test_a_declaration_for_a_missing_entry_script_is_stale(liveness, monkeypatch):
+    monkeypatch.setitem(liveness.NOT_IN_GATE_REGISTRY, "no-such-gate.py", "编造的条目")
+    problems = liveness.check_gate_registry_wiring(ROOT, liveness.read_workflows(ROOT))
+    assert any("no such entry script exists" in p for p in problems)
 
-    verify_citations.py 被每个 PR 跑的脚本 import，却从不作为命令出现 —— 若按
-    可达性去比，它会被要求写进 npm test，那是错的。
-    """
-    named = liveness.pr_workflow_scripts(ROOT, liveness.read_workflows(ROOT))
-    assert "verify_citations.py" not in named
-    assert "validate-quote-attribution.py" in named
+
+def test_a_registered_gate_no_pr_workflow_selects_is_reported(liveness):
+    """清单里有、但没有哪个 PR workflow 跑它 —— 发版前它什么也没守。"""
+    workflows = liveness.read_workflows(ROOT)
+    without_main = {
+        path: doc for path, doc in workflows.items()
+        if path != ".github/workflows/validate-and-test.yml"
+    }
+    problems = liveness.check_gate_registry_wiring(ROOT, without_main)
+    assert any(
+        "'validate-routing' (content)" in p and "no pull_request workflow selects it" in p
+        for p in problems
+    ), problems
+
+
+def test_the_windows_only_group_counts_as_selected(liveness):
+    """hooks-cmd 只由 Windows job 选中；它也算数，不能被报成没人跑。"""
+    selections = liveness.pr_gate_selections(ROOT, liveness.read_workflows(ROOT))
+    assert ["hooks-cmd"] in selections
+    assert ["eval-sdk"] in selections
+
+
+def test_a_misspelt_selector_in_a_workflow_is_reported(liveness, monkeypatch):
+    """`--only contnet` 选中零道门禁后退出 0，正是这个仓库反复撞上的形状。"""
+    monkeypatch.setattr(liveness, "pr_gate_selections", lambda root, docs: [["contnet"]])
+    problems = liveness.check_gate_registry_wiring(ROOT, liveness.read_workflows(ROOT))
+    assert any("unknown gate or group: contnet" in p for p in problems)
+
+
+def test_npm_test_as_a_second_list_is_reported(liveness, monkeypatch):
+    monkeypatch.setattr(
+        liveness, "npm_test_command",
+        lambda root: "python3 scripts/validate.py --strict && node --test tests/cli.test.mjs",
+    )
+    problems = liveness.check_gate_registry_wiring(ROOT, liveness.read_workflows(ROOT))
+    assert any("does not run scripts/run-gates.py" in p for p in problems)
+    assert any("names ['validate.py'] directly" in p for p in problems)
+
+
+def test_npm_test_narrowed_with_only_is_reported(liveness, monkeypatch):
+    monkeypatch.setattr(
+        liveness, "npm_test_command", lambda root: "python3 scripts/run-gates.py --only content"
+    )
+    problems = liveness.check_gate_registry_wiring(ROOT, liveness.read_workflows(ROOT))
+    assert any("passes --only" in p for p in problems)
+
+
+def test_selections_parse_bare_repeated_and_comma_forms(liveness, tmp_path):
+    wf = tmp_path / ".github" / "workflows"
+    wf.mkdir(parents=True)
+    (wf / "a.yml").write_text(
+        "on:\n  pull_request:\njobs:\n  j:\n    steps:\n"
+        "      - run: python scripts/run-gates.py\n"
+        "      - run: python scripts/run-gates.py --only hooks --only=cli-tests,dry-run\n",
+        encoding="utf-8",
+    )
+    (wf / "b.yml").write_text(
+        "on:\n  push:\njobs:\n  j:\n    steps:\n"
+        "      - run: python scripts/run-gates.py --only eval-sdk\n",
+        encoding="utf-8",
+    )
+    selections = liveness.pr_gate_selections(tmp_path, liveness.read_workflows(tmp_path))
+    # b.yml is not a pull_request workflow, so its call does not count.
+    assert selections == [[], ["hooks", "cli-tests", "dry-run"]]
+
+
+# --------------------------------------------------------------------------
+# A missing-secret branch that only reports and fails is not a skip.
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "run",
+    [
+        'if [ -z "${ANTHROPIC_API_KEY:-}" ]; then\n  echo "::error::no key"\n  exit 1\nfi\npython x.py\n',
+        'if [ -z "${K:-}" ]; then exit 1; fi\n',
+        'if [ -z "${K:-}" ]; then echo nope; exit 2; fi\n',
+    ],
+)
+def test_a_hard_fail_on_a_missing_secret_is_not_advisory(liveness, run):
+    assert liveness.check_advisory_gates_declared(_wf("g", name="Hard", run=run)) == []
+
+
+@pytest.mark.parametrize(
+    "run",
+    [
+        # the smoke's shape: fail only when promoted, otherwise exit 0
+        'if [ -z "${K:-}" ]; then\n  if [ "$R" = true ]; then\n    exit 1\n  fi\n  exit 0\nfi\n',
+        # persona-fidelity's shape: record a flag and carry on
+        'if [ -z "${K:-}" ]; then\n  echo "run=false" >> "$GITHUB_OUTPUT"\nelse\n  echo ok\nfi\n',
+        'if [ -z "${K:-}" ]; then\n  echo skipped\n  exit 0\nfi\n',
+    ],
+)
+def test_a_missing_secret_branch_that_can_pass_is_still_advisory(liveness, run):
+    problems = liveness.check_advisory_gates_declared(_wf("g", name="Soft", run=run))
+    assert len(problems) == 1 and "Soft" in problems[0]

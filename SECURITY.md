@@ -182,7 +182,8 @@ Master-skill 作为 AgentSkill 插件 + NPX CLI，主要关注以下安全面：
 >   就从"警告"变成"硬失败"。
 >
 > 此前 SECURITY.md 在这里列的是 `Fidelity smoke` 与
-> `Persona-fidelity schema + advisory eval`。前者名字不全（分支保护按 check
+> `Persona-fidelity schema + advisory eval`（2026-10 起更名为
+> `Persona-fidelity schema + rubric eval`，见 CHANGELOG）。前者名字不全（分支保护按 check
 > 全名匹配），后者根本不在 required 列表里，而 `GitGuardian Security Checks`
 > 在列表里却没写。已按 2026-09-06 实测的分支保护设置更正。
 

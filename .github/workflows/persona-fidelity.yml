@@ -5,22 +5,27 @@ name: Persona Fidelity
 # Two stages:
 #
 #   1. promptfooconfig schema + repo-convention validation — ALWAYS runs.
-#      No API key needed. Catches structural drift on every PR.
+#      No API key needed. Catches structural drift on every matching PR.
 #
-#   2. llm-rubric eval against the persona prompts — ADVISORY ONLY when an
-#      ANTHROPIC_API_KEY is configured. Fork PRs have no secret access, and
-#      the project's stated policy is "do not pay for LLM-as-judge in CI"
-#      until further notice. Results are uploaded as artifacts; the job
-#      never blocks the PR.
+#   2. llm-rubric eval against the persona prompts — runs only with an
+#      ANTHROPIC_API_KEY. Fork PRs have no secret access, and the project's
+#      stated policy is "do not pay for LLM-as-judge in CI", so on a pull
+#      request a missing key skips this stage (declared in ADVISORY_GATES in
+#      scripts/check-gate-liveness.py). A manual dispatch is someone asking
+#      for a paid run: there a missing key FAILS the job, and so does any
+#      rubric failure — the eval is no longer `|| true`.
+#
+# There is no cron. A weekly schedule used to run this with no key configured,
+# skip stage 2 and conclude success — a green Monday tick that evaluated
+# nothing. Stage 1 still runs on every PR that touches personas or scripts, and
+# the repo-convention validator also runs in validate-and-test.yml's validate
+# job, as part of the gate registry's `content` group.
 #
 # Automatic paid evaluation retains the original three representative personas.
 # All 15 configs are validated for free. The expanded paid sweep requires manual
 # dispatch with full_suite=true; never silently multiply paid CI scope by adding
 # configs. Runtime prompts now include real sources, so old miniature-prompt cost
 # estimates no longer describe these calls. Budget before requesting a full sweep.
-#
-# When the project later flips to gating, switch the `|| true` off in the
-# eval step and remove the advisory `notice`.
 
 on:
   pull_request:
@@ -30,10 +35,8 @@ on:
       - 'scripts/validate-promptfoo-configs.py'
       - 'scripts/**'
       - '.github/workflows/persona-fidelity.yml'
-  schedule:
-    # Weekly full sweep — Mondays 07:00 UTC. Slightly offset from the
-    # validate-and-test fidelity sweep (04:00 UTC) so the two don't pile up.
-    - cron: '0 7 * * 1'
+      - '.github/promptfoo/package.json'
+      - 'requirements-dev.txt'
   workflow_dispatch:
     inputs:
       full_suite:
@@ -41,7 +44,7 @@ on:
         type: boolean
         default: false
 
-# Least privilege: schema validation + advisory eval only read the repo and
+# Least privilege: schema validation + rubric eval only read the repo and
 # upload artifacts. No contents/issues/PR writes needed. Pinned here so the
 # token stays read-only regardless of the repo default.
 permissions:
@@ -59,8 +62,8 @@ permissions:
 #
 # `cancel-in-progress: false` on main does NOT mean main runs independently —
 # it means they QUEUE, and GitHub cancels a *pending* run when a newer one
-# queues behind it. A merge landing while the Monday sweep holds the group can
-# therefore still be dropped. main is given its own per-run group instead, so
+# queues behind it. A merge landing while a long manual eval holds the group
+# could therefore still be dropped. main is given its own per-run group instead, so
 # merges never contend at all.
 concurrency:
   group: >-
@@ -72,7 +75,7 @@ concurrency:
 
 jobs:
   fidelity:
-    name: Persona-fidelity schema + advisory eval
+    name: Persona-fidelity schema + rubric eval
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -85,10 +88,13 @@ jobs:
           cache: 'pip'
           cache-dependency-path: |
             requirements.txt
-            requirements-eval.txt
+            requirements-dev.txt
 
-      - name: Install Python deps (for repo-convention validator)
-        run: pip install -r requirements.txt -r requirements-eval.txt
+      - name: Install Python deps (validator + runtime-prompt test)
+        # requirements-dev.txt (pytest), not requirements-eval.txt: nothing here
+        # imports the anthropic / openai SDKs — promptfoo calls the provider
+        # itself — so this job no longer installs them.
+        run: pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Run repo-convention validator (always)
         # This is the gate: filename convention, RAW/SPE/CUS coverage,
@@ -96,10 +102,15 @@ jobs:
         run: python scripts/validate-promptfoo-configs.py
 
       - name: Install promptfoo CLI (pinned)
-        # Pin to the previous-week stable to avoid landing on a brand-new
-        # release that may regress YAML parsing. Bumped by Dependabot npm
-        # ecosystem (see .github/dependabot.yml).
-        run: npm install -g promptfoo@0.121.14
+        # The version lives in .github/promptfoo/package.json, which the
+        # Dependabot npm ecosystem watches (.github/dependabot.yml). A version
+        # written here instead would be invisible to Dependabot — the root
+        # package.json has no dependencies — which is what this comment used to
+        # claim did not matter.
+        shell: bash
+        run: |
+          PROMPTFOO_VERSION=$(node -p "require('./.github/promptfoo/package.json').devDependencies.promptfoo")
+          npm install -g "promptfoo@${PROMPTFOO_VERSION}"
 
       - name: Validate promptfoo YAML schema (always)
         # Falls back gracefully if `promptfoo validate` is unavailable in this
@@ -125,16 +136,28 @@ jobs:
         id: key
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          EVENT_NAME: ${{ github.event_name }}
+          FIDELITY_GRADING_REQUIRED: ${{ vars.FIDELITY_GRADING_REQUIRED }}
         run: |
           if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-            echo "advisory=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::ANTHROPIC_API_KEY not set — skipping llm-rubric eval (schema validation passed; advisory by project policy)."
+            if [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "${FIDELITY_GRADING_REQUIRED:-}" = "true" ]; then
+              echo "::error::ANTHROPIC_API_KEY is not configured — a manually dispatched (or FIDELITY_GRADING_REQUIRED) persona eval must grade, not skip."
+              exit 1
+            fi
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::ANTHROPIC_API_KEY not set — skipping llm-rubric eval on this pull request (schema validation passed)."
+            {
+              echo "### llm-rubric eval skipped — this green tick evaluated no model response"
+              echo
+              echo "ANTHROPIC_API_KEY is not configured; only the promptfoo schema and repo-convention validation ran."
+            } >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "advisory=false" >> "$GITHUB_OUTPUT"
+            echo "run=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Run llm-rubric eval (advisory — never blocks)
-        if: steps.key.outputs.advisory == 'false'
+      - name: Run llm-rubric eval
+        if: steps.key.outputs.run == 'true'
+        shell: bash
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           MASTER_SKILL_FULL_PERSONA_EVAL: ${{ github.event_name == 'workflow_dispatch' && inputs.full_suite }}
@@ -144,17 +167,24 @@ jobs:
           if [ "$MASTER_SKILL_FULL_PERSONA_EVAL" = true ]; then
             configs=(tests/persona/*.promptfooconfig.yaml)
           fi
+          # Every config runs even after one fails, so the artifact carries all
+          # results; the step then fails if any did. Nothing masks the exit
+          # code any more (each call used to end in an or-true): an eval that
+          # cannot fail is not an eval.
+          failed=()
           for cfg in "${configs[@]}"; do
             slug=$(basename "$cfg" .promptfooconfig.yaml)
-            # `|| true` makes the eval advisory — the job never fails on
-            # rubric mismatches. Switch off when the project promotes this
-            # to a hard gate.
-            promptfoo eval -c "$cfg" \
-              -o ".promptfoo-results/${slug}.json" || true
+            if ! promptfoo eval -c "$cfg" -o ".promptfoo-results/${slug}.json"; then
+              failed+=("$slug")
+            fi
           done
+          if [ "${#failed[@]}" -gt 0 ]; then
+            echo "::error::llm-rubric eval failed for: ${failed[*]}"
+            exit 1
+          fi
 
       - name: Upload eval results
-        if: steps.key.outputs.advisory == 'false'
+        if: always() && steps.key.outputs.run == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: persona-fidelity-results-${{ github.run_id }}

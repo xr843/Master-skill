@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import ast
 import functools
+import importlib.util
 import json
 import re
 import subprocess
@@ -164,12 +165,11 @@ ADVISORY_GATES = {
         "response was graded. Set repo variable FIDELITY_GRADING_REQUIRED=true "
         "once the secret exists to make the skip a hard failure."
     ),
-    "Fidelity tests — full suite (weekly + manual)": (
-        "same skip as the smoke, on the weekly cron"
-    ),
-    "Persona-fidelity schema + advisory eval": (
-        "llm-rubric eval is `|| true` and is skipped entirely without a key; "
-        "only the promptfoo schema + repo-convention validation is real"
+    "Persona-fidelity schema + rubric eval": (
+        "on a pull request the llm-rubric eval is skipped without "
+        "ANTHROPIC_API_KEY (forks never have it, and this repo has none) — only "
+        "the promptfoo schema + repo-convention validation is real. A manual "
+        "dispatch without the key fails instead of passing."
     ),
 }
 
@@ -216,24 +216,19 @@ NOT_A_PR_GATE = {
 
 # `npm test` is what CONTRIBUTING tells a contributor to run before touching
 # scripts/, in its own words 「避免在 CI 才发现」. A command that exists to pre-empt CI
-# has to cover what CI checks. It has fallen behind twice: pytest was missing from it
-# until 2026-09-03, and on 2026-09-16 four content gates the PR job runs —
-# validate-citation-contract, validate-cross-critique, validate-lore-triggers-content
-# and validate-quote-attribution — were absent, so a contributor could go green
-# locally and still be failed by CI.
+# has to cover what CI checks. It fell behind twice while it and the CI job were two
+# hand-written lists: pytest was missing from it until 2026-09-03, and on 2026-09-16
+# four content gates the PR job ran were absent. The lists then drifted the other way
+# too — validate-promptfoo-configs.py ran only in `npm test`, the hook tests only in CI.
 #
-# Anything the per-PR job runs must therefore appear in `npm test` too, or be
-# declared here. `check_npm_test_covers_pr_gates` keeps this true in both directions.
-NOT_IN_NPM_TEST = {
-    "check-eval-sdk-surface.py": (
-        "asserts the pinned eval SDKs still expose what test-fidelity.py calls — it "
-        "needs requirements-eval.txt installed, which a content contributor has no "
-        "reason to have"
-    ),
-    "smoke-eval-sdk.py": (
-        "stands up a local server for a keyless end-to-end SDK smoke; same eval-only "
-        "dependency, and far slower than the content gates around it"
-    ),
+# Since 2026-10 both ends run `scripts/run-gates.py`, whose `GATES` tuple is the only
+# list: `npm test` runs its default gates, each CI step one group. What is left to
+# police is the wiring, in `check_gate_registry_wiring`:
+#   - every entry script under scripts/ is registered there, or declared below (or
+#     in NOT_A_PR_GATE) with the reason it is not;
+#   - every registered gate is selected by some workflow that runs on pull_request;
+#   - `npm test` is a bare run of the registry, not a list of its own.
+NOT_IN_GATE_REGISTRY = {
     "select-fidelity-smoke.py": (
         "picks which persona the CI smoke grades from job metadata — a CI scheduling "
         "helper, not a check over repository content"
@@ -244,7 +239,17 @@ NOT_IN_NPM_TEST = {
         "Rust toolchain and the advisory database there is nothing for it to read; "
         "run bare it exits 2 on argparse usage"
     ),
+    "validate-curriculum-sources.py": (
+        "runs as a sub-check inside validate.py (loaded by spec_from_file_location), "
+        "so the registered `validate` gate already executes it"
+    ),
+    "verify_citations.py": (
+        "the citation-audit library test-fidelity.py and the validators import; its "
+        "CLI is a reader-facing lookup, and its behaviour is covered by pytest"
+    ),
 }
+
+GATE_RUNNER = "run-gates.py"
 
 
 # The shape of a silent skip: a step that exits 0 because a secret is missing.
@@ -267,13 +272,30 @@ def _job_display_name(job_id: str, job: dict) -> str:
     return str(name) if name else job_id
 
 
+# A missing-secret branch that does nothing but report and fail is the opposite
+# of a skip: `if [ -z "${KEY:-}" ]; then echo "::error::…"; exit 1; fi`. The
+# manual full sweep is written that way since its cron was removed, and must not
+# be forced into ADVISORY_GATES — a false caveat hides a real one.
+_HARD_FAIL_BODY = re.compile(
+    r"\A\s*then\b(?:\s*echo\b[^;\n]*[;\n])*\s*exit\s+[1-9]\d*\s*[;\n]\s*fi\b"
+)
+
+
+def _run_skips_on_missing_secret(run: str) -> bool:
+    for match in _SKIP_ON_MISSING_SECRET.finditer(run):
+        rest = run[match.end():].lstrip(" \t;")
+        if not _HARD_FAIL_BODY.match(rest):
+            return True
+    return False
+
+
 def _job_skips_on_missing_secret(job: dict) -> bool:
     steps = job.get("steps") or [] if isinstance(job, dict) else []
     for step in steps:
         if not isinstance(step, dict):
             continue
         run = step.get("run")
-        if isinstance(run, str) and _SKIP_ON_MISSING_SECRET.search(run):
+        if isinstance(run, str) and _run_skips_on_missing_secret(run):
             return True
     return False
 
@@ -432,56 +454,139 @@ def check_every_gate_runs_on_a_pr(root: Path, workflow_docs: dict[str, dict]) ->
     return problems
 
 
-def npm_test_scripts(root: Path) -> set[str]:
-    """The scripts the documented pre-push command actually runs."""
-    package = root / "package.json"
-    if not package.exists():
-        return set()
-    data = json.loads(package.read_text(encoding="utf-8"))
-    command = str((data.get("scripts") or {}).get("test") or "")
-    return set(re.findall(r"scripts/([a-z0-9_-]+\.py)", command))
+def load_gate_registry(root: Path):
+    """`GATES` from scripts/run-gates.py, or None if the runner is absent."""
+    path = root / "scripts" / GATE_RUNNER
+    if not path.exists():
+        return None
+    spec = importlib.util.spec_from_file_location("_run_gates_registry", path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
 
 
-def pr_workflow_scripts(root: Path, workflow_docs: dict[str, dict]) -> set[str]:
-    """Scripts named outright by a workflow that triggers on `pull_request`.
+def registered_scripts(gates) -> set[str]:
+    """Script filenames the registry runs, read from each gate's argv."""
+    return {
+        arg.split("/", 1)[1]
+        for gate in gates
+        for arg in gate.argv
+        if arg.startswith("scripts/") and arg.endswith(".py")
+    }
 
-    Direct mentions only, unlike `pr_reachable_scripts`: `npm test` runs commands, so
-    what it has to match is the commands CI runs, not everything those import.
+
+_RUNNER_CALL = re.compile(r"scripts/run-gates\.py((?:[ \t]+--only[ \t=]+[\w,.-]+)*)")
+
+
+def pr_gate_selections(root: Path, workflow_docs: dict[str, dict]) -> list[list[str]]:
+    """Every `run-gates.py` call in a pull_request workflow, as its --only tokens.
+
+    An empty list is a bare invocation, which runs the default gates. Only step
+    `run:` scripts are read, never the file text: a YAML comment that mentions
+    scripts/run-gates.py is not a call (the first version counted those as bare
+    runs, which "selected" every default gate from a comment).
     """
-    named: set[str] = set()
-    for path, doc in workflow_docs.items():
+    calls: list[list[str]] = []
+    for _path, doc in sorted(workflow_docs.items()):
         triggers = doc.get("on", doc.get(True))
         keys = set(triggers) if isinstance(triggers, (dict, list)) else set()
         if "pull_request" not in keys:
             continue
-        named |= set(re.findall(r"scripts/([a-z0-9_-]+\.py)", (root / path).read_text(encoding="utf-8")))
-    return named
+        for job in ((doc.get("jobs") or {}).values()):
+            for step in (job.get("steps") or []) if isinstance(job, dict) else []:
+                run = step.get("run") if isinstance(step, dict) else None
+                if not isinstance(run, str):
+                    continue
+                for line in run.splitlines():
+                    code = line.split("#", 1)[0]
+                    for match in _RUNNER_CALL.finditer(code):
+                        tokens = re.findall(r"--only[ \t=]+([\w,.-]+)", match.group(1))
+                        calls.append([t for raw in tokens for t in raw.split(",") if t])
+    return calls
 
 
-def check_npm_test_covers_pr_gates(root: Path, workflow_docs: dict[str, dict]) -> list[str]:
-    """What CI runs on a PR, `npm test` must run too — or say why it does not."""
-    if not (root / "package.json").exists():
-        return []
-    in_ci = pr_workflow_scripts(root, workflow_docs)
-    in_npm = npm_test_scripts(root)
+def npm_test_command(root: Path) -> str:
+    package = root / "package.json"
+    if not package.exists():
+        return ""
+    data = json.loads(package.read_text(encoding="utf-8"))
+    return str((data.get("scripts") or {}).get("test") or "")
 
-    problems = [
-        f"scripts/{name} runs on every PR in CI but is not in `npm test` and not in "
-        "NOT_IN_NPM_TEST — the command that exists to pre-empt CI does not cover it"
-        for name in sorted(in_ci - in_npm)
-        if name not in NOT_IN_NPM_TEST
+
+def check_gate_registry_wiring(root: Path, workflow_docs: dict[str, dict]) -> list[str]:
+    """One gate list, wired to both `npm test` and every pull request."""
+    module = load_gate_registry(root)
+    if module is None:
+        return [f"scripts/{GATE_RUNNER} is missing — `npm test` and CI have no gate list"]
+    gates = module.GATES
+    problems: list[str] = []
+
+    # 1. Every entry script is registered, or says why not.
+    scripts_dir = root / "scripts"
+    entries = {
+        p.name for p in scripts_dir.glob("*.py")
+        if "def main(" in p.read_text(encoding="utf-8")
+    } - {GATE_RUNNER}
+    registered = registered_scripts(gates)
+    exempt = set(NOT_IN_GATE_REGISTRY) | set(NOT_A_PR_GATE)
+    problems += [
+        f"scripts/{name} is not registered in scripts/{GATE_RUNNER} GATES and not "
+        "declared in NOT_IN_GATE_REGISTRY or NOT_A_PR_GATE — neither `npm test` nor "
+        "the CI gate steps run it"
+        for name in sorted(entries - registered - exempt)
     ]
     problems += [
-        f"NOT_IN_NPM_TEST declares {name!r}, but `npm test` runs it now — drop the "
-        "entry rather than leave a false caveat standing"
-        for name in sorted(NOT_IN_NPM_TEST)
-        if name in in_npm
+        f"{GATE_RUNNER} registers scripts/{name}, which does not exist"
+        for name in sorted(registered)
+        if not (scripts_dir / name).exists()
     ]
     problems += [
-        f"NOT_IN_NPM_TEST declares {name!r}, but no PR workflow runs it — stale entry"
-        for name in sorted(NOT_IN_NPM_TEST)
-        if name not in in_ci
+        f"NOT_IN_GATE_REGISTRY declares {name!r}, but run-gates.py registers it now "
+        "— drop the entry rather than leave a false caveat standing"
+        for name in sorted(NOT_IN_GATE_REGISTRY) if name in registered
     ]
+    problems += [
+        f"NOT_IN_GATE_REGISTRY declares {name!r}, but no such entry script exists "
+        "— stale entry"
+        for name in sorted(NOT_IN_GATE_REGISTRY) if name not in entries
+    ]
+
+    # 2. Every registered gate runs on a pull request.
+    selected: set[str] = set()
+    for tokens in pr_gate_selections(root, workflow_docs):
+        try:
+            selected |= {g.name for g in module.select(tokens)}
+        except ValueError as exc:
+            problems.append(f"a PR workflow calls run-gates.py with {tokens}: {exc}")
+    problems += [
+        f"gate {g.name!r} ({g.group}) is registered in {GATE_RUNNER} but no "
+        "pull_request workflow selects it — it guards nothing until release"
+        for g in gates if g.name not in selected
+    ]
+
+    # 3. A default exclusion must say why.
+    problems += [
+        f"gate {g.name!r} is left out of `npm test` with an empty reason"
+        for g in gates if g.not_default is not None and not str(g.not_default).strip()
+    ]
+
+    # 4. `npm test` is the registry, not a second list.
+    command = npm_test_command(root)
+    if (root / "package.json").exists():
+        if f"scripts/{GATE_RUNNER}" not in command:
+            problems.append(
+                f"`npm test` does not run scripts/{GATE_RUNNER} — it is a separate "
+                "gate list again, and it will drift from CI"
+            )
+        if "--only" in command:
+            problems.append("`npm test` passes --only to run-gates.py — it must run every default gate")
+        others = set(re.findall(r"scripts/([a-z0-9_-]+\.py)", command)) - {GATE_RUNNER}
+        if others:
+            problems.append(
+                f"`npm test` names {sorted(others)} directly — register them in "
+                f"{GATE_RUNNER} instead of growing a second list"
+            )
     return problems
 
 
@@ -591,7 +696,7 @@ def run_all(root: Path, fidelity_report: Path | None = None) -> list[str]:
     problems += check_advisory_gates_declared(workflows)
     problems += check_declared_gates_still_exist(workflows)
     problems += check_every_gate_runs_on_a_pr(root, workflows)
-    problems += check_npm_test_covers_pr_gates(root, workflows)
+    problems += check_gate_registry_wiring(root, workflows)
 
     # check_graded_suites_graded_something shipped fully written and unit-tested
     # but unreferenced by run_all — the anti-fake-green script had a check that
