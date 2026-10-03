@@ -138,7 +138,7 @@ Master-skill 是由 [FoJin](https://fojin.app) 驱动的佛教 AI 祖师人格�
 - **渐进式披露**：SKILL.md 以决策树 + Quick Ref 为主，`references/`、`sources/` 按需加载，Context 随查随取
 - **HARD-GATE 铁律**：`/create-master` 与预置法师内置红线——教义断言、修行指导与文本解释必须引用该 persona 声明的来源（CBETA / BDRC / Toh / SuttaCentral / PTS / 合规编纂开示），不得捏造来源 ID，不得为虚构人物建角色
 - **二阶段审查**：生成流程要求先审教义、再审风格；写入端要求两份审查阶段不同的 PASS 记录，并核对它们记下的输入哈希与当前内容一致，所以审查之后改稿必须重审。这些记录由生成流程在本机写下，能防止「审完再改」，证明不了审查确由两个独立的人完成——审查判断本身由审查者负责
-- **自动化保真度测试**：211 条夹具（每位祖师 10+ 条，`compare-masters` 元技能 18 条）检查关键词与引用覆盖，每条评分回答另经离线引文审计；CI 在每个 PR 与 main 上做结构校验（dry-run）；实跑评分支持 Anthropic / DeepSeek / Gemini（`--provider`），需要对应的 API key，作为本地/发版前手动步骤执行——最近一次全量运行与逐条裁定见[下文](#保真度评测当前数据)
+- **自动化保真度测试**：240 条夹具（每位祖师 12+ 条，含危机转介与不印证边界，`compare-masters` 元技能 18 条）检查关键词与引用覆盖，每条评分回答另经离线引文审计；CI 在每个 PR 与 main 上做结构校验（dry-run）；实跑评分支持 Anthropic / DeepSeek / Gemini（`--provider`），需要对应的 API key，作为本地/发版前手动步骤执行——最近一次全量运行与逐条裁定见[下文](#保真度评测当前数据)
 - **多平台共用一份 `prebuilt/`**：Claude Code、Cursor、Codex CLI、OpenCode、Gemini CLI 各有装法（见 [docs/install.md](docs/install.md)，Codex / OpenCode / Gemini 三端均为实测过的步骤）
 - **NPX 一键安装**：`npx master-skill install master-zhiyi` 直接部署到 Claude Code
 - **离线工具链**：`scripts/cite.py`（CBETA 引用查询）、`scripts/query.py`（繁简归一的离线关键词检索）、`scripts/validate.py`（frontmatter linter）
@@ -160,7 +160,7 @@ Master-skill 的核心不是"角色扮演提示词集合"，而是一个可验�
 
 ### 保真度评测（当前数据）
 
-211 条夹具（`prebuilt/*/tests/fidelity.jsonl`）对真实模型的回答做机械检查：该出现的关键词与引用是否出现，不该出现的是否没有出现；每条评分回答另外进入离线引文审计。每个数字都要连同产生它的模型与判分口径一起读：
+240 条夹具（`prebuilt/*/tests/fidelity.jsonl`；下表各次运行用的是此前的 211 条）对真实模型的回答做机械检查：该出现的关键词与引用是否出现，不该出现的是否没有出现；每条评分回答另外进入离线引文审计。每个数字都要连同产生它的模型与判分口径一起读：
 
 | | 数值 | 口径 |
 |---|---|---|

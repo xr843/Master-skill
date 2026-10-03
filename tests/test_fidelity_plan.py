@@ -19,7 +19,7 @@ def test_plan_all_uses_real_suite_scope_and_cannot_claim_grading():
     result = run_plan("--all")
     assert result.returncode == 0, result.stderr
     suites = json.loads(result.stdout)
-    assert sum(suite["total"] for suite in suites) == 211
+    assert sum(suite["total"] for suite in suites) == 240
     for suite in suites:
         assert suite["mode"] == "plan"
         assert suite["results"] == []
