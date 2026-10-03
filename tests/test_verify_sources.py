@@ -1506,7 +1506,7 @@ def test_the_collector_gained_the_quotations_it_used_to_walk_past():
         "master-huineng/references/teaching.md:107",
         "master-kumarajiva/references/teaching.md:55",
         "master-atisha/references/teaching.md:83",
-        "master-xuyun/references/teaching.md:21",
+        "master-xuyun/references/teaching.md:23",
     ):
         assert gained in where, f"{gained} 是真引文，应当被收"
     for meta_line in (
@@ -1593,7 +1593,9 @@ def test_the_block_collector_takes_only_blocks_without_a_cbeta_id():
     blocks = verify_sources.collect_compiled_excerpt_blocks()
     assert blocks, "一块都没收到 —— 采集器检查了空集合"
     assert all(len(b) == 3 for b in blocks)
-    assert all(b[0].startswith("master-yinguang/") for b in blocks), "目前只有印光的块没有经号"
+    # 没有经号的只有两位编集语录祖师：印光的《文钞》与虚云的《法汇》《年谱》（2026-10-03 加入）。
+    assert all(b[0].startswith(("master-yinguang/", "master-xuyun/")) for b in blocks), "目前只有印光、虚云的块没有经号"
+    assert any(b[0].startswith("master-xuyun/sources/fahui-excerpts.md") for b in blocks), "虚云《法汇》的「原典」块应当被收"
     assert not any(verify_sources._DOC_CBETA_ID.search(b[2]) for b in blocks)
 
 

@@ -56,11 +56,13 @@ verified_at: 2026-04-06
 |---------|---------|------|
 | 念佛 / 往生 / 净土 | master-yinguang + master-ouyi | 净土专精 + 跨宗派 |
 | 参禅 / 话头 / 开悟 | master-huineng + master-xuyun | 古今禅宗对比 |
-| 唯识 / 空有 / 性相 / 法相 | master-xuanzang + master-kumarajiva | 唯识 vs 中观 |
+| 唯识 / 空有 / 性相 / 法相 | master-xuanzang + master-nagarjuna | 唯识 vs 中观 |
 | 判教 / 圆融 / 止观 | master-zhiyi + master-fazang | 天台 vs 华严 |
 | 修行次第 / 综合法门 | master-ouyi + master-yinguang | 综合 vs 专修 |
 | 戒律 / 持戒 / 律仪 / 行持 | master-xuyun + master-atisha + master-buddhaghosa | 汉传禅门律 vs 印藏菩萨律 vs 上座部律藏注释 |
-| 般若 / 空性 / 中观 / 缘起性空 / 应成 / 毕竟空 | master-kumarajiva + master-tsongkhapa + master-huineng | 早期中观译师 · 应成中观精确分判 · 禅宗直指 |
+| 空性 / 中观 / 缘起性空 / 应成 / 毕竟空 | master-nagarjuna + master-tsongkhapa + master-huineng | 印度中观源头 · 应成中观精确分判 · 禅宗直指 |
+| 般若 / 金刚经 | master-kumarajiva + master-huineng | 《金刚经》译师 vs 闻《金刚经》开悟的六祖 |
+| 法华 / 一佛乘 | master-kumarajiva + master-zhiyi | 《法华经》译师 vs 依《法华》立教的天台 |
 | 道次第 / 三士道 / 下士道 / 中士道 / 上士道 / lam rim | master-atisha + master-tsongkhapa | 印藏桥梁源头 vs 格鲁派系统化 |
 | 心识 / 阿赖耶 / 心所 / 末那 | master-xuanzang + master-buddhaghosa + master-huineng | 唯识 vs 上座部阿毗达摩 vs 禅宗直指 |
 | 苦行 / 闭关 / 山中修行 / 头陀 | master-xuyun + master-milarepa | 汉传禅门头陀 vs 藏传瑜伽士传统 |

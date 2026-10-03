@@ -10,6 +10,35 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- master-xuyun: new `sources/fahui-excerpts.md` with 17 verbatim blocks from
+  《虚云和尚法汇》(开示: 参禅的先决条件, 禅堂开示, 参禅与念佛, 上海居士林请普说,
+  一月十九日开示; 规约: 禅堂规约) and 《虚云老和尚年谱》(光绪二十一年, the Gaomin
+  awakening and verse). Text is copied from the BFNN transcription of 岑学吕's edition
+  — the same base text `tools/compiled-teaching-sources.json` registers for step 3i —
+  and every block was re-fetched and matched as a substring. 参话头 / 疑情 / 念佛是谁
+  in `references/teaching.md` were paraphrase attributed to 《开示录》; they now quote
+  the 法汇 text with 篇名, and the Quick Reference no longer cites the undeclared
+  《修習止觀坐禪法要》. 《开示录》 stays declared but uncited: 净慧's 2011 edition is in
+  copyright and has no free full text.
+- master-kumarajiva: declares 《鸠摩罗什法师大义》(大乘大义章, T45n1856, 慧远问 / 罗什答)
+  and 《高僧传》(T50n2059). New `sources/dachengdayi-excerpts.md` holds six 什答
+  passages (真法身, 诸法实相 as 如·法性·真际, 一义三品, 无我门与空法门, 非有非无亦须舍,
+  念佛三昧), each checked against CBETA kwic by fascicle. SKILL.md and teaching.md now
+  separate his translations from his own words; the 中论 / 金刚经 excerpts shared with
+  nagarjuna and huineng keep the canonical text but their notes speak as translator
+  (不来亦不出, 偈「无」vs 释「空」, six vs nine similes). The cross-critique of xuanzang
+  now rests on T45n1856 instead of repeating nagarjuna's 中论 position. Fixed:
+  「嚼饭与人」was cited to 僧叡《大品经序》/《出三藏记集》卷8; it is 罗什's remark to
+  僧叡 in 《高僧传》卷2 (出三藏记集 卷14 has a variant), and the unsourced "three
+  translation principles" are gone.
+- Routing: the 唯识 vs 中观 and 空性 / 中观 topic pairings use master-nagarjuna as the
+  Madhyamaka side. 般若 moved to a new `prajna-sutras` row (kumarajiva + huineng) and
+  法华 / 一佛乘 got a `lotus` row (kumarajiva + zhiyi); compare-masters and master-help
+  mirror the table. The debate pairing for 空有之争 stays kumarajiva vs xuanzang (三论
+  vs 法相, armed both ways in cross_critique).
+- These change persona inputs for xuyun and kumarajiva; their fidelity numbers need a
+  fresh measured run.
+
 - Paid fidelity evaluations no longer run on a schedule. The Monday crons in
   `validate-and-test.yml` and `persona-fidelity.yml` ran without
   `ANTHROPIC_API_KEY`, skipped grading and concluded success. Both are manual

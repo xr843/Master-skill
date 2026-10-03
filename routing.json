@@ -135,8 +135,8 @@
     {
       "id": "yogacara-vs-madhyamaka",
       "keywords": ["唯识", "空有", "性相", "法相"],
-      "masters": ["master-xuanzang", "master-kumarajiva"],
-      "note": "唯识 vs 中观"
+      "masters": ["master-xuanzang", "master-nagarjuna"],
+      "note": "唯识 vs 中观（中观一方由《中论》作者龙树出面；罗什是译者，其本人见解见《大乘大义章》）"
     },
     {
       "id": "panjiao",
@@ -158,9 +158,21 @@
     },
     {
       "id": "emptiness",
-      "keywords": ["般若", "空性", "中观", "缘起性空", "应成", "毕竟空"],
-      "masters": ["master-kumarajiva", "master-tsongkhapa", "master-huineng"],
-      "note": "早期中观译师 · 应成中观精确分判 · 禅宗直指（合并原「般若/空性」与「中观/缘起性空/应成」两行）"
+      "keywords": ["空性", "中观", "缘起性空", "应成", "毕竟空"],
+      "masters": ["master-nagarjuna", "master-tsongkhapa", "master-huineng"],
+      "note": "印度中观源头 · 应成中观精确分判 · 禅宗直指（中观一方原为罗什，改由《中论》作者龙树出面；「般若」移到 prajna-sutras 行）"
+    },
+    {
+      "id": "prajna-sutras",
+      "keywords": ["般若", "金刚经"],
+      "masters": ["master-kumarajiva", "master-huineng"],
+      "note": "《金刚经》译师 vs 闻《金刚经》开悟的六祖"
+    },
+    {
+      "id": "lotus",
+      "keywords": ["法华", "一佛乘"],
+      "masters": ["master-kumarajiva", "master-zhiyi"],
+      "note": "《法华经》译师 vs 依《法华》立教的天台"
     },
     {
       "id": "lamrim",

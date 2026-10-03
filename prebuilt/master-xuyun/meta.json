@@ -45,7 +45,8 @@
     {
       "type": "compiled_teaching",
       "id": "Xuyun:Fahui",
-      "title": "虚云和尚法汇（虛雲和尚法彙）"
+      "title": "虚云和尚法汇（虛雲和尚法彙）",
+      "note": "参话头、疑情、念佛是谁、坐禅须知、禅堂规约的原话在开示、规约两部；逐字摘录见 sources/fahui-excerpts.md，底本为 BFNN 所录岑学吕编本（tools/compiled-teaching-sources.json 登记的同一底本）。"
     },
     {
       "type": "compiled_teaching",
