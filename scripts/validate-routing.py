@@ -35,6 +35,9 @@ Checks
   7. every catalog persona is reachable from at least one pairing or the
      default pairing (no master can become unrecommendable)
   8. every catalog persona has a non-empty search_scope.keywords
+  9. `crisis` (checked before every other layer) has a non-empty keyword
+     list, and master-help's step 0 lists it verbatim
+ 10. a situation's optional `referral` flag is a boolean
 
 Usage
 -----
@@ -186,6 +189,19 @@ def validate(root: Path = ROOT) -> list:
                         f"first, so this situation row is unreachable"
                     )
 
+    # 5c — crisis is checked before every other layer, so it only needs a
+    # usable keyword list; overlap with later layers is intended (it wins).
+    crisis = routing.get("crisis")
+    if crisis is not None:
+        kws = crisis.get("keywords") if isinstance(crisis, dict) else None
+        if not isinstance(kws, list) or not kws or not all(
+            isinstance(k, str) and k.strip() for k in kws
+        ):
+            problems.append("crisis: keywords must be a non-empty list of strings")
+    for row in situations:
+        if "referral" in row and not isinstance(row["referral"], bool):
+            problems.append(f"situations: {row.get('id')!r} referral must be true or false")
+
     # 6 — order is a clean 1..N
     orders = [r.get("order") for r in mode_rules]
     if sorted(o for o in orders if isinstance(o, int)) != list(
@@ -318,6 +334,12 @@ def _master_help_problems(root: Path, routing: dict) -> list:
     if not skill_md.exists():
         return ["master-help: prebuilt/master-help/SKILL.md is missing"]
     text = skill_md.read_text(encoding="utf-8")
+
+    crisis = (routing.get("crisis") or {}).get("keywords") or []
+    if crisis and f"命中「{' / '.join(crisis)}」" not in text:
+        problems.append(
+            "master-help: step 0 does not list the crisis keywords exactly as routing.json has them"
+        )
 
     for rule in routing.get("mode_rules") or []:
         listed = f"命中「{' / '.join(rule['keywords'])}」"

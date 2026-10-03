@@ -6,6 +6,10 @@
   },
   "_min_keyword_length_comment": "Persona keywords shorter than this are ignored when scoring. Seven single-character doctrinal atoms (空 戒 定 慧 苦 禅 业) live in meta.json search_scope.keywords, and matching by containment made them fire on ordinary Chinese: 「有空吗」 scored Kumārajīva and Nāgārjuna, 「我戒烟了」 scored Buddhaghosa. Every one of them also appears inside a longer keyword (空性 / 持戒 / 戒定慧 / 毕竟空 …), so dropping them costs no real recall; queries that only carry the bare atom fall through to topic_pairings, which is what that layer is for.",
   "min_keyword_length": 2,
+  "_crisis_comment": "Checked before everything else. A query that reads as suicidal or self-harm intent gets no master and no teaching mode: `recommend` prints a referral to crisis and professional help instead (ETHICS.md: crisis is referred, never answered with a Dharma substitute). Containment matching, so a keyword here fires inside any longer sentence; a false positive costs a referral, a false negative costs a recommendation where there should have been none.",
+  "crisis": {
+    "keywords": ["自杀", "轻生", "不想活", "活不下去", "想死", "寻死", "结束生命", "自残", "自伤", "割腕", "suicide", "suicidal", "kill myself", "end my life", "self-harm", "self harm", "want to die"]
+  },
   "mode_rules": [
     {
       "mode": "master-curriculum",
@@ -29,7 +33,7 @@
     {
       "mode": "master-debate",
       "order": 2,
-      "note": "横向 / 对立：4 轮立论-反驳-回应-综合",
+      "note": "横向 / 对立：多轮立论-反驳-回应-综合（默认 4 轮，部分配对 5 轮）",
       "keywords": [
         "辩论",
         "各执一词",
@@ -82,6 +86,20 @@
       "keywords": ["最朴素", "朴素", "最简单的修法"],
       "masters": ["master-ajahn-chah"],
       "note": "南传森林禅 · 出入息念"
+    },
+    {
+      "id": "anxiety-insomnia",
+      "keywords": ["焦虑", "睡不着", "失眠", "压力大", "紧张不安", "烦躁"],
+      "masters": ["master-ajahn-chah", "master-mahasi-sayadaw", "master-zhiyi"],
+      "note": "正念观察 / 标记法 / 止观调心",
+      "referral": true
+    },
+    {
+      "id": "grief",
+      "keywords": ["去世", "过世", "离世", "丧亲", "失去亲人", "悲伤", "伤心", "难过"],
+      "masters": ["master-ajahn-chah", "master-yinguang"],
+      "note": "观无常与放下 / 为亡者念佛回向",
+      "referral": true
     }
   ],
   "topic_pairings": [

@@ -40,6 +40,8 @@ master-skill recommend "<用户原话>" --json
 与 `routing.json.mode_rules` 的 `order` 一致：
 
 ```
+0. 命中「自杀 / 轻生 / 不想活 / 活不下去 / 想死 / 寻死 / 结束生命 / 自残 / 自伤 / 割腕 / suicide / suicidal / kill myself / end my life / self-harm / self harm / want to die」
+     → 不推荐任何祖师或模式：温和回应，请对方立即联系当地急救 / 心理危机热线或身边可信的人（ETHICS.md：危机转介专业帮助，不以佛法替代）
 1. 命中「学习计划 / 学修次第 / 入门 / 先学什么 / 从哪开始 / 开始学 / 应该读 / 下一步读什么 / 路径推荐 / 按什么顺序 / curriculum / roadmap」
      → /master-curriculum
 2. 命中「辩论 / 各执一词 / 谁更对 / 高下 / 之争 / 之辩 / 分判 / debate」
@@ -70,6 +72,8 @@ master-skill recommend "<用户原话>" --json
 | 看不懂 / 读不懂 / 理不清 / 没有逻辑 | master-xuanzang | 唯识严密分析 |
 | 无力感 / 使不上力 / 没有进步 / 学佛很久 / 提不起劲 | master-yinguang | 老实念佛 |
 | 最朴素 / 朴素 / 最简单的修法 | master-ajahn-chah | 南传森林禅 · 出入息念 |
+| 焦虑 / 睡不着 / 失眠 / 压力大 / 紧张不安 / 烦躁 | master-ajahn-chah + master-mahasi-sayadaw + master-zhiyi | 正念观察 / 标记法 / 止观调心（另附一句：持续影响生活请先看医生或心理专业人员） |
+| 去世 / 过世 / 离世 / 丧亲 / 失去亲人 / 悲伤 / 伤心 / 难过 | master-ajahn-chah + master-yinguang | 观无常与放下 / 为亡者念佛回向（同样附专业求助一句） |
 
 ## 主题配对（第 6 步）与兜底（第 7 步）
 
