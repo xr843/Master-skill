@@ -31,6 +31,41 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 - pytest moved from `requirements-eval.txt` to `requirements-dev.txt`, so
   persona-fidelity's offline stage no longer installs the anthropic / openai SDKs;
   pip-audit covers the new file.
+- First-run CLI: `install` ends with a next-step hint (new session, `/master-help`
+  or the installed persona, and that Codex / Gemini do not read `~/.claude/skills/`).
+  `doctor` with nothing installed prints a warning with the install command;
+  `status` and the exit code stay `ok`, and `--json` adds a `warnings` array.
+  Unknown skill names and commands suggest the closest match (`huineg` → `huineng`,
+  `instal` → `install`).
+- `list` shows people a summary (persona name · tradition · school · era from
+  `meta.json`; a catalog `summary` for teaching modes and the generator) instead
+  of the model-facing "Use when…" text. `--json` adds `displayName` / `summary` and
+  keeps every existing field. The frontmatter reader now unquotes single- and
+  double-quoted scalars and folds continuation lines; three teaching-mode
+  descriptions had reached `list` with a leading `'`.
+- `recommend`: statements of suicide or self-harm (`自杀`, `不想活`, `kill myself`…)
+  are checked first and get crisis-line referrals, never a master. New plain-language
+  situations for anxiety / insomnia and grief carry a line pointing to professional
+  help. An English query that matches nothing now says matching is Chinese-keyword
+  based and points to `/master-help` instead of presenting the default pairing.
+  `master-help` mirrors the crisis step and new rows; `validate-routing.py` checks both.
+- SessionStart hook: Claude Code, which lists all 20 plugin skills to the model
+  itself, now gets a 175-byte pointer to `/master-help` instead of the 1,548-byte
+  list (2,134 bytes of JSON) at every startup / clear / compact, emitted before any
+  Python interpreter is looked up. Cursor and unidentified hosts keep the full list.
+  `/master-debate` is no longer described as fixed 4 rounds (some pairs default to 5).
+- Docs: the README no longer claims the three teaching modes run on fojin.app/chat
+  (the web offers single-master conversation; teaching modes need a terminal
+  install); the 「你的状况」 table uses real `/master-<name>` commands; the desktop
+  section moved to `docs/desktop*.md` (macOS builds are Apple Silicon only).
+  Troubleshooting replaces "delete `~/.claude/skills/master-<name>/`" with
+  `update --dry-run` / `--force`, quotes the real offline marker, states the fidelity
+  minimum (5 cases, ≥1 boundary) consistently with CONTRIBUTING, and adds Codex /
+  Gemini discovery, missing `pypinyin`, and command-not-found entries. `docs/PRD.md`
+  is marked historical in favour of `v1-framework-roadmap.md`. `SECURITY.md` states
+  the installer threat model: an attacker who can already write the skills
+  directory is out of scope.
+
 - Installation checks treat nonregular replacements as local edits without reading
   them. Records and hashes read from one checked file descriptor, preventing a
   pathname replacement from redirecting the read to a pipe. Dangling installation
