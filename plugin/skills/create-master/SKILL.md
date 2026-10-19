@@ -8,8 +8,6 @@ allowed-tools:
   - Read
   - Glob
   - Grep
-  - Bash(python3 ${CLAUDE_SKILL_DIR}/tools/*)
-  - Bash(python3 "${CLAUDE_SKILL_DIR}/tools/*)
 ---
 
 # Master-skill — 佛教法师教学角色生成器

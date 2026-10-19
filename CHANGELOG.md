@@ -10,6 +10,14 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- The plugin has an icon (`.claude-plugin/icon.png`, the FoJin lotus, 512 × 512), carried
+  into `plugin/`. The Claude plugin directory reads it once, the first time a listing is
+  saved.
+- create-master no longer pre-approves any shell command. `Bash(python3
+  ${CLAUDE_SKILL_DIR}/tools/*)` let any arguments through without a prompt, and the Claude
+  plugin directory holds a submission for it ("Pre-approves broad shell access"); the
+  generator's tool runs now go through the user's normal permission prompt.
+
 ## [0.13.2] — 2026-10-19
 
 **Fewer misquotations from three masters.** master-nagarjuna, master-tsongkhapa and
