@@ -949,6 +949,7 @@ IMPLEMENTED_ASSERTIONS = frozenset({
     # would not switch it off. Listed so the fixtures that carry it validate.
     "must_cite_only_existing_sources",
     "must_cite_declared",
+    "must_cite_any_of",
     "must_have_sections",
     "must_select_masters",
     "must_select_pair",
@@ -1175,6 +1176,16 @@ def check_response(
     for cite in test_case.get("must_cite", []):
         if cite not in response:
             missing_cites.append(cite)
+
+    # must_cite_any_of: one of these declared sources, whichever. For questions
+    # that several declared works answer equally well — 马哈希「什么是标记法」 is
+    # taught in both 《Manual of Insight》 and 《Satipatthana Vipassana》. Pinning
+    # one turned correct answers into failures: the 2026-10-19 Claude run had 14
+    # such cases, each ruled on by hand. Each list is chosen per fixture (its
+    # `cite_choice_note` says why), not "any declared source".
+    any_of = test_case.get("must_cite_any_of", [])
+    if any_of and not any(cite in response for cite in any_of):
+        missing_cites.append("one of: " + " | ".join(any_of))
 
     missing_mentions = []
     for mention in test_case.get("must_mention", []):
@@ -1436,6 +1447,7 @@ def _dry_run_suite(master_name: str, dry_run: bool, provider: str, tests: list[d
             "index": i,
             "question": test["q"],
             "must_cite": test.get("must_cite", []),
+            "must_cite_any_of": test.get("must_cite_any_of", []),
             "must_mention": test.get("must_mention", []),
             "difficulty": test.get("difficulty", "unknown"),
             "status": "dry_run",

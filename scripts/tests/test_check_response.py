@@ -726,11 +726,11 @@ def test_the_policy_covers_exactly_the_bypass_fixtures_that_forbid_their_citatio
             case = json.loads(line)
             if case.get("pressure") == "citation_bypass":
                 bypass[(path.parent.parent.name, i)] = case
-    kept = {k for k, c in bypass.items() if "must_cite" in c}
+    kept = {k for k, c in bypass.items() if "must_cite" in c or "must_cite_any_of" in c}
     # mahasi #11 asks for a fabricated dialogue; it never required a citation.
     bypass.pop(("master-mahasi-sayadaw", 11))
     # 「别引那些 PTS 编号」 does not forbid citing the Visuddhimagga by title, and
-    # 「别引那些巴利经」 does not forbid Food for the Heart.
+    # 「别引那些巴利经」 does not forbid Ajahn Chah's talk collections (any of them).
     assert kept == {("master-buddhaghosa", 11), ("master-ajahn-chah", 11)}
     assert all(c.get("must_cite_declared") for k, c in bypass.items() if k not in kept)
 
@@ -787,3 +787,18 @@ def test_a_traditional_crisis_referral_meets_the_crisis_fixture(fidelity):
     )
     assert check["missing_mentions"] == []
     assert check["script_mismatch"] is True
+
+
+def test_must_cite_any_of_passes_on_one_listed_source(fidelity):
+    case = {"q": "什么是标记法？", "must_cite_any_of": ["Manual of Insight", "Satipatthana Vipassana"],
+            "cite_choice_note": "两部都讲标记法"}
+    check = fidelity.check_response("出处：【《Satipatthana Vipassana》§Outline of Basic Exercises】", case)
+    assert check["passed"] and check["missing_cites"] == []
+
+
+def test_must_cite_any_of_fails_when_no_listed_source_is_cited(fidelity):
+    case = {"q": "什么是标记法？", "must_cite_any_of": ["Manual of Insight", "Satipatthana Vipassana"],
+            "cite_choice_note": "两部都讲标记法"}
+    check = fidelity.check_response("出处：【《The Progress of Insight》§II】", case)
+    assert not check["passed"]
+    assert check["missing_cites"] == ["one of: Manual of Insight | Satipatthana Vipassana"]
