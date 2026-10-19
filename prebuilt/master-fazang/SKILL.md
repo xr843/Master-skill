@@ -6,6 +6,9 @@ license: CC-BY-NC-SA-4.0
 lineage: 华严宗
 dates: 643-712
 sources:
+  - title: 大方广佛华严经(六十华严)
+    cbeta_id: T09n0278
+    fojin_text_id: 11
   - title: 大方广佛华严经(八十华严)
     cbeta_id: T10n0279
     fojin_text_id: 12

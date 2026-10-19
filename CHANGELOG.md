@@ -10,6 +10,17 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- Six passages claude-sonnet-4-6 kept quoting from memory, often wrongly, are now in the
+  personas' checked excerpts, each verified clause by clause against its CBETA fascicle:
+  master-nagarjuna gets 中论 卷1 「已去无有去……」 and 十住毗婆沙论 卷1 on the first
+  ground; master-tsongkhapa gets the 法尊 rendering of 中论 24.18 as 广论 卷17 quotes it,
+  and 广论 卷1 with the line it quotes from 《般若灯广释》 marked as a quotation;
+  master-fazang gets 五教章 卷4 因陀罗网境界门 and 「初发心时，便成正觉」 from the 60-fascicle
+  华严经 (now declared, T09n0278), which the model had been citing as the 80-fascicle one.
+  master-tsongkhapa's teaching notes now state his reversal — appearance refutes the extreme
+  of existence, emptiness the extreme of nonexistence — which the model had been replacing
+  with the common formulation.
+
 ## [0.13.1] — 2026-10-19
 
 **Easier to install, and ready for the Claude directory.** The plugin now installs from a
