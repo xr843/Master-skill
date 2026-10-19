@@ -10,6 +10,17 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.13.1] — 2026-10-19
+
+**Easier to install, and ready for the Claude directory.** The plugin now installs from a
+generated `plugin/` folder that passes the Claude plugin directory's pre-submission checklist
+(189 files, none over 256 KiB, a hook the validator can read, disclosed network use); a gate
+keeps it byte-identical to its sources. Existing installs pick it up with `claude plugin update`.
+Codex users get all 21 skills, `create-master` included, from
+`codex plugin marketplace add xr843/Master-skill`, and `npx skills add xr843/Master-skill
+--full-depth` installs all 21 into any of the agents skills.sh supports. compare-masters and
+master-debate now keep their required headings and their sources when asked not to cite.
+
 - Install docs (README, README_EN, docs/install.md, docs/install.en.md) add two one-line
   installs measured on 2026-10-19 with an isolated HOME. Codex CLI:
   `codex plugin marketplace add xr843/Master-skill` then `codex plugin add master-skill@master-skill`
