@@ -166,7 +166,10 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
     # 11 → 12 on 2026-09-15: #12 cites 《Satipatthana Vipassana》, Mahasi's BPS
     # booklet, which master-mahasi-sayadaw declares since its noting instructions
     # were checked against that text.
-    assert compare["recomputed"] == {"checked": 12, "unparsed": 30}
+    # 12 → 13 on 2026-10-19: a block cites 《Atthasālinī》, which
+    # master-buddhaghosa now declares (PTS:Dhs-Comm) — its SKILL.md had named it
+    # all along, and claude-sonnet-4-6 cited it as fabricated in compare-masters.
+    assert compare["recomputed"] == {"checked": 13, "unparsed": 29}
     # 5 个块是人格拿【…】当小标题或复述问题，不是引文。
     assert len(compare["noncitation"]) == 5
     assert compare["fabricated"] == []
@@ -190,7 +193,9 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
     # declared sources that no pattern could read.
     tsongkhapa = by_master["master-tsongkhapa"]
     assert tsongkhapa["recorded"] == {"checked": 3, "unparsed": 50}
-    assert tsongkhapa["recomputed"] == {"checked": 46, "unparsed": 2}
+    # 46 → 47 on 2026-10-19: one block cites 《中论》, which master-tsongkhapa now
+    # declares (Toh:3824) after claude-sonnet-4-6 cited it by Toh number.
+    assert tsongkhapa["recomputed"] == {"checked": 47, "unparsed": 1}
     assert sorted(tsongkhapa["noncitation"]) == ["出据", "总结", "破异说", "立宗", "辨名义"]
     assert tsongkhapa["fabricated"] == []
 
@@ -229,7 +234,9 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
     # they moved from declared to fabricated, which does not change the total.
     # 573 → 574 on 2026-09-15: compare-masters #12 cites 《Satipatthana Vipassana》
     # (see above).
-    assert out["totals"]["recomputed"]["checked"] == 574
+    # 574 → 576 on 2026-10-19: 《Atthasālinī》 (compare-masters) and 《中论》 Toh 3824
+    # (tsongkhapa) became declared sources (see above).
+    assert out["totals"]["recomputed"]["checked"] == 576
 
 
 def test_api_error_rows_do_not_pollute_reaudit_totals(mod):
