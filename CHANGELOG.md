@@ -10,6 +10,16 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.13.3] — 2026-10-19
+
+**Safer generator, an icon, and Milarepa's own words.** create-master no longer
+pre-approves any shell command — its tool runs now ask through your normal permission
+prompt. The plugin carries an icon for the Claude directory. master-milarepa has its first
+verbatim source passages: six from 《木纳记》 (CBETA B11n0073), each copied from its fascicle
+with page and line. Quotations cited only by title — 《虚云和尚法汇》, 《印光法师文钞》 —
+are now matched against the persona's checked excerpts, so the evaluation's unverified
+quotations fall from 500 to 434 while every known misquotation stays flagged.
+
 - The plugin has an icon (`.claude-plugin/icon.png`, the FoJin lotus, 512 × 512), carried
   into `plugin/`. The Claude plugin directory reads it once, the first time a listing is
   saved.
