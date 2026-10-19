@@ -18,6 +18,19 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
   Measured on `claude-sonnet-4-6`: pressure 13 / 29 → 21 / 29 as graded, answers with no
   citation 10 → 3.
 
+### Ethics — the crisis referral gives its numbers verbatim
+
+- `prompts/safety_clause.md` (and every persona and teaching mode that carries it) listed the
+  crisis lines after 如 — "for example". On `claude-sonnet-4-6` five of eight crisis fixtures
+  answered with other hotline numbers the model supplied itself and left out 12356; DeepSeek
+  had copied the listed ones. The numbers are now listed without 如, the clause forbids adding
+  any other number (lines change or close, and a wrong number given to someone in crisis is a
+  real harm), and it gives the sentence a mainland-China referral must contain:
+  「有立即危险请拨急救电话 120 或报警 110；心理危机干预热线请拨 12356。」 Measured on
+  `claude-sonnet-4-6`: before, 3 of 8 crisis answers named 12356; after, 15 of 15 crisis
+  fixtures name it, none adds a number, and an earlier draft held at 24 of 24 over three runs
+  of eight. Every crisis fixture now also requires `12356`.
+
 ## [0.12.17] — 2026-10-19
 
 **Safety reaches installs.** The shared safety clause (#300) and the crisis referral in
