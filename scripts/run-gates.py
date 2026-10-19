@@ -136,6 +136,13 @@ GATES: Tuple[Gate, ...] = (
     Gate("pytest", "python-tests", (PY, "-m", "pytest", "tests/", "scripts/tests/", "-q")),
     Gate("fidelity-dry-run", "dry-run", (PY, "scripts/test-fidelity.py", "--all", "--dry-run")),
     Gate("cli", "cli-tests", ("node", "--test", "tests/cli.test.mjs")),
+    # A persona's SKILL.md description and its meta.json keywords are two
+    # routing tables for the same person; on 2026-10-19 61 of 343 description
+    # triggers did not reach their own persona through `recommend` (南传 and
+    # 噶举 fell through to the default pairing). Runs the real router, so it
+    # needs node and lives with the CLI tests.
+    Gate("validate-recommend-triggers", "cli-tests",
+         (PY, "scripts/validate-recommend-triggers.py")),
 )
 
 

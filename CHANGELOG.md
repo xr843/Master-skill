@@ -10,6 +10,23 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- recommend: tradition and school names now reach their masters. `recommend
+  "南传佛教怎么修"` and `recommend "噶举派"` used to fall through to the default
+  pairing (Kumārajīva and Yinguang, both 汉传): the words were in each persona's
+  SKILL.md description, which a host model reads, but not in the meta.json
+  `search_scope.keywords` the CLI and /master-help score. 61 of 343 Chinese
+  description triggers did not route back to their own persona; 47 new keywords
+  across 12 personas close 52 of them (南传 / 巴利 / 藏传 / 噶举 / 白教 / 格鲁 /
+  黄教 / 噶当 / 禅宗 / 广论 / 应成 / 入中论 …). New gate
+  `scripts/validate-recommend-triggers.py` (cli-tests group) runs the real router
+  on every description trigger and fails when the persona is not returned; the
+  nine that stay unrouted are listed with reasons and checked both ways — 禅 and
+  空 are below `min_keyword_length`, 法藏 would also catch 法藏比丘, 觉受 and 明空
+  fire inside 感觉受… and 说明空性, 上座部 stays Buddhaghosa's alone per the
+  README situation table, 缘起性空 is a four-way tie the three-master cap cuts,
+  and 达赖喇嘛传承根基 describes a lineage rather than being a query.
+  No SKILL.md, reference or fixture changed.
+
 - master-xuyun: new `sources/fahui-excerpts.md` with 17 verbatim blocks from
   《虚云和尚法汇》(开示: 参禅的先决条件, 禅堂开示, 参禅与念佛, 上海居士林请普说,
   一月十九日开示; 规约: 禅堂规约) and 《虚云老和尚年谱》(光绪二十一年, the Gaomin
