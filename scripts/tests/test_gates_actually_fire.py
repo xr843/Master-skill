@@ -91,7 +91,7 @@ CASES = [
             (r / "prebuilt/compare-masters/SKILL.md")
             .read_text(encoding="utf-8")
             .replace(
-                "| 戒律 / 持戒 / 律仪 / 行持 | master-xuyun + master-atisha + master-buddhaghosa |",
+                "| 戒律 / 持戒 / 律仪 / 行持 | master-daoxuan + master-buddhaghosa + master-atisha |",
                 "| 戒律 / 行持 / 日常 | master-xuyun + master-yinguang + master-ajahn-chah |",
             ),
             encoding="utf-8",

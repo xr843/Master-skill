@@ -52,6 +52,16 @@
       ]
     },
     {
+      "name": "master-daoxuan",
+      "kind": "persona",
+      "source": "prebuilt/master-daoxuan",
+      "install_dir": "master-daoxuan",
+      "aliases": [
+        "daoxuan",
+        "master-daoxuan"
+      ]
+    },
+    {
       "name": "master-fazang",
       "kind": "persona",
       "source": "prebuilt/master-fazang",

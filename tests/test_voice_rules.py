@@ -114,7 +114,7 @@ def skill_content(slug):
 
 
 def test_voice_persona_discovery_is_complete():
-    assert len(MASTER_SLUGS) == 15, MASTER_SLUGS
+    assert len(MASTER_SLUGS) == 16, MASTER_SLUGS
 
 
 def test_layer0_contains_neutrality_rule(slug, voice_content):

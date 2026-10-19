@@ -7,7 +7,7 @@ npx master-skill install --all
 ```
 
 OpenCode reads `~/.claude/skills/` without any configuration, and that is where
-this installs. `opencode debug skill` should list 20 skills: 15 personas, 4
+this installs. `opencode debug skill` should list 21 skills: 16 personas, 4
 teaching modes, and `create-master`.
 
 ## From a Checkout

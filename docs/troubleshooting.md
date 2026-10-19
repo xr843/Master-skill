@@ -17,7 +17,7 @@
 两者都**不读** `~/.claude/skills/`，`npx master-skill install` 对它们无效。
 
 - **Codex CLI**：按 [`.codex/INSTALL.md`](../.codex/INSTALL.md) 链接到 `~/.agents/skills/`。要先 `mkdir -p ~/.agents/skills`，否则 `ln` 会失败；`create-master` 必须链接整个仓库目录（文件符号链接会被 Codex 忽略）。用 `codex debug prompt-input "hi"` 可以看到模型实际拿到的 skill 列表。
-- **Gemini CLI**：`gemini skills install https://github.com/xr843/Master-skill --path prebuilt`，`gemini skills list` 应列出 19 个。需要带 `skills` 子命令的 Gemini CLI：0.60.0 实测可用，0.25.x 没有这个子命令，请先升级。只装扩展（`gemini extensions install`）**不带来任何祖师**。详见 [install.md](install.md) 的 Gemini 小节。
+- **Gemini CLI**：`gemini skills install https://github.com/xr843/Master-skill --path prebuilt`，`gemini skills list` 应列出 20 个。需要带 `skills` 子命令的 Gemini CLI：0.60.0 实测可用，0.25.x 没有这个子命令，请先升级。只装扩展（`gemini extensions install`）**不带来任何祖师**。详见 [install.md](install.md) 的 Gemini 小节。
 
 **Q：`create-master` 报 `ModuleNotFoundError: No module named 'pypinyin'`（或 requests / yaml）？**
 

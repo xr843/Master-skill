@@ -35,6 +35,7 @@ allowed-tools:
 - `/master-kumarajiva` — 鸠摩罗什（三论宗/中观）
 - `/master-huineng` — 慧能大师（禅宗六祖）
 - `/master-zhiyi` — 智顗大师（天台宗）
+- `/master-daoxuan` — 道宣律师（律宗 · 南山律）
 - `/master-fazang` — 法藏大师（华严宗）
 - `/master-yinguang` — 印光大师（净土宗）
 - `/master-ouyi` — 蕅益大师（天台/净土·跨宗派）

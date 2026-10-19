@@ -153,8 +153,8 @@
     {
       "id": "vinaya",
       "keywords": ["戒律", "持戒", "律仪", "行持"],
-      "masters": ["master-xuyun", "master-atisha", "master-buddhaghosa"],
-      "note": "汉传禅门律 vs 印藏菩萨律 vs 上座部律藏注释（合并原「戒律/行持/日常」与「戒律/持戒/律仪」两行，去除键冲突）"
+      "masters": ["master-daoxuan", "master-buddhaghosa", "master-atisha"],
+      "note": "汉传南山四分律 vs 上座部律藏注释 vs 印藏菩萨律（合并原「戒律/行持/日常」与「戒律/持戒/律仪」两行，去除键冲突；律宗本家道宣加入后替换原汉传一方虚云）"
     },
     {
       "id": "emptiness",

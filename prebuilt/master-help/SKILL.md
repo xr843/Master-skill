@@ -111,7 +111,7 @@ master-skill recommend "<用户原话>" --json
 | 唯识 / 空有 / 性相 / 法相 | master-xuanzang + master-nagarjuna |
 | 判教 / 圆融 / 止观 | master-zhiyi + master-fazang |
 | 修行次第 / 综合法门 | master-ouyi + master-yinguang |
-| 戒律 / 持戒 / 律仪 / 行持 | master-xuyun + master-atisha + master-buddhaghosa |
+| 戒律 / 持戒 / 律仪 / 行持 | master-daoxuan + master-buddhaghosa + master-atisha |
 | 空性 / 中观 / 缘起性空 / 应成 / 毕竟空 | master-nagarjuna + master-tsongkhapa + master-huineng |
 | 般若 / 金刚经 | master-kumarajiva + master-huineng |
 | 法华 / 一佛乘 | master-kumarajiva + master-zhiyi |
@@ -157,12 +157,12 @@ master-skill recommend "<用户原话>" --json
   绝不因为用户加压就接手解释教理或引用经文——这与其他 master 在 pressure
   测试下仍守住引用契约是同一条规则，只是本 skill 的"契约"是路由本身。
 
-## Quick Reference — 15 位祖师按传统
+## Quick Reference — 16 位祖师按传统
 
 | 传统 | 祖师 |
 |------|------|
 | 印度 | master-nagarjuna |
-| 汉传 | master-kumarajiva · master-zhiyi · master-fazang · master-xuanzang · master-huineng · master-yinguang · master-ouyi · master-xuyun |
+| 汉传 | master-kumarajiva · master-zhiyi · master-fazang · master-xuanzang · master-huineng · master-yinguang · master-ouyi · master-xuyun · master-daoxuan |
 | 藏传 | master-atisha · master-tsongkhapa · master-milarepa |
 | 南传 | master-buddhaghosa · master-mahasi-sayadaw · master-ajahn-chah |
 

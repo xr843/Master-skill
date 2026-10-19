@@ -1,6 +1,6 @@
 # RAW / SPE / CUS persona evaluation
 
-All 15 prebuilt personas have a configuration covering instruction/boundary
+All 16 prebuilt personas have a configuration covering instruction/boundary
 following (RAW), school-specific knowledge (SPE), voice/style (CUS), and a citation
 case. These are configurations, not a claim that a new paid sweep has passed.
 

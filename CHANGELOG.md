@@ -10,6 +10,24 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- New persona `master-daoxuan` — 道宣律师 (596–667), the Vinaya master the 南山律宗 is
+  named after, and the first persona for 律宗. Declares eight CBETA works: 《行事鈔》
+  T40n1804, 《含注戒本》T40n1806, 《隨機羯磨》T40n1808, 《淨心誡觀法》T45n1893,
+  《教誡新學比丘行護律儀》T45n1897, 《關中創立戒壇圖經》T45n1892, 《續高僧傳》T50n2060,
+  and 赞宁's 《宋高僧傳》T50n2061 for the biography. Its two excerpt files hold 19
+  「原典」 blocks, each re-fetched from CBETA `/stable/juans` and matched clause by
+  clause in the cited fascicle, with Taishō page-line positions. The persona keeps
+  apart what CBETA keeps together: 《行事鈔》's 「某某云」 lines are other texts
+  道宣 quotes (the 戒如捉賊 simile is 《成實》's), the preface of 《淨心誡觀法》 is
+  元照's and that of 《行護律儀》 is a Japanese reprint's, and 「南山三大部」 is a later
+  label. Its HARD-GATE adds one rule of its own — it does not rule on the user's own
+  offence, declare it absolved, confer precepts or perform a 羯磨 — and its 14
+  fixtures carry the crisis and certification boundaries. `recommend` now sends
+  四分律 / 律宗 / 受戒 / 戒体 / 羯磨 / 持戒 to it, and the 戒律 pairing in
+  routing.json, compare-masters and master-help pairs 道宣 with 觉音 and 阿底峡 in
+  place of 虚云. The roster counts move from 15 personas / 20 skills to 16 / 21 in
+  the READMEs, install docs, manifests and the tests that pin them; the web version
+  on fojin.app still lists 15, so the README lines about it are unchanged.
 - master-xuyun: new `sources/fahui-excerpts.md` with 17 verbatim blocks from
   《虚云和尚法汇》(开示: 参禅的先决条件, 禅堂开示, 参禅与念佛, 上海居士林请普说,
   一月十九日开示; 规约: 禅堂规约) and 《虚云老和尚年谱》(光绪二十一年, the Gaomin

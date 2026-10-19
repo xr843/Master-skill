@@ -448,7 +448,7 @@ function parseFrontmatter(filepath) {
   return fm;
 }
 
-// Every skill under prebuilt/: the 15 personas and the 4 teaching modes.
+// Every skill under prebuilt/: the 16 personas and the 4 teaching modes.
 // Named for the first CLI, when "masters" meant personas and `compare` was the
 // only meta-skill, so it was filtered out here. The three teaching modes added
 // later were not, which left compare-masters the one skill the desktop manager

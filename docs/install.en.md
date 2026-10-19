@@ -11,7 +11,7 @@
 
 **NPX (recommended, no global state)**
 
-`npx master-skill install --all` installs all 20 skills: 15 personas, 4 teaching modes (including the `/master-help` router), and the `create-master` generator. Installing `/compare-masters`, `/master-debate` or `/master-curriculum` on its own also installs the personas it reads that you do not have yet (ones already installed are left as they are; the output says "needed by"), and `doctor` reports it if one is later removed. `/master-help` routes among whichever personas are installed and brings none with it. The generator is copied as a self-contained runtime, so it remains usable after the transient npx package directory is removed; reinstall and `update --all` refresh the runtime while preserving user-generated personas under `create-master/masters/`. `uninstall create-master` refuses while personas are there and lists them; `--force` deletes them too, along with the links registered for them.
+`npx master-skill install --all` installs all 21 skills: 16 personas, 4 teaching modes (including the `/master-help` router), and the `create-master` generator. Installing `/compare-masters`, `/master-debate` or `/master-curriculum` on its own also installs the personas it reads that you do not have yet (ones already installed are left as they are; the output says "needed by"), and `doctor` reports it if one is later removed. `/master-help` routes among whichever personas are installed and brings none with it. The generator is copied as a self-contained runtime, so it remains usable after the transient npx package directory is removed; reinstall and `update --all` refresh the runtime while preserving user-generated personas under `create-master/masters/`. `uninstall create-master` refuses while personas are there and lists them; `--force` deletes them too, along with the links registered for them.
 
 ```bash
 # Install individual public skills
@@ -77,7 +77,7 @@ npx master-skill update --all           # Update unmodified installations
 npx master-skill install zhiyi --force  # Explicitly replace after backing up
 ```
 
-`update --all` continues to install all 20 skills.
+`update --all` continues to install all 21 skills.
 
 ```bash
 npm install -g master-skill            # Adds the binary to $PATH
@@ -95,7 +95,7 @@ claude plugin marketplace add xr843/Master-skill
 claude plugin install master-skill@master-skill
 ```
 
-`claude plugin details master-skill` should show `Skills (20)`. Through v0.12.11 the plugin registered only
+`claude plugin details master-skill` should show `Skills (21)`. Through v0.12.11 the plugin registered only
 `create-master` while its hook announced every `/master-*` command. Plugins update by version number, so an existing install picks up the fix
 with `claude plugin update master-skill` once the next version is released (at the same version, update reports "already at the latest version").
 
@@ -132,7 +132,7 @@ From a checkout, `{"skills": {"paths": ["/absolute/path/to/Master-skill/prebuilt
 gemini skills install https://github.com/xr843/Master-skill --path prebuilt
 ```
 
-`gemini skills list` should list 19 (15 personas + 4 teaching modes). From a checkout, use `gemini skills link /path/to/Master-skill/prebuilt`.
+`gemini skills list` should list 20 (16 personas + 4 teaching modes). From a checkout, use `gemini skills link /path/to/Master-skill/prebuilt`.
 
 > Installing only the extension (`gemini extensions install`) **brings no masters**: Gemini CLI looks for skills in the
 > extension's `skills/` directory, this repository keeps them in `prebuilt/`, and the extension supplies just `GEMINI.md` —

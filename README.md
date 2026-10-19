@@ -27,7 +27,7 @@
 
 <p align="center">
   <strong>FoJin 驱动的佛教 AI 祖师人格框架</strong><br>
-  有来源 · 守边界 · 可评测 · 可运行 · 15 位祖师 · 印度 / 汉传 / 藏传 / 南传跨传统
+  有来源 · 守边界 · 可评测 · 可运行 · 16 位祖师 · 印度 / 汉传 / 藏传 / 南传跨传统
 </p>
 
 <p align="center">
@@ -134,7 +134,7 @@ Master-skill 是由 [FoJin](https://fojin.app) 驱动的佛教 AI 祖师人格�
 
 ## 特性
 
-- **预置十五位四大传统祖师**：1 位印度（龙树 · 中观）+ 8 位汉传（唯识、中观、禅、天台、华严、净土、跨宗派）+ 3 位藏传（阿底峡 · 噶当；宗喀巴 · 格鲁；米拉日巴 · 噶举）+ 3 位南传（觉音 · 上座部论师；马哈希 · 缅甸内观；阿姜查 · 泰国森林）—— 另含 4 个教学模式（`/compare-masters` 并列对比、`/master-debate` 多轮对辩、`/master-curriculum` 学修路径、`/master-help` 我该问谁）与 `/create-master` 自定义生成器
+- **预置十六位四大传统祖师**：1 位印度（龙树 · 中观）+ 9 位汉传（唯识、中观、禅、天台、华严、律、净土、跨宗派）+ 3 位藏传（阿底峡 · 噶当；宗喀巴 · 格鲁；米拉日巴 · 噶举）+ 3 位南传（觉音 · 上座部论师；马哈希 · 缅甸内观；阿姜查 · 泰国森林）—— 另含 4 个教学模式（`/compare-masters` 并列对比、`/master-debate` 多轮对辩、`/master-curriculum` 学修路径、`/master-help` 我该问谁）与 `/create-master` 自定义生成器
 - **经文溯源（Provenance）**：每位祖师附声明来源 ID（CBETA / BDRC / Toh / SuttaCentral / PTS / 合规编纂开示）；实时检索仅在返回真实 `text_id` 时附 FoJin 定位链接，所有教义断言强制附原典引证
 - **离线经文片段**：`sources/` 目录收录核心经典关键段落，FoJin 不可用时仍可离线引用
 - **渐进式披露**：SKILL.md 以决策树 + Quick Ref 为主，`references/`、`sources/` 按需加载，Context 随查随取
@@ -192,7 +192,7 @@ Master-skill 的核心不是"角色扮演提示词集合"，而是一个可验�
 > 🛠️ **本节面向** Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI 用户。
 
 ```bash
-npx master-skill install --all          # 一次装全部 20 个 Skill
+npx master-skill install --all          # 一次装全部 21 个 Skill
 npx master-skill install master-huineng # 或只装一位
 npx master-skill list                   # 看全部可装的
 npx master-skill recommend "念佛怎么念才算老实"   # 不知道该问谁？让它推荐
@@ -214,13 +214,14 @@ npx master-skill update --all           # 升级：重装全部并清掉旧文�
 
 ## 预置法师
 
-十五位祖师，四大传统。命令即技能名，装好后直接在对话里调用。
+十六位祖师，四大传统。命令即技能名，装好后直接在对话里调用。
 
 | 命令 | 祖师 | 传统 · 宗派 | 年代 |
 |---|---|---|---|
 | `/master-nagarjuna` | 龙树菩萨 | 印度 · 中观（八宗共祖） | 约 150-250 |
 | `/master-kumarajiva` | 鸠摩罗什 | 汉传 · 三论／中观 | 344-413 |
 | `/master-zhiyi` | 智顗大师 | 汉传 · 天台 | 538-597 |
+| `/master-daoxuan` | 道宣律师 | 汉传 · 律宗（南山律） | 596-667 |
 | `/master-xuanzang` | 玄奘法师 | 汉传 · 法相唯识 | 602-664 |
 | `/master-huineng` | 慧能大师 | 汉传 · 禅宗六祖 | 638-713 |
 | `/master-fazang` | 法藏大师 | 汉传 · 华严 | 643-712 |
