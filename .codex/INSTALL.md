@@ -9,7 +9,7 @@ ln -sfn ~/.codex/master-skill/prebuilt ~/.agents/skills/master-skill
 ln -sfn ~/.codex/master-skill ~/.agents/skills/create-master
 ```
 
-Restart Codex. It should list 20 skills: 15 personas, 4 teaching modes, and
+Restart Codex. It should list 21 skills: 16 personas, 4 teaching modes, and
 `create-master`. Codex names a skill found under a linked directory after that
 directory, so they appear as `master-skill:master-huineng`,
 `master-skill:compare-masters`, and so on.

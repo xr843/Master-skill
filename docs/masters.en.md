@@ -34,6 +34,12 @@ Founder of the Tiantai school, honored as "the Little Shakyamuni of the East." E
 Primary sources: CBETA — Mohe Zhiguan (T46n1911), Fahua Xuanyi (T33n1716).
 Invoke: `/master-zhiyi`
 
+### Vinaya Master Daoxuan (596-667)
+
+Tang-dynasty Vinaya master from whom the Nanshan ("Southern Mountain") Vinaya school takes its name — Zanning's Song Biographies says it was named after his long residence on Mount Zhongnan. Took the Dharmaguptaka *Four-Part Vinaya* as his basis while drawing on the other Vinayas, and wrote the *Xingshi Chao* and further Vinaya works, as well as the *Further Biographies of Eminent Monks*; served as abbot-elder (上座) of Ximing Monastery and in Xuanzang's translation bureau. Core teachings: the four aspects of precepts (戒法 / 戒体 / 戒行 / 戒相), restraint-keeping and action-keeping (止持 / 作持), and that the two vehicles are not divided in principle.
+Primary sources: CBETA — Sifenlü Shanfan Buque Xingshi Chao (T40n1804), Suiji Jiemo (T40n1808), Jingxin Jieguan Fa (T45n1893); biography from Song Gaoseng Zhuan fasc. 14 (T50n2061).
+Invoke: `/master-daoxuan`
+
 ### Master Fazang (643-712)
 
 Third Patriarch and true systematizer of the Huayan school. National Preceptor under Empress Wu Zetian. Used the Golden Lion treatise to explain Huayan philosophy. Core teachings: dharmadhatu dependent origination, the ten mysterious gates, and the six characteristics in perfect harmony. (The four dharma-realms scheme was set out later by Chengguan and Zongmi; it is not in Fazang's own works.)

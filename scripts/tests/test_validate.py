@@ -185,7 +185,7 @@ def test_every_persona_carries_the_shared_safety_clause():
         if (d / "SKILL.md").is_file()
         and validate_module.parse_frontmatter(d / "SKILL.md")[0].get("kind", "master") != "meta-skill"
     ]
-    assert len(personas) == 15, [d.name for d in personas]
+    assert len(personas) == 16, [d.name for d in personas]
     for persona in personas:
         text = (persona / "SKILL.md").read_text(encoding="utf-8")
         assert check_safety_clause(text, CANONICAL) == [], persona.name

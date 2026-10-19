@@ -30,7 +30,7 @@
 
 <p align="center">
   <strong>A FoJin-powered Buddhist AI persona framework</strong><br>
-  Source-grounded · Boundary-aware · Fidelity-tested · Runtime-ready · 15 masters across 印度 / 汉传 / 藏传 / 南传
+  Source-grounded · Boundary-aware · Fidelity-tested · Runtime-ready · 16 masters across 印度 / 汉传 / 藏传 / 南传
 </p>
 
 <p align="center">
@@ -152,7 +152,7 @@ This project is built out of respect for Buddhist traditions. All content is gen
 
 ## Features
 
-- **15 pre-built masters across four traditions**: 1 印度 (Madhyamaka · Nāgārjuna) + 8 汉传 (Yogācāra, Madhyamaka, Chan, Tiantai, Huayan, Pure Land, cross-tradition) + 3 藏传 (Kadam · Atiśa; Gelug · Tsongkhapa; Kagyu · Milarepa) + 3 南传 (Theravāda commentator · Buddhaghosa; Burmese vipassanā · Mahasi Sayadaw; Thai Forest · Ajahn Chah) — plus 4 teaching modes (`/compare-masters` side-by-side, `/master-debate` multi-round dialectic, `/master-curriculum` study path, `/master-help` who-to-ask) and the `/create-master` generator
+- **16 pre-built masters across four traditions**: 1 印度 (Madhyamaka · Nāgārjuna) + 9 汉传 (Yogācāra, Madhyamaka, Chan, Tiantai, Huayan, Vinaya, Pure Land, cross-tradition) + 3 藏传 (Kadam · Atiśa; Gelug · Tsongkhapa; Kagyu · Milarepa) + 3 南传 (Theravāda commentator · Buddhaghosa; Burmese vipassanā · Mahasi Sayadaw; Thai Forest · Ajahn Chah) — plus 4 teaching modes (`/compare-masters` side-by-side, `/master-debate` multi-round dialectic, `/master-curriculum` study path, `/master-help` who-to-ask) and the `/create-master` generator
 - **Provenance enforcement**: Every master ships with declared source IDs (CBETA / BDRC / Toh / SuttaCentral / PTS / compliant compiled teachings); live retrieval adds a FoJin locator only when a real `text_id` is returned, and every doctrinal claim must carry a source citation
 - **Offline source passages**: `sources/` captures key passages from each master's core canon, so citations still work when FoJin is unreachable
 - **Progressive disclosure**: SKILL.md is a decision tree + quick reference; `references/` and `sources/` are loaded on demand to keep context lean
@@ -212,7 +212,7 @@ These are **keyword and citation-string coverage checks, not doctrinal correctne
 > 🛠️ **This section is for** Claude Code / Cursor / Codex CLI / OpenCode / Gemini CLI users.
 
 ```bash
-npx master-skill install --all          # all 20 skills at once
+npx master-skill install --all          # all 21 skills at once
 npx master-skill install master-huineng # or just one
 npx master-skill list                   # see everything installable
 npx master-skill recommend "how do I actually practice nianfo"   # not sure who to ask?
@@ -234,13 +234,14 @@ A native evaluation and quality console for maintainers (Rust; needs a local clo
 
 ## Pre-built Masters
 
-Fifteen masters across four traditions. The command *is* the skill name — invoke it directly once installed.
+Sixteen masters across four traditions. The command *is* the skill name — invoke it directly once installed.
 
 | Command | Master | Tradition · School | Dates |
 |---|---|---|---|
 | `/master-nagarjuna` | Nāgārjuna | Indian · Madhyamaka | c. 150-250 |
 | `/master-kumarajiva` | Kumārajīva | Chinese · Sanlun / Madhyamaka | 344-413 |
 | `/master-zhiyi` | Zhiyi | Chinese · Tiantai | 538-597 |
+| `/master-daoxuan` | Daoxuan | Chinese · Vinaya (Nanshan) | 596-667 |
 | `/master-xuanzang` | Xuanzang | Chinese · Yogācāra | 602-664 |
 | `/master-huineng` | Huineng | Chinese · Chan (Sixth Patriarch) | 638-713 |
 | `/master-fazang` | Fazang | Chinese · Huayan | 643-712 |

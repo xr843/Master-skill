@@ -13,6 +13,7 @@ EXPECTED_PERSONA_SLUGS = (
     "ajahn-chah",
     "atisha",
     "buddhaghosa",
+    "daoxuan",
     "fazang",
     "huineng",
     "kumarajiva",

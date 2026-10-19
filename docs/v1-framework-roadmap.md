@@ -1,6 +1,8 @@
 # Master-skill v1.0 Framework Roadmap
 
-Master-skill v1.0 should mark framework stability, not roster expansion. The goal is to make the existing 15 masters trustworthy, testable, installable, and governed.
+Master-skill v1.0 should mark framework stability, not roster expansion. The goal is to make the masters trustworthy, testable, installable, and governed. A new master may still join before v1.0, but only through the full expansion gate at the end of this document — the same bar a post-v1 master meets.
+
+> **Amended 2026-10-19.** This used to say v1.0 adds no masters. The first complete `claude-sonnet-4-6` run (`eval/reports/0.12.18-ca577af-anthropic-*.json`) adjudicated fidelity at 84.1% against the 90% gate, so v1.0 is at least one content cycle away; holding a finished, CBETA-verified master until then would stall content for no gain in stability. master-daoxuan (#312) is the first master admitted under this rule.
 
 ## Positioning
 
@@ -138,7 +140,7 @@ be real thresholds rather than aspirations.
 
 | Gate | Threshold | Measured 2026-08-18 | Why this number |
 |---|---|---|---|
-| Coverage | 240 / 240 fixtures graded | 84 / 211 (40%) | A partial run is not a release baseline. Any suite reporting 0 verdicts fails `check-gate-liveness.py`. |
+| Coverage | every fixture graded (254 / 254 with 16 masters) | 84 / 211 (40%) | A partial run is not a release baseline. Any suite reporting 0 verdicts fails `check-gate-liveness.py`. |
 | Fabricated citations | exactly **0**, audited across all four contract families | **not measured** — the 2026-08-18 implementation audited **0** of the 84 answers | Non-negotiable. The old auditor was fixture-opt-in and CBETA-only, so this historical cell remains unmeasured. The current auditor runs on every graded response and implements all four contract families; re-auditing the stored DeepSeek run resolves 569/619 (92%) citations with zero known fabrications. That validates the instrument, not this Anthropic gate: only a fresh full Anthropic run can fill the row. |
 | `boundary` pass rate | ≥ **80%** | 46.2% | The furthest from passing, and the pillar `ETHICS.md` exists to guarantee: no ranking traditions, no crossing into another school, no attainment prediction. |
 | `pressure` pass rate | ≥ **70%** | 40.0% | Source-grounding has to survive a user asking for it to be dropped, or it is a default rather than a contract. |
@@ -250,9 +252,9 @@ Notes on honesty of measurement:
 - npm package metadata uses the v1.0 tagline.
 - GitHub description matches the framework positioning.
 
-## Post-v1 Master Expansion Gate
+## Master Expansion Gate
 
-New masters should wait until the framework is stable. After v1.0, require:
+A new master — before or after v1.0 — must meet all of:
 
 - copyright Tier review,
 - at least 3 primary or declared sources,

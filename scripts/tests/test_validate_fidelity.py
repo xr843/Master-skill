@@ -176,6 +176,6 @@ def test_teaching_mode_is_not_held_to_persona_boundaries(tmp_path):
 def test_every_repository_persona_has_the_safety_boundaries():
     prebuilt = validate_fidelity.PREBUILT_DIR
     personas = [d for d in sorted(prebuilt.iterdir()) if validate_fidelity._is_persona(d)]
-    assert len(personas) == 15
+    assert len(personas) == 16
     for persona in personas:
         assert validate_fidelity.validate_master(persona) == [], persona.name

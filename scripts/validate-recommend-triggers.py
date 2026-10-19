@@ -70,6 +70,8 @@ EXEMPT: dict[str, dict[str, str]] = {
         "缘起性空": "four personas hold it, one per tradition; the three-master cap "
                     "and slug order keep Buddhaghosa, Kumārajīva, Nāgārjuna",
         "达赖喇嘛传承根基": "a description of lineage, not a query anyone types",
+        "戒律": "four personas hold it; the three-master cap keeps one per tradition "
+                "and slug order — Ajahn Chah, Atiśa, Daoxuan",
     },
 }
 

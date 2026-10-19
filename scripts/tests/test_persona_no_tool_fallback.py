@@ -20,7 +20,7 @@ def test_every_persona_with_live_retrieval_says_what_to_do_without_tools():
         path for path in sorted((ROOT / "prebuilt").glob("master-*/SKILL.md"))
         if "FoJin 实时检索" in path.read_text(encoding="utf-8")
     ]
-    assert len(live) == 15, [p.parent.name for p in live]
+    assert len(live) == 16, [p.parent.name for p in live]
     missing = [p.parent.name for p in live if CLAUSE not in p.read_text(encoding="utf-8")]
     assert not missing, missing
 

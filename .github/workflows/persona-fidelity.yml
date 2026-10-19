@@ -40,7 +40,7 @@ on:
   workflow_dispatch:
     inputs:
       full_suite:
-        description: 'Run paid evaluation for all 15 personas (budget first)'
+        description: 'Run paid evaluation for all 16 personas (budget first)'
         type: boolean
         default: false
 

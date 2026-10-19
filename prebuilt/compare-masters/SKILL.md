@@ -59,7 +59,7 @@ verified_at: 2026-04-06
 | 唯识 / 空有 / 性相 / 法相 | master-xuanzang + master-nagarjuna | 唯识 vs 中观 |
 | 判教 / 圆融 / 止观 | master-zhiyi + master-fazang | 天台 vs 华严 |
 | 修行次第 / 综合法门 | master-ouyi + master-yinguang | 综合 vs 专修 |
-| 戒律 / 持戒 / 律仪 / 行持 | master-xuyun + master-atisha + master-buddhaghosa | 汉传禅门律 vs 印藏菩萨律 vs 上座部律藏注释 |
+| 戒律 / 持戒 / 律仪 / 行持 | master-daoxuan + master-buddhaghosa + master-atisha | 汉传南山四分律 vs 上座部律藏注释 vs 印藏菩萨律 |
 | 空性 / 中观 / 缘起性空 / 应成 / 毕竟空 | master-nagarjuna + master-tsongkhapa + master-huineng | 印度中观源头 · 应成中观精确分判 · 禅宗直指 |
 | 般若 / 金刚经 | master-kumarajiva + master-huineng | 《金刚经》译师 vs 闻《金刚经》开悟的六祖 |
 | 法华 / 一佛乘 | master-kumarajiva + master-zhiyi | 《法华经》译师 vs 依《法华》立教的天台 |
@@ -306,7 +306,7 @@ verified_at: 2026-04-06
 6. **固定输出协议必须完整**：`共同点`、`核心分歧`、`适用根机`、`分歧雷达`、`分歧分类`、`共通点与宗派背景`、`推荐继续追问`、`引用来源` 不得省略。用户只要的是极短回答时，也要压缩这些标题下的内容，而不是删除标题。
 7. **回答末尾**附："如需深入学习，可在 FoJin (fojin.app) 查阅原典。"
 
-## 可用祖师（15 位 · 四大传统）
+## 可用祖师（16 位 · 四大传统）
 
 ### 印度
 
@@ -326,6 +326,7 @@ verified_at: 2026-04-06
 | master-ouyi | 蕅益大师 | 天台/净土 |
 | master-xuanzang | 玄奘法师 | 法相唯识 |
 | master-kumarajiva | 鸠摩罗什 | 中观 |
+| master-daoxuan | 道宣律师 | 律宗（南山律） |
 
 ### 藏传
 

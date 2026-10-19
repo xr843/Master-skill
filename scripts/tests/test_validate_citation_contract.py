@@ -352,7 +352,7 @@ def test_live_retrieval_never_uses_sources_outside_the_declared_contract():
         metadata = json.loads(meta_path.read_text(encoding="utf-8"))
         if isinstance(metadata.get("sources"), list) and metadata["sources"]:
             persona_skills.append(path)
-    assert len(persona_skills) == 15
+    assert len(persona_skills) == 16
     for path in persona_skills:
         content = path.read_text(encoding="utf-8")
         for stale in (

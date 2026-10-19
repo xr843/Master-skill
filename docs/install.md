@@ -11,7 +11,7 @@
 
 **NPX 一键安装（推荐，无需常驻）**
 
-`npx master-skill install --all` 一次安装全部 20 个 Skill：15 位祖师、4 个教学模式（含 `/master-help` 路由），以及 `create-master` 生成器。单独安装 `/compare-masters`、`/master-debate` 或 `/master-curriculum` 时，会补装它们需要读取、而你尚未安装的祖师（已安装的不会被覆盖，输出里标明 needed by）；之后卸载其中一位，`doctor` 会报告依赖缺失。`/master-help` 只在已安装的祖师之间路由，单独安装时不带依赖。`create-master` 会复制自包含的运行时，因此临时 npx 包目录被清理后仍可使用；重新安装或 `update --all` 会更新运行时，但保留 `create-master/masters/` 中用户生成的 persona；`uninstall create-master` 在那里有 persona 时会拒绝执行并列出它们，确要连同删除须加 `--force`（同时移除为它们注册的链接）。
+`npx master-skill install --all` 一次安装全部 21 个 Skill：16 位祖师、4 个教学模式（含 `/master-help` 路由），以及 `create-master` 生成器。单独安装 `/compare-masters`、`/master-debate` 或 `/master-curriculum` 时，会补装它们需要读取、而你尚未安装的祖师（已安装的不会被覆盖，输出里标明 needed by）；之后卸载其中一位，`doctor` 会报告依赖缺失。`/master-help` 只在已安装的祖师之间路由，单独安装时不带依赖。`create-master` 会复制自包含的运行时，因此临时 npx 包目录被清理后仍可使用；重新安装或 `update --all` 会更新运行时，但保留 `create-master/masters/` 中用户生成的 persona；`uninstall create-master` 在那里有 persona 时会拒绝执行并列出它们，确要连同删除须加 `--force`（同时移除为它们注册的链接）。
 
 ```bash
 # 安装指定祖师
@@ -21,7 +21,7 @@ npx master-skill install master-zhiyi master-fazang master-huineng
 npx master-skill install compare-masters
 npx master-skill install create-master
 
-# 安装全部 20 个 Skill
+# 安装全部 21 个 Skill
 npx master-skill install --all
 
 # 查看全部可安装 Skill
@@ -72,7 +72,7 @@ npx master-skill update --all           # 更新未被用户修改的安装
 npx master-skill install zhiyi --force  # 备份后明确覆盖指定技能
 ```
 
-`update --all` 仍会安装全部 20 项。`--force` 会删除技能目录中的用户改动，
+`update --all` 仍会安装全部 21 项。`--force` 会删除技能目录中的用户改动，
 包括新增笔记；只在备份并核对预览之后使用。
 
 ```bash
@@ -91,7 +91,7 @@ claude plugin marketplace add xr843/Master-skill
 claude plugin install master-skill@master-skill
 ```
 
-`claude plugin details master-skill` 应显示 `Skills (20)`。v0.12.11 及更早的插件只注册了
+`claude plugin details master-skill` 应显示 `Skills (21)`。v0.12.11 及更早的插件只注册了
 `create-master` 一个 skill，hook 却宣布了全部 `/master-*` 命令。插件按版本号更新，已安装的在下一个版本发布后运行
 `claude plugin update master-skill`（同版本号时 update 会报“已是最新”而不拉取修复）。
 
@@ -119,9 +119,9 @@ git clone https://github.com/xr843/Master-skill ~/Master-skill
 npx master-skill install --all
 ```
 
-OpenCode 无需配置即读取 `~/.claude/skills/`，npx 正是装到这里；`opencode debug skill` 应列出 20 个。
+OpenCode 无需配置即读取 `~/.claude/skills/`，npx 正是装到这里；`opencode debug skill` 应列出 21 个。
 已 clone 仓库的，也可在 `opencode.json` 里写
-`{"skills": {"paths": ["/仓库绝对路径/prebuilt"]}}`，得到 `prebuilt/` 下的 19 个（`create-master` 在仓库根，不在其中）。
+`{"skills": {"paths": ["/仓库绝对路径/prebuilt"]}}`，得到 `prebuilt/` 下的 20 个（`create-master` 在仓库根，不在其中）。
 
 > 旧版说明让你写 `"plugin": ["master-skill@git+https://github.com/xr843/Master-skill.git"]`。
 > OpenCode 的 plugin 是 JavaScript 模块，本仓库没有提供，这样配置**一个 skill 都不会注册**。
@@ -136,7 +136,7 @@ OpenCode 无需配置即读取 `~/.claude/skills/`，npx 正是装到这里；`o
 gemini skills install https://github.com/xr843/Master-skill --path prebuilt
 ```
 
-`gemini skills list` 应列出 19 个（15 位祖师 + 4 个教学模式）。已 clone 仓库的，用
+`gemini skills list` 应列出 20 个（16 位祖师 + 4 个教学模式）。已 clone 仓库的，用
 `gemini skills link /仓库路径/prebuilt`。
 
 > 只装扩展（`gemini extensions install`）**不带来任何祖师**：Gemini CLI 只从扩展根目录的 `skills/`
