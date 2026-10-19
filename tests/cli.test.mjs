@@ -1325,6 +1325,34 @@ test("recommend ignores single-character keywords", () => {
   }
 });
 
+// Tradition and school names were in each persona's SKILL.md description but
+// not in meta.json, so these fell through to the default pairing — two 汉传
+// masters for a question about 南传 or 噶举. scripts/validate-recommend-
+// triggers.py keeps the two lists together; these pin the cases a user meets.
+const TRADITION_FIXTURES = [
+  ["南传佛教怎么修", ["master-ajahn-chah", "master-buddhaghosa", "master-mahasi-sayadaw"]],
+  ["噶举派", ["master-milarepa"]],
+  ["格鲁派和黄教是一回事吗", ["master-tsongkhapa"]],
+  ["上座部是什么", ["master-buddhaghosa"]],
+  ["菩提本无树什么意思", ["master-huineng"]],
+];
+
+for (const [query, expected] of TRADITION_FIXTURES) {
+  test(`recommend routes tradition query "${query}"`, () => {
+    const data = recommendJson(query);
+    assert.equal(data.resolvedBy, "persona_keywords");
+    assert.deepEqual(data.masters.map((m) => m.name).sort(), [...expected].sort());
+  });
+}
+
+test("recommend sends 妄念太多 to a mindfulness teacher", () => {
+  const names = recommendJson("妄念太多").masters.map((m) => m.name);
+  assert.ok(
+    names.includes("master-mahasi-sayadaw") || names.includes("master-ajahn-chah"),
+    `got ${names.join(", ")}`
+  );
+});
+
 test("recommend falls back to the default pairing with a reason", () => {
   const data = recommendJson("今天天气不错");
   assert.deepEqual(
