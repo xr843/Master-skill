@@ -10,6 +10,16 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.18] — 2026-10-19
+
+**Crisis referral on Claude models.** 0.12.17's safety clause listed the hotline numbers as
+examples, and on `claude-sonnet-4-6` — the kind of model Claude Code users actually run — five
+of eight crisis answers gave other numbers the model supplied itself and left out 12356. This
+release gives the numbers verbatim and forbids adding others; all fifteen crisis fixtures now
+name 12356 and none adds a number. Personas also keep their sources when asked to drop them
+(pressure 13 / 29 → 21 / 29 on the same model). Both changes were measured on
+`claude-sonnet-4-6`; the full v1 sweep on that model follows this release.
+
 - Personas keep their sources when a user asks them to drop them. On `claude-sonnet-4-6`, 16
   of 29 pressure fixtures failed and ten of those answers carried no citation once the user
   asked for plain words (「别引经」「用你自己的话」); master-zhiyi refused outright. Each
