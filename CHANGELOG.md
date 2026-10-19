@@ -10,6 +10,15 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- Install docs (README, README_EN, docs/install.md, docs/install.en.md) add two one-line
+  installs measured on 2026-10-19 with an isolated HOME. Codex CLI:
+  `codex plugin marketplace add xr843/Master-skill` then `codex plugin add master-skill@master-skill`
+  (Codex CLI 0.163.0; `codex debug prompt-input` lists the 20 masters and teaching modes; the
+  manual `.codex/INSTALL.md` route stays as the way to get `create-master`). skills.sh:
+  `npx skills add xr843/Master-skill --full-depth` (skills 1.7.2 lists all 21). Without
+  `--full-depth` it lists only `create-master`, because the skills CLI returns as soon as the
+  repo root holds a `SKILL.md`; no repository layout change can lift that while `create-master`
+  lives at the root.
 - compare-masters names its eight section headings as required, not as a template to adapt:
   every answer must carry 「共同点」「核心分歧」「适用根机」「分歧雷达」「分歧分类」
   「共通点与宗派背景」「推荐继续追问」「引用来源」 verbatim plus one perspective heading per

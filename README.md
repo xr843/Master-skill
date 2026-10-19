@@ -206,6 +206,18 @@ npx master-skill update --all           # 升级：重装全部并清掉旧文�
 
 装好后在对话里直接调 `/master-huineng`、`/compare-masters` 等。npx 装到 `~/.claude/skills/`，Claude Code 与 OpenCode 读取这里；**Codex CLI 与 Gemini CLI 不读**，请按 docs/install.md 的对应小节安装。
 
+另有两条一行装法：
+
+```bash
+# Codex CLI 插件（20 个：16 位祖师 + 4 个教学模式；create-master 见 docs/install.md）
+codex plugin marketplace add xr843/Master-skill && codex plugin add master-skill@master-skill
+
+# skills.sh（Vercel skills CLI，可装进 Claude Code / Codex / Cursor / Gemini 等）——必须带 --full-depth
+npx skills add xr843/Master-skill --full-depth
+```
+
+不带 `--full-depth` 只会找到仓库根的 `create-master` 一个：skills CLI 发现根目录有 `SKILL.md` 就停止往下找。
+
 > 五端安装细节（Claude Code 插件 / Cursor / OpenCode / Codex CLI / Gemini CLI）、
 > 全局安装、教学模式用法、`/create-master` 自定义生成
 > → **[docs/install.md](docs/install.md)**
