@@ -940,8 +940,8 @@ def main() -> int:
     from _citation_evidence import load_quote_evidence, unsupported_quotes
 
     directory = resolve_master_dir(args.master)
-    evidence = load_quote_evidence(Path(directory), declared) if directory else {}
-    quotes = unsupported_quotes(answer, evidence, declared)
+    evidence = load_quote_evidence(Path(directory), declared, title_aliases) if directory else {}
+    quotes = unsupported_quotes(answer, evidence, declared, title_aliases)
     pending = bool(quotes or report["unparsed"])
     tids = sorted(set(re.findall(r"https?://fojin\.app/texts/([0-9]+)(?![0-9])", answer)))
     # Resolve declared-ID URL pairs too: offline ID membership says nothing

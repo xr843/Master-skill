@@ -149,3 +149,28 @@ def test_quotations_inside_a_quoted_blockquote_are_each_checked():
             "> 【《坛经》，T48n2008】\n")
     unknown = unsupported_quotes(text, {"T48n2008": ["菩提自性本来清净"]}, {"T48n2008"})
     assert "量子电脑可令人人即刻成佛。" in [q["quote"] for q in unknown]
+
+
+def test_a_compiled_teaching_cited_by_its_chinese_title_is_matched(tmp_path: Path):
+    # 【《虚云和尚法汇》·开示·篇名】 carries no id; only the declared-title alias
+    # resolves it. Without the aliases every xuyun quotation of the 《法汇》 was
+    # unverified, verbatim or not (2026-10-19 sweep: 37 of 49).
+    sources = tmp_path / "sources"
+    sources.mkdir()
+    (sources / "fahui-excerpts.md").write_text(
+        "## 话头\n\n原典（节选）：\n\n> 所谓话头。即是一念未生之际。一念才生。已成话尾。\n\n"
+        "**引用格式：**【《虚云和尚法汇》·开示·禅堂开示】\n",
+        encoding="utf-8",
+    )
+    declared = {"Xuyun:Fahui", "Xuyun:Nianpu"}
+    aliases = {"虚云和尚法汇": "Xuyun:Fahui", "虚云老和尚年谱": "Xuyun:Nianpu"}
+    evidence = load_quote_evidence(tmp_path, declared, aliases)
+    assert set(evidence) == {"Xuyun:Fahui"}
+    cited = "【《虚云和尚法汇》·开示·禅堂开示】"
+    genuine = f"老和尚说：“所谓话头，即是一念未生之际。”{cited}"
+    assert unsupported_quotes(genuine, evidence, declared, aliases) == []
+    # Still exact: one changed character, or the right words under the other work, miss.
+    assert unsupported_quotes(genuine.replace("未生", "不生"), evidence, declared, aliases)
+    assert unsupported_quotes(genuine.replace(cited, "【《虚云老和尚年谱》】"), evidence, declared, aliases)
+    # Without the aliases nothing resolves — the behaviour this guards against.
+    assert load_quote_evidence(tmp_path, declared) == {}

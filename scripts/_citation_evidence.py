@@ -90,7 +90,17 @@ def normalize_quote(text: str) -> str:
     return "".join(c for c in text if c.isalnum())
 
 
-def load_quote_evidence(master_dir: Path, declared_ids: set[str]) -> dict[str, list[str]]:
+def load_quote_evidence(master_dir: Path, declared_ids: set[str],
+                        title_aliases: dict[str, str] | None = None) -> dict[str, list[str]]:
+    """Original excerpts per declared id.
+
+    ``title_aliases`` (declared title → id, see ``load_title_aliases``) is what
+    resolves a compiled teaching cited by its Chinese title alone:
+    【《虚云和尚法汇》·开示·篇名】 carries no id, so without it every excerpt of
+    the 《法汇》 — and every answer quoting it — resolved to no id at all, and
+    all 49 of xuyun's quotations in the 2026-10-19 sweep counted as unverified
+    however verbatim they were.
+    """
     evidence: dict[str, list[str]] = {}
     for path in sorted((master_dir / "sources").glob("*.md")):
         for section in re.split(r"(?m)^#{1,3} ", path.read_text(encoding="utf-8")):
@@ -101,7 +111,8 @@ def load_quote_evidence(master_dir: Path, declared_ids: set[str]) -> dict[str, l
             citation = re.search(r"【[^】]+】", section[original.end():])
             if not citation:
                 continue
-            for cid in set(audit_answer(declared_ids, citation.group())["offline"]):
+            cited = audit_answer(declared_ids, citation.group(), title_aliases=title_aliases)
+            for cid in set(cited["offline"]):
                 evidence.setdefault(cid, []).append(passage)
     return evidence
 
@@ -199,7 +210,8 @@ def _inside(block: tuple[int, int, str], position: int) -> bool:
 
 
 def unsupported_quotes(answer: str, evidence: dict[str, list[str]],
-                       declared_ids: set[str] | None = None) -> list[dict[str, str]]:
+                       declared_ids: set[str] | None = None,
+                       title_aliases: dict[str, str] | None = None) -> list[dict[str, str]]:
     unknown: list[dict[str, str]] = []
     blocks = [(match.start(), match.end(), re.sub(r"(?m)^[ \t]*>\s?", "", match.group()))
               for match in _BLOCKQUOTES.finditer(answer)]
@@ -243,7 +255,8 @@ def unsupported_quotes(answer: str, evidence: dict[str, list[str]],
             if not previous:
                 continue
             citation = previous[-1]
-        ids = audit_answer(declared_ids or set(evidence), citation.group())["offline"]
+        ids = audit_answer(declared_ids or set(evidence), citation.group(),
+                           title_aliases=title_aliases)["offline"]
         if not any(_supported(segments, evidence.get(cid, [])) for cid in ids):
             unknown.append({"quote": quote, "citation": citation.group()})
     return unknown
