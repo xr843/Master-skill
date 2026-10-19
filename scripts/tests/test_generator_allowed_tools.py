@@ -41,10 +41,15 @@ def test_no_unrestricted_acting_tool_is_preapproved():
     assert not unrestricted, f"pre-approved without a pattern: {unrestricted}"
 
 
-def test_bash_is_limited_to_the_generators_own_tools():
-    for tool in allowed_tools(ROOT / "SKILL.md"):
-        if tool.startswith("Bash("):
-            assert re.fullmatch(r'Bash\(python3 "?\$\{CLAUDE_SKILL_DIR\}/tools/\*\)', tool), tool
+def test_no_bash_is_preapproved():
+    """2026-10-19: even `Bash(python3 ${CLAUDE_SKILL_DIR}/tools/*)` was too broad.
+
+    The Claude plugin directory puts it on a policy hold ("Pre-approves broad shell
+    access in allowed-tools"): the trailing `*` admits any arguments. The generator's
+    commands now go through the user's normal permission prompt instead.
+    """
+    granted = [tool for tool in allowed_tools(ROOT / "SKILL.md") if tool.startswith("Bash")]
+    assert not granted, granted
 
 
 def test_every_documented_generator_command_is_covered():

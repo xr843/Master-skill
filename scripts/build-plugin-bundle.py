@@ -185,6 +185,9 @@ def build(dest: Path) -> None:
     for name in ROOT_FILES:
         shutil.copyfile(ROOT / name, dest / name)
     _write_json(dest / ".claude-plugin" / "plugin.json", manifest())
+    # The directory reads .claude-plugin/icon.png inside the plugin folder as the
+    # listing icon, and only the first time the plugin is saved in the portal.
+    shutil.copyfile(ROOT / ".claude-plugin" / "icon.png", dest / ".claude-plugin" / "icon.png")
     _write_json(dest / "hooks" / "hooks.json", hooks_json())
 
 
