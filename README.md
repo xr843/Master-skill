@@ -174,6 +174,8 @@ Master-skill 的核心不是"角色扮演提示词集合"，而是一个可验�
 | 元技能带文件工具复测 | **455 条引文、伪造 0**；40 / 41 | 2026-09-25，四个教学模式 44 条，DeepSeek `deepseek-v4-flash`，¥2.61。教学模式首次能按指令读取同级祖师的文件（此前评测不给工具，模型把工具调用写成正文，6 条这样的"回答"曾判为通过）；伪造工具调用降为 0，每条都读了文件。与上一行不是同一把尺子，通过率不并列比较；2 条截断、1 条撞工具轮次上限，未计入 41。报告：[`0.12.15-df76fd2-deepseek-metaskills-tools.json`](eval/reports/0.12.15-df76fd2-deepseek-metaskills-tools.json) |
 | 辩论各轮在独立子代理中写 | **8 / 8**；86 条引文、伪造 0 | 2026-09-26，`master-debate` 8 条，¥0.46。协议要求每轮在全新上下文里写、双方只见对方摘要；评测此前只能在一个上下文里代写四轮。现每条派出 4–5 个子代理、无一失败。报告：[`0.12.15-ab26c9a-deepseek-debate-subagents.json`](eval/reports/0.12.15-ab26c9a-deepseek-debate-subagents.json) |
 
+**2026-10-19 首次在 Anthropic `claude-sonnet-4-6` 上跑满全部 240 条**（commit `ca577af`，约 $11）。全部评分、无一截断，**引文伪造 0**。逐条裁定全部 55 条失败与复核案例后：教理 95 / 113 = 84.1% · 守边界 87 / 96 = 90.6% · 抗压 24 / 31 = 77.4%（报告 [`0.12.18-ca577af-anthropic-personas.json`](eval/reports/0.12.18-ca577af-anthropic-personas.json)、[`…-metaskills-tools.json`](eval/reports/0.12.18-ca577af-anthropic-metaskills-tools.json) 与两份裁定）。教理低于 v1 门禁的 90%，且引语核验未裁，所以**v1.0 尚未达标**。这一轮还查出两处 DeepSeek 没暴露的缺陷并已修：危机转介在 Claude 上会自报热线号码（#314），用户说「别引经」时整篇零出处（#315）。**直接引语抽样**：带 CBETA 经号、≥8 字的引语抽 100 处，64 处是真引语，其中所引书所引卷逐字有 53%（95% CI 41–65%），差一两字或拼接再加 19%，挂错书、意译、全藏查不到合计 28%——见 [`quote-sample-ca577af-anthropic.json`](eval/reports/quote-sample-ca577af-anthropic.json)。
+
 **这一列不能推进 v1.0 门禁。** 门禁定义在 Anthropic（`claude-sonnet-4-6`）那一列上，两个模型是两把尺子，不混算。Anthropic 那一列至今只有 2026-08-18 的一次部分运行（84 / 211 条，因账户余额耗尽中断），当时的「零伪造引文」已于 2026-08-31 撤回——那次审计实际一条都没有运行。
 
 **引文审计的边界**：回答审计中的“可核验”和“伪造 0”指来源标识符可解析到已声明来源，或实时链接可定位；它不证明引号内原句出自该书，也不证明该来源支持回答中的解释。静态 `sources/` 摘录另有原文核对流程，生成回答的原句与论断仍需逐条复核。`citation_contract.minimum_claim_coverage` 是写作与审查要求，当前自动校验只检查字段配置值，尚未自动计算每个回答的教义断言覆盖率。
