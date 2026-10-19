@@ -18,6 +18,32 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
   plugin directory holds a submission for it ("Pre-approves broad shell access"); the
   generator's tool runs now go through the user's normal permission prompt.
 
+### Fixed
+
+- The evaluation's quotation check now recognises a compiled teaching cited by its Chinese
+  title alone, such as 【《虚云和尚法汇》·开示·篇名】. Both the excerpt loader and the
+  answer check resolved citations without the declared-title aliases the citation audit
+  already uses, so neither the 17 《法汇》 passages added in 0.12.17 nor any answer quoting
+  them could be matched: every one of master-xuyun's 49 quotations in the 2026-10-19
+  claude-sonnet-4-6 run counted as unverified, verbatim or not. Re-graded offline, xuyun
+  drops to 12 and master-yinguang (《文钞》, same cause) from 26 to 5; matching is still
+  exact, and a regression test pins both halves.
+
+### Content
+
+- master-milarepa gets `sources/munaji-excerpts.md`: six passages copied verbatim from the
+  CBETA text of 《木纳记》 (B11n0073), each with its page, column and line — Marpa's own
+  explanation of the ordeals (卷10), the precepts song (卷11), the song on leaving home with
+  his mother's bones (卷14), the eight worldly concerns (卷15), dropping firewood and cloth
+  in the wind (卷20) and the song of the six powers (卷23). The persona's previous sources
+  were summaries only, so none of its quotations could be verified; its unverified count in
+  the same run falls from 21 to 15, and every remaining one is a paraphrase or an altered
+  line, not a gap in the excerpts. All six pass the CBETA fascicle check (3f).
+- Two summaries the model had quoted as if they were Milarepa's words are now marked as
+  summaries (the guru as the sum of the Three Jewels; Marpa's ordeals as purification), and
+  a master-xuyun excerpt heading the model quoted as the master's words now uses the
+  《法汇》's own subheading.
+
 ## [0.13.2] — 2026-10-19
 
 **Fewer misquotations from three masters.** master-nagarjuna, master-tsongkhapa and

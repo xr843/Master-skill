@@ -1330,7 +1330,7 @@ def check_response(
         and len(contract_failures) == 0
     )
 
-    unverified_quotes = unsupported_quotes(response, quote_evidence or {}, declared_ids)
+    unverified_quotes = unsupported_quotes(response, quote_evidence or {}, declared_ids, title_aliases)
     return {
         "passed": passed,
         "missing_cites": missing_cites,
@@ -1538,10 +1538,10 @@ def _load_audit_inputs(master_name: str, master_dir: Path, tools: bool):
         member_aliases = None
         title_aliases = None
 
-    quote_evidence = load_quote_evidence(master_dir, declared_ids or set())
+    quote_evidence = load_quote_evidence(master_dir, declared_ids or set(), title_aliases)
     if tools:
         for persona in sorted(PREBUILT_DIR.glob("master-*")):
-            for cid, passages in load_quote_evidence(persona, declared_ids or set()).items():
+            for cid, passages in load_quote_evidence(persona, declared_ids or set(), title_aliases).items():
                 quote_evidence.setdefault(cid, []).extend(passages)
     return declared_ids, member_aliases, title_aliases, quote_evidence
 
