@@ -15,6 +15,13 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
   77.4% — v1.0's fidelity gate (90%) is not met, and quotation checks are not ruled on. A
   100-quotation sample against CBETA puts verbatim accuracy of real quotations at 53%
   (95% CI 41–65%).
+- master-curriculum names its four stage headings as required, not as a template to adapt:
+  every answer must carry 「根基」「深入」「精研」「可能的盲点」 verbatim, and an
+  "A or B first?" question still gets all four stages. On `claude-sonnet-4-6` four of eight
+  curriculum fixtures failed the output contract — three renamed the last stage
+  (「最容易踩的三个坑」「你特别需要注意的盲点」), one answered 马哈希 vs 阿姜查 with a comparison
+  table and no stages at all. Two runs after the change: zero contract failures in 16
+  answers (7 / 8 and 8 / 8; the one miss is an undeclared `Toh:3871`, not the contract).
 
 - master-tsongkhapa declares 《中论》 (`Toh:3824`, checked against 84000's title) and
   master-buddhaghosa declares 《Atthasālinī》 (`PTS:Dhs-Comm`). On `claude-sonnet-4-6` both
