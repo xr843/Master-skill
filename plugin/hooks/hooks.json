@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"Master-skill plugin loaded: Buddhist master persona skills (/master-<name>) and teaching modes are in your skill list. If the user is unsure whom to ask, suggest /master-help.\"}}'"
+          }
+        ]
+      }
+    ]
+  }
+}

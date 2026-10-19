@@ -1,0 +1,25 @@
+{
+  "slug": "debate",
+  "name": "master-debate",
+  "kind": "meta-skill",
+  "version": "0.8.0",
+  "debate_protocol": {
+    "default_rounds": 4,
+    "max_rounds": 6,
+    "min_rounds": 2,
+    "selector": "alternating",
+    "stop_on_consensus": false,
+    "subagent_isolation": true,
+    "moderator_summary": true,
+    "per_pair_overrides": {
+      "huineng-vs-yinguang": {"default_rounds": 4},
+      "kumarajiva-vs-xuanzang": {"default_rounds": 4},
+      "huineng-vs-zhiyi": {"default_rounds": 4},
+      "huineng-vs-tsongkhapa": {"default_rounds": 5},
+      "ajahn-chah-vs-mahasi-sayadaw": {"default_rounds": 4},
+      "atisha-vs-huineng": {"default_rounds": 4},
+      "ouyi-vs-yinguang": {"default_rounds": 4},
+      "ouyi-vs-tsongkhapa": {"default_rounds": 5}
+    }
+  }
+}

@@ -14,6 +14,8 @@ Files checked (all relative to repo root):
   - .claude-plugin/marketplace.json       (Claude Code marketplace — nested
                                           `plugins[*].version`)
   - .cursor-plugin/plugin.json            (Cursor)
+  - plugin/.claude-plugin/plugin.json     (the installed plugin bundle, built
+                                          by scripts/build-plugin-bundle.py)
   - gemini-extension.json                 (Gemini CLI)
 
 Any *.json under .codex/ or .opencode/ that carries a `version` field is
@@ -54,6 +56,7 @@ def collect_versions(root: Path = ROOT) -> dict[str, str]:
     flat_paths = [
         root / ".claude-plugin" / "plugin.json",
         root / ".cursor-plugin" / "plugin.json",
+        root / "plugin" / ".claude-plugin" / "plugin.json",
         root / "gemini-extension.json",
     ]
     for p in flat_paths:

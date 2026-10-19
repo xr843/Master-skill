@@ -155,6 +155,7 @@ hook 测试、CLI 测试一起跑一遍，**包括 Python 单测**——CI 一�
 - [ ] CHANGELOG.md 的 `[Unreleased]` 章节已更新（除非是纯 typo）
 - [ ] 涉及 `prebuilt/**` 的改动 → 已 review ETHICS.md §2（版权 Tier）、§3（教界边界）
 - [ ] PR description 说明**做了什么 + 为什么**，而非只列改动文件
+- [ ] 改了 `prebuilt/**`、根目录 `SKILL.md`、`tools/` `prompts/` `references/`、`hooks/session_start.py` 或 `.claude-plugin/plugin.json` → 已运行 `python3 scripts/build-plugin-bundle.py` 并提交 `plugin/` 的变化。`plugin/` 是 `claude plugin install` / `codex plugin add` 实际安装的文件夹（也是提交 Anthropic 插件目录的文件夹），由脚本生成，不要手改（`plugin/README.md` 除外）；CI 的 `check-plugin-bundle` 门禁在它与源文件不一致时失败
 
 ---
 

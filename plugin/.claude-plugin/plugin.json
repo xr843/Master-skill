@@ -1,0 +1,22 @@
+{
+  "name": "master-skill",
+  "description": "FoJin-powered Buddhist AI persona framework — source-grounded, boundary-aware, fidelity-tested, runtime-ready. 16 prebuilt masters across 印度/汉传/藏传/南传 plus compare, debate, curriculum and help teaching modes and the create-master generator.",
+  "version": "0.13.0",
+  "author": {
+    "name": "xr843",
+    "email": "xr843@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/xr843/Master-skill",
+  "repository": "https://github.com/xr843/Master-skill",
+  "license": "MIT AND CC-BY-NC-SA-4.0 AND CC-BY-4.0",
+  "keywords": [
+    "buddhism",
+    "chinese-buddhism",
+    "ai-persona",
+    "digital-humanities",
+    "rag",
+    "cbeta",
+    "fojin",
+    "agent-skills"
+  ]
+}

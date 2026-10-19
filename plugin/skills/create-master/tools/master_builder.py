@@ -1,0 +1,493 @@
+"""
+Teacher Builder — orchestrates the full teacher skill generation pipeline.
+
+Flow:
+1. Collect data via sutra_collector
+2. Analyze via prompt templates (sutra_analyzer + voice_analyzer)
+3. Build via prompt templates (teaching_builder + voice_builder)
+4. Write via skill_writer
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import sys
+from pathlib import Path
+from typing import Optional
+
+from fojin_bridge import FojinBridge, create_bridge
+from sutra_collector import collect_teacher_data, collect_specific_texts
+from skill_writer import DISCLAIMER, create_teacher, derive_citation_contract, sanitize_generated
+
+
+PROMPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "prompts")
+
+# Boundary markers wrapping any FoJin / external-sourced text before it is
+# spliced into an LLM prompt. FoJin enriches its KG from third-party-editable
+# sources (Wikidata / 维基 / BDRC), so retrieved content is untrusted input:
+# a poisoned entity description could otherwise carry instruction text straight
+# into the generation prompt (indirect prompt injection). The matching prompt
+# templates instruct the model to treat anything between these markers as data,
+# never as instructions. See prompts/sutra_analyzer.md "安全边界".
+_FENCE_OPEN = "<<<FOJIN_DATA>>>"
+_FENCE_CLOSE = "<<<END_FOJIN_DATA>>>"
+
+# Strip C0/C1 control chars (except \n and \t) plus Unicode format/bidi/
+# zero-width chars (U+200B–200F, U+2028/2029, U+202A–202E, U+2066–2069, U+FEFF)
+# so escape sequences and invisible reorderings can't smuggle hidden directives
+# or visually obscure injected text. Forged fence markers are stripped
+# separately in _fence().
+_CONTROL_CHARS = re.compile(
+    r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f"
+    r"\u200b-\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069\ufeff]"
+)
+
+
+def _fence(value: str) -> str:
+    """Wrap external/untrusted content in data boundary markers after stripping
+    control chars and any attacker-forged fence markers. Empty input stays empty
+    so absent sections render cleanly."""
+    if not value or not value.strip():
+        return value
+    cleaned = _CONTROL_CHARS.sub("", value)
+    # Strip forged markers until stable. A single pass is defeatable by
+    # overlapping markers, e.g. "<<<END_FOJIN<<<END_FOJIN_DATA>>>_DATA>>>":
+    # removing the inner complete marker rejoins the outer fragments into a
+    # fresh contiguous one. Loop until no marker substring survives.
+    while _FENCE_OPEN in cleaned or _FENCE_CLOSE in cleaned:
+        cleaned = cleaned.replace(_FENCE_OPEN, "").replace(_FENCE_CLOSE, "")
+    return f"{_FENCE_OPEN}\n{cleaned.strip()}\n{_FENCE_CLOSE}"
+
+
+def load_prompt(name: str) -> str:
+    """Load a prompt template by name."""
+    path = os.path.join(PROMPTS_DIR, f"{name}.md")
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def build_analysis_prompt(
+    template_name: str,
+    teacher_name: str,
+    data: dict,
+) -> str:
+    """Build a complete analysis prompt by filling template with collected data."""
+    template = load_prompt(template_name)
+
+    entity_info = ""
+    if data.get("entity"):
+        e = data["entity"]
+        entity_info = f"名称: {e.get('name_zh', teacher_name)}\n"
+        entity_info += f"类型: {e.get('entity_type', '未知')}\n"
+        if e.get("description"):
+            entity_info += f"描述: {e['description']}\n"
+        if e.get("properties"):
+            for k, v in e["properties"].items():
+                entity_info += f"{k}: {v}\n"
+
+    lineage_info = ""
+    for rel in data.get("lineage", []):
+        lineage_info += f"- {rel['predicate']}: {rel.get('target_name', '未知')}\n"
+
+    sources_info = ""
+    for source in data.get("sources", []):
+        sources_info += (
+            f"- title={source.get('title', '未知')} "
+            f"source_type={source.get('type', '')} "
+            f"source_id={source.get('id', '')}\n"
+        )
+
+    texts_info = ""
+    for t in data.get("texts", [])[:20]:
+        source_type = t.get("source_type") or (
+            "cbeta" if t.get("cbeta_id") else ""
+        )
+        source_id = t.get("source_id") or t.get("cbeta_id", "")
+        locator = f" FoJin text_id={t['id']}" if t.get("id") else ""
+        texts_info += (
+            f"- 《{t.get('title_zh') or t.get('title', '未知')}》 "
+            f"source_type={source_type} source_id={source_id}{locator}\n"
+        )
+
+    content_samples = ""
+    for sample in data.get("content_samples", []):
+        locator = (
+            f" FoJin text_id={sample['text_id']}"
+            if sample.get("text_id") else ""
+        )
+        content_samples += (
+            f"\n### 《{sample['title']}》 "
+            f"source_type={sample.get('source_type', '')} "
+            f"source_id={sample.get('source_id', '')}{locator}\n"
+            f"{sample['content'][:2000]}\n"
+        )
+
+    terms_info = ""
+    for term in data.get("terms", [])[:30]:
+        terms_info += f"- {term.get('headword', '')}: {term.get('definition', '')[:100]}\n"
+
+    # teacher_name is operator-supplied (CLI arg), not retrieved content, so it
+    # is not fenced. Still control-char-scrubbed as cheap insurance against a
+    # future flow that sources the name from user/web input. Everything else
+    # comes from FoJin and is wrapped as data.
+    prompt = template.replace("{teacher_name}", _CONTROL_CHARS.sub("", teacher_name))
+    prompt = prompt.replace("{entity_info}", _fence(entity_info))
+    prompt = prompt.replace("{lineage_info}", _fence(lineage_info))
+    prompt = prompt.replace("{sources_info}", _fence(sources_info))
+    prompt = prompt.replace("{texts_info}", _fence(texts_info))
+    prompt = prompt.replace("{content_samples}", _fence(content_samples))
+    prompt = prompt.replace("{terms_info}", _fence(terms_info))
+
+    return prompt
+
+
+def build_teacher_prompt(
+    template_name: str,
+    teacher_name: str,
+    analysis_result: str,
+) -> str:
+    """Build a generation prompt from analysis results."""
+    template = load_prompt(template_name)
+    prompt = template.replace("{teacher_name}", teacher_name)
+    prompt = prompt.replace("{analysis_result}", analysis_result)
+    return prompt
+
+
+def prepare_generation_context(
+    sources: list[dict],
+    citation_contract: Optional[dict] = None,
+) -> dict:
+    """Derive and retain the citation contract before doctrine review."""
+    expected = derive_citation_contract(sources)
+    if citation_contract is None:
+        citation_contract = expected
+    elif citation_contract != expected:
+        raise ValueError(
+            "citation_contract must equal the contract derived from sources[].type"
+        )
+    return {
+        "sources": sources,
+        "citation_contract": citation_contract,
+    }
+
+
+def build_doctrine_review_prompt(teaching_content: str, context: dict) -> str:
+    """Attach the in-memory source contract to the doctrine reviewer prompt."""
+    contract = context["citation_contract"]
+    sources = context["sources"]
+    contract_json = json.dumps(contract, ensure_ascii=False, sort_keys=True)
+    sources_json = json.dumps(sources, ensure_ascii=False, sort_keys=True)
+    return (
+        f"{load_prompt('doctrine_reviewer')}\n\n"
+        "## 本次审查输入（生成器内存上下文）\n"
+        f"citation_contract: {contract_json}\n"
+        f"sources: {sources_json}\n\n"
+        "## 待审 teaching.md\n"
+        f"{teaching_content}\n"
+    )
+
+
+def generate_teacher_skill(
+    name: str,
+    tradition: str,
+    school: str,
+    era: str,
+    languages: list,
+    teaching_content: str,
+    voice_content: str,
+    output_dir: str = "teachers",
+    fojin_entity_id: Optional[str] = None,
+    sources: Optional[list] = None,
+    citation_contract: Optional[dict] = None,
+    generation_context: Optional[dict] = None,
+) -> str:
+    """Write the final teacher skill to disk."""
+    if generation_context is None:
+        generation_context = prepare_generation_context(
+            sources if sources is not None else [], citation_contract
+        )
+    else:
+        if sources is not None and sources != generation_context.get("sources"):
+            raise ValueError("sources disagree with generation_context")
+        generation_context = prepare_generation_context(
+            generation_context.get("sources", []),
+            generation_context.get("citation_contract"),
+        )
+
+    base_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), output_dir
+    )
+    return create_teacher(
+        base_dir=base_dir,
+        name=name,
+        tradition=tradition,
+        school=school,
+        era=era,
+        languages=languages,
+        teaching_content=teaching_content,
+        voice_content=voice_content,
+        fojin_entity_id=fojin_entity_id,
+        sources=generation_context["sources"],
+        citation_contract=generation_context["citation_contract"],
+    )
+
+
+def _offline_smoke_spec() -> dict:
+    return {
+        "name": "Offline Smoke Master",
+        "tradition": "offline-test",
+        "school": "deterministic",
+        "era": "test-only",
+        "languages": ["en"],
+        "teaching_content": "Offline teaching content with declared source support.",
+        "voice_content": "Offline deterministic voice.",
+        "sources": [
+            {
+                "type": "compiled_teaching",
+                "id": "OfflineSmoke:Deterministic",
+                "title": "Deterministic offline smoke source",
+            }
+        ],
+    }
+
+
+def _review_inputs(teaching_content: str, voice_content: str, sources: list, contract: dict) -> dict:
+    return {
+        "doctrine": {"teaching_content": teaching_content, "sources": sources, "citation_contract": contract},
+        "voice": {"voice_content": voice_content, "teaching_content": teaching_content},
+    }
+
+
+def _review_digest(payload: dict) -> str:
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _check_review(review: object, inputs: dict) -> None:
+    if not isinstance(review, dict):
+        raise ValueError("review must contain doctrine and voice PASS records before writing")
+    reviewers = []
+    for stage, payload in inputs.items():
+        record = review.get(stage)
+        if not isinstance(record, dict) or record.get("verdict") != "PASS":
+            raise ValueError(f"review.{stage} must have a PASS verdict")
+        if record.get("input_sha256") != _review_digest(payload):
+            raise ValueError(f"review.{stage} hash does not match the current inputs")
+        reviewer = record.get("reviewer")
+        if not isinstance(reviewer, str) or not reviewer.strip():
+            raise ValueError(f"review.{stage} must name a reviewer")
+        reviewers.append(reviewer.strip())
+    if len(set(reviewers)) != len(reviewers):
+        raise ValueError("review stages need independent reviewer identifiers")
+
+
+def build_from_spec(spec: dict, output_dir: str, *, offline_smoke: bool = False) -> dict:
+    """Prepare review input and persist one persona from an explicit spec."""
+    required = (
+        "name",
+        "tradition",
+        "school",
+        "era",
+        "languages",
+        "teaching_content",
+        "voice_content",
+        "sources",
+    )
+    missing = [field for field in required if field not in spec]
+    if missing:
+        raise ValueError(f"generation spec missing required fields: {missing}")
+
+    context = prepare_generation_context(
+        spec["sources"], spec.get("citation_contract")
+    )
+    review_inputs = _review_inputs(spec["teaching_content"], spec["voice_content"], context["sources"], context["citation_contract"])
+    if not offline_smoke:
+        _check_review(spec.get("review"), review_inputs)
+        if any(sanitize_generated(spec[field]) != spec[field] for field in ("teaching_content", "voice_content")):
+            raise ValueError("reviewed content would change during sanitization; review the sanitized text")
+    review_prompt = build_doctrine_review_prompt(
+        spec["teaching_content"], context
+    )
+    teacher_dir = generate_teacher_skill(
+        name=spec["name"],
+        tradition=spec["tradition"],
+        school=spec["school"],
+        era=spec["era"],
+        languages=spec["languages"],
+        teaching_content=spec["teaching_content"],
+        voice_content=spec["voice_content"],
+        output_dir=output_dir,
+        fojin_entity_id=spec.get("fojin_entity_id"),
+        generation_context=context,
+    )
+
+    review_input_path = Path(teacher_dir) / "doctrine-review-input.json"
+    review_input_path.write_text(
+        json.dumps(
+            {
+                "sources": context["sources"],
+                "citation_contract": context["citation_contract"],
+                "prompt": review_prompt,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    if not offline_smoke:
+        review_record = dict(spec["review"])
+        review_record["skill_sha256"] = hashlib.sha256(
+            (Path(teacher_dir) / "SKILL.md").read_bytes()
+        ).hexdigest()
+        (Path(teacher_dir) / "review-record.json").write_text(
+            json.dumps(review_record, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    return {
+        "teacher_dir": str(teacher_dir),
+        "meta_path": str(Path(teacher_dir) / "meta.json"),
+        "review_input_path": str(review_input_path),
+    }
+
+
+_SKILL_NAME = re.compile(r"^name:[ \t]*(\S+)[ \t]*$", re.MULTILINE)
+
+
+def register_teacher(teacher_dir: str, skills_dir: str) -> dict:
+    """Make a generated persona invocable by linking it into a skills directory.
+
+    The generator writes to `${CLAUDE_SKILL_DIR}/masters/master-{slug}/`, so that
+    `master-skill update` can carry generated personas across runtime updates.
+    Claude Code does not look there: it loads `<skills dir>/<name>/SKILL.md` and
+    scans no deeper. Measured 2026-09-16 with Claude Code 2.1.273 in an isolated
+    config, `/skills` listed a probe skill at `~/.claude/skills/master-control/`
+    and not one at `~/.claude/skills/create-master/masters/master-probe/`; a
+    directory symlink `~/.claude/skills/master-probe` made it appear in the same
+    session, without a restart.
+
+    An existing entry of the same name is never replaced: a user regenerating a
+    prebuilt master (`master-huineng`) must not overwrite the installed one.
+    """
+    teacher = Path(teacher_dir).resolve()
+    record_path = teacher / "review-record.json"
+    if not record_path.is_file():
+        raise ValueError("review record missing; an unreviewed draft cannot be registered")
+    meta = json.loads((teacher / "meta.json").read_text(encoding="utf-8"))
+    inputs = _review_inputs(
+        (teacher / "teaching.md").read_text(encoding="utf-8"),
+        (teacher / "voice.md").read_text(encoding="utf-8"),
+        meta["sources"], meta["citation_contract"],
+    )
+    review_record = json.loads(record_path.read_text(encoding="utf-8"))
+    _check_review(review_record, inputs)
+    skill_md = teacher / "SKILL.md"
+    if not skill_md.is_file():
+        raise ValueError(f"{teacher} has no SKILL.md")
+    text = skill_md.read_text(encoding="utf-8")
+    frontmatter = text.split("---", 2)[1] if text.startswith("---") else ""
+    match = _SKILL_NAME.search(frontmatter)
+    if not match or match.group(1) != teacher.name:
+        raise ValueError(
+            f"SKILL.md name must equal the directory name {teacher.name!r} — "
+            "Claude Code invokes the skill by that name"
+        )
+    if review_record.get("skill_sha256") != hashlib.sha256(skill_md.read_bytes()).hexdigest():
+        raise ValueError("reviewed SKILL.md changed after generation")
+
+    skills = Path(skills_dir).expanduser()
+    created_skills_dir = not skills.is_dir()
+    skills.mkdir(parents=True, exist_ok=True)
+    link = skills / teacher.name
+
+    if link.exists() or link.is_symlink():
+        if link.exists() and link.resolve() == teacher:
+            return {
+                "registered": str(link),
+                "target": str(teacher),
+                "invoke": f"/{teacher.name}",
+                "already_registered": True,
+                "restart_required": False,
+            }
+        raise ValueError(
+            f"{link} already exists and is not this persona; not replacing it. "
+            f"Rename the generated persona, or remove {link} yourself."
+        )
+
+    try:
+        os.symlink(teacher, link, target_is_directory=True)
+    except OSError:
+        if os.name != "nt":
+            raise
+        import _winapi  # symlinks need a privilege on Windows; junctions do not
+
+        _winapi.CreateJunction(str(teacher), str(link))
+
+    return {
+        "registered": str(link),
+        "target": str(teacher),
+        "invoke": f"/{teacher.name}",
+        "already_registered": False,
+        # Claude Code watches skill directories that existed when the session
+        # started; a skills directory created now is seen after a restart.
+        "restart_required": created_skills_dir,
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Build a create-master persona from an explicit generation spec"
+    )
+    modes = parser.add_mutually_exclusive_group(required=True)
+    modes.add_argument("--spec", help="JSON generation spec prepared after review")
+    modes.add_argument("--review-digests", metavar="SPEC", help="print hashes of the current doctrine and voice review inputs")
+    modes.add_argument(
+        "--offline-smoke",
+        action="store_true",
+        help="run a deterministic no-network generation smoke",
+    )
+    modes.add_argument(
+        "--register",
+        metavar="TEACHER_DIR",
+        help="link a generated persona into --skills-dir so it can be invoked",
+    )
+    parser.add_argument("--output", help="master output directory (with --spec / --offline-smoke)")
+    parser.add_argument(
+        "--skills-dir",
+        default=os.path.join("~", ".claude", "skills"),
+        help="skills directory to register into (with --register; default ~/.claude/skills)",
+    )
+    args = parser.parse_args(argv)
+    if not args.register and not args.review_digests and not args.output:
+        parser.error("--output is required with --spec / --offline-smoke")
+
+    try:
+        if args.register:
+            summary = register_teacher(args.register, args.skills_dir)
+        elif args.review_digests:
+            spec = json.loads(Path(args.review_digests).read_text(encoding="utf-8"))
+            context = prepare_generation_context(spec["sources"], spec.get("citation_contract"))
+            inputs = _review_inputs(spec["teaching_content"], spec["voice_content"], context["sources"], context["citation_contract"])
+            summary = {stage: _review_digest(payload) for stage, payload in inputs.items()}
+        elif args.offline_smoke:
+            summary = build_from_spec(_offline_smoke_spec(), args.output, offline_smoke=True)
+        else:
+            spec = json.loads(Path(args.spec).read_text(encoding="utf-8"))
+            summary = build_from_spec(spec, args.output)
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    except KeyError as exc:
+        # A spec missing a required field (`sources`, `teaching_content`, …)
+        # printed a traceback; it is an input error like the others.
+        print(f"ERROR: spec is missing required field {exc}", file=sys.stderr)
+        return 1
+
+    print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

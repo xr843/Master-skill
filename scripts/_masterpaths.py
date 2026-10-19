@@ -11,7 +11,13 @@ so this only does path resolution, never path-traversal guarding.
 """
 import os
 
-PREBUILT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "prebuilt")
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# In the repository the masters are in prebuilt/. In the plugin bundle
+# (plugin/, built by scripts/build-plugin-bundle.py) these scripts sit in
+# plugin/scripts/ and the masters in plugin/skills/.
+PREBUILT = os.path.join(_ROOT, "prebuilt")
+if not os.path.isdir(PREBUILT) and os.path.isdir(os.path.join(_ROOT, "skills")):
+    PREBUILT = os.path.join(_ROOT, "skills")
 
 
 def resolve_master_dir(master, base=PREBUILT):

@@ -1,0 +1,89 @@
+{
+  "_comment": "CBETA 不收、但有免费全文可取的编集语录。周检 3i 用它把人设里当原话引的句子拿到原书里逐字找。3h 只能查 CBETA，查不到时对这些祖师一律记『未判定』——2026-09-15 修掉的那批拼接引文（虚云、印光）正是长在这个盲区里。coverage 决定这一步能不能判错：complete 表示该祖师声明的编集语录全都在下面取得到，找不到即伪造；partial 表示还有声明了却取不到全文的，找不到只记未判定，绝不报错。宁可少判，不可错判。",
+  "corpora": [
+    {
+      "master": "master-yinguang",
+      "corpus_title": "《印光法师文钞》",
+      "coverage": "complete",
+      "coverage_reason": "meta.json 声明的编集语录是正编、续编、三编，外加一个只作总名解析用的『Yinguang:Wenchao』（正续三编的合称，非另一部书）。这三编就是《文钞》的全部，且都在殆知阁语料库里。2026-09-16 核验：三个文件在 commit e9e11f1 下分别为 1285781 / 1410227 / 1973347 字节，且 voice.md 现有三条引文逐字命中（正编 2 条、续编 1 条）。故查不到即可判错。",
+      "verified_on": "2026-09-16",
+      "not_a_separate_book": [
+        "Yinguang:Wenchao"
+      ],
+      "not_a_separate_book_reason": "『Yinguang:Wenchao』是正编、续编、三编的合称，meta.json 里留着它只为解析只写总名的引用，并非第四部书。列在这里，coverage=complete 才是可核验的声明而不是一句断言——测试会要求每个声明过的编集来源要么有全文、要么在这里说明为什么不需要。",
+      "texts": [
+        {
+          "id": "Yinguang:WenchaoZhengbian",
+          "title": "印光法师文钞正编",
+          "url": "https://raw.githubusercontent.com/daizhige-org/daizhigev20/e9e11f19b7e6bd9c1284bbdab71d2a9cb94d637c/佛藏/藏外/印光法师文钞.md",
+          "encoding": "utf-8"
+        },
+        {
+          "id": "Yinguang:WenchaoXubian",
+          "title": "印光法师文钞续编",
+          "url": "https://raw.githubusercontent.com/daizhige-org/daizhigev20/e9e11f19b7e6bd9c1284bbdab71d2a9cb94d637c/佛藏/藏外/印光法师文钞续编.md",
+          "encoding": "utf-8"
+        },
+        {
+          "id": "Yinguang:WenchaoSanbian",
+          "title": "印光法师文钞三编",
+          "url": "https://raw.githubusercontent.com/daizhige-org/daizhigev20/e9e11f19b7e6bd9c1284bbdab71d2a9cb94d637c/佛藏/藏外/印光法师文钞三编.md",
+          "encoding": "utf-8"
+        }
+      ],
+      "source_note": "殆知阁古代文献 v2.0（github.com/daizhige-org/daizhigev20），默认分支是 data 不是 master——用 master 取会 404，2026-09-16 就这样踩过一次。地址钉在 commit e9e11f1（2026-09-12）上，分支移动不会悄悄换掉被核对的底本；哪天该 commit 取不到，3i 记未判定而不是判错。url 一律写字面字符、不要预先百分号编码：编码由 fetch_compiled_text 统一做，清单里再编一次就成了 %25 开头的双重编码，一取就 404 —— 2026-09-16 首次实跑正是这样让印光三部全部『取不到』的。"
+    },
+    {
+      "master": "master-xuyun",
+      "corpus_title": "《虚云和尚法汇》《虚云老和尚年谱》",
+      "coverage": "partial",
+      "coverage_reason": "meta.json 声明了开示录、法汇、年谱三种，BFNN 上只有岑学吕编的法汇六部与年谱，没有《虚云老和尚开示录》——后者是净慧所编，《虚云和尚全集》相对岑本新增约六十余万字，仅开示就多出 110 余则。也就是说虚云的真引文完全可能出自这里取不到的那部分，所以这部语料只能用来确认，不能用来判错。哪天开示录有了可取的免费全文，再改成 complete。",
+      "verified_on": "2026-09-16",
+      "texts": [
+        {
+          "id": "Xuyun:Nianpu",
+          "title": "虚云和尚年谱",
+          "url": "http://bookgb.bfnn.org/books2/1184.htm",
+          "encoding": "gb18030"
+        },
+        {
+          "id": "Xuyun:Fahui",
+          "title": "虚云和尚法汇—法语",
+          "url": "http://bookgb.bfnn.org/books2/1185.htm",
+          "encoding": "gb18030"
+        },
+        {
+          "id": "Xuyun:Fahui",
+          "title": "虚云和尚法汇—开示",
+          "url": "http://bookgb.bfnn.org/books2/1186.htm",
+          "encoding": "gb18030"
+        },
+        {
+          "id": "Xuyun:Fahui",
+          "title": "虚云和尚法汇—书问",
+          "url": "http://bookgb.bfnn.org/books2/1187.htm",
+          "encoding": "gb18030"
+        },
+        {
+          "id": "Xuyun:Fahui",
+          "title": "虚云和尚法汇—文记",
+          "url": "http://bookgb.bfnn.org/books2/1188.htm",
+          "encoding": "gb18030"
+        },
+        {
+          "id": "Xuyun:Fahui",
+          "title": "虚云和尚法汇—规约",
+          "url": "http://bookgb.bfnn.org/books2/1189.htm",
+          "encoding": "gb18030"
+        },
+        {
+          "id": "Xuyun:Fahui",
+          "title": "虚云和尚法汇—诗歌偈赞",
+          "url": "http://bookgb.bfnn.org/books2/1190.htm",
+          "encoding": "gb18030"
+        }
+      ],
+      "source_note": "BFNN（bookgb.bfnn.org）转录岑学吕编本，gb18030 编码，默认 Python-urllib 即可取（不像 FoJin 会挡 UA）。2026-09-16 核验：voice.md 现有三条引文逐字命中 1186《法汇—开示》。"
+    }
+  ]
+}
