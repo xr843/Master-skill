@@ -10,6 +10,12 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- master-tsongkhapa declares 《中论》 (`Toh:3824`, checked against 84000's title) and
+  master-buddhaghosa declares 《Atthasālinī》 (`PTS:Dhs-Comm`). On `claude-sonnet-4-6` both
+  were cited correctly but flagged as fabricated because neither was declared — the v1 gate
+  requires exactly zero. The offline re-audit of the committed DeepSeek run checks two more
+  citations (574 → 576), and its pinned numbers say why.
+
 ## [0.12.18] — 2026-10-19
 
 **Crisis referral on Claude models.** 0.12.17's safety clause listed the hotline numbers as

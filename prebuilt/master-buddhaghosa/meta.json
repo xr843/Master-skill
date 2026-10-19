@@ -55,6 +55,12 @@
       "note": "律藏注释"
     },
     {
+      "type": "pali_commentary",
+      "id": "PTS:Dhs-Comm",
+      "title": "Atthasālinī (《殊胜义》《法集论注》)",
+      "note": "对《法集论》Dhammasaṅgaṇī 的注释，传统归于觉音；SKILL.md 阿毗达摩一行已引用"
+    },
+    {
       "type": "pali_canon",
       "id": "SuttaCentral",
       "title": "巴利三藏 (Tipiṭaka)",
