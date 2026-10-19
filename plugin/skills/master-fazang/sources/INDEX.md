@@ -8,6 +8,7 @@
 |---|---|---|---|---|
 | `wujiao-zhang-excerpts.md` | 《华严一乘教义分齐章》 | T45n1866 | [8038](https://fojin.app/texts/8038) | 四法界、十玄门、六相圆融、五教判教 |
 | `jinshizi-excerpts.md` | 《金师子章》 | T45n1880 | [8052](https://fojin.app/texts/8052) | 金师子喻理事圆融、同时具足、事事无碍 |
+| `huayan60-excerpts.md` | 《大方广佛华严经》六十卷本 | T09n0278 | [11](https://fojin.app/texts/11) | 初发心时便成正觉 |
 
 ## 引用规范
 
