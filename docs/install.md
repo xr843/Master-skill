@@ -128,7 +128,28 @@ OpenCode 无需配置即读取 `~/.claude/skills/`，npx 正是装到这里；`o
 
 **Codex CLI**
 
-参见 [.codex/INSTALL.md](../.codex/INSTALL.md)。Codex 不读 `~/.claude/skills/`，npx 装的它看不到。
+插件方式（推荐）：
+
+```bash
+codex plugin marketplace add xr843/Master-skill
+codex plugin add master-skill@master-skill
+```
+
+装后模型能看到 20 个（16 位祖师 + 4 个教学模式），显示为 `master-skill:master-huineng` 等；
+插件不含 `create-master`。需要生成器，或想手动管理目录的，按 [.codex/INSTALL.md](../.codex/INSTALL.md)
+clone 后链接到 `~/.agents/skills/`。Codex 不读 `~/.claude/skills/`，npx 装的它看不到。
+
+**skills.sh（Vercel skills CLI）**
+
+```bash
+npx skills add xr843/Master-skill --full-depth
+```
+
+列出全部 21 个，交互选择要装的 skill 和目标 agent（Claude Code、Codex、Cursor、Gemini CLI 等）；
+加 `-g` 装到用户目录，`--skill '*' -a claude-code -y` 免交互。**`--full-depth` 不能省**：
+skills CLI 在仓库根发现 `SKILL.md`（`create-master`）就不再往下找，不带它只列出这一个。
+`npx skills update -g` 会逐个按装时记录的路径检查这 21 个，不必再带 `--full-depth`。四个教学模式靠读取同级祖师目录工作，
+各 agent 的 skills 目录里祖师与教学模式是平级的，读取正常；只装教学模式而不装祖师则读不到。
 
 **Gemini CLI**
 
@@ -147,6 +168,8 @@ gemini skills install https://github.com/xr843/Master-skill --path prebuilt
 
 > 以上 OpenCode / Codex / Gemini 的结论均于 2026-09-16 在 Linux 上以隔离的 HOME 实测
 > （OpenCode 1.18.13、Codex CLI 0.153.4、Gemini CLI 0.60.0）；Windows 步骤未重新验证。
+> Codex 插件与 skills.sh 两条于 2026-10-19 同样以隔离 HOME 实测（Codex CLI 0.163.0 的
+> `codex debug prompt-input` 列出 20 个；skills 1.7.2 列出 21 个并装进 `~/.claude/skills/`）。
 
 ### 使用预置法师
 

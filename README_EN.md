@@ -222,6 +222,18 @@ npx master-skill update --all           # upgrade: reinstall everything, clearin
 
 Once installed, invoke `/master-huineng`, `/compare-masters`, etc. directly in chat. npx installs to `~/.claude/skills/`, which Claude Code and OpenCode read; **Codex CLI and Gemini CLI do not**, so use their sections in docs/install.en.md.
 
+Two more one-line installs:
+
+```bash
+# Codex CLI plugin (20 skills: 16 masters + 4 teaching modes; for create-master see docs/install.en.md)
+codex plugin marketplace add xr843/Master-skill && codex plugin add master-skill@master-skill
+
+# skills.sh (Vercel's skills CLI; installs into Claude Code / Codex / Cursor / Gemini and more) — --full-depth is required
+npx skills add xr843/Master-skill --full-depth
+```
+
+Without `--full-depth` it finds only `create-master` at the repo root: the skills CLI stops searching once the root holds a `SKILL.md`.
+
 > Per-platform setup (Claude Code plugin / Cursor / OpenCode / Codex CLI / Gemini CLI),
 > global install, teaching-mode usage, and `/create-master`
 > → **[docs/install.en.md](docs/install.en.md)**

@@ -124,7 +124,30 @@ From a checkout, `{"skills": {"paths": ["/absolute/path/to/Master-skill/prebuilt
 > Earlier versions of this page said to add `"plugin": ["master-skill@git+https://github.com/xr843/Master-skill.git"]`.
 > OpenCode plugins are JavaScript modules and this repository ships none; that entry **registers no skills**.
 
-**Codex CLI** — See [.codex/INSTALL.md](../.codex/INSTALL.md). Codex does not read `~/.claude/skills/`, so an npx install is invisible to it.
+**Codex CLI** — Plugin install (recommended):
+
+```bash
+codex plugin marketplace add xr843/Master-skill
+codex plugin add master-skill@master-skill
+```
+
+The model then sees 20 skills (16 masters + 4 teaching modes), named `master-skill:master-huineng` and so on;
+the plugin does not include `create-master`. For the generator, or to manage the directories by hand,
+clone and link into `~/.agents/skills/` as in [.codex/INSTALL.md](../.codex/INSTALL.md).
+Codex does not read `~/.claude/skills/`, so an npx install is invisible to it.
+
+**skills.sh (Vercel skills CLI)**
+
+```bash
+npx skills add xr843/Master-skill --full-depth
+```
+
+Lists all 21 skills and lets you pick skills and target agents (Claude Code, Codex, Cursor, Gemini CLI, …);
+add `-g` for a user-level install, `--skill '*' -a claude-code -y` to skip the prompts. **Do not drop
+`--full-depth`**: once the skills CLI finds a `SKILL.md` at the repo root (`create-master`) it stops
+searching, so without the flag it lists only that one. `npx skills update -g` checks all 21 by the path recorded at install, with no flag needed.
+The four teaching modes read the sibling master directories; each agent's skills directory puts masters and
+modes side by side, so that works, but a teaching mode installed without its masters has nothing to read.
 
 **Gemini CLI**
 
@@ -142,6 +165,8 @@ gemini skills install https://github.com/xr843/Master-skill --path prebuilt
 
 > The OpenCode / Codex / Gemini findings above were measured on Linux with an isolated HOME on 2026-09-16
 > (OpenCode 1.18.13, Codex CLI 0.153.4, Gemini CLI 0.60.0). The Windows steps were not re-verified.
+> The Codex plugin and skills.sh routes were measured the same way on 2026-10-19 (`codex debug prompt-input`
+> in Codex CLI 0.163.0 lists 20; skills 1.7.2 lists 21 and installs them into `~/.claude/skills/`).
 
 ### Use a Pre-built Master
 
