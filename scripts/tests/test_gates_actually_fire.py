@@ -111,6 +111,27 @@ CASES = [
         ),
     ),
     (
+        "validate-recommend-triggers.py", (),
+        "every Chinese trigger a description names must route back to its persona",
+        # The measured defect: 噶举 was in Milarepa's description and not in his
+        # meta.json keywords, so `recommend "噶举派"` returned Kumārajīva and
+        # Yinguang. Dropping the keyword again reproduces it.
+        lambda r: _edit_json(
+            r / "prebuilt/master-milarepa/meta.json",
+            lambda d: d["search_scope"]["keywords"].remove("噶举"),
+        ),
+    ),
+    (
+        "validate-recommend-triggers.py", (),
+        "a description trigger added without a keyword must fail",
+        lambda r: (r / "prebuilt/master-huineng/SKILL.md").write_text(
+            (r / "prebuilt/master-huineng/SKILL.md")
+            .read_text(encoding="utf-8")
+            .replace('phrases like "', 'phrases like "南传"、"', 1),
+            encoding="utf-8",
+        ),
+    ),
+    (
         "check-manifest-versions.py", (),
         "the version must agree across every platform manifest",
         lambda r: _edit_json(r / "package.json", lambda d: d.__setitem__("version", "9.9.9")),
