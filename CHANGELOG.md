@@ -21,6 +21,40 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
   of existence, emptiness the extreme of nonexistence — which the model had been replacing
   with the common formulation.
 
+### Fixed — `unverified_quotes` counts quotations, not every pair of quotation marks (2026-10-19)
+
+The v1.0 gate asks for a ruling on every `unverified_quotes` entry, and the
+claude-sonnet-4-6 sweep (`r2`, 240 answers) had 1838 of them. A CBETA hand check of
+the tsongkhapa / fazang / nagarjuna misses found 52 of 100 were not quotations at all
+and 21 were already in the local excerpts. `scripts/_citation_evidence.py` now:
+
+- **Extracts only spans presented as a source's words**: a citation inside or right
+  after the span, a speech verb or title right before it (「经云：」「明言」「》」), a
+  colon or dash introducing it, traditional characters copied from a source, a span
+  standing alone on its line, a blockquote wrapped in quotation marks, or a citation
+  later in the same paragraph. Spans under 8 Chinese characters need a citation beside
+  them, a speech verb right before them, or a whole sentence after a colon — otherwise
+  they are terms (「无我」「执筏」). Callouts, disclaimers, misconceptions, suggested
+  follow-up questions and citation-only blockquotes are no longer reported.
+- **Matches what the model actually quoted**: citation lines, links and 「出处：」 labels
+  inside a blockquote, and inserted parenthetical glosses (「我说即是无（空）」) are not
+  part of the quoted words. A quotation split by 「……」「…」「（中略）」 matches only
+  if every segment is verbatim in one and the same declared work — two genuine halves
+  from two books stay unverified. There is still no fuzzy matching: 「无」 written as
+  「空」 stays unverified.
+- **Reports a blockquote that is one quotation once**, not once as the blockquote and
+  again as the quotation inside it.
+
+Re-graded offline over the archived `r2` answers: 1838 → 500 (1835 → 500 counting
+from the old rules on this tree, whose new excerpts already settle three); ajahn-chah 116→43,
+atisha 50→17, buddhaghosa 119→34, compare-masters 299→84, fazang 59→16, huineng 70→25,
+kumarajiva 66→11, mahasi-sayadaw 122→31, master-curriculum 120→21, master-debate
+166→37, milarepa 77→21, nagarjuna 127→20, ouyi 72→20, tsongkhapa 120→31, xuanzang
+45→5, xuyun 108→49, yinguang 67→26, zhiyi 35→9. Every r2 quotation the hand check
+judged near, other_work, not_found or paraphrase is still reported; a random 30 of the
+dropped entries were each confirmed by hand to be a non-quotation or verbatim in the
+local excerpts. The grader fingerprint changes, so earlier reports re-grade.
+
 ## [0.13.1] — 2026-10-19
 
 **Easier to install, and ready for the Claude directory.** The plugin now installs from a
