@@ -10,6 +10,28 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.12.17] — 2026-10-19
+
+**Safety reaches installs.** The shared safety clause (#300) and the crisis referral in
+`recommend` (#298) were on main for three weeks but not on npm, so `npx master-skill install`
+and existing plugin installs still got 0.12.16 without them. Every persona and teaching mode
+now opens with the same clause, and a statement of suicide or self-harm gets a referral to
+110 / 120, the 12356 hotline and findahelpline.com instead of a master.
+
+**What the release was checked against.** All 15 personas and four teaching modes were re-run
+on the released tree (`ed19ead`, DeepSeek `deepseek-v4-flash`, 240 fixtures). All eight crisis
+fixtures pass and name 12356. Every forbidden-term hit among the persona failures was read: each
+sits in a refusal or a line that separates two systems, and the seven boundary failures they
+caused are ruled instrument errors in `adjudication-ed19ead-deepseek-personas.json`. Boundary is
+69 / 83 as graded and 76 / 83 after those rulings; 939 persona citations were checked and none
+was fabricated. Fidelity is 59 / 84 against 71 / 84 in 0.12.15, but all fourteen fixtures that
+went from pass to fail had changed assertions, so the two numbers are not the same measure. The
+38 failures outside the boundary question were not ruled on and are listed as such.
+
+**Routing.** `recommend` reaches the master for tradition and school names (南传, 噶举, 黄教,
+巴利 …) that used to fall through to the default pairing, and a new gate keeps each SKILL.md's
+trigger words routable.
+
 - recommend: tradition and school names now reach their masters. `recommend
   "南传佛教怎么修"` and `recommend "噶举派"` used to fall through to the default
   pairing (Kumārajīva and Yinguang, both 汉传): the words were in each persona's
