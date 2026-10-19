@@ -125,12 +125,13 @@ def parse_sections(text: str) -> List[Tuple[str, str]]:
 def load_fixtures(prebuilt: Path = PREBUILT_DIR) -> Dict[str, List[dict]]:
     """{skill dir name: [fixture, ...]} from every `<prebuilt>/*/tests/fidelity.jsonl`.
 
-    Read with the platform default encoding, as both former copies did.
+    UTF-8 explicitly: the fixtures are Chinese, and on Windows the platform
+    default (cp1252 / GBK) either raises or silently misreads them.
     """
     fixtures: Dict[str, List[dict]] = {}
     for path in sorted(prebuilt.glob("*/tests/fidelity.jsonl")):
         fixtures[path.parent.parent.name] = [
-            json.loads(line) for line in path.read_text().splitlines() if line.strip()
+            json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
         ]
     return fixtures
 
