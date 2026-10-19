@@ -316,6 +316,26 @@ CASES = [
             encoding="utf-8",
         ),
     ),
+    (
+        "build-plugin-bundle.py", ("--check",),
+        "plugin/ must be rebuilt when a persona it copies changes",
+        # The drift this gate exists for: a content PR edits prebuilt/ and the
+        # installed plugin keeps serving the old text.
+        lambda r: (r / "prebuilt/master-huineng/SKILL.md").write_text(
+            (r / "prebuilt/master-huineng/SKILL.md").read_text(encoding="utf-8")
+            + "\n新增一行，未重建 plugin/。\n",
+            encoding="utf-8",
+        ),
+    ),
+    (
+        "check-directory-readiness.py", (),
+        "no non-image file in plugin/ may be 256 KiB or larger",
+        # The repository root failed exactly this with eval reports and
+        # CHANGELOG.md, which is why the plugin folder is plugin/.
+        lambda r: (r / "plugin/skills/master-huineng/big.md").write_text(
+            "a" * (256 * 1024), encoding="utf-8"
+        ),
+    ),
 ]
 
 

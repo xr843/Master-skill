@@ -111,6 +111,13 @@ GATES: Tuple[Gate, ...] = (
     Gate("verify-adjudication", "content", (PY, "scripts/verify-adjudication.py")),
     Gate("validate-cross-critique", "content", (PY, "scripts/validate-cross-critique.py")),
     Gate("check-manifest-versions", "content", (PY, "scripts/check-manifest-versions.py")),
+    # plugin/ is what `claude plugin install` and `codex plugin add` copy, and
+    # the folder submitted to Anthropic's plugin directory. It is generated from
+    # prebuilt/ and the generator bundle; the first gate fails when it drifts
+    # from them, the second when it breaks a directory submission rule (file
+    # count, 256 KiB per file, links, unpinned launchers, README, license).
+    Gate("check-plugin-bundle", "content", (PY, "scripts/build-plugin-bundle.py", "--check")),
+    Gate("check-directory-readiness", "content", (PY, "scripts/check-directory-readiness.py")),
     Gate("validate-lore-triggers-content", "content",
          (PY, "scripts/validate-lore-triggers-content.py", "--strict")),
     # routing.json keyword sets stay pairwise disjoint. The pairing table this

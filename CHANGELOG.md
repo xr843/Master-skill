@@ -19,6 +19,34 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
   `--full-depth` it lists only `create-master`, because the skills CLI returns as soon as the
   repo root holds a `SKILL.md`; no repository layout change can lift that while `create-master`
   lives at the root.
+- The Claude Code / Codex plugin now installs from `plugin/`, a generated folder that holds
+  only what the plugin runs: the 21 skills from `skill-catalog.json` (personas without their
+  `tests/` fixtures), the generator's declared bundle, the offline helpers the personas name
+  (`scripts/cite.py`, `scripts/query.py`), `routing.json`, the SessionStart hook, `LICENSE` and
+  a listing `README.md`. The marketplace entry used to point at the repository root, so every
+  install copied all 447 tracked files, eight of them over 256 KiB (eval reports,
+  `CHANGELOG.md`). The bundle is 189 files, none over 256 KiB, which is what Anthropic's plugin
+  directory requires before a version can go live without a reviewer hold
+  (<https://claude.com/docs/plugins/pre-submission-checklist>). The install commands do not
+  change. Measured in isolated homes: `claude plugin details master-skill` still lists
+  `Skills (21)` and the hook still injects its pointer (`hook_success` in the transcript);
+  `codex debug prompt-input` now lists 21 `master-skill:` skills instead of 20, because
+  `create-master` sits at `skills/create-master/` where Codex finds it.
+- `scripts/build-plugin-bundle.py` writes `plugin/`; its `--check` mode is a new content gate
+  (`check-plugin-bundle`) that fails when `plugin/` drifts from `prebuilt/` and the other
+  sources. `scripts/check-directory-readiness.py` (gate `check-directory-readiness`) checks the
+  folder against the directory checklist (file count, 256 KiB per file, symbolic links, LFS
+  pointers, submodules, `.gitattributes`, unpinned `npx`/`uvx` in hooks, credentials, README
+  length, license) and prints PASS/WARN/FAIL per rule. Run on the repository root it fails
+  four rules, which is why the root is no longer the plugin folder.
+- In the bundle the SessionStart hook is a single `echo` of the same JSON that
+  `hooks/run-hook.cmd` → `hooks/session-start` already printed under Claude Code; a test pins
+  the two outputs equal. The directory holds for review a subfolder plugin whose hook runs
+  scripts with shell variables or calls to other files, and `echo '<json>'` prints verbatim in
+  sh, Git Bash and Windows PowerShell (checked), the shells Claude Code runs hooks in.
+- `scripts/_masterpaths.py` also looks in `skills/` when there is no `prebuilt/` next to it, so
+  `cite.py` and `query.py` work from the installed plugin.
+
 - compare-masters names its eight section headings as required, not as a template to adapt:
   every answer must carry 「共同点」「核心分歧」「适用根机」「分歧雷达」「分歧分类」
   「共通点与宗派背景」「推荐继续追问」「引用来源」 verbatim plus one perspective heading per

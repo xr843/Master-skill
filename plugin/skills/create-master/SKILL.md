@@ -1,0 +1,163 @@
+---
+name: create-master
+description: 基于佛教经典文献，生成特定高僧大德的 AI 教学角色
+argument-hint: <法师名称>
+version: 1.0.0
+user-invocable: true
+allowed-tools:
+  - Read
+  - Glob
+  - Grep
+  - Bash(python3 ${CLAUDE_SKILL_DIR}/tools/*)
+  - Bash(python3 "${CLAUDE_SKILL_DIR}/tools/*)
+---
+
+# Master-skill — 佛教法师教学角色生成器
+
+本内容依据历史佛教文献生成，仅供参考学习。如需正式修行指导，请亲近善知识。
+
+## 触发条件
+
+- `/create-master` 或 `/create-master <法师名>`
+- "帮我创建一个印光大师的教学角色"
+- "生成慧能大师的 AI Skill"
+- "我想和玄奘法师学习"
+
+## 预置法师（直接调用，无需生成）
+
+**印度**
+
+- `/master-nagarjuna` — 龙树菩萨（印度·中观｜八宗共祖）
+
+**汉传**
+
+- `/master-xuanzang` — 玄奘法师（法相唯识宗）
+- `/master-kumarajiva` — 鸠摩罗什（三论宗/中观）
+- `/master-huineng` — 慧能大师（禅宗六祖）
+- `/master-zhiyi` — 智顗大师（天台宗）
+- `/master-daoxuan` — 道宣律师（律宗 · 南山律）
+- `/master-fazang` — 法藏大师（华严宗）
+- `/master-yinguang` — 印光大师（净土宗）
+- `/master-ouyi` — 蕅益大师（天台/净土·跨宗派）
+- `/master-xuyun` — 虚云老和尚（禅宗·五宗兼嗣）
+
+**藏传**
+
+- `/master-atisha` — 阿底峡尊者（噶当派开祖 · 三士道 · 982-1054）
+- `/master-tsongkhapa` — 宗喀巴大师（格鲁派创始人 · 三主要道 · 1357-1419）
+- `/master-milarepa` — 米拉日巴尊者（噶举派 · 大手印 · 1052-1135）
+
+**南传**
+
+- `/master-buddhaghosa` — 觉音尊者（上座部论师 · 《清净道论》· 5世纪）
+- `/master-mahasi-sayadaw` — 马哈希尊者（缅甸内观 · 标记法 · 1904-1982）
+- `/master-ajahn-chah` — 阿姜查（泰国森林禅林派 · 1918-1992）
+
+## 教学模式（多祖师协作）
+
+- `/compare-masters` — 多位法师对同一问题的并列对比（横向 / 单轮）
+- `/master-debate` — 祖师就争议议题进行多轮交叉辩论（默认 4 轮，部分配对 5 轮；看分歧）
+- `/master-curriculum` — 按你的传统给出"根基→深入→精研→盲点"学修路径（纵向时序）
+
+> 选择哪个模式？读 `references/teaching-modes.md`（含决策树与示例）。
+
+## 主流程（生成新法师）
+
+### Step 0：检查运行环境
+
+先运行 `python3 "${CLAUDE_SKILL_DIR}/tools/check_deps.py"`。生成器的每个工具启动时都要导入 `requests`、`pyyaml`、`pypinyin`，缺任何一个都会直接报 `ModuleNotFoundError`，连离线步骤也跑不了。退出码非 0 时停下，把它打印的安装方法原样告诉用户（系统 Python 拒绝 pip 时改用虚拟环境）；**不要擅自安装**，那会改动用户的环境。
+
+### Step 1：信息录入
+
+加载 `${CLAUDE_SKILL_DIR}/prompts/intake.md`，3 问模式收集：①法师名称（FoJin KG 自动匹配） ②关注方面（教义/修行/讲解/全部） ③语言偏好（按传承默认）。
+
+快捷入口、KG 匹配兜底、名称校验规则细节 → `references/workflow-details.md` §Step 1。
+
+### Step 2：数据采集
+
+使用 `${CLAUDE_SKILL_DIR}/tools/sutra_collector.py --name "<法师名>" --tradition "<传承>" --output collected_data.json` 从 FoJin 采集知识图谱实体、经典内容、传承术语。采集后运行 `${CLAUDE_SKILL_DIR}/tools/verify_sources.py --check-links collected_data.json`，离线验证来源家族、ID 格式、声明归属与自动派生的 citation contract。
+
+API 故障 / 超时 / 数据阈值 / 引用规则细节 → `references/workflow-details.md` §Step 2 + `references/source-conventions.md`。
+
+### Step 3：分析与生成
+
+两阶段分析：教义（`prompts/sutra_analyzer.md`）→ 风格（`prompts/voice_analyzer.md`）；按 FoJin KG 宗派标签自动选择风格规则。然后 `prompts/teaching_builder.md` 生成 `teaching.md`、`prompts/voice_builder.md` 生成 `voice.md`（4 层结构）。RAG 检索指引由 `prompts/rag_instructions.md` 嵌入。
+
+宗派标签清单、Layer 0-3 含义、质量门控阈值 → `references/workflow-details.md` §Step 3。
+
+### Step 3.5：二阶段审查
+
+生成器先从 `sources[].type` 在**生成器内存**中派生 citation contract，再把同一个 sources/contract 上下文交给教义准确性审查（`doctrine_reviewer.md`，按 `citation_contract.minimum_claim_coverage` 审核声明来源覆盖率） → 风格一致性（`voice_reviewer.md`，Layer 0 硬规则完整）。审查顺序不可颠倒。FAIL → 自动修复重审，最多 2 轮，仍 FAIL → 人工介入；最终写入的 `meta.json` 必须复用并再次校验同一 contract。
+
+### Step 4：预览与确认
+
+展示 teaching.md / voice.md 结构化预览给用户。用户可要求修改特定教义、调整语气、补充主题、整体重新生成。
+
+### Step 5：写入文件
+
+将审查通过的名称、传承、宗派、时代、语言、`teaching_content`、`voice_content`、`sources` 与同一 `citation_contract` 写入 `generated-master.json`。先运行 `${CLAUDE_SKILL_DIR}/tools/master_builder.py --review-digests generated-master.json` 获取教义和风格两份输入哈希；两阶段审查各给出 PASS 后，在规格中写入 `review.doctrine`、`review.voice`，每份含 `verdict: "PASS"`、互不相同的 `reviewer` 标识和对应的 `input_sha256`，再运行 `${CLAUDE_SKILL_DIR}/tools/master_builder.py --spec generated-master.json --output "${CLAUDE_SKILL_DIR}/masters/"`。生成器统一写入 `masters/master-{slug}/`，且 `SKILL.md` 的 name 为 `master-{slug}`；随后运行 `${CLAUDE_SKILL_DIR}/tools/verify_sources.py --final-check "${CLAUDE_SKILL_DIR}/masters/master-{slug}/"`。该终验离线检查四个必需文件、目录/name 一致性，以及 `meta.json` 的来源清单、家族 ID、声明归属和 contract；它不解析 `teaching.md` 自由文本，也不保证外部站点可达。
+
+缺少审查记录或审查后改稿会在写入前失败；注册时重新核对落盘正文。哈希只证明记录对应当前内容，不证明审查结论正确。
+
+终验通过后运行 `${CLAUDE_SKILL_DIR}/tools/master_builder.py --register "${CLAUDE_SKILL_DIR}/masters/master-{slug}"`：Claude Code 只加载 `~/.claude/skills/<名字>/SKILL.md`，不扫 `masters/`，不注册就无法用 `/master-{slug}` 调用。按输出的 `invoke` 告知用户；`restart_required` 为真时提示重启；报 `not replacing` 时不得覆盖同名 skill，交由用户决定。细节与 OpenClaw 注册 → `references/workflow-details.md` §角色注册（按运行环境）。
+
+## 追加材料、纠正、管理命令
+
+- **追加材料**：用户说"给{法师}追加{经文}"或"补充关于{主题}" → 加载 `prompts/merger.md` 增量合并；版本号自动 minor 递增；旧版本归档 `.versions/`。
+- **纠正模式**：用户说"他不会这样说话/他应该更严厉" → 加载 `prompts/correction_handler.md`；以 `## Correction` 块追加到 teaching.md / voice.md 末尾；patch 递增。
+- **管理命令**：`/list-masters`（列出所有，标 `[预置]`/`[自定义]`）、`/master-rollback <slug> <version>`（回滚，自动归档当前）、`/delete-master <slug>`（删除，预置不可删，需二次确认）。
+
+冲突处理策略、版本号细节、用户确认文案 → `references/workflow-details.md` §追加材料、纠正、管理命令细则。
+
+## 执行优先级（运行时）
+
+1. voice.md Layer 0 硬规则
+2. Correction 记录
+3. voice.md Layer 1-3
+4. teaching.md 教义内容
+5. FoJin RAG 实时检索
+6. LLM 自身知识
+
+冲突时高优先级覆盖低优先级。示例与典型冲突场景 → `references/workflow-details.md` §执行优先级。
+
+## 工具路由
+
+| 任务 | 工具 |
+|------|------|
+| FoJin 数据查询 | `${CLAUDE_SKILL_DIR}/tools/fojin_bridge.py` |
+| FoJin 实时检索 | `${CLAUDE_SKILL_DIR}/tools/rag_query.py` |
+| 经文采集 | `${CLAUDE_SKILL_DIR}/tools/sutra_collector.py` |
+| 角色生成 | `${CLAUDE_SKILL_DIR}/tools/master_builder.py` |
+| 文件写入 | `${CLAUDE_SKILL_DIR}/tools/skill_writer.py` |
+| 版本管理 | `${CLAUDE_SKILL_DIR}/tools/version_manager.py` |
+| 来源验证 | `${CLAUDE_SKILL_DIR}/tools/verify_sources.py` |
+| 教义审查 | `${CLAUDE_SKILL_DIR}/prompts/doctrine_reviewer.md` |
+| 风格审查 | `${CLAUDE_SKILL_DIR}/prompts/voice_reviewer.md` |
+
+KG 深度遍历 / 跨词典对比等 `rag_query.py` 不够用的场景 → `references/fojin-api.md`（REST API 完整参考）。
+
+## 铁律（HARD-GATE）
+
+- **NO DOCTRINAL CLAIM WITHOUT A DECLARED SOURCE CITATION.** — 所有教义断言、修行指导与文本解释的引用必须解析到所选 persona 的 `meta.json.sources[]`，来源类型必须列于 `citation_contract.allowed_source_types`；仅当 `citation_contract.live_retrieval_allowed` 为 `true` 时才可实时检索
+- **NO FABRICATED SOURCES** — 不得编造来源 ID / 引文 / 链接，所有引用必经 `verify_sources.py` 验证
+- **NO FICTIONAL PERSONAS** — 仅历史真实人物，不为虚构角色创建
+
+完整理性化防御表、红旗清单、ETHICS.md 运行时摘要 → `references/ethics-runtime.md`。
+
+## 敏感性边界（一句话）
+
+不评宗派优劣 · 不宣神通感应 · 不涉政治议题 · 不代用户做重大决定 · 不替代真善知识。
+
+涉及"祖师怎么看 XX 现代议题"边界场景 → `references/ethics-runtime.md`。
+
+## 按需载入（progressive disclosure 路由）
+
+| 触发场景 | 读 |
+|---------|-----|
+| 用户问三大传统差异、宗派定位 | `references/traditions.md` |
+| 用户给出 T-/X-/SC-/Toh-/W- 引用，需验证或解析 | `references/source-conventions.md` |
+| 用户问"祖师怎么看 XX 现代议题"边界场景、AI 透明度、版权 | `references/ethics-runtime.md` |
+| 用户犹豫该用 compare / debate / curriculum 哪个 | `references/teaching-modes.md` |
+| 进入主流程 Step 1-5 任一步的细节、错误兜底、追加/纠正策略 | `references/workflow-details.md` |
+| 需要直接打 FoJin REST API（KG 深度遍历等） | `references/fojin-api.md` |
+| 治理文档：完整 ETHICS、版权分级、Tier B 授权流程 | 根目录 `ETHICS.md` |
