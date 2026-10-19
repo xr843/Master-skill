@@ -55,6 +55,20 @@ checks work identity, not whether an online passage entails the answer's claim.
   nonempty declared source set for that answer. The v1 gate rejects missing or false
   readiness and any `audit_unavailable` result, even if its answer review was cleared.
 - `BASELINE.md` — the human-readable summary table and failure analysis for the same run.
+- `0.12.18-ca577af-anthropic-personas.json` / `0.12.18-ca577af-anthropic-metaskills-tools.json` —
+  the first complete run on `claude-sonnet-4-6`, all 240 fixtures, every suite's fingerprint
+  matching `ca577af`. Their adjudications rule on every failure (none left unruled) but not
+  on `unverified_quotes` / `unverified_live_citations`, so they are not v1 release evidence.
+- `quote-sample-ca577af-anthropic.json` — 100 direct quotations from that run, cited to CBETA
+  works and checked against CBETA full text: method, per-item verdicts and the summary.
+- `0.12.17-ed19ead-deepseek-personas.json` — all 15 personas on the 0.12.17 release tree,
+  the first run with the shared safety clause and the crisis fixtures. Every suite's
+  `skill_sha256` matches `ed19ead`; suites whose inputs drifted mid-sweep were re-run, not
+  patched. `adjudication-ed19ead-deepseek-personas.json` rules on the boundary-class
+  failures only and lists the other 38 as not ruled on.
+- `0.12.17-ed19ead-deepseek-metaskills-tools.json` — the four teaching modes on the same
+  tree, with file tools and debate subagents. Not adjudicated; its `meta.note` says what
+  the two failures are.
 - `0.12.15-df76fd2-deepseek-metaskills-tools.json` — the four teaching modes only, the first
   run with file tools (`skill_tools` on every suite, `tool_calls` on every result). Its `meta`
   records cost, both output budgets, and why each unmeasured fixture is unmeasured.

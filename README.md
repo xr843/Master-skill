@@ -169,16 +169,20 @@ Master-skill 的核心不是"角色扮演提示词集合"，而是一个可验�
 | 最近一次全量运行 | **199 / 211 已评分**（94.3%） | DeepSeek `deepseek-v4-flash`，commit [`06b8142`](https://github.com/xr843/Master-skill/commit/06b814204082b3e4738185cf3eefa44ed149f9f0)，2026-08-31；12 条输出被截断，记为未测而非失败 |
 | 判分器直出通过率 | 137 / 199 = 68.8% | 子串匹配：分不清改写与缺失，也分不清「正确地拒绝」与「越界」 |
 | 逐条人工裁定后 | **179 / 199 = 89.9%** | 教理 94.3% · 守边界 85.9% · 抗压守引用 83.3%。推翻 43 条失败，也把 1 条 PASS 改判为 FAIL；每条裁定附回答原文引句，由 `verify-adjudication.py` 在 CI 中复核 |
-| 引文审计覆盖 | **574 / 619 = 93%**，判为伪造 3 | 用当前审计器离线重审同一批回答，覆盖 CBETA、BDRC / Toh、PTS / SuttaCentral、编集开示四个来源家族。3 条伪造都是 `master-curriculum` 当作《印光法师文钞》推荐的卍续藏经号，实为清代他人著作；印光本人有 23 条引用配的也是这些经号，因附 FoJin 链接而归为离线无法核验 |
+| 引文审计覆盖 | **576 / 619 = 93%**，判为伪造 3 | 用当前审计器离线重审同一批回答，覆盖 CBETA、BDRC / Toh、PTS / SuttaCentral、编集开示四个来源家族。3 条伪造都是 `master-curriculum` 当作《印光法师文钞》推荐的卍续藏经号，实为清代他人著作；印光本人有 23 条引用配的也是这些经号，因附 FoJin 链接而归为离线无法核验 |
 | 元技能定向复测 | compare-masters **0% → 90%** | 2026-09-13，34 条。修正输出模板后，`compare-masters` 引文可核验率由 0% 升至 90%，`master-curriculum` 由 0% 升至 100%；`master-debate` 此前把经号写在圆括号里、审计根本看不见，现为 100% |
 | 元技能带文件工具复测 | **455 条引文、伪造 0**；40 / 41 | 2026-09-25，四个教学模式 44 条，DeepSeek `deepseek-v4-flash`，¥2.61。教学模式首次能按指令读取同级祖师的文件（此前评测不给工具，模型把工具调用写成正文，6 条这样的"回答"曾判为通过）；伪造工具调用降为 0，每条都读了文件。与上一行不是同一把尺子，通过率不并列比较；2 条截断、1 条撞工具轮次上限，未计入 41。报告：[`0.12.15-df76fd2-deepseek-metaskills-tools.json`](eval/reports/0.12.15-df76fd2-deepseek-metaskills-tools.json) |
 | 辩论各轮在独立子代理中写 | **8 / 8**；86 条引文、伪造 0 | 2026-09-26，`master-debate` 8 条，¥0.46。协议要求每轮在全新上下文里写、双方只见对方摘要；评测此前只能在一个上下文里代写四轮。现每条派出 4–5 个子代理、无一失败。报告：[`0.12.15-ab26c9a-deepseek-debate-subagents.json`](eval/reports/0.12.15-ab26c9a-deepseek-debate-subagents.json) |
+
+**2026-10-19 首次在 Anthropic `claude-sonnet-4-6` 上跑满全部 240 条**（commit `ca577af`，约 $11）。全部评分、无一截断，**引文伪造 0**。逐条裁定全部 55 条失败与复核案例后：教理 95 / 113 = 84.1% · 守边界 87 / 96 = 90.6% · 抗压 24 / 31 = 77.4%（报告 [`0.12.18-ca577af-anthropic-personas.json`](eval/reports/0.12.18-ca577af-anthropic-personas.json)、[`…-metaskills-tools.json`](eval/reports/0.12.18-ca577af-anthropic-metaskills-tools.json) 与两份裁定）。教理低于 v1 门禁的 90%，且引语核验未裁，所以**v1.0 尚未达标**。这一轮还查出两处 DeepSeek 没暴露的缺陷并已修：危机转介在 Claude 上会自报热线号码（#314），用户说「别引经」时整篇零出处（#315）。**直接引语抽样**：带 CBETA 经号、≥8 字的引语抽 100 处，64 处是真引语，其中所引书所引卷逐字有 53%（95% CI 41–65%），差一两字或拼接再加 19%，挂错书、意译、全藏查不到合计 28%——见 [`quote-sample-ca577af-anthropic.json`](eval/reports/quote-sample-ca577af-anthropic.json)。
 
 **这一列不能推进 v1.0 门禁。** 门禁定义在 Anthropic（`claude-sonnet-4-6`）那一列上，两个模型是两把尺子，不混算。Anthropic 那一列至今只有 2026-08-18 的一次部分运行（84 / 211 条，因账户余额耗尽中断），当时的「零伪造引文」已于 2026-08-31 撤回——那次审计实际一条都没有运行。
 
 **引文审计的边界**：回答审计中的“可核验”和“伪造 0”指来源标识符可解析到已声明来源，或实时链接可定位；它不证明引号内原句出自该书，也不证明该来源支持回答中的解释。静态 `sources/` 摘录另有原文核对流程，生成回答的原句与论断仍需逐条复核。`citation_contract.minimum_claim_coverage` 是写作与审查要求，当前自动校验只检查字段配置值，尚未自动计算每个回答的教义断言覆盖率。
 
 **上表的数字属于 `06b8142` 那棵树。** 此后人设内容与夹具都改过（见 CHANGELOG 的 0.12.x 各条）。**2026-09-26 在当前的树上重跑了全部 15 位人设**（167 条，DeepSeek `deepseek-v4-flash`，¥1.51，报告 [`0.12.15-0e7d97e-deepseek-personas.json`](eval/reports/0.12.15-0e7d97e-deepseek-personas.json)）：判分器直出 131 / 166 = 78.9%，1 条截断；**逐条裁定后 144 / 166 = 86.7%**（教理 92.8% · 守边界 87.0% · 抗压守引用 69.0%；推翻 14 条失败，1 条 PASS 改判 FAIL，76 条全部裁定，见 [`ADJUDICATION.md`](eval/reports/ADJUDICATION.md)）；**681 条引文可核对，伪造 0**。同一把尺子的对照：当前判分器重评 `06b8142` 的存档回答直出为 132 / 160 = 82.5%。有 2 条回答是没有执行的工具调用——人设提示要求离线不足时实时检索 FoJin，而人设评测不给工具。
+
+**0.12.17 发版前（2026-10-19）在发版的树 `ed19ead` 上又重跑了全部 15 位人设与四个教学模式**（240 条，DeepSeek `deepseek-v4-flash`）。这一轮要回答的是：共享安全条款有没有让人设守边界变差。8 条危机题全部通过且回答含 12356；人设失败里的禁用词命中逐条读过，都出现在拒绝或划界的句子里，据此推翻 7 条守边界失败——守边界直出 69 / 83，裁定后 **76 / 83**；**939 条引文可核对，伪造 0**。教理 59 / 84 低于 0.12.15 的 71 / 84，但由过转败的 14 条夹具断言全部改过，不是同一把尺子，不宣称退步；其余 38 条失败未裁定。教学模式 42 / 44。报告：[`0.12.17-ed19ead-deepseek-personas.json`](eval/reports/0.12.17-ed19ead-deepseek-personas.json)、[裁定](eval/reports/adjudication-ed19ead-deepseek-personas.json)、[`0.12.17-ed19ead-deepseek-metaskills-tools.json`](eval/reports/0.12.17-ed19ead-deepseek-metaskills-tools.json)。
 
 **当时的判分器漏查了元技能的输出契约。** 44 条元技能夹具里有七类断言（必备章节、选对祖师、辩论轮次、每轮 / 每位祖师有出处、推荐的技能须存在）从未被评分，2026-09-23 起才评分。用现在的判分器离线重评上表那批存档回答：`master-debate` 另有 2 条由 PASS 变 FAIL（#0 没有分轮次，#2 最后一轮 R4 没有任何出处），它们当时判为通过，没有进入人工裁定，上表的数字没有算进去。2026-09-13 那次元技能复测里，`compare-masters` 的 11 条 PASS 中有 5 条、`master-debate` 的 4 条 PASS 中有 1 条，其实是模型吐出的伪造工具调用，不是回答；现在这 6 条都判为 FAIL。
 

@@ -10,6 +10,78 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- First complete run on `claude-sonnet-4-6`: all 240 fixtures on `ca577af`, 0 fabricated
+  citations, every failure ruled on. Adjudicated: fidelity 84.1%, boundary 90.6%, pressure
+  77.4% — v1.0's fidelity gate (90%) is not met, and quotation checks are not ruled on. A
+  100-quotation sample against CBETA puts verbatim accuracy of real quotations at 53%
+  (95% CI 41–65%).
+- master-curriculum names its four stage headings as required, not as a template to adapt:
+  every answer must carry 「根基」「深入」「精研」「可能的盲点」 verbatim, and an
+  "A or B first?" question still gets all four stages. On `claude-sonnet-4-6` four of eight
+  curriculum fixtures failed the output contract — three renamed the last stage
+  (「最容易踩的三个坑」「你特别需要注意的盲点」), one answered 马哈希 vs 阿姜查 with a comparison
+  table and no stages at all. Two runs after the change: zero contract failures in 16
+  answers (7 / 8 and 8 / 8; the one miss is an undeclared `Toh:3871`, not the contract).
+
+- master-tsongkhapa declares 《中论》 (`Toh:3824`, checked against 84000's title) and
+  master-buddhaghosa declares 《Atthasālinī》 (`PTS:Dhs-Comm`). On `claude-sonnet-4-6` both
+  were cited correctly but flagged as fabricated because neither was declared — the v1 gate
+  requires exactly zero. The offline re-audit of the committed DeepSeek run checks two more
+  citations (574 → 576), and its pinned numbers say why.
+
+## [0.12.18] — 2026-10-19
+
+**Crisis referral on Claude models.** 0.12.17's safety clause listed the hotline numbers as
+examples, and on `claude-sonnet-4-6` — the kind of model Claude Code users actually run — five
+of eight crisis answers gave other numbers the model supplied itself and left out 12356. This
+release gives the numbers verbatim and forbids adding others; all fifteen crisis fixtures now
+name 12356 and none adds a number. Personas also keep their sources when asked to drop them
+(pressure 13 / 29 → 21 / 29 on the same model). Both changes were measured on
+`claude-sonnet-4-6`; the full v1 sweep on that model follows this release.
+
+- Personas keep their sources when a user asks them to drop them. On `claude-sonnet-4-6`, 16
+  of 29 pressure fixtures failed and ten of those answers carried no citation once the user
+  asked for plain words (「别引经」「用你自己的话」); master-zhiyi refused outright. Each
+  persona's citation rule now says: plain prose, sources gathered at the end with one line on
+  why they stay, no refusal. `tools/skill_writer.py` gives generated personas the same rule.
+  Measured on `claude-sonnet-4-6`: pressure 13 / 29 → 21 / 29 as graded, answers with no
+  citation 10 → 3.
+
+### Ethics — the crisis referral gives its numbers verbatim
+
+- `prompts/safety_clause.md` (and every persona and teaching mode that carries it) listed the
+  crisis lines after 如 — "for example". On `claude-sonnet-4-6` five of eight crisis fixtures
+  answered with other hotline numbers the model supplied itself and left out 12356; DeepSeek
+  had copied the listed ones. The numbers are now listed without 如, the clause forbids adding
+  any other number (lines change or close, and a wrong number given to someone in crisis is a
+  real harm), and it gives the sentence a mainland-China referral must contain:
+  「有立即危险请拨急救电话 120 或报警 110；心理危机干预热线请拨 12356。」 Measured on
+  `claude-sonnet-4-6`: before, 3 of 8 crisis answers named 12356; after, 15 of 15 crisis
+  fixtures name it, none adds a number, and an earlier draft held at 24 of 24 over three runs
+  of eight. Every crisis fixture now also requires `12356`.
+
+## [0.12.17] — 2026-10-19
+
+**Safety reaches installs.** The shared safety clause (#300) and the crisis referral in
+`recommend` (#298) were on main for three weeks but not on npm, so `npx master-skill install`
+and existing plugin installs still got 0.12.16 without them. Every persona and teaching mode
+now opens with the same clause, and a statement of suicide or self-harm gets a referral to
+110 / 120, the 12356 hotline and findahelpline.com instead of a master.
+
+**What the release was checked against.** All 15 personas and four teaching modes were re-run
+on the released tree (`ed19ead`, DeepSeek `deepseek-v4-flash`, 240 fixtures). All eight crisis
+fixtures pass and name 12356. Every forbidden-term hit among the persona failures was read: each
+sits in a refusal or a line that separates two systems, and the seven boundary failures they
+caused are ruled instrument errors in `adjudication-ed19ead-deepseek-personas.json`. Boundary is
+69 / 83 as graded and 76 / 83 after those rulings; 939 persona citations were checked and none
+was fabricated. Fidelity is 59 / 84 against 71 / 84 in 0.12.15, but all fourteen fixtures that
+went from pass to fail had changed assertions, so the two numbers are not the same measure. The
+38 failures outside the boundary question were not ruled on and are listed as such.
+
+**Routing.** `recommend` reaches the master for tradition and school names (南传, 噶举, 黄教,
+巴利 …) that used to fall through to the default pairing, and a new gate keeps each SKILL.md's
+trigger words routable.
+
 - New persona `master-daoxuan` — 道宣律师 (596–667), the Vinaya master the 南山律宗 is
   named after, and the first persona for 律宗. Declares eight CBETA works: 《行事鈔》
   T40n1804, 《含注戒本》T40n1806, 《隨機羯磨》T40n1808, 《淨心誡觀法》T45n1893,
