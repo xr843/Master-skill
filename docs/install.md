@@ -135,8 +135,8 @@ codex plugin marketplace add xr843/Master-skill
 codex plugin add master-skill@master-skill
 ```
 
-装后模型能看到 20 个（16 位祖师 + 4 个教学模式），显示为 `master-skill:master-huineng` 等；
-插件不含 `create-master`。需要生成器，或想手动管理目录的，按 [.codex/INSTALL.md](../.codex/INSTALL.md)
+装后模型能看到全部 21 个（16 位祖师、4 个教学模式和 `create-master`），显示为 `master-skill:master-huineng` 等。
+想手动管理目录的，按 [.codex/INSTALL.md](../.codex/INSTALL.md)
 clone 后链接到 `~/.agents/skills/`。Codex 不读 `~/.claude/skills/`，npx 装的它看不到。
 
 **skills.sh（Vercel skills CLI）**
@@ -169,7 +169,7 @@ gemini skills install https://github.com/xr843/Master-skill --path prebuilt
 > 以上 OpenCode / Codex / Gemini 的结论均于 2026-09-16 在 Linux 上以隔离的 HOME 实测
 > （OpenCode 1.18.13、Codex CLI 0.153.4、Gemini CLI 0.60.0）；Windows 步骤未重新验证。
 > Codex 插件与 skills.sh 两条于 2026-10-19 同样以隔离 HOME 实测（Codex CLI 0.163.0 的
-> `codex debug prompt-input` 列出 20 个；skills 1.7.2 列出 21 个并装进 `~/.claude/skills/`）。
+> `codex debug prompt-input` 列出 21 个——插件改为从 `plugin/` 安装之前是 20 个，缺 `create-master`；skills 1.7.2 列出 21 个并装进 `~/.claude/skills/`）。
 
 ### 使用预置法师
 

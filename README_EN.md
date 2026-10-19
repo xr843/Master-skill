@@ -225,7 +225,7 @@ Once installed, invoke `/master-huineng`, `/compare-masters`, etc. directly in c
 Two more one-line installs:
 
 ```bash
-# Codex CLI plugin (20 skills: 16 masters + 4 teaching modes; for create-master see docs/install.en.md)
+# Codex CLI plugin (all 21 skills)
 codex plugin marketplace add xr843/Master-skill && codex plugin add master-skill@master-skill
 
 # skills.sh (Vercel's skills CLI; installs into Claude Code / Codex / Cursor / Gemini and more) — --full-depth is required

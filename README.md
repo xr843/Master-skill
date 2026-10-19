@@ -209,7 +209,7 @@ npx master-skill update --all           # 升级：重装全部并清掉旧文�
 另有两条一行装法：
 
 ```bash
-# Codex CLI 插件（20 个：16 位祖师 + 4 个教学模式；create-master 见 docs/install.md）
+# Codex CLI 插件（全部 21 个）
 codex plugin marketplace add xr843/Master-skill && codex plugin add master-skill@master-skill
 
 # skills.sh（Vercel skills CLI，可装进 Claude Code / Codex / Cursor / Gemini 等）——必须带 --full-depth
