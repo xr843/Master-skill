@@ -10,6 +10,12 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- First complete run on `claude-sonnet-4-6`: all 240 fixtures on `ca577af`, 0 fabricated
+  citations, every failure ruled on. Adjudicated: fidelity 84.1%, boundary 90.6%, pressure
+  77.4% — v1.0's fidelity gate (90%) is not met, and quotation checks are not ruled on. A
+  100-quotation sample against CBETA puts verbatim accuracy of real quotations at 53%
+  (95% CI 41–65%).
+
 - master-tsongkhapa declares 《中论》 (`Toh:3824`, checked against 84000's title) and
   master-buddhaghosa declares 《Atthasālinī》 (`PTS:Dhs-Comm`). On `claude-sonnet-4-6` both
   were cited correctly but flagged as fabricated because neither was declared — the v1 gate
