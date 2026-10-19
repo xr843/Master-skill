@@ -7,7 +7,7 @@
     "version": 1,
     "claim_policy": "declared_sources_only",
     "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
-    "allowed_source_types": ["pali_canon", "pali_commentary", "pali_treatise"],
+    "allowed_source_types": ["cbeta", "pali_canon", "pali_commentary", "pali_treatise"],
     "minimum_claim_coverage": 0.9,
     "live_retrieval_allowed": true
   },
@@ -65,6 +65,18 @@
       "id": "SuttaCentral",
       "title": "巴利三藏 (Tipiṭaka)",
       "note": "经律论三藏全文索引 [SuttaCentral.net](https://suttacentral.net)"
+    },
+    {
+      "type": "cbeta",
+      "id": "N67n0035",
+      "title": "清净道论（悟醒译，汉译南传大藏经）",
+      "note": "CBETA《汉译南传大藏经》第 67–69 册，23 卷，卷次即 PTS 本章次。FoJin 未收"
+    },
+    {
+      "type": "cbeta",
+      "id": "N19n0007",
+      "title": "增支部经典（汉译南传大藏经）",
+      "note": "CBETA《汉译南传大藏经》第 19–25 册；AN 3.88 三学在卷三。FoJin 未收"
     }
   ],
   "version": "1.0.0",

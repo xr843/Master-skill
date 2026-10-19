@@ -1002,6 +1002,23 @@ def test_supplementary_canon_and_fojiao_dazangjing_ids_are_cbeta_works():
     assert [m.group(0) for m in verify_sources._DOC_CBETA_ID.finditer("见 JB348 与 B10n0067")] == ["JB348", "B10n0067"]
 
 
+def test_nanchuan_canon_excerpts_are_checked_against_their_fascicle():
+    """N（汉译南传大藏经）ids are CBETA works, so 3f fetches the cited fascicle for them."""
+    assert verify_sources._cbeta_api_work("N67n0035") == "N0035"
+    assert verify_sources._cbeta_api_work("N09n0005") == "N0005"
+    quotes = verify_sources.collect_excerpt_quotes()
+    works = {
+        verify_sources._cbeta_api_work(cid)
+        for where, _, cid, _ in quotes
+        if where.startswith(("master-buddhaghosa/", "master-mahasi-sayadaw/", "master-ajahn-chah/"))
+    }
+    assert {"N0005", "N0006", "N0007", "N0010", "N0035"} <= works
+    assert not [
+        where for where, _, _ in verify_sources.collect_compiled_excerpt_blocks()
+        if "cbeta-nanchuan" in where
+    ]
+
+
 # --- Step 3h: quoted lines in persona docs ------------------------------------
 
 
@@ -1315,6 +1332,7 @@ def test_an_elided_quote_is_no_longer_thrown_away():
     """带「……」的引文原本被收集器整条丢弃 —— 三条米拉日巴道歌从未被任何一步看过。"""
     elided = [q for q in verify_sources.collect_persona_quotes() if "…" in q[2]]
     assert [q[0] for q in elided] == [
+        "master-buddhaghosa/sources/cbeta-nanchuan-excerpts.md:67",
         "master-milarepa/references/teaching.md:63",
         "master-milarepa/references/voice.md:32",
         "master-milarepa/references/voice.md:33",

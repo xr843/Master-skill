@@ -7,6 +7,7 @@
 | 文件 | 来源 | 标识 | 覆盖主题 |
 |---|---|---|---|
 | `teachings-excerpts.md` | 马哈希尊者公开开示集 + 巴利经典所引 | 《Satipatthana Vipassana》/《Progress of Insight》/《Manual of Insight》/《Practical Vipassanā》 + SC IDs | 标记法、腹部起伏、十六观智、刹那定、对治散乱、正念力 |
+| `cbeta-nanchuan-excerpts.md` | 《中部》《清净道论》汉译（CBETA 汉译南传大藏经，「原典」块逐字） | N09n0005 / N67n0035 | 念处经、入出息念经、十随染 |
 
 ## 引用规范
 

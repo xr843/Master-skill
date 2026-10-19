@@ -305,14 +305,25 @@ def test_non_cbeta_runtime_instructions_are_source_family_aware():
     # (B11n0073, 2026-09-16). Their contracts therefore include cbeta next to
     # their Tibetan families, and their frontmatter lists cbeta_id. They must
     # still never be told that CBETA is their main source.
-    mixed = {"atisha", "tsongkhapa", "milarepa"}
+    # The three Theravāda personas declare the 汉译南传大藏经 (CBETA N) renderings
+    # of the suttas and the Visuddhimagga they quote (2026-10-20), next to PTS /
+    # SuttaCentral.
+    native = {
+        "atisha": ("tibetan_", "kadam_"),
+        "tsongkhapa": ("tibetan_", "kadam_"),
+        "milarepa": ("tibetan_", "kadam_"),
+        "buddhaghosa": ("pali_",),
+        "mahasi-sayadaw": ("pali_",),
+        "ajahn-chah": ("pali_",),
+    }
+    mixed = set(native)
     for slug in slugs:
         persona = repository / "prebuilt" / f"master-{slug}"
         meta = json.loads((persona / "meta.json").read_text(encoding="utf-8"))
         allowed = meta["citation_contract"]["allowed_source_types"]
         if slug in mixed:
             assert "cbeta" in allowed, f"master-{slug}: {allowed}"
-            assert any(t.startswith(("tibetan_", "kadam_")) for t in allowed), f"master-{slug}: {allowed}"
+            assert any(t.startswith(native[slug]) for t in allowed), f"master-{slug}: {allowed}"
         else:
             assert "cbeta" not in allowed
         instructions = (persona / "SKILL.md").read_text(encoding="utf-8")

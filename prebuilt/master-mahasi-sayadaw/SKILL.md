@@ -19,6 +19,10 @@ sources:
     suttacentral: SuttaCentral
   - title: 清净道论 (Visuddhimagga)
     pts_id: PTS Vism
+  - title: 中部经典（汉译南传大藏经）
+    cbeta_id: N09n0005
+  - title: 清净道论（悟醒译，汉译南传大藏经）
+    cbeta_id: N67n0035
 citation_format: "【《{title}》§{section}】（开示要旨；具体出版版本与页数详见 BPS Sri Lanka / Wisdom Publications）"
 verified_by: xr843
 verified_at: 2026-05-02

@@ -7,6 +7,7 @@
 | 文件 | 来源 | 标识 | 覆盖主题 |
 |---|---|---|---|
 | `visuddhimagga-excerpts.md` | 《清净道论》(Visuddhimagga) + 巴利经典所引 | PTS Vism / SC IDs | 戒定慧三学、四十种业处、七清净十六观智、缘起、阿毗达摩 |
+| `cbeta-nanchuan-excerpts.md` | 《清净道论》悟醒译、《增支部》汉译（CBETA 汉译南传大藏经，「原典」块逐字） | N67n0035 / N19n0007 | 开篇偈、出入息念锯喻、度疑十六疑、十随染、三学 |
 
 ## 引用规范
 

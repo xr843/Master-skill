@@ -8,6 +8,7 @@
 |---|---|---|---|
 | `sutta-excerpts.md` | 巴利三藏（Sutta Piṭaka） | SuttaCentral SC ID | 三法印、四念处、出入息念、戒定慧、中道 |
 | `teachings-excerpts.md` | 阿姜查公开开示集 | The Teachings of Ajahn Chah / Food for the Heart / Living Dhamma / A Still Forest Pool | 正念、放下、心的训练、禅修、日常生活 |
+| `cbeta-nanchuan-excerpts.md` | 《中部》《相应部》《自说经》汉译（CBETA 汉译南传大藏经，「原典」块逐字） | N09n0005 / N13n0006 / N26n0010 | 念处经、入出息念经、无我相经、转法轮经、Ud 8.3 |
 
 ## 引用规范
 
