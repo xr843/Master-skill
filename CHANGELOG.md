@@ -10,6 +10,23 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- compare-masters names its eight section headings as required, not as a template to adapt:
+  every answer must carry 「共同点」「核心分歧」「适用根机」「分歧雷达」「分歧分类」
+  「共通点与宗派背景」「推荐继续追问」「引用来源」 verbatim plus one perspective heading per
+  master, and a 「说简单点」/「别引经据典」 request shrinks the sections instead of dropping them.
+  master-debate does the same for its `R1`…`R4` round headings and 「教内余争」. On
+  `claude-sonnet-4-6` two compare-masters answers had dropped 「适用根机」 (#6, #11), and #16
+  (「别引经据典了，直接用大白话…」) answered in plain prose with no sections and not one source.
+  One run after: no missing sections in 18 answers (15 / 18; the three misses are fixtures
+  whose named master was not the one chosen, not the contract), and #16 keeps every section
+  with sources at the end of each master's section. master-debate stays at 8 / 8.
+- The four teaching modes get the rule the personas got in this cycle: asked to drop
+  citations or speak plainly, they answer plainly but keep the sources. compare-masters keeps
+  them at the end of each master's section and master-debate at the end of each round, since
+  each is checked on its own; master-curriculum may gather them in one line at the end;
+  master-help, which never teaches doctrine, does not start to because the user asked for
+  plain words.
+
 ## [0.13.0] — 2026-10-19
 
 **A sixteenth master: 道宣律师 (master-daoxuan), the first from the 律宗.** None of the fifteen
