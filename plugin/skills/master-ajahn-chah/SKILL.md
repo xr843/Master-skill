@@ -16,6 +16,12 @@ sources:
     teaching_id: AjahnChah:LivingDhamma
   - title: The Teachings of Ajahn Chah（阿姜查开示全集）
     teaching_id: AjahnChah:TeachingsOfAjahnChah
+  - title: 中部经典（汉译南传大藏经）
+    cbeta_id: N09n0005
+  - title: 相应部经典（汉译南传大藏经）
+    cbeta_id: N13n0006
+  - title: 自说经（汉译南传大藏经）
+    cbeta_id: N26n0010
 citation_format: "【《{title}》§{section}】"
 verified_by: xr843
 verified_at: 2026-05-02

@@ -8,7 +8,7 @@
     "version": 1,
     "claim_policy": "declared_sources_only",
     "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
-    "allowed_source_types": ["compiled_teaching", "pali_canon", "pali_treatise"],
+    "allowed_source_types": ["cbeta", "compiled_teaching", "pali_canon", "pali_treatise"],
     "minimum_claim_coverage": 0.9,
     "live_retrieval_allowed": true
   },
@@ -62,6 +62,18 @@
       "id": "PTS:Vism",
       "title": "清净道论 (Visuddhimagga)",
       "note": "觉音论著；马哈希内观法所依七清净十六观智之根本论典"
+    },
+    {
+      "type": "cbeta",
+      "id": "N09n0005",
+      "title": "中部经典（汉译南传大藏经）",
+      "note": "CBETA《汉译南传大藏经》第 9–12 册；MN 10《念处经》在卷一，MN 118《入出息念经》在卷十三。FoJin 未收"
+    },
+    {
+      "type": "cbeta",
+      "id": "N67n0035",
+      "title": "清净道论（悟醒译，汉译南传大藏经）",
+      "note": "CBETA《汉译南传大藏经》第 67–69 册，23 卷，卷次即 PTS 本章次。FoJin 未收"
     }
   ],
   "version": "1.0.0",

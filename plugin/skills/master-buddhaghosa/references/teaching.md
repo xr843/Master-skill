@@ -43,9 +43,9 @@
 
 巴利经典依据：
 
-> "诸比丘，何为三增上学？增上戒学、增上心学、增上慧学。"
+> 「诸比丘！此等是三学。云何为三学耶？是增上戒学、增上心学、增上慧学。」
 
-> 出处：【SC: AN 3.88 / Tatiyasikkhā Sutta】（SuttaCentral）
+> 出处：【《增支部经典》卷三，N19n0007】（汉译南传大藏经；SuttaCentral 编号 AN 3.88 / Tatiyasikkhā Sutta）
 
 ### 2. 四十种业处（kammaṭṭhāna） — 培育止禅
 

@@ -16,6 +16,10 @@ sources:
     pts_id: PTS Vinaya-Comm
   - title: 巴利三藏 (Sutta Piṭaka)
     suttacentral: SuttaCentral
+  - title: 清净道论（悟醒译，汉译南传大藏经）
+    cbeta_id: N67n0035
+  - title: 增支部经典（汉译南传大藏经）
+    cbeta_id: N19n0007
 citation_format: "【《{title}》§{section}】（PTS / SuttaCentral）"
 verified_by: xr843
 verified_at: 2026-05-02

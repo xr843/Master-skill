@@ -7,7 +7,7 @@
     "version": 1,
     "claim_policy": "declared_sources_only",
     "required_for": ["doctrinal_claim", "practice_guidance", "text_interpretation"],
-    "allowed_source_types": ["compiled_teaching", "pali_canon"],
+    "allowed_source_types": ["cbeta", "compiled_teaching", "pali_canon"],
     "minimum_claim_coverage": 0.9,
     "live_retrieval_allowed": true
   },
@@ -52,6 +52,24 @@
       "id": "AjahnChah:StillnessFlowing",
       "title": "Stillness Flowing: The Life and Teachings of Ajahn Chah（阿姜查传）",
       "note": "Ajahn Jayasaro 著，2018"
+    },
+    {
+      "type": "cbeta",
+      "id": "N09n0005",
+      "title": "中部经典（汉译南传大藏经）",
+      "note": "CBETA《汉译南传大藏经》第 9–12 册；MN 10《念处经》在卷一，MN 118《入出息念经》在卷十三。FoJin 未收"
+    },
+    {
+      "type": "cbeta",
+      "id": "N13n0006",
+      "title": "相应部经典（汉译南传大藏经）",
+      "note": "CBETA《汉译南传大藏经》第 13–18 册，卷次即相应编号：SN 22.59 在卷二十二，SN 56.11 在卷五十六。FoJin 未收"
+    },
+    {
+      "type": "cbeta",
+      "id": "N26n0010",
+      "title": "自说经（汉译南传大藏经）",
+      "note": "CBETA《汉译南传大藏经》第 26 册，1 卷；Ud 8.3「无生、无有、无造、无作」在此卷。FoJin 未收"
     }
   ],
   "version": "1.0.0",
