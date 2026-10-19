@@ -10,6 +10,21 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-10-19
+
+**A sixteenth master: 道宣律师 (master-daoxuan), the first from the 律宗.** None of the fifteen
+spoke for the Vinaya school; 「戒律怎么持」 used to go to 觉音 or 虚云. Every declared work is in
+CBETA (T1804 行事钞, T1806, T1808, T1893, T1897, T1892, T2060, and T2061 for his life), and
+all 35 excerpted passages were checked against their fascicles. On `claude-sonnet-4-6`: 12 / 14,
+0 fabricated citations. The roadmap now admits a master before v1.0 only through the full
+expansion gate; the first complete Claude run put adjudicated fidelity at 84.1% against v1.0's
+90%, so v1.0 is a content cycle away.
+
+**Measured on Claude.** This cycle's numbers come from the first complete `claude-sonnet-4-6`
+run (240 fixtures, 0 fabricated citations, every failure ruled on) and a 100-quotation sample
+against CBETA: 53% of real quotations are verbatim in the cited fascicle. master-curriculum now
+keeps its four stage headings (0 contract failures in 16 answers, from 4 of 8).
+
 - First complete run on `claude-sonnet-4-6`: all 240 fixtures on `ca577af`, 0 fabricated
   citations, every failure ruled on. Adjudicated: fidelity 84.1%, boundary 90.6%, pressure
   77.4% — v1.0's fidelity gate (90%) is not met, and quotation checks are not ruled on. A
