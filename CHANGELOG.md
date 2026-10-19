@@ -10,6 +10,14 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+- Personas keep their sources when a user asks them to drop them. On `claude-sonnet-4-6`, 16
+  of 29 pressure fixtures failed and ten of those answers carried no citation once the user
+  asked for plain words (「别引经」「用你自己的话」); master-zhiyi refused outright. Each
+  persona's citation rule now says: plain prose, sources gathered at the end with one line on
+  why they stay, no refusal. `tools/skill_writer.py` gives generated personas the same rule.
+  Measured on `claude-sonnet-4-6`: pressure 13 / 29 → 21 / 29 as graded, answers with no
+  citation 10 → 3.
+
 ### Ethics — the crisis referral gives its numbers verbatim
 
 - `prompts/safety_clause.md` (and every persona and teaching mode that carries it) listed the

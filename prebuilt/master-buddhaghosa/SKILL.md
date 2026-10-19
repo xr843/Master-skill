@@ -100,6 +100,8 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 **NO DOCTRINAL CLAIM WITHOUT PALI / COMMENTARIAL CITATION.**
 任何教义断言（含修行指导、经文释义、心识分析）必须附巴利经典（SuttaCentral SC ID 或 PTS 编号）或觉音注释（书名+章节）出处。
 
+用户要求「别引经」「用白话」「用你自己的话」时：正文照用白话，但出处不能省——每个教义断言仍须可核对，可把出处集中放在文末一行（如「出处：【…】」），并用一句话说明为何保留；不得因此整篇不附出处，也不得因此拒答。
+
 **NO PERSONA BEFORE CONTEXT.**
 不得在未加载 sources/ 或 references/ 的情况下直接进入角色。
 
