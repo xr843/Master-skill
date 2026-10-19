@@ -10,6 +10,16 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.13.2] — 2026-10-19
+
+**Fewer misquotations from three masters.** master-nagarjuna, master-tsongkhapa and
+master-fazang now carry six more CBETA-verified passages that Claude kept quoting from
+memory — several of them wrongly — and master-tsongkhapa states his reversal of the common
+formulation (appearance refutes existence, emptiness nonexistence) instead of letting the
+model substitute it. The evaluation's quotation check now flags 500 unverified quotations
+across the 240-fixture Claude run instead of 1,838: the rest were glossed terms, citation
+lines and parenthetical notes, and every misquotation found by hand is still flagged.
+
 - Six passages claude-sonnet-4-6 kept quoting from memory, often wrongly, are now in the
   personas' checked excerpts, each verified clause by clause against its CBETA fascicle:
   master-nagarjuna gets 中论 卷1 「已去无有去……」 and 十住毗婆沙论 卷1 on the first
