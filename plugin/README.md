@@ -52,10 +52,19 @@ about a tradition and Claude will pick the matching persona.
 - **SessionStart hook.** One `echo` of a fixed sentence that tells Claude the
   persona skills are available and to suggest `/master-help` when the user is
   unsure whom to ask. It reads nothing, writes nothing and contacts nothing.
-- **Personas and teaching modes** read only the files inside this plugin.
-  `scripts/cite.py` and `scripts/query.py` search the bundled source excerpts
-  locally (`query.py` needs the `opencc` Python package). Answers may include links to fojin.app, CBETA or SuttaCentral for
-  the reader to follow; the plugin does not fetch them.
+- **Personas and teaching modes** answer from the files inside this plugin
+  first. `scripts/cite.py` and `scripts/query.py` search the bundled source
+  excerpts locally (`query.py` needs the `opencc` Python package).
+- **Optional live lookup.** When the bundled excerpts do not cover a question,
+  a persona's instructions tell Claude it may look the passage up in FoJin's
+  public, read-only API under `https://fojin.app/api/` (full-text and semantic
+  search, text lookup, and — in a few skills — the dictionary and
+  knowledge-graph endpoints), using
+  your host's normal web or shell tool — so your usual tool-permission prompt
+  applies. Only the search terms for that passage are sent; no conversation
+  content, personal data or credentials. If FoJin is unreachable the persona
+  says so and answers from the bundled excerpts. Answers may also include
+  links to fojin.app, CBETA or SuttaCentral for the reader to follow.
 - **`create-master` only**, and only when you run it, uses Python tools in
   `skills/create-master/tools/` that send the master name and search keywords
   you give it to these public, read-only APIs: the FoJin REST API
