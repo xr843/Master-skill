@@ -78,6 +78,10 @@ about a tradition and Claude will pick the matching persona.
   installs anything itself. Generated personas are written under
   `skills/create-master/masters/` on your machine.
 
+The full privacy policy is [`PRIVACY.md`](https://github.com/xr843/Master-skill/blob/main/PRIVACY.md)
+(also in this folder): the plugin collects nothing, and the only data that
+leaves your machine is listed above.
+
 ## Scope and limits
 
 This content is generated from historical Buddhist literature for study and
