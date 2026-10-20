@@ -139,8 +139,14 @@ def test_the_committed_run_regrades_against_the_repository_as_it_stands(mod):
     # template requires 「### R1｜…」 rounds. In #2 the closing round R4 names
     # no source of any kind; R1–R3 cite T30n1564 / T48n2008. (A first reading
     # said three rounds cited nothing — it read sections cut short at a bold
-    # line, by the same splitter being checked.) Any other regression still
-    # fails here.
+    # line, by the same splitter being checked.)
+    #
+    # master-xuyun #4 asks how he awakened at 高旻寺. The stored answer tells the
+    # story — 光绪二十一年, the cup, the verse — and cites it to nothing; its one
+    # 楞严 citation backs an unrelated line. It passed only because the fixture
+    # required 楞严. Since 2026-10-20 it requires the source of the story
+    # (《年谱》 or 《法汇》, must_cite_any_of). Any other regression still fails
+    # here.
     assert regressions == [
         ("master-curriculum", 1),
         ("master-debate", 0),
@@ -154,6 +160,7 @@ def test_the_committed_run_regrades_against_the_repository_as_it_stands(mod):
         ("master-milarepa", 7),
         ("master-milarepa", 8),
         ("master-milarepa", 9),
+        ("master-xuyun", 4),
     ], regressions
     assert out["mentions"]["mention_coverage"].endswith("%")
     # Asked without the L0–L3 level their skill requires (「缺则反问」), so the

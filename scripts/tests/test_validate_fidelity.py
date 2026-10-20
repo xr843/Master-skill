@@ -179,3 +179,21 @@ def test_every_repository_persona_has_the_safety_boundaries():
     assert len(personas) == 16
     for persona in personas:
         assert validate_fidelity.validate_master(persona) == [], persona.name
+
+
+def test_must_cite_any_of_needs_two_sources_and_a_reason(tmp_path):
+    master_dir = _write_fixture(
+        tmp_path,
+        "master-example",
+        [
+            {"q": "一部", "must_cite_any_of": ["T0001"], "cite_choice_note": "x"},
+            {"q": "无理由", "must_cite_any_of": ["T0001", "T0002"]},
+            {"q": "合格", "must_cite_any_of": ["T0001", "T0002"], "cite_choice_note": "两部都讲"},
+        ],
+    )
+
+    errors = validate_fidelity.validate_master(master_dir)
+
+    assert any(":1: must_cite_any_of needs two or more" in e for e in errors), errors
+    assert any(":2: must_cite_any_of without a cite_choice_note" in e for e in errors), errors
+    assert not any(":3:" in e for e in errors), errors

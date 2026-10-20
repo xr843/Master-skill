@@ -137,7 +137,7 @@ def validate_master(master_dir: Path) -> list[str]:
         for field in (
             "must_cite", "must_mention", "must_convey", "must_not_contain",
             "must_not_contain_first_turn", "must_select_pair", "must_have_rounds",
-            "must_select_masters", "must_have_sections",
+            "must_select_masters", "must_have_sections", "must_cite_any_of",
         ):
             if field in test and (
                 not isinstance(test[field], list)
@@ -172,6 +172,14 @@ def validate_master(master_dir: Path) -> list[str]:
                 f"{master_dir.name}:{i}: must_cite_per_round without "
                 "must_have_rounds checks nothing"
             )
+
+        # An any-of list with one entry is a must_cite; with none it passes
+        # every reply. Either way the reason belongs next to it.
+        if "must_cite_any_of" in test:
+            if len(test["must_cite_any_of"]) < 2:
+                errors.append(f"{master_dir.name}:{i}: must_cite_any_of needs two or more sources")
+            if not str(test.get("cite_choice_note") or "").strip():
+                errors.append(f"{master_dir.name}:{i}: must_cite_any_of without a cite_choice_note")
 
         # Must have at least one assertion
         if not any(k in test for k in IMPLEMENTED_ASSERTIONS):
