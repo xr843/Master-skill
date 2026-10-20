@@ -25,3 +25,12 @@ def test_every_quoting_skill_carries_the_rule_inside_its_hard_gate():
 
 def test_generated_personas_get_the_rule():
     assert RULE in (ROOT / "tools" / "skill_writer.py").read_text(encoding="utf-8")
+
+
+def test_teaching_modes_do_not_present_cross_critique_as_a_masters_words():
+    """r5 (fd3d832): master-curriculum quoted ajahn-chah's cross_critique summary of
+    Mahasi as 「大意」 of 《A Still Forest Pool》 — a synthesis this repository wrote,
+    presented as Ajahn Chah's own remark."""
+    for name in ("compare-masters", "master-debate", "master-curriculum"):
+        text = (ROOT / "prebuilt" / name / "SKILL.md").read_text(encoding="utf-8")
+        assert "CROSS_CRITIQUE IS OUR SYNTHESIS" in _gate(text), name
