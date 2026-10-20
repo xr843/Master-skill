@@ -25,6 +25,7 @@ Layout:
     plugin/routing.json                 master-help says the plugin install can read it
     plugin/hooks/hooks.json             SessionStart: the static Claude Code pointer
     plugin/LICENSE                      copy of the root LICENSE
+    plugin/PRIVACY.md                   copy of the root PRIVACY.md
     plugin/README.md                    hand-written listing text (not generated)
 
 The hook. In the repository the hook goes through hooks/run-hook.cmd, a
@@ -69,7 +70,7 @@ HAND_WRITTEN = ("README.md",)
 RUNTIME_SCRIPTS = tuple(f"{stem}.py" for stem in ("cite", "query", "_masterpaths", "_skill_io"))
 
 # Repository-root files the bundle carries at its own root.
-ROOT_FILES = ("routing.json", "LICENSE")
+ROOT_FILES = ("routing.json", "LICENSE", "PRIVACY.md")
 
 # Never copied: eval fixtures, bytecode, OS litter.
 SKIP_NAMES = {"__pycache__", ".DS_Store", "Thumbs.db", "desktop.ini"}
