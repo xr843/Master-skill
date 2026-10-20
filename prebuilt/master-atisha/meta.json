@@ -49,6 +49,24 @@
       "id": "G148n2518",
       "title": "菩提道灯论（法尊译）",
       "note": "CBETA 所收《佛教大藏经》第 148 册，1 卷；法尊法师 1978 年译于广济寺。FoJin 未收"
+    },
+    {
+      "type": "tibetan_canon",
+      "id": "Toh:3824",
+      "title": "中论 (Mūlamadhyamakakārikā)",
+      "note": "龙树造；《菩提道灯论》颂 51「七十空性理，及本中论等」点名此论。84000 题名 Fundamental Treatise on the Middle Way called “Wisdom”（2026-10-20 核）"
+    },
+    {
+      "type": "tibetan_canon",
+      "id": "Toh:3827",
+      "title": "七十空性论 (Śūnyatāsaptati)",
+      "note": "龙树造；《菩提道灯论》颂 51 点名此论。84000 题名 Seventy Verses on Emptiness（2026-10-20 核）"
+    },
+    {
+      "type": "tibetan_canon",
+      "id": "Toh:3902",
+      "title": "入二谛论 (Satyadvayāvatāra)",
+      "note": "阿底峡本人著，推重月称之处在此。84000 题名 Entering into the Two Truths（2026-10-20 核）"
     }
   ],
   "version": "1.0.0",

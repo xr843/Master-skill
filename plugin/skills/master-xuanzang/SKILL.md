@@ -30,6 +30,9 @@ sources:
   - title: 因明入正理论
     cbeta_id: T32n1630
     fojin_text_id: 50
+  - title: 解深密经
+    cbeta_id: T16n0676
+    fojin_text_id: 69
 citation_format: "【《{title}》卷{juan}，{cbeta_id}】"
 verified_by: xr843
 verified_at: 2026-04-06
