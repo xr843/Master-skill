@@ -480,6 +480,12 @@ _TOOL_DESCRIPTIONS[SUBAGENT_TOOL] = (
     "its final reply is returned to you."
 )
 _TOOL_SCHEMAS = {name: _PATH_SCHEMA for name in SKILL_TOOL_NAMES}
+# Pilot only (pilot/quote-lookup): FIDELITY_QUOTE_LOOKUP=1 gives personas a
+# look-up tool, to measure a rule that every quotation be retrieved first.
+import _quote_lookup  # noqa: E402
+QUOTE_LOOKUP_ENABLED = os.environ.get("FIDELITY_QUOTE_LOOKUP") == "1"
+_TOOL_SCHEMAS[_quote_lookup.TOOL_NAME] = _quote_lookup.SCHEMA
+_TOOL_DESCRIPTIONS[_quote_lookup.TOOL_NAME] = _quote_lookup.DESCRIPTION
 _TOOL_SCHEMAS[SUBAGENT_TOOL] = {
     "type": "object",
     "properties": {
@@ -720,6 +726,7 @@ def converse(
     budget_s: float | None = None,
     clock=None,
     subagent=None,
+    tool_names=None,
 ):
     """Send ``body``; while the reply asks for tools, answer and resend.
 
@@ -737,7 +744,7 @@ def converse(
 
     clock = clock or time.monotonic
     started = clock()
-    names = SKILL_TOOL_NAMES + ((SUBAGENT_TOOL,) if subagent else ())
+    names = (tool_names or SKILL_TOOL_NAMES) + ((SUBAGENT_TOOL,) if subagent else ())
     body = {**body, "messages": list(body["messages"]), "tools": tool_definitions(provider, names)}
     anthropic_api = resolve_provider(provider)["api"] == "anthropic"
     rounds = 0
@@ -1711,11 +1718,28 @@ def run_tests(
         bad fixture cannot take the pool down with it.
         """
         files = SkillFiles(master_dir) if tools else None
+        lookup = _quote_lookup.QuoteLookup(master_dir) if QUOTE_LOOKUP_ENABLED and not tools else None
         try:
             body = build_request(
                 provider, model, system_prompt, test["q"], max_output_tokens
             )
-            if files is not None:
+            if lookup is not None:
+                record = lambda r: _record_cache_usage(cache_stats, r)  # noqa: E731
+                response = converse(
+                    send, provider, body, lookup,
+                    on_response=record,
+                    budget_s=tool_budget(request_timeout, max_retries, False),
+                    tool_names=(_quote_lookup.TOOL_NAME,),
+                )
+                finish_reason = extract_finish_reason(provider, response)
+                try:
+                    response_text = extract_text(provider, response)
+                except ValueError:
+                    if finish_reason != "length":
+                        raise
+                    response_text = ""
+                files = lookup
+            elif files is not None:
                 budget = tool_budget(request_timeout, max_retries, subagents)
                 deadline = time.monotonic() + budget
                 record = lambda r: _record_cache_usage(cache_stats, r)  # noqa: E731
