@@ -10,6 +10,67 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.14.0] — 2026-10-20
+
+**Quotation marks hold original text, and a privacy policy.** Every persona and teaching
+mode now carries a HARD-GATE rule. Text in quotation marks must be copied from the skill's
+checked 原典 excerpts or retrieved with a tool during the conversation; anything recalled
+from memory is written as 「大意是……」 with its source. Three Theravāda personas get their
+first verbatim source passages, from the 汉译南传大藏经 in CBETA. The plugin ships
+`PRIVACY.md`.
+
+Measured honestly: in the claude-sonnet-4-6 run at fd3d832, every quotation was ruled
+under the maintainer's graded standard. Answers carrying a misquotation fell from 40 to 33.
+That is a real but modest drop, and the v1.0 fidelity gate is still not met: fidelity 80.0%,
+boundary 79.2%, pressure 78.8%, 0 fabricated citations. Both runs and their full
+adjudications are in `eval/reports/`.
+
+- **Quotation rule** (#336): added to 16 personas, compare-masters, master-debate,
+  master-curriculum and the persona generator.
+  - Elisions must be marked, and two passages may not be joined into one.
+  - Pali, English and Tibetan sources with no Chinese original may be self-translated if
+    marked 「（自译）」.
+- **Personas answer a no-topic request** (#332). Asked 「直接说你自己的看法」 with no topic,
+  a persona teaches its core point in plain words, with sources, instead of asking back.
+- **Privacy policy** (#337): `PRIVACY.md`, shipped in `plugin/`.
+  - The plugin collects nothing.
+  - Personas may send search terms to fojin.app.
+  - create-master contacts six public, read-only services, and only when you run it.
+  - FoJin's access logs are deleted within 30 days; this was checked on the server.
+
+### Content
+
+- **Verbatim originals checked line by line against CBETA** (#331):
+  - master-buddhaghosa: 《清净道论》 N67n0035 and 《增支部》 N19n0007.
+  - master-mahasi-sayadaw: 《中部》 N09n0005.
+  - master-ajahn-chah: 《中部》, 《相应部》 N13n0006 and 《自说经》 N26n0010.
+  - master-atisha: four more passages from 法尊's 《菩提道灯论》 G148n2518.
+- **Misattributions found while checking:**
+  - 「无生、无有、无造、无作」 is Ud 8.3, not Ud 8.1.
+  - 法尊's 《道灯论》 has no 「胜者智光前」.
+- **Newly declared sources:** each was cited correctly by claude-sonnet-4-6 but flagged as
+  fabricated because it was not declared (#332, #334, #336).
+  - master-tsongkhapa: 《入菩萨行论》 Toh:3871.
+  - master-atisha: 《中论》 Toh:3824 and 《七十空性论》 Toh:3827, named in 《道灯论》 颂 51,
+    and his own 《入二谛论》 Toh:3902.
+  - master-xuanzang: 《解深密经》 T16n0676.
+  - master-zhiyi: 《六妙法门》 T46n1917.
+
+### Fixed
+
+- **Weekly check now covers the N canon:** `verify_sources.py` step 3f checks 汉译南传大藏经
+  quotations against their fascicle; it previously skipped the N canon.
+- **`must_cite_any_of`** (#333): a fixture can now accept any of several declared,
+  on-topic sources, with a written reason. 13 fixtures that pinned one book where several
+  answer the question were rewritten one by one; two stay strict.
+- **Mechanical misses no longer fail a required term** (#333): a term split by bold or an
+  enumeration comma (「心、心所」), differing only in capitalisation (Sati), or written as one
+  Traditional word in a Simplified answer is now found.
+- **`check-release-fidelity` finds bare persona names** (#336): it now matches suites
+  recorded as `ajahn-chah` rather than `master-ajahn-chah`. On the first real report it had
+  failed every persona as "missing suite".
+- **Fixture loading** reads UTF-8 explicitly.
+
 ## [0.13.3] — 2026-10-19
 
 **Safer generator, an icon, and Milarepa's own words.** create-master no longer
