@@ -204,7 +204,10 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
     # 3: 4 → 523, 3 → 526, 2 → 530, 1 → 530 on this run.
     atisha = by_master["master-atisha"]
     assert atisha["recorded"] == {"checked": 25, "unparsed": 7}
-    assert atisha["recomputed"] == {"checked": 29, "unparsed": 3}
+    # 29 → 30 on 2026-10-20: one block cites a Toh work master-atisha now
+    # declares (Toh:3824 / 3827, named in 《菩提道灯论》 颂 51, or his own
+    # Toh:3902), added after claude-sonnet-4-6 cited them by Toh number.
+    assert atisha["recomputed"] == {"checked": 30, "unparsed": 2}
     assert atisha["fabricated"] == []
 
     # Everything else must be untouched — a citation-family change that moves a
@@ -236,7 +239,8 @@ def test_the_committed_deepseek_run_reaudits_to_the_documented_numbers(mod):
     # (see above).
     # 574 → 576 on 2026-10-19: 《Atthasālinī》 (compare-masters) and 《中论》 Toh 3824
     # (tsongkhapa) became declared sources (see above).
-    assert out["totals"]["recomputed"]["checked"] == 576
+    # 576 → 577 on 2026-10-20: the atisha block above.
+    assert out["totals"]["recomputed"]["checked"] == 577
 
 
 def test_api_error_rows_do_not_pollute_reaudit_totals(mod):
