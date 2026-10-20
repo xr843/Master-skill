@@ -88,6 +88,21 @@ def runtime_identities(root: Path = ROOT) -> dict[str, dict[str, str]]:
             for path in (root / "prebuilt").glob("*/tests/fidelity.jsonl")}
 
 
+def _skill_dir(name, expected_types) -> str:
+    """The prebuilt/ directory a suite's `master` names.
+
+    test-fidelity.py records a persona by its bare name (`ajahn-chah`), the way
+    `--master` takes it, while every expected table here is keyed by directory
+    (`master-ajahn-chah`). Until 2026-10-20 the gate looked the bare name up
+    directly, so the first real report it was pointed at failed every persona
+    as "missing suite" before any threshold was checked.
+    """
+    if name in expected_types or not isinstance(name, str):
+        return name
+    prefixed = f"master-{name}"
+    return prefixed if prefixed in expected_types else name
+
+
 def validate(pairs, expected_types, expected_questions, *, expected_digests, expected_identities, adjudication=None) -> tuple[list[str], dict, int]:
     """Return (problems, adjudicated tally by test_type, unparsed-citation count).
 
@@ -115,20 +130,23 @@ def validate(pairs, expected_types, expected_questions, *, expected_digests, exp
             if c.get("review_verdict") is not None
         }
         for suite in suites:
+            # `name` keys the adjudication (it records the suite's own name);
+            # `skill` keys everything derived from prebuilt/.
             name = suite.get("master")
+            skill = _skill_dir(name, expected_types)
             if suite.get("inputs_stable") is not True or suite.get("outcome") != "completed":
                 problems.append(f"{name}: evaluation inputs were not stable between start and end")
-            if not expected_identities.get(name) or suite.get("evaluation_identity") != expected_identities.get(name):
+            if not expected_identities.get(skill) or suite.get("evaluation_identity") != expected_identities.get(skill):
                 problems.append(f"{name}: evaluation identity differs from current runtime or grader")
-            if name in seen:
+            if skill in seen:
                 problems.append(f"{name}: graded in more than one run")
-            seen.add(name)
+            seen.add(skill)
             if suite.get("provider") != "anthropic" or suite.get("model") != RELEASE_MODEL:
                 problems.append(f"{name}: release model must be Anthropic {RELEASE_MODEL}")
             if suite.get("mode") != "graded":
                 problems.append(f"{name}: suite was not graded")
             results = suite.get("results", [])
-            types = expected_types.get(name)
+            types = expected_types.get(skill)
             if types is None:
                 problems.append(f"{name}: no matching fixture suite")
                 continue
@@ -144,11 +162,11 @@ def validate(pairs, expected_types, expected_questions, *, expected_digests, exp
                     continue
                 if isinstance(index, int) and 0 <= index < len(types) and case.get("test_type") != types[index]:
                     problems.append(f"{where}: test_type differs from its fixture")
-                questions = expected_questions.get(name)
+                questions = expected_questions.get(skill)
                 if questions is not None and isinstance(index, int) and 0 <= index < len(questions):
                     if case.get("question") != questions[index]:
                         problems.append(f"{where}: question differs from its fixture")
-                digests = expected_digests.get(name)
+                digests = expected_digests.get(skill)
                 if digests is None:
                     problems.append(f"{name}: no fixture digests available")
                 elif isinstance(index, int) and 0 <= index < len(digests):
