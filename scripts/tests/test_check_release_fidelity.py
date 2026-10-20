@@ -239,3 +239,24 @@ def test_run_must_record_unchanged_inputs():
     assert any("inputs were not stable" in p for p in _problems(report, adjudication))
     report["suites"][0].pop("inputs_stable")
     assert any("inputs were not stable" in p for p in _problems(report, adjudication))
+
+
+def test_a_persona_suite_recorded_by_its_bare_name_is_found():
+    """test-fidelity.py writes `demo`, not `master-demo` — the gate must still match it.
+
+    Before 2026-10-20 the first real report (c0f0f3b) failed every persona as
+    "missing suite" here, ahead of any threshold.
+    """
+    report, adjudication = _run()
+    report["suites"][0]["master"] = "demo"
+    adjudication["cases"][0]["master"] = "demo"
+    assert _problems(report, adjudication) == []
+
+
+def test_a_bare_name_is_still_one_suite():
+    report, adjudication = _run()
+    second = json.loads(json.dumps(report["suites"][0]))
+    second["master"] = "demo"
+    report["suites"].append(second)
+    problems = _problems(report, adjudication)
+    assert any("graded in more than one run" in p for p in problems), problems
