@@ -802,3 +802,21 @@ def test_must_cite_any_of_fails_when_no_listed_source_is_cited(fidelity):
     check = fidelity.check_response("出处：【《The Progress of Insight》§II】", case)
     assert not check["passed"]
     assert check["missing_cites"] == ["one of: Manual of Insight | Satipatthana Vipassana"]
+
+
+def test_a_mention_split_by_bold_or_an_enumeration_comma_was_said(fidelity):
+    case = {"q": "x", "must_mention": ["上座部不立", "心心所"]}
+    check = fidelity.check_response("**上座部**不立第七、第八识；这里讲六识与心、心所。", case)
+    assert check["missing_mentions"] == []
+
+
+def test_a_pali_mention_ignores_capitalisation_only(fidelity):
+    case = {"q": "x", "must_mention": ["sati", "dukkha"]}
+    check = fidelity.check_response("正念（Sati）是觉知。", case)
+    assert check["missing_mentions"] == ["dukkha"]
+
+
+def test_one_traditional_word_in_a_simplified_answer_was_said(fidelity):
+    case = {"q": "x", "must_mention": ["文钞"]}
+    check = fidelity.check_response("出处：【《印光法師文鈔正編》卷一】，这是简体回答。", case)
+    assert check["missing_mentions"] == []
