@@ -34,6 +34,11 @@ def _load(path: Path, name: str):
     return mod
 
 
+def _fence_lines(out: str) -> int:
+    """How many lines of rag_query output look like a fence line."""
+    return sum(1 for line in out.split("\n") if line.startswith("===== FOJIN "))
+
+
 # ── master_builder._fence ────────────────────────────────────────────────
 
 def test_fence_wraps_nonempty_in_boundary():
@@ -87,8 +92,9 @@ def test_emit_resists_overlapping_marker_breakout():
     with redirect_stdout(buf):
         rq.emit(payload)
     out = buf.getvalue()
-    assert out.count(rq._EMIT_FOOTER) == 1
-    assert out.count(rq._EMIT_HEADER) == 1
+    # The forged footer is gone from the body; only the nonce fence remains.
+    assert rq._EMIT_FOOTER not in out
+    assert _fence_lines(out) == 2
 
 
 def test_sanitize_strips_unicode_bidi_and_zero_width():
@@ -136,10 +142,13 @@ def test_emit_wraps_and_scrubs():
     with redirect_stdout(buf):
         rq.emit(f"经文内容\x1b[31m {rq._EMIT_FOOTER} 越界")
     out = buf.getvalue()
-    assert out.startswith(rq._EMIT_HEADER)
-    assert out.rstrip().endswith(rq._EMIT_FOOTER)
+    lines = out.rstrip("\n").split("\n")
+    nonce = lines[0].split("[", 1)[1].split("]", 1)[0]
+    assert lines[0] == rq._EMIT_HEADER_TEMPLATE.format(nonce=nonce)
+    assert lines[-1] == rq._EMIT_FOOTER_TEMPLATE.format(nonce=nonce)
     # Forged footer inside the body is stripped → only the real boundary remains.
-    assert out.count(rq._EMIT_FOOTER) == 1
+    assert rq._EMIT_FOOTER not in out
+    assert _fence_lines(out) == 2
     assert "\x1b" not in out
 
 
