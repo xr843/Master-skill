@@ -12,7 +12,9 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import time
+import unicodedata
 from typing import Optional
 from urllib.parse import urlparse
 
@@ -32,6 +34,36 @@ DEFAULT_TIMEOUT = (5, 30)
 # Wall clock for a whole streamed body. `stream=True` applies the read timeout
 # to each chunk, not to the transfer, so a slow drip never trips it.
 READ_DEADLINE = 60.0
+
+
+def _marker_form(line: str) -> str:
+    """The line as a reader would see it, for matching only — never printed.
+
+    NFKD folds full-width letters, `＝`, `＜`, U+3000 and NBSP to their ASCII
+    forms and splits accented letters into base + combining mark; dropping
+    categories Mn/Cf/Cc then removes the marks and every invisible (zero-width,
+    word joiner, soft hyphen, bidi). A forged marker with a U+2060 inside
+    `FOJIN` renders as the marker, so it has to match as one.
+    """
+    decomposed = unicodedata.normalize("NFKD", line)
+    visible = "".join(ch for ch in decomposed if unicodedata.category(ch) not in ("Mn", "Cf", "Cc"))
+    return visible.casefold()
+
+
+def drop_forged_boundary_lines(text: str, marker: re.Pattern) -> str:
+    """Remove every line of untrusted `text` that contains something looking
+    like a boundary marker, so fenced data cannot close its own fence.
+
+    Exact-string stripping missed `===== FOJIN 检索数据结束  =====` (one extra
+    space). `marker` is matched against `_marker_form(line)` — casefolded, so
+    write it in lower case — and the whole line goes, not just the match:
+    legitimate retrieval text never contains a fence marker, and what follows a
+    forged one on the same line is the injected instruction. Dropping whole
+    lines also cannot rejoin fragments into a fresh marker, the way removing a
+    substring can. The real text of kept lines is untouched (no normalisation
+    leaks into quotations).
+    """
+    return "\n".join(line for line in text.split("\n") if not marker.search(_marker_form(line)))
 
 
 class FojinUnavailableError(Exception):

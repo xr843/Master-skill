@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from fojin_bridge import FojinBridge, create_bridge
+from fojin_bridge import FojinBridge, create_bridge, drop_forged_boundary_lines
 from sutra_collector import collect_teacher_data, collect_specific_texts
 from skill_writer import DISCLAIMER, create_teacher, derive_citation_contract, sanitize_generated
 
@@ -35,6 +35,14 @@ PROMPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 # never as instructions. See prompts/sutra_analyzer.md "安全边界".
 _FENCE_OPEN = "<<<FOJIN_DATA>>>"
 _FENCE_CLOSE = "<<<END_FOJIN_DATA>>>"
+# Any line with an angle-bracket run against "fojin_data" / "end_fojin_data"
+# (spaces, `_` or `-` between the words). Matched against
+# fojin_bridge._marker_form, so case, full-width brackets and invisibles are
+# already folded away; "FOJIN_DATA 字段" in prose has no brackets and is kept.
+# Unlike rag_query's fence this one carries no nonce: the analysis prompts
+# document the literal marker, and they are build-time templates whose input is
+# fenced six times per prompt, so the per-line strip is the defence here.
+_FENCE_MARKER = re.compile(r"[<«‹]+\s*(?:end[\s_-]*)?fojin[\s_-]*data|fojin[\s_-]*data\s*[>»›]+")
 
 # Strip C0/C1 control chars (except \n and \t) plus Unicode format/bidi/
 # zero-width chars (U+200B–200F, U+2028/2029, U+202A–202E, U+2066–2069, U+FEFF)
@@ -60,6 +68,9 @@ def _fence(value: str) -> str:
     # fresh contiguous one. Loop until no marker substring survives.
     while _FENCE_OPEN in cleaned or _FENCE_CLOSE in cleaned:
         cleaned = cleaned.replace(_FENCE_OPEN, "").replace(_FENCE_CLOSE, "")
+    # Exact strings miss `<<< END_FOJIN_DATA >>>`, `＜＜＜END_FOJIN_DATA＞＞＞`
+    # and every other near-copy; drop any line that reads as a marker.
+    cleaned = drop_forged_boundary_lines(cleaned, _FENCE_MARKER)
     return f"{_FENCE_OPEN}\n{cleaned.strip()}\n{_FENCE_CLOSE}"
 
 
