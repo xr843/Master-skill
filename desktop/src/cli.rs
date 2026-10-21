@@ -291,10 +291,11 @@ impl Default for CliClient {
 ///
 ///   1. `MASTER_SKILL_REPO_ROOT` states the root explicitly and skips
 ///      discovery entirely.
-///   2. A discovered root that is group- or world-writable is refused (Unix
-///      only — the bits mean nothing on Windows). The fallback then applies,
-///      and the caller reports a resolved root that has no `prebuilt/` rather
-///      than silently running foreign code.
+///   2. A discovered root is refused unless the root, `scripts/`, `bin/` and
+///      the files run out of them are all owned by you and not group- or
+///      world-writable (Unix only — see `check_root_trust`). The fallback
+///      then applies, and the startup line names the refused path and why
+///      rather than silently running foreign code.
 pub fn resolve_repo_root() -> PathBuf {
     resolve_repo_root_with(explicit_repo_root(), std::env::current_dir().ok())
 }
@@ -319,36 +320,140 @@ fn resolve_repo_root_with(explicit: Option<PathBuf>, cwd: Option<PathBuf>) -> Pa
         return explicit;
     }
     cwd.and_then(|cwd| find_repo_root_from(&cwd))
-        .filter(|root| is_safely_owned(root))
+        .filter(|root| check_root_trust(root).is_ok())
         .unwrap_or_else(compile_time_repo_root)
 }
 
-/// Whether a discovered directory is safe to execute code out of.
-///
-/// Unix: refuse group- or other-writable directories. Those are the ones a
-/// second party can plant a `scripts/test-fidelity.py` in — a shared `/tmp`,
-/// a group-writable share, a misconfigured home. Everywhere else there is no
-/// cheap equivalent signal, so this does not pretend to have one.
-///
-/// What it deliberately does NOT cover: a directory you own and wrote
-/// yourself — an extracted archive in `~/Downloads`, a cloned fork. Running
-/// the binary inside a repo you chose is the documented workflow, and no
-/// permission bit can distinguish a repo you trust from one you regret. That
-/// case is addressed by *announcing* the resolved root instead of silently
-/// executing from it; see `describe_repo_root`.
-#[cfg(unix)]
-fn is_safely_owned(root: &Path) -> bool {
-    use std::os::unix::fs::PermissionsExt;
-    match std::fs::metadata(root) {
-        Ok(meta) => meta.permissions().mode() & 0o022 == 0,
-        // Unreadable: refuse rather than guess.
-        Err(_) => false,
+/// Why a discovered root was refused: the exact path that failed, and what
+/// was wrong with it. Carried into the startup disclosure so the user is told
+/// which directory to fix, not just that something was rejected.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Refusal {
+    pub path: PathBuf,
+    pub reason: String,
+}
+
+impl std::fmt::Display for Refusal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.path.display(), self.reason)
     }
 }
 
-#[cfg(not(unix))]
-fn is_safely_owned(_root: &Path) -> bool {
-    true
+/// Everything under a root that this app executes, or that decides what gets
+/// executed, relative to the root. The root itself comes first.
+///
+/// `scripts/test-fidelity.py` runs under python, `bin/cli.mjs` under node, and
+/// `npm test` reads `package.json` to decide what to run. A missing entry is
+/// skipped, not refused: `find_repo_root_from` only requires `prebuilt/` and
+/// the fidelity script, and nobody but the owner can create the others once
+/// the directory above them has passed.
+#[cfg(unix)]
+const EXECUTED_PATHS: &[&str] = &[
+    "",
+    "scripts",
+    "scripts/test-fidelity.py",
+    "bin",
+    "bin/cli.mjs",
+    "package.json",
+];
+
+/// Whether a discovered directory is safe to execute code out of.
+///
+/// Unix: every path in `EXECUTED_PATHS` must be owned by the effective uid and
+/// not group- or other-writable. Those are the paths a second party could use
+/// to plant code — a shared `/tmp`, a group-writable share, a misconfigured
+/// home. `std::fs::metadata` follows symlinks, so a `scripts/` that links
+/// elsewhere is judged by its target, not by the link.
+///
+/// Until 2026-10-21 this looked at the root's mode bits and nothing else. A
+/// reviewer showed the hole: root 0755, `scripts/` 0777, and a planted
+/// `scripts/test-fidelity.py` was run by `--baseline` and announced as
+/// "discovered from the working directory". Ownership was not checked either,
+/// so a 0755 root that belongs to another user passed.
+///
+/// What it deliberately does NOT cover:
+///   - A directory you own and wrote yourself — an extracted archive in
+///     `~/Downloads`, a cloned fork. Running the binary inside a repo you chose
+///     is the documented workflow, and no permission bit can distinguish a repo
+///     you trust from one you regret. That case is addressed by *announcing*
+///     the resolved root instead of silently executing from it; see
+///     `describe_repo_root`.
+///   - The directories *above* the root (or above a symlink's target), and the
+///     modules the executed files import (`scripts/*.py`, `lib/`,
+///     `node_modules/`). Checking the entry points and their directories closes
+///     the planted-file case without walking the whole tree on every start.
+fn check_root_trust(root: &Path) -> std::result::Result<(), Refusal> {
+    #[cfg(unix)]
+    {
+        // SAFETY: geteuid has no preconditions and cannot fail.
+        let euid = unsafe { libc::geteuid() };
+        check_root_trust_as(root, euid)
+    }
+    // Windows: no check. Mode bits do not exist there, and the real answer —
+    // reading each path's ACL and owner SID — is a different mechanism this
+    // file does not attempt. A discovered root on Windows is trusted as
+    // before; `describe_repo_root` still names it, and `MASTER_SKILL_REPO_ROOT`
+    // is the way to pin it. A known gap, written down rather than faked.
+    #[cfg(not(unix))]
+    {
+        let _ = root;
+        Ok(())
+    }
+}
+
+/// `check_root_trust` with the uid passed in, so tests can play "a directory
+/// owned by somebody else" without needing root to `chown` one.
+#[cfg(unix)]
+fn check_root_trust_as(root: &Path, euid: u32) -> std::result::Result<(), Refusal> {
+    use std::os::unix::fs::MetadataExt;
+    for relative in EXECUTED_PATHS {
+        let path = if relative.is_empty() {
+            root.to_path_buf()
+        } else {
+            root.join(relative)
+        };
+        let meta = match std::fs::metadata(&path) {
+            Ok(meta) => meta,
+            Err(err) if !relative.is_empty() && err.kind() == std::io::ErrorKind::NotFound => {
+                continue
+            }
+            // Unreadable, or a dangling link: refuse rather than guess.
+            Err(err) => {
+                return Err(Refusal {
+                    path,
+                    reason: format!("could not be inspected ({err})"),
+                })
+            }
+        };
+        if let Err(reason) = judge_mode_and_owner(meta.mode(), meta.uid(), euid) {
+            // Name the target too when a symlink was followed: the thing to
+            // fix is the target, and the link alone would not say where it is.
+            let reason = match std::fs::canonicalize(&path) {
+                Ok(target) if path.is_symlink() => {
+                    format!("(a symlink to {}) {reason}", target.display())
+                }
+                _ => reason,
+            };
+            return Err(Refusal { path, reason });
+        }
+    }
+    Ok(())
+}
+
+/// The rule itself, on raw numbers: owned by `euid`, and no group or other
+/// write bit. Returns the human-readable reason on refusal.
+#[cfg(unix)]
+fn judge_mode_and_owner(mode: u32, owner: u32, euid: u32) -> std::result::Result<(), String> {
+    if owner != euid {
+        return Err(format!("is owned by uid {owner}, not by you (uid {euid})"));
+    }
+    if mode & 0o022 != 0 {
+        return Err(format!(
+            "is group- or world-writable (mode {:04o})",
+            mode & 0o7777
+        ));
+    }
+    Ok(())
 }
 
 /// One line naming the directory whose `scripts/` and `bin/` are about to be
@@ -379,6 +484,9 @@ pub enum RootProvenance {
     /// fallback, which almost certainly does not exist here.
     RefusedFellBack {
         rejected: PathBuf,
+        /// Which path under it failed, and how — e.g. `…/scripts is group- or
+        /// world-writable (mode 0777)`.
+        reason: String,
     },
     /// Nothing qualified anywhere up the tree.
     NoneFoundFellBack,
@@ -394,7 +502,14 @@ impl RootProvenance {
             .and_then(|cwd| find_repo_root_from(&cwd))
         {
             Some(found) if found == resolved => Self::Discovered,
-            Some(rejected) => Self::RefusedFellBack { rejected },
+            Some(rejected) => {
+                let reason = match check_root_trust(&rejected) {
+                    Err(refusal) => refusal.to_string(),
+                    // Passed now but not when resolved: it changed in between.
+                    Ok(()) => "failed the ownership/permission check".to_string(),
+                };
+                Self::RefusedFellBack { rejected, reason }
+            }
             None => Self::NoneFoundFellBack,
         }
     }
@@ -404,8 +519,10 @@ fn describe_repo_root_with(root: &Path, provenance: &RootProvenance) -> String {
     let how = match provenance {
         RootProvenance::Explicit => "MASTER_SKILL_REPO_ROOT".to_string(),
         RootProvenance::Discovered => "discovered from the working directory".to_string(),
-        RootProvenance::RefusedFellBack { rejected } => format!(
-            "REFUSED {} as group- or world-writable; fell back to the build-time path",
+        RootProvenance::RefusedFellBack { rejected, reason } => format!(
+            "REFUSED {}: {reason}; it must be owned by you and not group- or \
+             world-writable (or set MASTER_SKILL_REPO_ROOT). Fell back to the \
+             build-time path",
             rejected.display()
         ),
         RootProvenance::NoneFoundFellBack => {
@@ -564,7 +681,10 @@ mod interpreter_resolution_tests {
 
 #[cfg(test)]
 mod repo_root_trust_tests {
-    use super::{describe_repo_root_with, is_safely_owned, resolve_repo_root_with, RootProvenance};
+    // Every test that calls it is Unix-only; the Windows check is a no-op.
+    #[cfg(unix)]
+    use super::check_root_trust;
+    use super::{describe_repo_root_with, resolve_repo_root_with, RootProvenance};
     use std::path::{Path, PathBuf};
 
     fn make_repo(dir: &Path) {
@@ -607,6 +727,39 @@ mod repo_root_trust_tests {
         assert_ne!(resolve_repo_root_with(None, Some(root.clone())), root);
     }
 
+    /// The reviewer's repro (2026-10-21): root 0755, `scripts/` 0777, and a
+    /// planted `scripts/test-fidelity.py` was executed by `--baseline` as
+    /// "discovered from the working directory". Only the root was checked.
+    #[cfg(unix)]
+    #[test]
+    fn a_world_writable_scripts_dir_under_a_safe_root_is_not_used() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("repo");
+        make_repo(&root);
+        std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o755)).unwrap();
+        std::fs::set_permissions(root.join("scripts"), std::fs::Permissions::from_mode(0o777))
+            .unwrap();
+
+        assert_ne!(resolve_repo_root_with(None, Some(root.clone())), root);
+    }
+
+    /// Same hole one directory over: `node <root>/bin/cli.mjs` runs too.
+    #[cfg(unix)]
+    #[test]
+    fn a_world_writable_bin_dir_under_a_safe_root_is_not_used() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("repo");
+        make_repo(&root);
+        std::fs::create_dir_all(root.join("bin")).unwrap();
+        std::fs::write(root.join("bin").join("cli.mjs"), "").unwrap();
+        std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o755)).unwrap();
+        std::fs::set_permissions(root.join("bin"), std::fs::Permissions::from_mode(0o777)).unwrap();
+
+        assert_ne!(resolve_repo_root_with(None, Some(root.clone())), root);
+    }
+
     #[cfg(unix)]
     #[test]
     fn permission_bits_decide_which_directories_are_refused() {
@@ -617,15 +770,159 @@ mod repo_root_trust_tests {
 
         for (mode, expected) in [(0o755, true), (0o775, false), (0o777, false), (0o700, true)] {
             std::fs::set_permissions(&root, std::fs::Permissions::from_mode(mode)).unwrap();
-            assert_eq!(is_safely_owned(&root), expected, "mode {mode:o}");
+            assert_eq!(check_root_trust(&root).is_ok(), expected, "mode {mode:o}");
         }
     }
 
+    // Unix only: on Windows the check is a documented no-op (see
+    // `check_root_trust`), so this assertion never held there.
+    #[cfg(unix)]
     #[test]
     fn an_unreadable_root_is_refused_rather_than_guessed() {
-        assert!(!is_safely_owned(Path::new(
-            "/definitely/not/a/real/path/xyzzy"
-        )));
+        assert!(check_root_trust(Path::new("/definitely/not/a/real/path/xyzzy")).is_err());
+    }
+
+    /// A full checkout shape — root, scripts/, bin/, package.json, all 0755 /
+    /// 0644 and yours — must still pass, or the fix broke the normal case.
+    #[cfg(unix)]
+    #[test]
+    fn a_normal_checkout_with_bin_and_package_json_passes() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("repo");
+        make_repo(&root);
+        std::fs::create_dir_all(root.join("bin")).unwrap();
+        std::fs::write(root.join("bin").join("cli.mjs"), "").unwrap();
+        std::fs::write(root.join("package.json"), "{}").unwrap();
+        for dir in [root.clone(), root.join("scripts"), root.join("bin")] {
+            std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        for file in [
+            root.join("scripts/test-fidelity.py"),
+            root.join("bin/cli.mjs"),
+            root.join("package.json"),
+        ] {
+            std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o644)).unwrap();
+        }
+
+        assert_eq!(check_root_trust(&root), Ok(()));
+        assert_eq!(resolve_repo_root_with(None, Some(root.clone())), root);
+    }
+
+    /// The refusal must say which path failed and why — "something was
+    /// refused" gives the user nothing to fix.
+    #[cfg(unix)]
+    #[test]
+    fn the_refusal_names_the_failing_subdirectory_and_its_mode() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("repo");
+        make_repo(&root);
+        std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o755)).unwrap();
+        std::fs::set_permissions(root.join("scripts"), std::fs::Permissions::from_mode(0o777))
+            .unwrap();
+
+        let refusal = check_root_trust(&root).unwrap_err();
+        assert_eq!(refusal.path, root.join("scripts"));
+        let text = refusal.to_string();
+        assert!(text.contains("group- or world-writable"), "{text}");
+        assert!(text.contains("0777"), "{text}");
+    }
+
+    /// The executed file itself, not only its directory: a 0666
+    /// `test-fidelity.py` in a 0755 `scripts/` can be overwritten in place.
+    #[cfg(unix)]
+    #[test]
+    fn a_world_writable_executed_file_is_refused() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("repo");
+        make_repo(&root);
+        std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o755)).unwrap();
+        std::fs::set_permissions(root.join("scripts"), std::fs::Permissions::from_mode(0o755))
+            .unwrap();
+        let script = root.join("scripts").join("test-fidelity.py");
+        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o666)).unwrap();
+
+        assert_eq!(check_root_trust(&root).unwrap_err().path, script);
+    }
+
+    /// A `scripts/` symlink is judged by what it points at: the link itself
+    /// can only be replaced by whoever can write the root, but its target can
+    /// be written by whoever can write the target.
+    #[cfg(unix)]
+    #[test]
+    fn a_symlinked_scripts_dir_is_judged_by_its_target() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("repo");
+        std::fs::create_dir_all(root.join("prebuilt")).unwrap();
+        let elsewhere = temp.path().join("shared-scripts");
+        std::fs::create_dir_all(&elsewhere).unwrap();
+        std::fs::write(elsewhere.join("test-fidelity.py"), "").unwrap();
+        std::os::unix::fs::symlink(&elsewhere, root.join("scripts")).unwrap();
+        std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+        // Target safe: the link is fine.
+        std::fs::set_permissions(&elsewhere, std::fs::Permissions::from_mode(0o755)).unwrap();
+        assert_eq!(check_root_trust(&root), Ok(()));
+
+        // Target world-writable: refused, and the message names the target.
+        std::fs::set_permissions(&elsewhere, std::fs::Permissions::from_mode(0o777)).unwrap();
+        let refusal = check_root_trust(&root).unwrap_err();
+        assert_eq!(refusal.path, root.join("scripts"));
+        assert!(
+            refusal.reason.contains("shared-scripts"),
+            "name the symlink target: {refusal}"
+        );
+        assert_ne!(resolve_repo_root_with(None, Some(root.clone())), root);
+    }
+
+    /// Ownership. `chown`ing a directory to another user needs root, so this
+    /// injects the uid instead: the same tree, judged as if we were somebody
+    /// else, must be refused at the root with both uids named.
+    #[cfg(unix)]
+    #[test]
+    fn a_root_owned_by_another_uid_is_refused() {
+        use std::os::unix::fs::{MetadataExt, PermissionsExt};
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("repo");
+        make_repo(&root);
+        std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let owner = std::fs::metadata(&root).unwrap().uid();
+
+        assert_eq!(super::check_root_trust_as(&root, owner), Ok(()));
+        let refusal = super::check_root_trust_as(&root, owner.wrapping_add(1)).unwrap_err();
+        assert_eq!(refusal.path, root);
+        assert!(
+            refusal.reason.contains(&format!("owned by uid {owner}")),
+            "{refusal}"
+        );
+    }
+
+    /// The rule on raw numbers, so every branch is covered without touching
+    /// the filesystem.
+    #[cfg(unix)]
+    #[test]
+    fn the_rule_requires_both_ownership_and_no_group_or_other_write() {
+        use super::judge_mode_and_owner;
+        let me = 1000;
+        for (mode, owner, ok) in [
+            (0o040755, me, true),
+            (0o040700, me, true),
+            (0o100644, me, true),
+            (0o040775, me, false),
+            (0o040757, me, false),
+            (0o041777, me, false), // sticky does not help: we execute what is in it
+            (0o040755, 0, false),
+            (0o040755, me + 1, false),
+        ] {
+            assert_eq!(
+                judge_mode_and_owner(mode, owner, me).is_ok(),
+                ok,
+                "mode {mode:o} owner {owner}"
+            );
+        }
     }
 
     #[test]
@@ -653,9 +950,15 @@ mod repo_root_trust_tests {
             Path::new("/build/machine/path"),
             &RootProvenance::RefusedFellBack {
                 rejected: PathBuf::from("/tmp/world-writable"),
+                reason: "/tmp/world-writable/scripts is group- or world-writable (mode 0777)"
+                    .to_string(),
             },
         );
         assert!(text.contains("REFUSED"));
+        assert!(
+            text.contains("/tmp/world-writable/scripts is group- or world-writable"),
+            "say which path failed and why: {text}"
+        );
         assert!(
             text.contains("/tmp/world-writable"),
             "name what was rejected"

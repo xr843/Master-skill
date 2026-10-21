@@ -10,6 +10,22 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Security — the desktop app no longer runs a planted script under a safe-looking root (2026-10-21)
+
+The desktop app finds its repo root by walking up from the working directory, then runs
+`python3 <root>/scripts/test-fidelity.py`, `node <root>/bin/cli.mjs` and `npm test` from it.
+The trust check only looked at the root's own mode bits. A reviewer reproduced the gap: root
+0755, `scripts/` 0777, a planted `scripts/test-fidelity.py`, and `--baseline` ran it, announced
+as "discovered from the working directory".
+
+- On Unix the root, `scripts/`, `bin/`, `scripts/test-fidelity.py`, `bin/cli.mjs` and
+  `package.json` must now all be owned by the effective uid and not group- or
+  world-writable. A symlinked `scripts/` or `bin/` is judged by its target.
+- A refused root is named on the startup line together with the path that failed and why,
+  for example `…/scripts is group- or world-writable (mode 0777)`.
+- Windows is unchanged: no check, as before. ACLs are not inspected, and the gap is
+  documented in `desktop/src/cli.rs`. `MASTER_SKILL_REPO_ROOT` pins the root on any platform.
+
 ## [0.14.0] — 2026-10-20
 
 **Quotation marks hold original text, and a privacy policy.** Every persona and teaching
