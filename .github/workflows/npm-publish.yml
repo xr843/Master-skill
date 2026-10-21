@@ -8,6 +8,7 @@ name: Publish to npm
 #   - npm publish uses --provenance and OIDC Trusted Publishing.
 #     No NPM_TOKEN secret is needed (or trusted) — the GitHub OIDC
 #     id-token is exchanged at npmjs.com for short-lived publish creds.
+#     Only the `publish` job (environment `npm`) holds `id-token: write`.
 #
 # First-time / re-configuration setup (one-time, by repo admin):
 #   1. npmjs.com → Package "master-skill" → Settings → Trusted Publisher
@@ -36,10 +37,14 @@ on:
         type: choice
         options: ["true", "false"]
 
+# Read-only by default. The OIDC grant lives on the `publish` job alone: at
+# workflow level it also reached `gate`, which pip-installs unpinned
+# requirements and runs the whole test suite. npm's Trusted Publisher pins the
+# `npm` environment, which `gate` lacks, so such a token should not publish —
+# but it is still a signed identity for this repo and workflow, and nothing in
+# `gate` needs one. Least privilege, rather than relying on that one claim.
 permissions:
   contents: read
-  # Required for npm provenance + OIDC Trusted Publishing.
-  id-token: write
 
 jobs:
   # Nothing gated `publish` before v0.10.1: it ran on `release: published`
@@ -107,6 +112,12 @@ jobs:
     needs: gate
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # A job-level block replaces the workflow-level one outright, so
+    # `contents: read` (for checkout) has to be restated here.
+    permissions:
+      contents: read
+      # Required for npm provenance + OIDC Trusted Publishing.
+      id-token: write
     environment:
       name: npm
       url: https://www.npmjs.com/package/master-skill

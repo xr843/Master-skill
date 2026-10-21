@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Tests the cmd.exe half of hooks/run-hook.cmd — that a failing hook's
-# exit code reaches the caller instead of being reported as success.
+# exit code reaches the caller instead of being reported as success, and that
+# a plugin path holding cmd.exe metacharacters (`!`, `&`, `^`, `%`, spaces,
+# parentheses) still reaches the hook.
 #
 # Runs wherever cmd.exe is reachable: Git bash on windows-latest (which is
 # what CI uses) and WSL. Skips elsewhere, so the Linux jobs stay quiet.
@@ -42,10 +44,10 @@ trap cleanup EXIT
 
 mkdir -p "$TMP_DIR/hooks"
 # Strip any CR before adding one: a Windows checkout already holds CRLF, and
-# appending blindly yields CR CR LF. cmd.exe then reads the argument to
-# `setlocal enabledelayedexpansion` with a trailing CR, rejects it, leaves
-# delayed expansion off, and !ERRORLEVEL! stays literal — which looks exactly
-# like the bug this file tests.
+# appending blindly yields CR CR LF, which cmd.exe misreads as part of the
+# arguments — measured when the wrapper still used
+# `setlocal enabledelayedexpansion`: the CR made it reject the option, and the
+# lost exit code looked exactly like the bug this file tests.
 sed 's/\r*$/\r/' "$WRAPPER" > "$TMP_DIR/hooks/run-hook.cmd"
 
 # Stage two hooks: one that fails with a distinctive code, one that succeeds.
@@ -86,6 +88,32 @@ if [ "$rc" -eq 0 ]; then
     PASS=$((PASS + 1))
 else
     printf "  FAIL  succeeding hook: expected exit 0, got %s\n" "$rc"
+    FAIL=$((FAIL + 1))
+fi
+
+# --- Case 3: a path with cmd.exe metacharacters reaches the hook ---------
+# `setlocal enabledelayedexpansion` stripped every `!` from %HOOK_DIR%, so a
+# plugin under a Windows user named like `bang!x` ran ...\bangx\hooks\... and
+# bash failed with "No such file or directory" (exit 127). The wrapper is
+# invoked the way hooks.json invokes it: by its full, quoted path. A driver
+# batch file carries that path, because quotes inside `cmd.exe /c "..."` do not
+# survive the trip from bash intact; `%` is doubled for the batch parser, and
+# there is no `call`, which would re-expand `%` and double `^`.
+ODD_NAME='odd bang!x a&b (1) pct%x%y car^et'
+mkdir -p "$TMP_DIR/$ODD_NAME/hooks"
+cp "$TMP_DIR/hooks/run-hook.cmd" "$TMP_DIR/hooks/failing-hook" "$TMP_DIR/$ODD_NAME/hooks/"
+ODD_WIN="${WIN_TMP}\\${ODD_NAME}"
+printf '@echo off\r\n"%s\\hooks\\run-hook.cmd" failing-hook\r\n' "${ODD_WIN//%/%%}" \
+    > "$TMP_DIR/driver.bat"
+MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' \
+    "$CMD_EXE" /c "${WIN_TMP}\\driver.bat" > "$TMP_DIR/odd.out" 2>&1
+rc=$?
+out="$(tr -d '\r' < "$TMP_DIR/odd.out")"
+if [ "$rc" -eq 42 ] && printf '%s' "$out" | grep -q "failing hook ran"; then
+    echo "  PASS  path with ! & ^ % ( ) and spaces: hook ran, exit 42 propagated"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL  path with ! & ^ %% ( ) and spaces: exit %s, output: %s\n" "$rc" "$out"
     FAIL=$((FAIL + 1))
 fi
 
