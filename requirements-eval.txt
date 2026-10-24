@@ -14,8 +14,8 @@
 #      against anthropic's 0.x line. A grading harness that silently changes
 #      SDK major versions between runs is not an instrument.
 #
-# 1.8.0, verified 2026-09-28 (moved from 1.7.0 in #289; 1.7.0 came in #267,
-# 1.6.0 in #264, 1.5.0 in #175) in two ways, neither of
+# 1.17.0, verified 2026-10-24 (moved from 1.8.0 in #301; 1.8.0 came in #289,
+# 1.7.0 in #267, 1.6.0 in #264, 1.5.0 in #175) in two ways, neither of
 # which is CI going green — the grading never runs without a key, so a
 # breaking SDK change would not show up until someone spent money:
 #
@@ -38,7 +38,7 @@
 #   - the HTTP layer moved to httpx2, which handles proxies differently — on a
 #     machine with a SOCKS proxy set, constructing the client now raises unless
 #     `socksio` is installed. Hit while verifying this bump.
-anthropic==1.8.0
+anthropic==1.17.0
 
 # The deepseek / gemini providers go through the OpenAI-compatible client
 # (test-fidelity.py imports `openai`, and its ImportError branch tells you to
@@ -46,8 +46,8 @@ anthropic==1.8.0
 # a clean checkout — while the guard test only grepped for anthropic and pytest.
 #
 # `==`, same reasoning as anthropic above, and pinned to the version actually
-# verified: 3.19.2 (moved from 3.16.2 in #289; 3.16.2 came in #267, 3.14.1 in
-# #264, 3.13.0 in #174), checked 2026-09-28 by the same two scripts — now
+# verified: 3.35.1 (moved from 3.19.2 in #301; 3.19.2 came in #289, 3.16.2 in
+# #267, 3.14.1 in #264, 3.13.0 in #174), checked 2026-10-24 by the same two scripts — now
 # including the tool-loop surface (tools=, tool_calls) the teaching modes use. It still takes `OpenAI(api_key, base_url, max_retries)` and
 # `chat.completions.create(model, max_tokens, messages, timeout)`, and the
 # smoke confirms the request lands on the patched base_url's
@@ -55,4 +55,4 @@ anthropic==1.8.0
 # comment here guessed that 3.x was where `max_tokens` gave way to
 # `max_completion_tokens`; checked on 3.10.0, both were accepted, so
 # build_request() needed no change. Same >= 3.10 floor as anthropic.
-openai==3.19.2
+openai==3.35.1
