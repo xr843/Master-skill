@@ -60,7 +60,7 @@ def test_unix_archive_preserves_executable_mode(tmp_path: Path):
 def test_each_build_hands_all_staged_assets_to_the_assembler():
     step = _step("build", "Upload staged assets")
     assert step.get("uses") == (
-        "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
+        "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9"
     )
     assert step.get("if") is None
     assert step.get("with") == {
@@ -158,7 +158,7 @@ def test_assembler_publishes_release_or_combined_dry_run_artifact():
     dry_run = _step("assemble", "Upload combined workflow artifact")
     assert dry_run.get("if") == "github.event_name == 'workflow_dispatch'"
     assert dry_run.get("uses") == (
-        "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
+        "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9"
     )
     assert dry_run.get("with") == {
         "name": "master-skill-desktop-release-assets",
