@@ -10,6 +10,66 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.14.1] — 2026-10-24
+
+**Security fixes from the 2026-10-21 review, and the most-misquoted lines given their
+originals.** No dependency had a known vulnerability (`cargo audit`, `pip-audit` on all
+three requirements files). The review found three issues and the follow-up a fourth, on
+Windows; each was reproduced before it was fixed. Three are in the desktop app and the
+FoJin retrieval fence, below; the fourth is in CI.
+
+The retrieval fence's random number was probed on real models before release, at about
+$0.30. The injected text sat behind a forged end marker made of `-`, the shape the line
+filter keeps. Ten runs per arm:
+
+- No model obeyed it in either arm (claude-sonnet-5-5, claude-haiku-5-5; old fence and
+  prompt vs new).
+- With the new prompt, Haiku told the user the retrieval data looked tampered with in 7 of
+  10 runs, against 0 of 10 with the old one, and one run cited the number mismatch.
+  Sonnet flagged it every time in both arms.
+- The probe is too small to show the number blocks an attack the old fence let through. It
+  shows the rule is read and does not hurt answers.
+
+### Security — CI: the publish token and the hook wrapper (#341)
+
+- `npm-publish.yml` granted `id-token: write` to the whole workflow, so the `gate` job,
+  which installs floor-pinned requirements and runs the full suite, could also mint the
+  OIDC token npm's trusted publishing exchanges. Only the `publish` job holds it now, and
+  `scripts/tests/test_workflow_permissions.py` fails any workflow that grants it at the top.
+- `hooks/run-hook.cmd` ran with `enabledelayedexpansion`, which strips every `!` from an
+  expanded path. A plugin under a Windows user named like `bang!x` failed its SessionStart
+  hook with exit 127 (measured on Windows 11). The wrapper no longer needs delayed
+  expansion, and a test runs it from a path holding `! & ^ % ( )` and spaces.
+
+### Performance — `update --all` is ten times faster (#346)
+
+`resolveSkill()` rebuilt the whole catalog on every lookup, so all 21 SKILL.md files and
+the personas' meta.json were re-read and re-parsed each time, and `cmdInstall` looks
+skills up inside a loop over names × personas. A CPU profile put 70% of `update --all`'s
+2.8s in those reads. The catalog is now built once per process: 0.27s. The two
+named-pipe tests, which give `update --all` 3 seconds, had been failing on a loaded
+machine for this reason.
+
+### Content (#340)
+
+- master-tsongkhapa: the two 《广论》 lines the fd3d832 run misquoted most (卷1 四殊胜,
+  卷17 「唯无我慧乃能永断三有根本」) are verbatim 原典 blocks with CBETA B10n0067 page
+  and line.
+- master-yinguang: three 《文钞》 letters checked word for word against the pinned 殆知阁
+  corpus.
+- compare-masters, master-debate, master-curriculum: `cross_critique` positions are this
+  repository's synthesis, not a master's remark about another.
+
+### Dependencies
+
+- anthropic 1.8.0 → 1.17.0 and openai 3.19.2 → 3.35.1 for the paid eval (#301). Both
+  verification scripts pass, and the keyless smoke output is unchanged apart from the
+  version line.
+- actions/setup-node 7.1.0 (#306), download-artifact 8.0.2 (#307), upload-artifact 7.0.2
+  (#308). The new SHAs were checked against the upstream tags.
+- eframe 0.37 (#310) is not in this release. CI is green, but nobody has looked at the
+  window yet.
+
 ### Security — the Windows desktop exe no longer runs a `python.exe` dropped beside it (2026-10-24)
 
 The desktop app spawns `python`, `node` and `npm.cmd` by bare name. On Windows, Rust's
