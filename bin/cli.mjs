@@ -526,13 +526,24 @@ function humanSummary(skill, description) {
   return { displayName: null, summary: (skill.summary || description).trim() };
 }
 
+// Built once per process. Until 2026-10-24 every call re-read and re-parsed
+// all 21 SKILL.md files and the personas' meta.json, and `resolveSkill` calls
+// it once per lookup — inside `cmdInstall`'s loop over names × personas. A
+// profile of `update --all` put 70% of its 2.8s in those reads, and the two
+// named-pipe tests, which give `update --all` 3s, failed on a loaded machine.
+// The package files cannot change under a running command, so one read is
+// the same answer. A copy of the array goes out so no caller can reorder the
+// cache.
+let CATALOG_SKILLS;
+
 function catalogSkills() {
-  return CATALOG.skills.map((skill) => {
+  CATALOG_SKILLS ??= CATALOG.skills.map((skill) => {
     const skillMd = path.join(PACKAGE_ROOT, skill.source, "SKILL.md");
     const fm = fs.existsSync(skillMd) ? parseFrontmatter(skillMd) : {};
     const description = fm.description || "";
     return { ...skill, description, ...humanSummary(skill, description) };
   });
+  return CATALOG_SKILLS.slice();
 }
 
 function resolveSkill(input) {
