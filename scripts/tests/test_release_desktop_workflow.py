@@ -77,7 +77,7 @@ def test_assembler_downloads_every_matrix_leg_with_a_pinned_action():
     assert job.get("runs-on") == "ubuntu-latest"
     step = _step("assemble", "Download staged assets")
     assert step.get("uses") == (
-        "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c"
+        "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333"
     )
     assert step.get("with") == {
         "pattern": "desktop-assets-*",
