@@ -10,6 +10,24 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Security — the Windows desktop exe no longer runs a `python.exe` dropped beside it (2026-10-24)
+
+The desktop app spawns `python`, `node` and `npm.cmd` by bare name. On Windows, Rust's
+`Command` searches the directory of the running executable before PATH, and the released
+exe is a single file people run from Downloads. Reproduced with the v0.14.0 release on
+Windows: with a `python.exe` next to the exe (a copy of the desktop exe itself),
+`--baseline` reported `invalid arguments: ["…\scripts\test-fidelity.py", "--master", …]`
+as the dry-run's stderr, although a real Python was on PATH. Without the decoy the same
+run printed `ok demo`. A decoy in the working directory or the repo root did not run.
+
+- On Windows a bare interpreter name is now looked up on PATH by the app and spawned by
+  absolute path. Only absolute PATH entries are searched, and only `.exe` is appended,
+  as std does: PATHEXT would let a `python.bat` outrank `python.exe`.
+- Not found on PATH is an error naming the program and the override to set
+  (`NODE`, `MASTER_SKILL_PYTHON`, `MASTER_SKILL_NPM`). Falling back to the bare name
+  would put the executable's directory back in the search.
+- Unix is unchanged. `execvp` never searched the executable's directory.
+
 ### Security — the desktop app no longer runs a planted script under a safe-looking root (2026-10-21)
 
 The desktop app finds its repo root by walking up from the working directory, then runs

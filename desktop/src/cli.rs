@@ -60,9 +60,10 @@ impl CliClient {
         // timeout or unparseable output is still an error.
         let args = ["doctor", "--json"];
         let context = format!("failed to run master-skill CLI with args {args:?}");
+        let mut command = self.cli_command(&args).with_context(|| context.clone())?;
         let output = self
             .runner
-            .run(&mut self.cli_command(&args))
+            .run(&mut command)
             .with_context(|| context.clone())?;
         if !output.timed_out && output.status.code() == Some(1) {
             if let Ok(report) = serde_json::from_str::<DoctorReport>(&output.stdout) {
@@ -97,7 +98,7 @@ impl CliClient {
 
     pub fn run_fidelity_dry_run(&self) -> Result<String> {
         self.run_command(
-            Command::new(&self.python_bin)
+            self.program(&self.python_bin)?
                 .arg(self.repo_root.join("scripts").join("test-fidelity.py"))
                 .arg("--all")
                 .arg("--dry-run")
@@ -108,7 +109,7 @@ impl CliClient {
 
     pub fn run_fidelity_dry_run_for(&self, slug: &str) -> Result<String> {
         self.run_command(
-            Command::new(&self.python_bin)
+            self.program(&self.python_bin)?
                 .arg(self.repo_root.join("scripts").join("test-fidelity.py"))
                 .arg("--master")
                 .arg(format!("master-{slug}"))
@@ -120,7 +121,7 @@ impl CliClient {
 
     pub fn run_full_validation(&self) -> Result<String> {
         self.run_command(
-            Command::new(&self.npm_bin).arg("test"),
+            self.program(&self.npm_bin)?.arg("test"),
             "failed to run full validation",
         )
     }
@@ -133,8 +134,13 @@ impl CliClient {
         serde_json::from_str(&stdout).with_context(|| format!("failed to parse JSON from {args:?}"))
     }
 
-    fn cli_command(&self, args: &[&str]) -> Command {
-        let mut command = Command::new(&self.node_bin);
+    /// Every interpreter spawn goes through here — see `resolve_program`.
+    fn program(&self, name: &str) -> Result<Command> {
+        Ok(Command::new(resolve_program(name)?))
+    }
+
+    fn cli_command(&self, args: &[&str]) -> Result<Command> {
+        let mut command = self.program(&self.node_bin)?;
         command
             .arg(self.repo_root.join("bin").join("cli.mjs"))
             .args(args)
@@ -142,14 +148,13 @@ impl CliClient {
         if let Some(home) = &self.home {
             command.env("HOME", home).env("USERPROFILE", home);
         }
-        command
+        Ok(command)
     }
 
     fn run(&self, args: &[&str]) -> Result<String> {
-        self.run_command(
-            &mut self.cli_command(args),
-            &format!("failed to run master-skill CLI with args {args:?}"),
-        )
+        let context = format!("failed to run master-skill CLI with args {args:?}");
+        let mut command = self.cli_command(args).with_context(|| context.clone())?;
+        self.run_command(&mut command, &context)
     }
 
     fn run_command(&self, command: &mut Command, context: &str) -> Result<String> {
@@ -246,6 +251,81 @@ fn resolve_interpreter(
         windows_default.to_string()
     } else {
         unix_default.to_string()
+    }
+}
+
+/// The program to hand to `Command::new`, resolved on PATH ourselves on
+/// Windows.
+///
+/// On Windows, std resolves a bare name by searching the child's PATH, then
+/// **the directory of the running executable**, then System32 and the Windows
+/// directory, and only then the PATH (`resolve_exe` / `search_paths` in
+/// library/std/src/sys/process/windows.rs, read at 1.95.0). The released exe
+/// is a single file people run from Downloads, so anything a browser dropped
+/// next to it was found first. Reproduced 2026-10-24 with the v0.14.0 release
+/// on Windows: a `python.exe` beside it — a copy of the desktop exe itself, so
+/// its output is unmistakable — ran instead of the Python on PATH, and
+/// `--baseline` reported its usage error as the dry-run's stderr.
+///
+/// So a bare name is looked up on PATH here and passed on as an absolute path,
+/// which std uses as given. Not found is an error: falling back to the bare
+/// name would put the executable's directory back in the search. A directory
+/// that is itself on PATH is still searched — every other program on the
+/// machine already trusts PATH, and skipping it here would protect nothing.
+/// Neither cwd is involved; std dropped it from the search long ago, and a
+/// cwd-only decoy did not run in the same reproduction.
+///
+/// Unix is unchanged: execvp never searched the executable's directory.
+fn resolve_program(name: &str) -> Result<std::ffi::OsString> {
+    resolve_program_with(name, std::env::var_os("PATH"), cfg!(windows))
+}
+
+/// The decision, with PATH and the platform passed in — the tests run it on
+/// Linux and must not mutate the process environment (see
+/// `resolve_interpreter`).
+fn resolve_program_with(
+    name: &str,
+    path_var: Option<std::ffi::OsString>,
+    windows: bool,
+) -> Result<std::ffi::OsString> {
+    // `:` too: `C:python.exe` is drive-relative, not a bare name.
+    if !windows || name.contains(['/', '\\', ':']) {
+        return Ok(name.into());
+    }
+    search_path_for(name, path_var.as_deref())
+        .map(PathBuf::into_os_string)
+        .ok_or_else(|| {
+            anyhow!(
+                "{} was not found on PATH. The directory this app runs from is \
+                 deliberately not searched; set the full path in NODE, \
+                 MASTER_SKILL_PYTHON or MASTER_SKILL_NPM instead",
+                exe_file_name(name)
+            )
+        })
+}
+
+/// The first `name` on PATH, with `.exe` appended when it has no extension.
+///
+/// Only `.exe`, as std does — not PATHEXT. With PATHEXT a `python.bat` earlier
+/// on PATH would outrank `python.exe` and send the call through cmd.exe, where
+/// the arguments (a repo path, a slug) meet BatBadBut's quoting rules. `npm`
+/// is already named `npm.cmd` explicitly; see `default_npm_bin`.
+///
+/// Relative entries are skipped: they resolve against whatever the cwd is,
+/// which is the same planting surface by another door.
+fn search_path_for(name: &str, path_var: Option<&std::ffi::OsStr>) -> Option<PathBuf> {
+    let file_name = exe_file_name(name);
+    std::env::split_paths(path_var?)
+        .filter(|dir| dir.is_absolute())
+        .map(|dir| dir.join(&file_name))
+        .find(|candidate| candidate.is_file())
+}
+
+fn exe_file_name(name: &str) -> String {
+    if name.contains('.') {
+        name.to_string()
+    } else {
+        format!("{name}.exe")
     }
 }
 
@@ -676,6 +756,119 @@ mod interpreter_resolution_tests {
     fn the_public_helpers_return_a_usable_name() {
         assert!(!default_python_bin().is_empty());
         assert!(!default_npm_bin().is_empty());
+    }
+}
+
+#[cfg(test)]
+mod program_search_tests {
+    use super::{resolve_program_with, search_path_for};
+    use std::ffi::OsString;
+    use std::path::{Path, PathBuf};
+
+    fn path_var(dirs: &[&Path]) -> OsString {
+        std::env::join_paths(dirs).unwrap()
+    }
+
+    fn touch(dir: &Path, name: &str) -> PathBuf {
+        let file = dir.join(name);
+        std::fs::write(&file, "").unwrap();
+        file
+    }
+
+    /// The bug, reproduced on Windows 2026-10-24 with the released v0.14.0
+    /// exe: a `python.exe` beside the downloaded exe ran instead of the real
+    /// Python on PATH. Resolving ourselves means only PATH is consulted, so
+    /// the answer must come from PATH and be absolute.
+    #[test]
+    fn a_bare_name_on_windows_becomes_the_first_absolute_path_match() {
+        let temp = tempfile::tempdir().unwrap();
+        let (a, b) = (temp.path().join("a"), temp.path().join("b"));
+        std::fs::create_dir_all(&a).unwrap();
+        std::fs::create_dir_all(&b).unwrap();
+        let in_b = touch(&b, "python.exe");
+        let path = path_var(&[&a, &b]);
+        assert_eq!(
+            resolve_program_with("python", Some(path.clone()), true).unwrap(),
+            in_b.into_os_string()
+        );
+        let in_a = touch(&a, "python.exe");
+        assert_eq!(
+            resolve_program_with("python", Some(path), true).unwrap(),
+            in_a.into_os_string()
+        );
+    }
+
+    /// Not found must be an error, not the bare name: handing the bare name
+    /// back to `Command` is exactly what searches the exe's directory.
+    #[test]
+    fn a_name_missing_from_path_is_an_error_not_a_fallback() {
+        let temp = tempfile::tempdir().unwrap();
+        let error = resolve_program_with("node", Some(path_var(&[temp.path()])), true)
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("node.exe"), "{error}");
+        assert!(error.contains("PATH"), "{error}");
+        assert!(resolve_program_with("node", None, true).is_err());
+    }
+
+    /// `npm.cmd` already has an extension and is looked up as written. A
+    /// bare `npm` does not find `npm.cmd`: like std, only `.exe` is appended
+    /// — PATHEXT would let a `python.bat` earlier on PATH outrank
+    /// `python.exe`, and route the call through cmd.exe.
+    #[test]
+    fn only_exe_is_appended_and_an_explicit_extension_is_kept() {
+        let temp = tempfile::tempdir().unwrap();
+        let npm = touch(temp.path(), "npm.cmd");
+        touch(temp.path(), "python.bat");
+        let path = path_var(&[temp.path()]);
+        assert_eq!(search_path_for("npm.cmd", Some(&path)), Some(npm));
+        assert_eq!(search_path_for("npm", Some(&path)), None);
+        assert_eq!(search_path_for("python", Some(&path)), None);
+    }
+
+    /// A relative PATH entry resolves against whatever the cwd happens to
+    /// be — the same planting surface by another door. `src/lib.rs` exists
+    /// relative to the crate dir cargo runs tests in, so the relative entry
+    /// would match if it were consulted.
+    #[test]
+    fn relative_path_entries_are_skipped() {
+        let relative = OsString::from("src");
+        assert_eq!(search_path_for("lib.rs", Some(&relative)), None);
+        let absolute = std::env::current_dir().unwrap().join("src");
+        let absolute_var = path_var(&[&absolute]);
+        assert_eq!(
+            search_path_for("lib.rs", Some(&absolute_var)),
+            Some(absolute.join("lib.rs"))
+        );
+    }
+
+    #[test]
+    fn a_directory_with_the_name_is_not_a_program() {
+        let temp = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(temp.path().join("python.exe")).unwrap();
+        assert_eq!(
+            search_path_for("python", Some(&path_var(&[temp.path()]))),
+            None
+        );
+    }
+
+    /// Paths are used as given, and nothing changes off Windows: execvp
+    /// never searched the executable's directory.
+    #[test]
+    fn paths_and_non_windows_platforms_are_left_alone() {
+        let empty = Some(OsString::new());
+        assert_eq!(
+            resolve_program_with(r"C:\Python313\python.exe", empty.clone(), true).unwrap(),
+            OsString::from(r"C:\Python313\python.exe")
+        );
+        assert_eq!(
+            resolve_program_with("./venv/python", empty.clone(), true).unwrap(),
+            OsString::from("./venv/python")
+        );
+        assert_eq!(
+            resolve_program_with("python3", empty, false).unwrap(),
+            OsString::from("python3")
+        );
     }
 }
 
