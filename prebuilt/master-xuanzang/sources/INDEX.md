@@ -8,6 +8,8 @@
 |---|---|---|---|---|
 | `chengweishi-excerpts.md` | 《成唯识论》 | T31n1585 | [44](https://fojin.app/texts/44) | 八识、三性三无性、转识成智、唯识观行四重 |
 | `xinjing-excerpts.md` | 《般若波罗蜜多心经》 | T08n0251 | [9](https://fojin.app/texts/9) | 色空不二、五蕴皆空、心无挂碍 |
+| `jieshenmi-excerpts.md` | 《解深密经》 | T16n0676 | [69](https://fojin.app/texts/69) | 三时教 |
+| `yuqie-excerpts.md` | 《瑜伽师地论》 | T30n1579 | [43](https://fojin.app/texts/43) | 菩萨修正四依、依智不依识 |
 
 ## 引用规范
 
