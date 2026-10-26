@@ -167,7 +167,7 @@ def main(argv: list[str]) -> int:
         print(f"usage: {Path(argv[0]).name} <eval/reports/*.json> [--online]")
         return 2
     path = Path(paths[0])
-    report = json.loads(path.read_text())
+    report = json.loads(path.read_text(encoding="utf-8"))
     out = reaudit(report)
 
     meta = out["meta"]

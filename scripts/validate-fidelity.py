@@ -251,7 +251,7 @@ def main():
         all_errors.extend(errors)
         if not errors:
             fidelity_path = master_dir / "tests" / "fidelity.jsonl"
-            count = len(fidelity_path.read_text().strip().splitlines()) if fidelity_path.exists() else 0
+            count = len(fidelity_path.read_text(encoding="utf-8").strip().splitlines()) if fidelity_path.exists() else 0
             print(f"  {master_dir.name}: {count} tests OK")
 
     if all_errors:

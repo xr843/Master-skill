@@ -34,7 +34,7 @@ def load_fixtures() -> dict[str, list[dict]]:
 
 
 def load_adjudications() -> list[dict]:
-    return [json.loads(p.read_text()) for p in sorted(REPORTS.glob("adjudication-*.json"))]
+    return [json.loads(p.read_text(encoding="utf-8")) for p in sorted(REPORTS.glob("adjudication-*.json"))]
 
 
 def _permitted(adjudications: list[dict]) -> set[tuple[str, int, str]]:
