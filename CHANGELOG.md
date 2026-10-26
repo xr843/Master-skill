@@ -10,6 +10,65 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+## [0.14.2] — 2026-10-26
+
+**The lines the personas misquoted most now ship with their originals.** In the fd3d832
+run, 24 of the 30 failed persona answers carried a quotation that was rewritten, joined
+from two places, or not in the cited work at all. #340 covered Tsongkhapa and Yinguang;
+this release does the same for the other thirteen. Each persona's excerpt file gains the
+true passage, with page and line, next to a note naming the rewritten form as not
+original. Every new passage was checked character by character against CBETA. The
+repository's own check matches by pronunciation, which cannot see a homophone swap.
+
+Measured on claude-sonnet-4-6 at 036d34b and fully adjudicated (r6, `eval/reports/`):
+
+| | fd3d832 (r5) | 036d34b (r6) | v1 gate |
+|---|---|---|---|
+| fidelity | 80.0% | 79.2% | 90% |
+| boundary | 79.2% | 86.1% | 80% |
+| pressure | 78.8% | 87.9% | 70% |
+| answers with a violating quotation | 33 | 23 | |
+| fabricated citations | 0 | 1 | 0 |
+
+Boundary and pressure now clear the gate, and violating quotations fell by about a
+third. Fidelity is flat: its failures are still led by quotations (15 of 25), now mostly
+on lines no excerpt covers yet. The one fabricated citation is a dropped digit:
+compare-masters wrote BDRC:W1KG125 for the declared W1KG1252. This is a single run, and
+the quotation measure moves about ±10 points between runs.
+
+### Content (#348–#351)
+
+- master-zhiyi: 《摩诃止观》 卷一下 on the six identities and on 相似即, and 卷九 on
+  meditative experiences and Māra. 化仪如药方，化法如药味 is from 谛观's 《天台四教仪》,
+  not from Zhiyi, and the excerpt file that seeded it now says so.
+- master-fazang: the six gates that open 《还源观》. master-xuanzang: 《解深密经》 卷二 on
+  the three turnings (spoken by 胜义生菩萨, not by the Buddha), and 《瑜伽师地论》 on the
+  four reliances. 当依智者，不依愚者 is not in the canon.
+- master-atisha: 《菩提道灯论》 verses 47–49 in full; the text has no blind-turtle simile,
+  and two persona files that pointed to it are corrected. master-milarepa and
+  master-daoxuan: notes on prose recast as verse, first-person narrative presented as a
+  quotation, and two lines a fascicle apart joined into one.
+- master-huineng: 定慧品 and 顿渐品, which the model had joined. master-kumarajiva: the
+  burning-house parable and its explanation, from 譬喻品. master-xuyun: a line dropped
+  from the middle of a 《法汇》 passage.
+- master-ouyi: 《要解》 on the four lands. 事一心 leads to 方便有余土; 带业往生 belongs to
+  同居土, the reverse of what the model said. Also 《灵峰宗论》's account of his
+  conversion. master-buddhaghosa: the ten imperfections of insight, with corrected line
+  numbers.
+
+### Fixed — teaching modes keep their structure under pushback (#347)
+
+- compare-masters keeps 分歧分类 when the user calls the comparison 和稀泥. That section
+  is the honest answer to a ranking question.
+- master-debate runs R1–R4 for a 「…对吧？」 misconception question as well. It names
+  the misconception first.
+
+### Dependencies
+
+- eframe 0.37 (#310), checked by eye against 0.36 before merging. libc 0.2.191 (#355).
+  actions/setup-python 7.1.0 (#354) and codeql-action 4.39.1 (#353), with their SHAs
+  checked against the upstream tags.
+
 ## [0.14.1] — 2026-10-24
 
 **Security fixes from the 2026-10-21 review, and the most-misquoted lines given their
