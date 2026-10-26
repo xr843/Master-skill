@@ -289,13 +289,13 @@ def main() -> int:
 
     failed = False
     for path in found:
-        adjudication = json.loads(path.read_text())
+        adjudication = json.loads(path.read_text(encoding="utf-8"))
         report = ROOT / adjudication["summary"]["report"]
         if not report.exists():
             print(f"FAIL: {path.name} judges {report}, which is not in the repo")
             failed = True
             continue
-        problems = verify(adjudication, json.loads(report.read_text()))
+        problems = verify(adjudication, json.loads(report.read_text(encoding="utf-8")))
         cases = len(adjudication["cases"])
 
         # The summary states how many cases were ruled on; nothing was checking

@@ -135,7 +135,7 @@ def main(argv: list[str]) -> int:
         print(f"usage: {Path(argv[0]).name} <eval/reports/*.json>")
         return 2
     path = Path(argv[1])
-    out = regrade(json.loads(path.read_text()), load_fixtures())
+    out = regrade(json.loads(path.read_text(encoding="utf-8")), load_fixtures())
     meta = out["meta"]
     print(f"{path.name} — commit {meta.get('commit_short')}, model {meta.get('model')}")
     print(f"\n{'test_type':12} {'graded':>7} {'as graded':>11} {'re-graded':>11}")
