@@ -10,6 +10,19 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Fixed
+
+- `master-skill install --help` (and `--help` / `-h` after any command) prints the help
+  instead of looking up a skill named `--help`.
+
+### Docs
+
+- README / README_EN: the evaluation section now leads with every full
+  `claude-sonnet-4-6` run (r4–r6 and `ca577af`) against the v1.0 gate, with the DeepSeek
+  runs moved under their own heading. Removed the stale sentence saying the Anthropic
+  column held only the 2026-08-18 partial run, and noted that Daoxuan is not on
+  fojin.app yet.
+
 ## [0.14.2] — 2026-10-26
 
 **The lines the personas misquoted most now ship with their originals.** In the fd3d832

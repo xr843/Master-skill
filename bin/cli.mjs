@@ -1540,7 +1540,8 @@ if (CATALOG) {
   if (dryRun && knownOrFlag && !["install", "update"].includes(cmd)) {
     console.error("--dry-run is supported only for install/update; no action taken.");
     process.exitCode = 1;
-  } else if (!cmd || cmd === "--help" || cmd === "-h") {
+  } else if (!cmd || args.includes("--help") || args.includes("-h")) {
+    // Anywhere on the line: `install --help` must not look up a skill named --help.
     showHelp();
   } else if (cmd === "--version" || cmd === "-v") {
     console.log(pkgVersion());

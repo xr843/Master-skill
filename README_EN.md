@@ -58,7 +58,7 @@
 On the AI Q&A page, open the **"法师模式"** (Master Mode) dropdown in the bottom-left and pick one of the 15 pre-built masters across four traditions to start chatting.
 
 - No install, no signup
-- The web version offers **one-on-one conversation** with each of the 15 masters; the three teaching modes (`/compare-masters` side-by-side comparison, `/master-debate` multi-round dialectic, `/master-curriculum` study path) are currently available only after a terminal AgentSkill install — see [Developer Installation](#developer-installation)
+- The web version offers **one-on-one conversation** with each of 15 masters (the 16th, Daoxuan, is not on the web yet); the three teaching modes (`/compare-masters` side-by-side comparison, `/master-debate` multi-round dialectic, `/master-curriculum` study path) are currently available only after a terminal AgentSkill install — see [Developer Installation](#developer-installation)
 - Live citation retrieval backed by FoJin's 10K+ texts and 678K+ semantic embeddings
 - Answers cite sources in each master's declared format: mostly CBETA IDs for 汉传, Toh / BDRC numbers for 藏传, PTS / SuttaCentral references for 南传 (Theravāda and some Tibetan sources have no per-passage ID, and the citation contract says so)
 
@@ -180,7 +180,27 @@ The v1.0 track prioritizes framework stability over adding more masters. See [do
 
 ### Fidelity evaluation (current data)
 
-The 240 fixtures (`prebuilt/*/tests/fidelity.jsonl`; the runs below graded the earlier 211) run mechanical checks against real model answers: do the expected keywords and citations appear, and do the forbidden ones stay out. Every graded answer also goes through the offline citation audit. Read each number together with the model and the grading method that produced it:
+**v1.0 is not met yet.** The gate is judged on full runs on Anthropic `claude-sonnet-4-6`. In the latest one (r6, 2026-10-26), boundary and pressure clear their thresholds; fidelity is 79.2% against a 90% gate.
+
+The 240 fixtures (`prebuilt/*/tests/fidelity.jsonl`) run mechanical checks against real model answers: do the expected keywords and citations appear, and do the forbidden ones stay out. Every graded answer also goes through the offline citation audit. Every full run on `claude-sonnet-4-6`, all numbers after case-by-case adjudication:
+
+| Run | Fidelity (gate 90%) | Boundary (gate 80%) | Pressure (gate 70%) | Answers with a violating quotation | Fabricated citations |
+|---|---|---|---|---|---|
+| **r6** · 2026-10-26 · [`036d34b`](eval/reports/0.14.1-036d34b-anthropic-personas.json) | **95 / 120 = 79.2%** ✗ | 87 / 101 = 86.1% ✓ | 29 / 33 = 87.9% ✓ | 23 | 1 |
+| r5 · 2026-10-20 · [`fd3d832`](eval/reports/0.13.3-fd3d832-anthropic-personas.json) | 96 / 120 = 80.0% | 80 / 101 = 79.2% | 26 / 33 = 78.8% | 33 | 0 |
+| r4 · 2026-10-20 · [`c0f0f3b`](eval/reports/0.13.3-c0f0f3b-anthropic-personas.json) | 97 / 120 = 80.8% | 75 / 101 = 74.3% | 26 / 33 = 78.8% | 40 | 1 |
+| 2026-10-19 · [`ca577af`](eval/reports/0.12.18-ca577af-anthropic-personas.json) | 95 / 113 = 84.1% | 87 / 96 = 90.6% | 24 / 31 = 77.4% | not ruled | 0 |
+
+- **From r4 on, every direct quotation in every answer is ruled on**: a quotation cited to the wrong work, joined from two places without an ellipsis, found nowhere in the canon, or invented counts as a violation. The `ca577af` run did not rule on quotations, so its fidelity is higher and not comparable with the three rows above it.
+- **Fidelity is held back by quotations**: of r6's 25 fidelity failures, 15 carry a violating quotation, mostly on lines no excerpt yet holds the original of; 7 miss a required point and 4 are teaching modes missing a required section (some fail for more than one reason).
+- **Single runs**: the quotation measure moves about ±10 points between runs.
+- Each run's teaching-mode report and full adjudication are in [`eval/reports/`](eval/reports/) under the same commit. r6's one fabricated citation is BDRC:W1KG1252 written one digit short.
+
+**Quotation sample from the first Claude full run (`ca577af`)**: of 100 quotations of 8+ characters cited to a CBETA work, 64 were real quotations; 53% of those are verbatim in the cited fascicle (95% CI 41–65%), another 19% differ by a character or two or splice real lines, and 28% are in another work, paraphrased, or found nowhere in the canon — see [`quote-sample-ca577af-anthropic.json`](eval/reports/quote-sample-ca577af-anthropic.json). That run also found two defects DeepSeek had not shown, both fixed: on Claude the crisis referral named hotline numbers the model supplied (#314), and personas dropped every citation when asked not to cite (#315).
+
+#### Earlier data on DeepSeek (does not count toward the v1.0 gate)
+
+These runs used DeepSeek `deepseek-v4-flash`, most of them on the earlier 211 fixtures. Two models are two instruments and are never pooled. Read each number together with the model and the grading method that produced it:
 
 | | Value | Basis |
 |---|---|---|
@@ -192,9 +212,7 @@ The 240 fixtures (`prebuilt/*/tests/fidelity.jsonl`; the runs below graded the e
 | Teaching modes with file tools | **455 citations, 0 fabricated**; 40 / 41 | 2026-09-25, all four teaching modes, 44 fixtures, DeepSeek `deepseek-v4-flash`, ¥2.61. The teaching modes could read their sibling masters' files as their instructions say for the first time (the eval used to give no tools, and six replies that wrote the tool call out as text had graded PASS); leaked tool calls fell to 0, and every fixture read files. A different instrument from the row above, so pass rates are not compared; 2 truncated and 1 at the tool-round cap are outside the 41. Report: [`0.12.15-df76fd2-deepseek-metaskills-tools.json`](eval/reports/0.12.15-df76fd2-deepseek-metaskills-tools.json) |
 | Debate rounds in separate subagents | **8 / 8**; 86 citations, 0 fabricated | 2026-09-26, `master-debate`, 8 fixtures, ¥0.46. The protocol writes each round in a fresh context where a side sees only a summary of the other; the eval used to write all four rounds in one. Every fixture now dispatched 4–5 subagents, none failed. Report: [`0.12.15-ab26c9a-deepseek-debate-subagents.json`](eval/reports/0.12.15-ab26c9a-deepseek-debate-subagents.json) |
 
-**On 2026-10-19 all 240 fixtures were run on Anthropic `claude-sonnet-4-6` for the first time** (commit `ca577af`, about $11): all graded, none truncated, **0 fabricated citations**. After ruling on all 55 failures and review cases: fidelity 95 / 113 = 84.1% · boundary 87 / 96 = 90.6% · pressure 24 / 31 = 77.4% (reports [`0.12.18-ca577af-anthropic-personas.json`](eval/reports/0.12.18-ca577af-anthropic-personas.json), [`…-metaskills-tools.json`](eval/reports/0.12.18-ca577af-anthropic-metaskills-tools.json) and their adjudications). Fidelity is below the v1 gate's 90% and quotation checks were not ruled on, so **v1.0 is not met**. The run also found two defects DeepSeek had not shown, both fixed: on Claude the crisis referral named hotline numbers the model supplied (#314), and personas dropped every citation when asked not to cite (#315). **Direct-quotation sample**: of 100 quotations of 8+ characters cited to a CBETA work, 64 were real quotations; 53% of those are verbatim in the cited fascicle (95% CI 41–65%), another 19% differ by a character or two or splice real lines, and 28% are in another work, paraphrased, or found nowhere in the canon — see [`quote-sample-ca577af-anthropic.json`](eval/reports/quote-sample-ca577af-anthropic.json).
-
-**This column cannot advance the v1.0 gate.** The gate is defined on the Anthropic (`claude-sonnet-4-6`) column; two models are two instruments and are never pooled. That column still holds only one partial run, from 2026-08-18 (84 / 211, stopped when the account ran out of credit), whose "zero fabricated citations" was retracted on 2026-08-31 — the audit had not actually run on a single case.
+An earlier partial run on Anthropic, from 2026-08-18 (84 / 211, stopped when the account ran out of credit), reported "zero fabricated citations"; that was retracted on 2026-08-31 because the audit had not actually run on a single case — see [BASELINE.md](eval/reports/BASELINE.md).
 
 **The table above belongs to the tree at `06b8142`.** Persona content and the fixtures have changed since (see the 0.12.x entries in the CHANGELOG). **On 2026-09-26 all 15 personas were re-run on the current tree** (167 fixtures, DeepSeek `deepseek-v4-flash`, ¥1.51, report [`0.12.15-0e7d97e-deepseek-personas.json`](eval/reports/0.12.15-0e7d97e-deepseek-personas.json)): 131 / 166 = 78.9% as graded, 1 truncated; **144 / 166 = 86.7% after case-by-case adjudication** (doctrine 92.8% · boundary 87.0% · citation-under-pressure 69.0%; 14 failures overturned, 1 PASS turned into a FAIL, all 76 cases ruled — see [`ADJUDICATION.md`](eval/reports/ADJUDICATION.md)); **681 citations checked, 0 fabricated**. Same-ruler comparison: the current grader on `06b8142`'s stored answers gives 132 / 160 = 82.5% as graded. Two answers were unexecuted tool calls — the persona prompts say to retrieve live from FoJin when offline sources fall short, and persona suites run with no tools.
 

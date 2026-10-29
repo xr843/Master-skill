@@ -158,6 +158,15 @@ test("--version prints the package.json version", () => {
   assert.equal(stdout.trim(), pkg.version);
 });
 
+test("--help after a command shows help instead of being read as a skill name", () => {
+  for (const argv of [["install", "--help"], ["uninstall", "-h"], ["recommend", "--help"]]) {
+    const { stdout, code } = run(argv);
+    assert.equal(code, 0, argv.join(" "));
+    assert.match(stdout, /master-skill install <name\.\.\.>/);
+    assert.doesNotMatch(stdout, /not found in skill catalog/);
+  }
+});
+
 test("help shows the current version, not a hardcoded one", () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(REPO, "package.json"), "utf8"));
   const { stdout, code } = run(["--help"]);
