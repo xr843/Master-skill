@@ -41,26 +41,24 @@ verified_at: 2026-04-06
 
 用户指定 2-3 位祖师 → 直接使用。
 
-### 优先级 2 — 关键词智能匹配
+### 优先级 2 — 经典论题模板
 
-从用户问题提取佛学关键词，与各祖师 `meta.json` 的 `search_scope.keywords` 匹配：
-- 强匹配（关键词直接出现在 keywords 中）：权重 3
-- 相关匹配（属于该传承核心领域）：权重 2
-- 弱匹配（部分字面重叠）：权重 1
+问题命中下文「经典论题模板」中的某个论题（禅净、性相、空有、顿渐……）→ 用该模板的**推荐配对**，括号里的替换只在其所写的条件成立时才用。
 
-取 top 2-3 位，优先选不同宗派以呈现多元视角。
+### 优先级 3 — 主题映射表
 
-### 优先级 3 — 主题映射兜底
+问题含下表某行的任一关键词 → **直接用该行的配对**，不增不减、不换人。同一宗派有两位祖师时（如中观的龙树与罗什），以本表为准，不按个人判断替换。命中多行时，取命中关键词最多的一行。
 
 | 问题主题 | 配对祖师 | 说明 |
 |---------|---------|------|
 | 念佛 / 往生 / 净土 | master-yinguang + master-ouyi | 净土专精 + 跨宗派 |
 | 参禅 / 话头 / 开悟 | master-huineng + master-xuyun | 古今禅宗对比 |
-| 唯识 / 空有 / 性相 / 法相 | master-xuanzang + master-nagarjuna | 唯识 vs 中观 |
+| 唯识 / 空有 / 法相 | master-xuanzang + master-nagarjuna | 唯识 vs 中观 |
+| 性相 / 性宗 / 五性各别 / 一阐提 | master-xuanzang + master-fazang | 法相唯识 vs 华严性宗 |
 | 判教 / 圆融 / 止观 | master-zhiyi + master-fazang | 天台 vs 华严 |
 | 修行次第 / 综合法门 | master-ouyi + master-yinguang | 综合 vs 专修 |
 | 戒律 / 持戒 / 律仪 / 行持 | master-daoxuan + master-buddhaghosa + master-atisha | 汉传南山四分律 vs 上座部律藏注释 vs 印藏菩萨律 |
-| 空性 / 中观 / 缘起性空 / 应成 / 毕竟空 | master-nagarjuna + master-tsongkhapa + master-huineng | 印度中观源头 · 应成中观精确分判 · 禅宗直指 |
+| 空性 / 中观 / 缘起性空 / 性空 / 应成 / 毕竟空 | master-nagarjuna + master-tsongkhapa + master-huineng | 印度中观源头 · 应成中观精确分判 · 禅宗直指 |
 | 般若 / 金刚经 | master-kumarajiva + master-huineng | 《金刚经》译师 vs 闻《金刚经》开悟的六祖 |
 | 法华 / 一佛乘 | master-kumarajiva + master-zhiyi | 《法华经》译师 vs 依《法华》立教的天台 |
 | 道次第 / 三士道 / 下士道 / 中士道 / 上士道 / lam rim | master-atisha + master-tsongkhapa | 印藏桥梁源头 vs 格鲁派系统化 |
@@ -76,6 +74,15 @@ verified_at: 2026-04-06
 | 四大传统 / 四方对照 | master-nagarjuna + master-huineng + master-tsongkhapa + master-buddhaghosa | 印度中观 · 禅 · 应成中观 · 上座部论藏，四方系统对照 |
 | 跨传统禅修 / 大手印 | master-huineng + master-milarepa + master-ajahn-chah | 禅 · 大手印 · 森林禅，跨传统禅修法 |
 | 其他 | master-kumarajiva + master-yinguang | 中观 + 净土两大传统 |
+
+### 优先级 4 — 关键词匹配兜底
+
+上表没有一行命中时，从用户问题提取佛学关键词，与各祖师 `meta.json` 的 `search_scope.keywords` 匹配：
+- 强匹配（关键词直接出现在 keywords 中）：权重 3
+- 相关匹配（属于该传承核心领域）：权重 2
+- 弱匹配（部分字面重叠）：权重 1
+
+取 top 2-3 位，优先选不同宗派以呈现多元视角。仍无任何匹配时，用上表末行「其他」。
 
 ## 工作流程
 
@@ -246,7 +253,7 @@ verified_at: 2026-04-06
 
 ### 性相之辩 —— 法相唯识 vs 性宗
 
-- **推荐配对**：`master-xuanzang` + `master-fazang`（或 `master-xuanzang` + `master-huineng`）
+- **推荐配对**：`master-xuanzang` + `master-fazang`（仅当用户问的就是禅宗的佛性见时，才改用 `master-xuanzang` + `master-huineng`）
 - **真实争点**：
   1. 是否安立阿赖耶识为万法所依？
   2. 五种姓说（一分无性）与一切众生皆可成佛是否可融？
@@ -256,7 +263,7 @@ verified_at: 2026-04-06
 
 ### 空有之争 —— 中观 vs 唯识
 
-- **推荐配对**：`master-kumarajiva` + `master-xuanzang`
+- **推荐配对**：`master-nagarjuna` + `master-xuanzang`（中观一方由《中论》作者龙树出面，与主题映射表一致；用户点名三论宗、罗什或《大乘大义章》时，才改用 `master-kumarajiva` + `master-xuanzang`）
 - **真实争点**：
   1. "空"是遮诠（否定戏论）还是表诠（描述实相）？
   2. 依他起性是"有"还是"空"？

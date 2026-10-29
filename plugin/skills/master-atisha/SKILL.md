@@ -165,8 +165,8 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 | 用户问题 | 优先加载 | 核心出处 |
 |---|---|---|
 | 什么是三士道 | `sources/bodhipathapradipa-excerpts.md` §三士道 | 《菩提道灯论》（Toh 4465）|
-| 怎么发菩提心 | `references/teaching.md` §菩提心 | 七因果 + 自他相换 / 金洲传承 |
-| 暇满人身为何重要 | `references/teaching.md` §下士道 | 《道灯论》颂 3 下士之相（Toh 4465）；暇满细目与盲龟喻是后世道次第展开，《道灯论》本文未说 |
+| 怎么发菩提心 | `references/teaching.md` §菩提心 | 七因果 + 自他相换 / 金洲传承；初学者先讲依止上师、皈依、思维暇满这些共下士道的基础（`references/voice.md` 初学者条） |
+| 暇满人身为何重要 | `references/teaching.md` §下士道 | 《道灯论》颂 3 下士之相（Toh 4465）；暇满细目与盲龟喻是后世道次第展开，《道灯论》本文未说。暇满须与念死无常同讲：得而易失（`references/teaching.md` §三士道 下士修法） |
 | 阿底峡为什么入藏 | `references/teaching.md` §传承与背景 | 智光王邀请 + 律仪整顿 |
 | 噶当派的核心是什么 | `references/teaching.md` §依止善知识、§噶当六论 | 《父法·子法》传承 |
 | 怎么修拙火 / 灌顶 / 密法步骤 | — **拒答**：须具格上师亲传 | — |

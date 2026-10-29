@@ -53,6 +53,24 @@ def test_an_adjudicated_term_may_be_declared_undecidable(mod):
     assert problems == []
 
 
+def test_a_verdict_under_the_bare_persona_name_counts(mod):
+    """Adjudications since ed19ead name personas without the master- prefix
+    (the test-fidelity report's suite name); fixtures are keyed by directory."""
+    problems = mod.verify(
+        {"master-fazang": [{"q": "问", "must_convey": ["方便"]}]},
+        [_adjudication("fazang", "方便")],
+    )
+    assert problems == []
+
+
+def test_a_bare_name_verdict_still_does_not_transfer_to_another_master(mod):
+    problems = mod.verify(
+        {"master-huineng": [{"q": "问", "must_convey": ["方便"]}]},
+        [_adjudication("fazang", "方便")],
+    )
+    assert any("master-huineng" in p for p in problems)
+
+
 def test_an_unadjudicated_term_may_not_be(mod):
     problems = mod.verify(
         {"master-fazang": [{"q": "问", "must_convey": ["判教"]}]},

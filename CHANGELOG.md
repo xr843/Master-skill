@@ -10,7 +10,42 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
-### Fixed
+### Fixed — teaching modes pick the masters their own tables name
+
+In the r6 run (036d34b), 4 of the 25 fidelity failures were teaching modes choosing
+different masters than the fixture asked for, 3 of them Nāgārjuna in place of
+Kumārajīva. The skill's own rules disagreed. `routing.json` and the compare-masters topic
+table pair Nāgārjuna with Xuanzang for 空有; the 空有之争 template and two fixtures still
+named Kumārajīva. A fuzzy keyword-scoring step also ran before the table and could
+override it.
+
+- compare-masters chooses in this order: masters the user names, then the classic-debate
+  template, then the topic table, then keyword scoring. A table row is used as written.
+- 空有之争 pairs Nāgārjuna with Xuanzang, as `routing.json` already recorded. Kumārajīva is
+  used when the user names 三论宗, 罗什 or 《大乘大义章》. Fixtures compare-masters #0 and
+  #5 updated to match. Both predate Nāgārjuna's addition.
+- 性相之辩 (法相唯识 vs 性宗) gets its own routing row, Xuanzang + Fazang. Before, it shared
+  the 唯识 vs 中观 row. Huineng is used only when the question is about Chan's view of
+  buddha-nature.
+- The emptiness row also matches 性空, so 「缘起和性空各宗怎么看」 reaches it (compare-masters
+  #0 wrote the two words apart and missed 缘起性空).
+- master-debate's 空有 row also matches 三论, and the skill now says to use a row as
+  written. It keeps Kumārajīva because Xuanzang's `cross_critique` targets him.
+
+### Fixed — personas cover points they already carry
+
+Seven r6 fidelity failures missed a required point that the persona's own references
+already hold. Quick-reference rows now point to them: Atiśa (暇满 with 念死无常; 皈依 and
+暇满 before bodhicitta practice), Xuyun (数息观 for beginners), Mahāsi (vipassanā-jhāna vs
+the four jhānas; ātāpī and continuity in MN 10), Ouyi and Yinguang (when compared, each
+first states what is distinctive to him: 六信 / 因果 and 敦伦尽分). Whether this helps is
+untested until the next run.
+
+- `validate-fixture-terms.py` matched adjudications by directory name. Persona
+  adjudications since ed19ead use the bare name, so no Claude-run `instrument` verdict
+  could back a `must_convey` term. Both forms now match. With that fixed, 热忱 in mahasi #5
+  moves to `must_convey`. The r6 adjudication ruled it an instrument artifact: the answer
+  quoted the Chinese translation's 「热心」. 持续 stays graded.
 
 - `master-skill install --help` (and `--help` / `-h` after any command) prints the help
   instead of looking up a skill named `--help`.

@@ -62,13 +62,15 @@ verified_at: 2026-06-09
 | 议题关键词 | Master A | Master B |
 |-----------|----------|----------|
 | 禅净 / 念佛 vs 参禅 | huineng | yinguang |
-| 空有 / 中观 vs 唯识 | kumarajiva | xuanzang |
+| 空有 / 三论 vs 唯识 / 中观 vs 唯识 | kumarajiva | xuanzang |
 | 顿渐 / 顿悟 vs 次第 | huineng | zhiyi |
 | 应成 vs 顿悟 / 中观分判 vs 直指 | tsongkhapa | huineng |
 | 戒律行持 vs 直观内观 | ajahn-chah | mahasi-sayadaw |
 | 三士道 vs 自性见 | atisha | huineng |
 | 教宗天台 vs 行归净土 | ouyi | yinguang |
 | 教观纲宗 vs 应成中观 | ouyi | tsongkhapa |
+
+命中本表某行 → 直接用该行配对，不换人。空有一行用罗什而不用龙树：玄奘的 `cross_critique` 只针对罗什，换成龙树会缺对辩弹药。
 
 ### 优先级 3 — 关键词匹配兜底
 

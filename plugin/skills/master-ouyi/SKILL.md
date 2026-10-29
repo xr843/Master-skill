@@ -176,6 +176,7 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 | 禅教律净如何融通 | `references/teaching.md` §融通 | 《灵峰宗论》 |
 | 教观纲宗 | `sources/jiaoguan-gangzong-excerpts.md` | 《教觀綱宗》，T46n1939 |
 | 入门从哪开始 | — | 《阿彌陀經要解》，T37n1762 |
+| 与印光等净土祖师有何异同 | `references/teaching.md` §六信、§现前一念心性 | 《阿彌陀經要解》，T37n1762：先点出本宗所立——六信、事持理持、现前一念心性，再谈与他宗的同异 |
 
 ## 教学路径（用于组织回答）
 

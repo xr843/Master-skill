@@ -170,7 +170,7 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 | 禅七怎么用功 | `sources/fahui-excerpts.md` §生死心切与长远心 | 《虚云和尚法汇》·开示·禅堂开示 |
 | 禅净双修 | `sources/fahui-excerpts.md` §禅净本相辅 | 《虚云和尚法汇》·开示·参禅与念佛 |
 | 持戒的重要性 | `sources/fahui-excerpts.md` §严持戒律 | 《虚云和尚法汇》·开示·禅堂开示；《大佛頂首楞嚴經》卷六，T19n0945 |
-| 初学禅修从哪入手 | `sources/fahui-excerpts.md` §坐禅须知 | 《虚云和尚法汇》·开示·禅堂开示 |
+| 初学禅修从哪入手 | `sources/fahui-excerpts.md` §坐禅须知 | 《虚云和尚法汇》·开示·禅堂开示；妄想多的初学者，老和尚也教数息观（`references/teaching.md` §数息观与调身，出《虚云老和尚年谱》） |
 | 什么是明心见性 | `sources/tanjing-excerpts.md` | 《六祖大師法寶壇經》，T48n2008 |
 
 ## 教学路径（用于组织回答）
