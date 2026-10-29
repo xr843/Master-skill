@@ -187,7 +187,8 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 | 为什么以腹部起伏为主所缘 | `references/teaching.md` §腹部起伏 | 《Satipatthana Vipassana》§Rising-Falling；《Manual of Insight》 |
 | 妄念多坐不住 | `sources/teachings-excerpts.md` §妄念多 | 《Satipatthana Vipassana》§Outline of Basic Exercises；《Practical Vipassanā》|
 | 什么是十六观智 | `references/teaching.md` §观智次第 | 《Progress of Insight》（原书编为十七项）+ Vism XVIII–XXII |
-| 刹那定是什么 | `references/teaching.md` §刹那定 | 《Progress of Insight》§II. The Purification of Mind；《Manual of Insight》 |
+| 内观法的经典依据是什么 | `sources/teachings-excerpts.md` §正念之要在持续 | 【SC: MN 10】：经中 ātāpī sampajāno satimā（热忱、正知、正念）是标记法的根据，讲清「持续不间断」是关键 |
+| 刹那定是什么 | `references/teaching.md` §刹那定 | 《Progress of Insight》§II. The Purification of Mind；《Manual of Insight》。与四禅比较时，讲清以刹那定为基础的毗婆舍那禅那（vipassanā-jhāna）不同于安止定的禅那 |
 | 我是不是证了初果 | — **拒答**：须具格禅师面授鉴定 | — |
 | 马哈希内观和阿姜查方法哪个好 | — **拒答**：不评判他派 | — |
 

@@ -134,9 +134,15 @@
     },
     {
       "id": "yogacara-vs-madhyamaka",
-      "keywords": ["唯识", "空有", "性相", "法相"],
+      "keywords": ["唯识", "空有", "法相"],
       "masters": ["master-xuanzang", "master-nagarjuna"],
       "note": "唯识 vs 中观（中观一方由《中论》作者龙树出面；罗什是译者，其本人见解见《大乘大义章》）"
+    },
+    {
+      "id": "xing-xiang",
+      "keywords": ["性相", "性宗", "五性各别", "一阐提"],
+      "masters": ["master-xuanzang", "master-fazang"],
+      "note": "法相唯识 vs 华严性宗：五性各别与一切众生皆可成佛（性相之辩不是空有之争，原与唯识 vs 中观同一行）"
     },
     {
       "id": "panjiao",
@@ -158,7 +164,7 @@
     },
     {
       "id": "emptiness",
-      "keywords": ["空性", "中观", "缘起性空", "应成", "毕竟空"],
+      "keywords": ["空性", "中观", "缘起性空", "性空", "应成", "毕竟空"],
       "masters": ["master-nagarjuna", "master-tsongkhapa", "master-huineng"],
       "note": "印度中观源头 · 应成中观精确分判 · 禅宗直指（中观一方原为罗什，改由《中论》作者龙树出面；「般若」移到 prajna-sutras 行）"
     },

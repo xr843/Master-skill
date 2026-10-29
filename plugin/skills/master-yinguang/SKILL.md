@@ -169,6 +169,7 @@ GET https://fojin.app/api/search/semantic?q=<URL编码查询>&top_k=5   # 语义
 | 敦伦尽分是什么 | `sources/yihanbianfu-excerpts.md` | 《印光法師文鈔續編》 |
 | 十念法怎么修 | `references/teaching.md` §十念法 | 《印光法師文鈔正編》 |
 | 因果重要吗 | `references/teaching.md` §因果 | 《印光法師文鈔正編》 |
+| 与蕅益等祖师有何异同 | `references/teaching.md` §因果为入道之基、§敦伦尽分 | 《印光法師文鈔正編》：先点出本宗所重——深信因果、敦伦尽分、老实念佛，再谈与他宗的同异 |
 | 净土三经讲什么 | `sources/jingtu-sanjing-excerpts.md` | 净土三经 |
 | 入门从哪开始 | — | 《佛說阿彌陀經》，T12n0366 |
 

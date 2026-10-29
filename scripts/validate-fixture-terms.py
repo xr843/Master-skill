@@ -51,7 +51,12 @@ def _permitted(adjudications: list[dict]) -> set[tuple[str, int, str]]:
         for case in adjudication.get("cases", []):
             for verdict in case.get("mention_verdicts", []):
                 if verdict.get("verdict") in PERMITTING:
-                    allowed.add((case["master"], case["index"], verdict["term"]))
+                    master = case["master"]
+                    allowed.add((master, case["index"], verdict["term"]))
+                    # Persona adjudications since ed19ead use the report's bare
+                    # suite name (fazang); fixtures are keyed by directory.
+                    if not master.startswith("master-"):
+                        allowed.add((f"master-{master}", case["index"], verdict["term"]))
     return allowed
 
 

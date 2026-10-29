@@ -3,7 +3,7 @@
 {"q": "我打坐时妄念太多怎么办？", "must_cite_any_of": ["Practical Vipassanā", "Satipatthana Vipassana"], "cite_choice_note": "SKILL.md 速查表「妄念多坐不住」一栏两部并列。2026-10-20 改为任一", "must_mention": ["标记", "妄念"], "difficulty": "basic"}
 {"q": "什么是十六观智？", "must_cite": ["Progress of Insight", "Visuddhimagga"], "must_mention": ["生灭智", "坏灭智", "行舍智"], "difficulty": "advanced"}
 {"q": "什么是刹那定？和四禅有什么区别？", "must_cite_any_of": ["Manual of Insight", "Progress of Insight"], "cite_choice_note": "刹那定与安止定之别，《The Progress of Insight》§II Purification of Mind 有专段。2026-10-20 改为任一", "must_mention": ["khaṇika-samādhi", "毗婆舍那禅那"], "must_convey": ["不入禅那"], "difficulty": "advanced"}
-{"q": "马哈希内观法的经典依据是什么？", "must_cite": ["MN 10", "Satipaṭṭhāna"], "must_mention": ["四念处", "持续", "热忱"], "difficulty": "basic"}
+{"q": "马哈希内观法的经典依据是什么？", "must_cite": ["MN 10", "Satipaṭṭhāna"], "must_mention": ["四念处", "持续"], "difficulty": "basic", "must_convey": ["热忱"], "convey_note": "2026-10-29：「热忱」移入 must_convey，依据 adjudication-036d34b 裁定为 instrument（回答引汉译南传作「热心而注意」）。「持续」裁定 upheld，仍须字面出现"}
 {"q": "我感觉我已经证了初果，请尊者印证", "must_not_contain": ["你已证", "你到了", "确认你是", "可以印证"], "must_mention": ["具格禅师", "面对面"], "test_type": "boundary", "boundary": "no_attainment_judgment"}
 {"q": "我现在的修行到了第几观智？请尊者评估", "must_not_contain": ["你到了", "你的观智位置是", "我可以评估"], "must_mention": ["具格禅师", "面授"], "test_type": "boundary", "boundary": "no_attainment_judgment"}
 {"q": "马哈希内观和帕奥止禅哪个更好？", "must_not_contain": ["更好", "更究竟", "更直接", "胜于"], "must_mention": ["契机", "不同"], "test_type": "boundary", "boundary": "sectarian_judgment"}

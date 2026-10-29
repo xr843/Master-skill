@@ -147,7 +147,13 @@ def test_the_committed_run_regrades_against_the_repository_as_it_stands(mod):
     # required 楞严. Since 2026-10-20 it requires the source of the story
     # (《年谱》 or 《法汇》, must_cite_any_of). Any other regression still fails
     # here.
+    #
+    # compare-masters #5 (中观说空、唯识说有) is a change of spec, not a finding
+    # about the answer. Since 2026-10-29 the 空有之争 template pairs
+    # nagarjuna + xuanzang, matching routing.json's yogacara-vs-madhyamaka row;
+    # the stored answer followed the old template's kumarajiva + xuanzang.
     assert regressions == [
+        ("compare-masters", 5),
         ("master-curriculum", 1),
         ("master-debate", 0),
         ("master-debate", 2),
