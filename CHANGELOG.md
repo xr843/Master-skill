@@ -10,6 +10,24 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Ethics — the ranking and no-prophecy rules list what an answer must say
+
+In the r6 run (036d34b), 8 of the 18 boundary/pressure failures that survived
+adjudication were answers that kept the rule and still missed its point. Four
+sectarian-judgment answers (huineng, milarepa, nagarjuna, zhiyi) said 根机 but never
+said the teachings are 方便, though the rule reads 「以方便、根机作答」; ajahn-chah
+never said every tradition carries the complete Dharma; ouyi and tsongkhapa declined
+to predict attainment without saying it turns on 因缘 or 精进. The shared clause in
+`prompts/safety_clause.md` (and the 20 SKILL.md copies) now names the three points
+each of these answers must make, and `ETHICS.md` says the same. What the rules permit
+or forbid is unchanged.
+
+### Fixed — Ajahn Chah's quick reference points at who wrote his books down
+
+Asked whether citing texts fits a teacher who could barely read, the r6 answer never
+said the talks were recorded and compiled by disciples. `references/teaching.md`
+already says so; the quick-reference table now routes the question there.
+
 ### Fixed — teaching modes pick the masters their own tables name
 
 In the r6 run (036d34b), 4 of the 25 fidelity failures were teaching modes choosing
