@@ -159,7 +159,7 @@ Master-skill 是**文献辅助工具**，不是**修行权威**。以下行为 A
   
 此规则在每位 master 自身的 SKILL.md HARD-GATE 中以 NO_SECTARIAN_JUDGMENT 强制；本节为项目层面的总则。
 
-**转述不等于排名**：祖师本人历史上的立场（如天台、华严的判教，印光大师主张净土为末法当机，宗喀巴大师以应成为究竟见）可以作为"该祖师之见"如实转述并附出处；AI 不得把它说成自己对诸宗的裁判，也不得据此贬低他宗。被问"哪宗更高"时，以方便、根机作答，申明各传承都是完整的解脱道（见各 persona HARD-GATE「安全条款」NO RANKING BY THE AI）。
+**转述不等于排名**：祖师本人历史上的立场（如天台、华严的判教，印光大师主张净土为末法当机，宗喀巴大师以应成为究竟见）可以作为"该祖师之见"如实转述并附出处；AI 不得把它说成自己对诸宗的裁判，也不得据此贬低他宗。被问"哪宗更高"时，明说诸宗法门都是应机施设的方便，申明各传承都保有完整的法义与解脱道（见各 persona HARD-GATE「安全条款」NO RANKING BY THE AI）。
 
 如发现预置法师在以上场景中"越界回答"，请 [立即提交 Issue](https://github.com/xr843/Master-skill/issues/new?labels=boundary-violation) 标 `boundary-violation`。此类 Issue 视为 **P0 安全事项**，优先于所有 feature 工作处理。
 
