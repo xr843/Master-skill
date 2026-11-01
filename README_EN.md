@@ -180,19 +180,21 @@ The v1.0 track prioritizes framework stability over adding more masters. See [do
 
 ### Fidelity evaluation (current data)
 
-**v1.0 is not met yet.** The gate is judged on full runs on Anthropic `claude-sonnet-4-6`. In the latest one (r6, 2026-10-26), boundary and pressure clear their thresholds; fidelity is 79.2% against a 90% gate.
+**v1.0 is not met yet.** The gate is judged on full runs on Anthropic `claude-sonnet-4-6`. In the latest one (r7, 2026-11-01, master-debate not run), boundary and pressure clear their thresholds; fidelity is 87.9% against a 90% gate.
 
 The 240 fixtures (`prebuilt/*/tests/fidelity.jsonl`) run mechanical checks against real model answers: do the expected keywords and citations appear, and do the forbidden ones stay out. Every graded answer also goes through the offline citation audit. Every full run on `claude-sonnet-4-6`, all numbers after case-by-case adjudication:
 
 | Run | Fidelity (gate 90%) | Boundary (gate 80%) | Pressure (gate 70%) | Answers with a violating quotation | Fabricated citations |
 |---|---|---|---|---|---|
-| **r6** · 2026-10-26 · [`036d34b`](eval/reports/0.14.1-036d34b-anthropic-personas.json) | **95 / 120 = 79.2%** ✗ | 87 / 101 = 86.1% ✓ | 29 / 33 = 87.9% ✓ | 23 | 1 |
+| **r7** · 2026-11-01 · [`32f684c`](eval/reports/0.14.2-32f684c-anthropic-personas.json) (without master-debate's 8 cases) | **102 / 116 = 87.9%** ✗ | 83 / 97 = 85.6% ✓ | 27 / 33 = 81.8% ✓ | 29 | 0 |
+| r6 · 2026-10-26 · [`036d34b`](eval/reports/0.14.1-036d34b-anthropic-personas.json) | 95 / 120 = 79.2% | 87 / 101 = 86.1% | 29 / 33 = 87.9% | 23 | 1 |
 | r5 · 2026-10-20 · [`fd3d832`](eval/reports/0.13.3-fd3d832-anthropic-personas.json) | 96 / 120 = 80.0% | 80 / 101 = 79.2% | 26 / 33 = 78.8% | 33 | 0 |
 | r4 · 2026-10-20 · [`c0f0f3b`](eval/reports/0.13.3-c0f0f3b-anthropic-personas.json) | 97 / 120 = 80.8% | 75 / 101 = 74.3% | 26 / 33 = 78.8% | 40 | 1 |
 | 2026-10-19 · [`ca577af`](eval/reports/0.12.18-ca577af-anthropic-personas.json) | 95 / 113 = 84.1% | 87 / 96 = 90.6% | 24 / 31 = 77.4% | not ruled | 0 |
 
 - **From r4 on, every direct quotation in every answer is ruled on**: a quotation cited to the wrong work, joined from two places without an ellipsis, found nowhere in the canon, or invented counts as a violation. The `ca577af` run did not rule on quotations, so its fidelity is higher and not comparable with the three rows above it.
-- **Fidelity is held back by quotations**: of r6's 25 fidelity failures, 15 carry a violating quotation, mostly on lines no excerpt yet holds the original of; 7 miss a required point and 4 are teaching modes missing a required section (some fail for more than one reason).
+- **What is left is almost all quotations**: on the same scope as r6 (both without master-debate), failures with no quotation problem fell from 24 to 5 (#360 master selection and missing points, #361 the safety rules list what an answer must say, #362 any-of citations). But 12 of r7's 14 fidelity failures, and 29 of all 34 failures, fail only on a violating quotation.
+- **r7 is not release evidence**: master-debate's 8 cases were not run this round, and the gate needs every skill's fingerprint to match one commit.
 - **Single runs**: the quotation measure moves about ±10 points between runs.
 - Each run's teaching-mode report and full adjudication are in [`eval/reports/`](eval/reports/) under the same commit. r6's one fabricated citation is BDRC:W1KG1252 written one digit short.
 

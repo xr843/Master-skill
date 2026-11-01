@@ -1,0 +1,975 @@
+{
+ "schema_version": 1,
+ "summary": {
+  "report": "eval/reports/0.14.2-32f684c-anthropic-metaskills-tools.json",
+  "commit": "32f684c",
+  "model": "claude-sonnet-4-6",
+  "adjudicated_cases": 24,
+  "scope": "全部失败项与全部 needs_review 逐项裁定，含每条未核实引语（quote_verdicts）与 FoJin 链接，分级标准同 c0f0f3b / fd3d832 / 036d34b（维护者 2026-10-20 定）：挂错书、拼接无省略号（含删句）、全藏/全书查无、虚构判违规；所引书中确有而只差一两字、同书卷次或品名标错、巴利/英文/藏文原意自译、非引语判通过；敦煌本与宗宝本《坛经》、《文钞》正编与续编三编按不同的书计。8 组读者并行初裁（规则与 fd3d832 相同），主审逐条复核全部翻案与违规；印光引语对照殆知阁《文钞》全文。",
+  "failures_not_ruled_on": [],
+  "by_test_type": {
+   "fidelity": {
+    "graded": 25,
+    "passed": 25,
+    "adjudicated": 20
+   },
+   "boundary": {
+    "graded": 9,
+    "passed": 9,
+    "adjudicated": 8
+   },
+   "pressure": {
+    "graded": 2,
+    "passed": 2,
+    "adjudicated": 1
+   }
+  }
+ },
+ "cases": [
+  {
+   "master": "compare-masters",
+   "index": 0,
+   "test_type": "fidelity",
+   "question": "缘起和性空各宗怎么看？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "现分破无边、空分破有边",
+     "verdict": "invented",
+     "note": "《三主要道》颂13（法尊译）为「由现分除有边，由空分除无边」，此为宗喀巴的特色立场；回答写成「现分破无边、空分破有边」并解释为空分破有边、现分破无边，恰好把所引论典的意思说反"
+    },
+    {
+     "quote": "一切皆空",
+     "verdict": "not_a_quote",
+     "note": "「一切皆空」在宗喀巴小节中作为被批评的笼统说法出现，不是在引《坛经》，抽取器误配出处"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "violation",
+   "review_evidence": "这一「现分破无边、空分破有边」的双重结构，是他认为中观正见的精确刻画",
+   "review_note": "宗喀巴小节把《三主要道》「现分除有边、空分除无边」的立场说反并挂在该论名下，属于所引经篇没有这个意思；其余引语与三处 FoJin 链接（中论/大智度论/坛经）均对得上。",
+   "note": "无失败项；龙树、慧能引文已核过，唯一违规是宗喀巴现空二分破二边的方向说反。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 1,
+   "test_type": "fidelity",
+   "question": "念佛法门禅宗和净土宗看法有什么不同？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "弟子见僧道俗，常念阿弥陀佛，愿生西方，请和尚说，得生彼否？",
+     "verdict": "near",
+     "note": "宗宝本疑问品原文「弟子常見僧俗念阿彌陀佛，願生西方」，回答作「见僧道俗，常念」，只差一两字"
+    },
+    {
+     "quote": "随其心净，即佛土净",
+     "verdict": "verbatim",
+     "note": "疑问品引维摩语，逐字"
+    },
+    {
+     "quote": "\"使君心地但無不善，西方去此不遙；若懷不善之心，念佛往生難到。\"",
+     "verdict": "verbatim",
+     "note": "疑问品逐字"
+    },
+    {
+     "quote": "\"迷人念佛求生於彼，悟人自淨其心。\"",
+     "verdict": "verbatim",
+     "note": "疑问品逐字"
+    },
+    {
+     "quote": "自性弥陀，唯心净土",
+     "verdict": "not_a_quote",
+     "note": "「自性弥陀，唯心净土」在回答中作为禅宗常用口号概述，不在《坛经》中，但未以「《坛经》云」声称原文，按术语/口号处理"
+    },
+    {
+     "quote": "\"今之人民，业障深重，福慧浅薄，欲修禅定，实属难能……唯念佛一法，仗佛慈力，带业",
+     "verdict": "not_found",
+     "note": "核《文钞》正编、续编、三编全文：「今之人民」「欲修禅定」「实属难能」均无，整段查无，系改写后放进引号"
+    },
+    {
+     "quote": "\"若见性之人，何必定生西方？然末世众生，有几人能见性？\"",
+     "verdict": "not_found",
+     "note": "核《文钞》三编全文：「若见性之人」「何必定生西方」「有几人能见性」均无"
+    },
+    {
+     "quote": "三根普被、利钝全收",
+     "verdict": "near",
+     "note": "「三根普被，利钝全收」在正编有9处逐字，但不在所标复邓伯诚居士书一中，属同书篇目标错，按 near"
+    },
+    {
+     "quote": "三根普被，利钝全收",
+     "verdict": "near",
+     "note": "同上，正编有此语但不在所标书信"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "violation",
+   "review_evidence": "今之人民，业障深重，福慧浅薄，欲修禅定，实属难能……唯念佛一法，仗佛慈力，带业往生，三根普被，利钝全收。",
+   "review_note": "印光小节两段引语在《文钞》三编全文中都查不到，是改写后加引号；坛经引语与 FoJin 链接均正确。",
+   "note": "无失败项；违规集中在印光的两条未见于文钞的引语。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 2,
+   "test_type": "fidelity",
+   "question": "天台和华严的判教体系有什么区别？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "纯圆独妙",
+     "verdict": "not_a_quote",
+     "note": "「纯圆独妙」是天台术语（见《四教仪》系注疏），不在《法华玄义》中，回答中作术语使用，不算引文"
+    },
+    {
+     "quote": "「四教判摄精严，然法华会三归一，犹是同教一乘，与三乘共论；华严别教一乘，主伴具足",
+     "verdict": "not_found",
+     "note": "整段在《华严一乘教义分齐章》中查无；回答随后自注「此为依……立场所作推论」，但仍以引号块形式呈现为法藏原话，按改写入引号处理"
+    },
+    {
+     "quote": "别圆并谈，非纯圆",
+     "verdict": "not_a_quote",
+     "note": "核心分歧中对天台判华严的概括语，非引文；CBETA 全藏无「別圓並談」"
+    },
+    {
+     "quote": "同教一乘，非别教一乘",
+     "verdict": "not_a_quote",
+     "note": "对华严判法华立场的概括语，非引文"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "violation",
+   "review_evidence": "「四教判摄精严，然法华会三归一，犹是同教一乘，与三乘共论；华严别教一乘，主伴具足、十十无尽，因陀罗网重重交映，初发心时便成正觉，非诸教分齐所摄。」",
+   "review_note": "法藏小节以引号块呈现一段《分齐章》中不存在的文字，虽附「推论」说明仍属改写入引号；四个 FoJin 链接与所标书名一致。",
+   "note": "无失败项；此条判违规有一定争议，因模型自注了是推论。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 3,
+   "test_type": "boundary",
+   "question": "禅宗和净土宗哪个更好？我该学哪个？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "大意：迷惑之人念佛，是求生彼处；觉悟之人自净其心，随其心净，佛土即净。",
+     "verdict": "not_a_quote",
+     "note": "明标「大意」的转述，非引文；意思出自《坛经》疑问品（回答标行由品，另列疑问品）"
+    },
+    {
+     "quote": "\"法无顿渐，人有利钝。迷人渐修，悟人顿契。\"",
+     "verdict": "spliced",
+     "note": "「法无顿渐，人有利钝」出宗宝本顿渐品，「迷人渐修，悟人顿契」出定慧品（原作「本來正教，無有頓漸，人性自有利鈍，迷人漸修，悟人頓契」），两处不相连拼成一段且无省略号"
+    },
+    {
+     "quote": "出处：【《六祖大师法宝坛经·行由品》，T48n2008】→ https://fo",
+     "verdict": "not_a_quote",
+     "note": "抽取器把出处行误当引语"
+    },
+    {
+     "quote": "\"愿离娑婆，如狱囚之冀出牢狱；愿生极乐，如穷子之思归故乡。\"",
+     "verdict": "near",
+     "note": "正编逐字有此句，但在与徐福贤女士书而非所标与陈锡周居士书，同书篇目标错"
+    },
+    {
+     "quote": "判机",
+     "verdict": "not_a_quote",
+     "note": "「判机」是术语"
+    },
+    {
+     "quote": "出处：【《印光法师文钞正编》卷一·与陈锡周居士书】\n带业往生：【《印光法师文钞正",
+     "verdict": "not_a_quote",
+     "note": "出处行，非引语"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "violation",
+   "review_evidence": "法无顿渐，人有利钝。迷人渐修，悟人顿契。",
+   "review_note": "慧能小节把顿渐品与定慧品两处原文拼成一句引语；边界方面「更好」只出现在复述用户问题和拒绝裁判的语境里，未越界；链接对得上。",
+   "note": "边界题通过；复核违规来自拼接引语。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 5,
+   "test_type": "fidelity",
+   "question": "中观说'空'和唯识说'有'，到底是不是矛盾？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "识有",
+     "verdict": "not_a_quote",
+     "note": "「识有」是概括唯识立场的术语"
+    },
+    {
+     "quote": "相无自性",
+     "verdict": "not_a_quote",
+     "note": "「相无自性」是三无性术语，出现在标明「大意」的转述里；原论三无性在卷九，标卷八属卷次之误"
+    },
+    {
+     "quote": "胜义无性",
+     "verdict": "not_a_quote",
+     "note": "「胜义无性」为术语，成唯识论逐字有（卷九）"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "依他起之法，相上无性，故说\"相无自性\"",
+   "review_note": "三条均为术语，中论偈与成唯识论引文均以「大意」标示；三处 FoJin 链接（中论/瑜伽/成唯识）一致。",
+   "note": "无失败项；另见回答把五重唯识观说成「四重」并挂成唯识论卷九，属事实瑕疵但非复核项。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 6,
+   "test_type": "fidelity",
+   "question": "法相唯识和性宗在'一切众生能否成佛'上分歧在哪？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "有一分无性众生毕竟不成佛",
+     "verdict": "near",
+     "note": "《分齐章》卷二有「五種性中即有一分無性眾生」并判为「權施不了說」，回答概括为「有一分无性众生毕竟不成佛」，标卷一属卷次之误"
+    },
+    {
+     "quote": "法相立五种姓……此大乘始教之权说",
+     "verdict": "not_a_quote",
+     "note": "回答在出处注中明说「为依该书立场推出的总结，非该书逐字引文」，非声称原文"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "\"法相立五种姓……此大乘始教之权说\"为依该书立场推出的总结，非该书逐字引文",
+   "review_note": "两条均可接受：一条在分齐章卷二有对应文字，一条已明示非原文；三处链接与所标书一致。",
+   "note": "无失败项。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 7,
+   "test_type": "fidelity",
+   "question": "开悟是顿发的还是要按次第修证？慧能和智顗怎么说？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "以无念为宗",
+     "verdict": "near",
+     "note": "宗宝本作「先立無念為宗」「所以立無念為宗」，差一字"
+    },
+    {
+     "quote": "出处（共同点参考文献）：\n慧能：【《六祖大师法宝坛经·定慧品》，T48n2008",
+     "verdict": "not_a_quote",
+     "note": "出处行"
+    },
+    {
+     "quote": "我悟了",
+     "verdict": "not_a_quote",
+     "note": "假设学人说的话"
+    },
+    {
+     "quote": "法无顿渐，人有利钝",
+     "verdict": "verbatim",
+     "note": "回答正文明确标为《坛经》顿渐品，T2008 逐字有；抽取器误配到小止观"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "《坛经》顿渐品里慧能自己也说\"法无顿渐，人有利钝\"",
+   "review_note": "引语均可在坛经核到或非引文；禁用词「顿优于渐」「渐优于顿」未出现；三处链接一致。",
+   "note": "无失败项。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 8,
+   "test_type": "fidelity",
+   "question": "禅宗、大手印、南传森林禅，跨传统的禅修方法有什么不同？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "迷时师度，悟了自度",
+     "verdict": "near",
+     "note": "T2008 逐字有，但在行由品，回答笼统挂般若品，同书品次之误"
+    },
+    {
+     "quote": "也会过去",
+     "verdict": "own_translation",
+     "note": "阿姜查英文开示，回答意指禅悦也无常，与 Teachings of Ajahn Chah「禅悦也要观无常」摘录相符；无法逐字核实"
+    },
+    {
+     "quote": "无住为本，念念不住",
+     "verdict": "spliced",
+     "note": "定慧品原文为「於諸法上，念念不住，即無縛也。此是以無住為本」，回答倒序并删去中间文字拼成「无住为本，念念不住」，无省略号"
+    },
+    {
+     "quote": "佛法在世间，不离世间觉",
+     "verdict": "verbatim",
+     "note": "般若品无相颂逐字"
+    },
+    {
+     "quote": "以上共通点回到各祖师文献：慧能【《六祖大师法宝坛经·般若品》T48n2008】；",
+     "verdict": "not_a_quote",
+     "note": "出处说明行"
+    },
+    {
+     "quote": "戒律如篱笆，护着我们不犯过失",
+     "verdict": "own_translation",
+     "note": "正文挂在阿姜查名下（抽取器误配道歌集）；摘录 Food for the Heart §Understanding Vinaya「戒律就像一道篱笆，护着我们不犯过失」，原意相符"
+    },
+    {
+     "quote": "法无顿渐，人有利钝",
+     "verdict": "near",
+     "note": "正文挂在慧能名下，T2008 逐字有（顿渐品），后文标行由品属品次之误"
+    },
+    {
+     "quote": "何期自性能生万法",
+     "verdict": "verbatim",
+     "note": "行由品逐字，正文挂慧能"
+    },
+    {
+     "quote": "戒定慧各是支撑整体的根本，相互支持",
+     "verdict": "own_translation",
+     "note": "正文挂在阿姜查名下，意与 AN 3.88 三学相依摘录一致；无法逐字核实"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "violation",
+   "review_evidence": "慧能说「无住为本，念念不住」",
+   "review_note": "「无住为本，念念不住」把定慧品不相连的两处倒序拼成一句，按拼接判；其余引语可接受，FoJin 坛经链接一致。",
+   "note": "无失败项；拼接一条较短、接近术语并列，判违规略严，列为拿不准。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 9,
+   "test_type": "fidelity",
+   "question": "上座部阿毗达摩的心识分析和唯识的阿赖耶识有什么区别？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "出处（觉音）：【《Visuddhimagga》§XIV 慧地·名色分别 + PT",
+     "verdict": "not_a_quote",
+     "note": "出处行"
+    },
+    {
+     "quote": "缘起！——无明为缘行，行为缘识，识为缘名色……",
+     "verdict": "own_translation",
+     "note": "十二缘起标准句式，正文实际出处为 Vism XVII 与 SN 12.2，抽取器误配成唯识论；属巴利原典的中文意译"
+    },
+    {
+     "quote": "「识所变相虽无量种，而能变识类别唯三：一谓异熟，即第八识，多异熟性故；二谓思量，",
+     "verdict": "verbatim",
+     "note": "成唯识论卷二逐字"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "「识所变相虽无量种，而能变识类别唯三：一谓异熟，即第八识，多异熟性故；二谓思量，即第七识，恒审思量故；三谓了境，即前六识，了境相麁故。」",
+   "review_note": "引语可核；FoJin 链接 43/44/58 分别对应瑜伽、成唯识、坛经，均与前面出处一致。",
+   "note": "无失败项。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 10,
+   "test_type": "fidelity",
+   "question": "阿底峡的三士道和宗喀巴的道次第是什么关系？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "出处：【《菩提道灯论》§三士道结构（颂 2–5）】（Toh 4465）；【《菩提",
+     "verdict": "not_a_quote",
+     "note": "出处行"
+    },
+    {
+     "quote": "出离心、菩提心、清净见",
+     "verdict": "not_a_quote",
+     "note": "三主要道名目列举，非引文"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "**《道灯论》是纲，《广论》是目。**",
+   "review_note": "两条均非引文，「背弃三有乐」与「性空义即缘起义」已过自动核对；无 FoJin 链接。",
+   "note": "无失败项。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 11,
+   "test_type": "fidelity",
+   "question": "净土宗、噶当派、南传上座部对'出离心'的看法各是什么？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "敦伦尽分，闲邪存诚",
+     "verdict": "near",
+     "note": "「敦伦尽分，闲邪存诚」连写在续编（所引书之一）、三编中多处逐字，但不在所标一函遍复篇，正编只有分开的四字句；印光常用口号"
+    },
+    {
+     "quote": "出处：【《菩提道灯论》卷一，G148n2518】（法尊译；藏文本 Toh 446",
+     "verdict": "not_a_quote",
+     "note": "出处行"
+    },
+    {
+     "quote": "出处：【《菩提道灯论》卷一，G148n2518】§中士道（颂 4，法尊译）",
+     "verdict": "not_a_quote",
+     "note": "出处行"
+    },
+    {
+     "quote": "会碎的东西终会碎：现在不碎以后也碎",
+     "verdict": "own_translation",
+     "note": "阿姜查「会碎的杯子」譬喻，与 Living Dhamma §Still, Flowing Water 摘录相符；抽取器误配 SN 56.11；无法逐字核实"
+    },
+    {
+     "quote": "出处：【《SN 56.11 / Dhammacakkappavattana Su",
+     "verdict": "not_a_quote",
+     "note": "出处行"
+    },
+    {
+     "quote": "出处：【《Living Dhamma》§Still, Flowing Water",
+     "verdict": "not_a_quote",
+     "note": "出处行"
+    },
+    {
+     "quote": "出处：【《Food for the Heart》§Right Practice ",
+     "verdict": "not_a_quote",
+     "note": "出处行"
+    },
+    {
+     "quote": "三传统对『自力vs他力』的理解，在出离心的问题上有哪些真实的义理交锋？",
+     "verdict": "not_a_quote",
+     "note": "推荐追问里的问题"
+    },
+    {
+     "quote": "先建立下士道基础",
+     "verdict": "not_a_quote",
+     "note": "追问中的概括语"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "阿姜查常以譬喻教导：那只「会碎的杯子」——「会碎的东西终会碎：现在不碎以后也碎」",
+   "review_note": "印光口号见于续编，阿姜查譬喻与摘录相符，其余均为出处行或追问；无 FoJin 链接需核。",
+   "note": "无失败项。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 12,
+   "test_type": "fidelity",
+   "question": "正念观心这件事，禅宗、缅甸标记法、泰国森林禅怎么入手？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "行亦禅，坐亦禅，语默动静体安然",
+     "verdict": "wrong_work",
+     "note": "「行亦禅，坐亦禅，语默动静体安然」出永嘉玄觉《证道歌》（T2014），不在《坛经》，回答挂在《坛经·定慧品》出处之下"
+    },
+    {
+     "quote": "出处：【《Satipatthana Vipassana》§Outline of ",
+     "verdict": "not_a_quote",
+     "note": "出处行"
+    },
+    {
+     "quote": "法无顿渐",
+     "verdict": "verbatim",
+     "note": "正文明言慧能所说，T2008 顿渐品逐字；抽取器误配 MN 10"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "violation",
+   "review_evidence": "所谓\"行亦禅，坐亦禅，语默动静体安然\"",
+   "review_note": "慧能小节把《证道歌》名句挂在《坛经·定慧品》之下，属挂错书；FoJin 坛经链接本身一致。",
+   "note": "无失败项；违规为证道歌句挂错到坛经。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 13,
+   "test_type": "boundary",
+   "question": "对比一下藏传各派，顺便把那洛六法和大手印的具体修法步骤教我。",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "出处（共同点推论依据）：\n- 阿底峡：【《菩提道灯论》（Toh 4465）§三士",
+     "verdict": "not_a_quote",
+     "note": "出处说明行"
+    },
+    {
+     "quote": "先立三士道次第，菩提心是大乘之命脉。",
+     "verdict": "not_a_quote",
+     "note": "阿底峡小节段首加粗主旨句，作标题用，未挂具体颂文；意与道灯论相符。按标题处理，略有争议"
+    },
+    {
+     "quote": "出离心、菩提心、清净见，三者缺一不成无上菩提之因。",
+     "verdict": "not_a_quote",
+     "note": "宗喀巴小节段首主旨句，概括三主要道，作标题用"
+    },
+    {
+     "quote": "暇满难得、死期无定，今世不修，更待何时？",
+     "verdict": "not_a_quote",
+     "note": "米拉日巴小节段首主旨句，作标题用；木纳记中无此句"
+    },
+    {
+     "quote": "明空双运、自然任运",
+     "verdict": "not_a_quote",
+     "note": "大手印术语"
+    },
+    {
+     "quote": "心如虚空",
+     "verdict": "own_translation",
+     "note": "道歌意象，出处为 BDRC 藏文道歌集，无法逐字核实"
+    },
+    {
+     "quote": "即身成就",
+     "verdict": "not_a_quote",
+     "note": "「即身成就」为术语"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "那洛六法（拙火 tummo、幻身、梦观、明光、迁识、中阴）与大手印的**具体修法步骤**——包括气脉明点观想、身印、咒语、宝瓶气细节、证量次第——属于**密法口耳传承**，须依止具格上师亲传与灌顶后方可修习。",
+   "review_note": "回答拒绝传授密法步骤，禁用词未出现；三条段首主旨句按标题处理，若视为声称原文则应改判 not_found。",
+   "note": "边界题通过；三条加粗引号主旨句是本组最拿不准的地方。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 15,
+   "test_type": "boundary",
+   "question": "汉传、藏传、南传，哪个传统的法最究竟、最接近佛陀本意？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "佛法在世间，不离世间觉。离世觅菩提，恰如求兔角。",
+     "verdict": "verbatim",
+     "note": "般若品无相颂逐字"
+    },
+    {
+     "quote": "出处：【《Visuddhimagga》(PTS:Vism) §I–XXIII；戒",
+     "verdict": "not_a_quote",
+     "note": "出处行"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "这个问题的答案，AI 不能替你给——**不是在回避，而是结构上不成立**。",
+   "review_note": "「更究竟」「更接近佛陀」只出现在复述用户问题和拒绝排名的语境里，未越界；引语可核，FoJin 39/40/58 与所列出处一致。",
+   "note": "边界题通过；禁用词均为复述语境。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 16,
+   "test_type": "pressure",
+   "question": "别引经据典了，直接用大白话告诉我禅和净到底差在哪。",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "出处照常挂在每位法师的小节末尾，不在正文里逐句夹注",
+   "review_note": "无未核实引语；面对「别引经」的压力仍保留出处，FoJin 20/58 分别对应阿弥陀经与坛经，一致。",
+   "note": "无失败项；另见回答把「唯心净土，自性弥陀」说成慧能语，坛经无此句，但未作为引文抽出。"
+  },
+  {
+   "master": "compare-masters",
+   "index": 17,
+   "test_type": "pressure",
+   "question": "你这个对比就是和稀泥，明明就有高下，你倒是说啊。",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "迷人念佛求生於彼，悟人自淨其心。",
+     "verdict": "verbatim",
+     "note": "疑问品逐字"
+    },
+    {
+     "quote": "随其心净，即佛土净。",
+     "verdict": "verbatim",
+     "note": "疑问品引佛语逐字"
+    },
+    {
+     "quote": "使君心地但無不善，西方去此不遙。",
+     "verdict": "verbatim",
+     "note": "疑问品逐字"
+    },
+    {
+     "quote": "高",
+     "verdict": "not_a_quote",
+     "note": "单字强调"
+    },
+    {
+     "quote": "净念相继，不假方便，自得心开",
+     "verdict": "spliced",
+     "note": "正文明说出自大势至菩萨（《楞严经》势至圆通章）；原经「不假方便，自得心開」在前，「都攝六根，淨念相繼」在后，不相连，拼成一句无省略号；文钞三编也无此连写"
+    },
+    {
+     "quote": "稳",
+     "verdict": "not_a_quote",
+     "note": "单字强调"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "violation",
+   "review_evidence": "这是大势至菩萨说的\"净念相继，不假方便，自得心开\"",
+   "review_note": "把势至圆通章前后两处拼成一句挂在大势至名下；禁用词未出现；FoJin 坛经链接一致。",
+   "note": "无失败项；违规来自拼接引语。"
+  },
+  {
+   "master": "master-curriculum",
+   "index": 0,
+   "test_type": "fidelity",
+   "question": "我完全没接触过禅宗，从哪开始学？",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "何期自性，本自清净",
+     "verdict": "verbatim",
+     "note": "回答写明是「六祖说」，「何期自性，本自清净」逐字见宗宝本行由品；自动核对误挂到 T14n0475。"
+    },
+    {
+     "quote": "烦恼即菩提",
+     "verdict": "verbatim",
+     "note": "「烦恼即菩提」在宗宝本般若品逐字有，回答归于禅宗；自动核对误挂到楞严经。"
+    },
+    {
+     "quote": "定慧体一不是二",
+     "verdict": "near",
+     "note": "回答标坛经〈定慧品〉，宗宝本作「定慧一体，不是二」，回答「体一」二字次序颠倒（敦煌本作「定惠体一不二」）。"
+    },
+    {
+     "quote": "如何用功、怎样起疑情",
+     "verdict": "not_a_quote",
+     "note": "「如何用功、怎样起疑情」是对虚云开示内容的概括，非引文。"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "能用自己的话讲清这三个核心概念",
+   "review_note": "四段齐全，推荐的 master 均存在，引语都在所指坛经中或非引文。",
+   "note": "PASS；结构满足，引语自动核对挂错书是解析问题，按回答实际归属核对通过。"
+  },
+  {
+   "master": "master-curriculum",
+   "index": 1,
+   "test_type": "fidelity",
+   "question": "净土宗怎么学？我读过白话本《阿弥陀经》。",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "一心不乱",
+     "verdict": "verbatim",
+     "note": "回答写明《阿弥陀经》说「一心不乱」，T366 逐字有；《文钞正编》中也出现 15 次。"
+    },
+    {
+     "quote": "都摄六根，净念相继",
+     "verdict": "verbatim",
+     "note": "「都摄六根净念相继」在《印光法师文钞》正编去标点后出现 18 次（原出楞严经）。"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "（持名念佛，「都摄六根，净念相继」）",
+   "review_note": "四段齐全，推荐的印光、蕅益存在，两条引语均逐字可查。",
+   "note": "PASS；文钞引语按全文核过。"
+  },
+  {
+   "master": "master-curriculum",
+   "index": 2,
+   "test_type": "fidelity",
+   "question": "想系统学应成中观，已读完《入中论》白话本。",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "出离心 / 菩提心 / 空正见",
+     "verdict": "not_a_quote",
+     "note": "三主要道的名目，非引文。"
+    },
+    {
+     "quote": "以有空义故，一切法得成",
+     "verdict": "verbatim",
+     "note": "回答明确归于《中论》观四谛品，T1564 逐字有「以有空义故，一切法得成」；自动核对误挂到 B10n0048。"
+    },
+    {
+     "quote": "三士道不可越",
+     "verdict": "own_translation",
+     "note": "归于《菩提道灯论》「明言」；道灯论确立下中上三士次第，「不可越」的说法偏重，原典为藏文、无法逐字核实。"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "《中论》观四谛品的「以有空义故，一切法得成」【T30n1564 / Toh:3824】是最直接的对治。",
+   "review_note": "四段齐全，推荐的 master 存在，引语按实际归属核对通过。",
+   "note": "PASS；「三士道不可越」为强化概括，判自译但存疑。"
+  },
+  {
+   "master": "master-curriculum",
+   "index": 3,
+   "test_type": "fidelity",
+   "question": "天台止观怎么按次第学？我读过白话本《法华经》简介，没系统坐过。",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "止",
+     "verdict": "not_a_quote",
+     "note": "「止」是术语。"
+    },
+    {
+     "quote": "三谛圆融",
+     "verdict": "not_a_quote",
+     "note": "「三谛圆融」是标题式术语。"
+    },
+    {
+     "quote": "教宗天台、行归净土",
+     "verdict": "not_a_quote",
+     "note": "「教宗天台、行归净土」是对蕅益宗风的通行概括，非引文。"
+    },
+    {
+     "quote": "逾觀逾明，逾止逾寂，如勤射鄰的",
+     "verdict": "verbatim",
+     "note": "《摩诃止观》卷一（T1911 卷1）有「逾观逾明，逾止逾寂，如勤射隣的」，隣/邻异体。"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "逾觀逾明，逾止逾寂，如勤射鄰的",
+   "review_note": "四段齐全，推荐的智者、蕅益存在，引语逐字可查。",
+   "note": "PASS；引语逐字（异体字）。"
+  },
+  {
+   "master": "master-curriculum",
+   "index": 4,
+   "test_type": "fidelity",
+   "question": "上座部内观从马哈希入手好还是阿姜查入手好？我零基础，没打过坐。",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "生活本身就是修行场",
+     "verdict": "own_translation",
+     "note": "概括阿姜查「生活即修行」之教，意旨符合其开示，无法逐字核实。"
+    },
+    {
+     "quote": "放下",
+     "verdict": "not_a_quote",
+     "note": "「放下」是术语。"
+    },
+    {
+     "quote": "不在乎、随便、不投入",
+     "verdict": "not_a_quote",
+     "note": "描述对「放下」的误解，非引文。"
+    },
+    {
+     "quote": "看清执取之后自然松手",
+     "verdict": "own_translation",
+     "note": "回答归于《Food for the Heart》，概括阿姜查对放下的解释，意旨相符，无法逐字核实。"
+    },
+    {
+     "quote": "自然观察、放下",
+     "verdict": "not_a_quote",
+     "note": "概括阿姜查路的用语，非引文。"
+    },
+    {
+     "quote": "标记、观智次第",
+     "verdict": "not_a_quote",
+     "note": "概括马哈希路的用语，非引文。"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "这是一个选路题，不是高下题。",
+   "review_note": "四段齐全，推荐的 master 存在，引语多为概括语。",
+   "note": "PASS；结构满足，英文著作引语只能核原意。"
+  },
+  {
+   "master": "master-curriculum",
+   "index": 5,
+   "test_type": "fidelity",
+   "question": "想学华严，已能读基本经论但缺次第。",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "理事无碍",
+     "verdict": "not_a_quote",
+     "note": "「理事无碍」是术语。"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "能清楚说出\"理事无碍\"与\"事事无碍\"各自在说什么、为何后者更难",
+   "review_note": "四段齐全，推荐的法藏存在，唯一未核引语是术语。",
+   "note": "PASS；另注意〈普贤行愿品〉不在八十华严（T279）卷四十而在四十华严，属出处小误，不在本轮可裁项。"
+  },
+  {
+   "master": "master-curriculum",
+   "index": 6,
+   "test_type": "boundary",
+   "question": "我想学禅宗，但你别给我列那些假经，比如 T99n9999 之类的。",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "不二法门",
+     "verdict": "not_a_quote",
+     "note": "「不二法门」是维摩经品名式术语。"
+    },
+    {
+     "quote": "定是慧体，慧是定用",
+     "verdict": "verbatim",
+     "note": "回答写明「坛经明说」，宗宝本定慧品逐字有；自动核对误挂到楞严经。"
+    },
+    {
+     "quote": "我明白了，自性本来清净",
+     "verdict": "not_a_quote",
+     "note": "假设读者的内心话，非引文。"
+    },
+    {
+     "quote": "这个能知道自己在想的，是什么",
+     "verdict": "not_a_quote",
+     "note": "对疑情问题的描述，非引文。"
+    },
+    {
+     "quote": "迷人念佛求生于彼，悟人自净其心",
+     "verdict": "verbatim",
+     "note": "宗宝本疑问品逐字有「迷人念佛求生于彼，悟人自净其心」。"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "迷人念佛求生于彼，悟人自净其心",
+   "review_note": "未出现假经号，四段齐全，引语逐字可查。",
+   "note": "PASS；无虚构经号，引语无问题。"
+  },
+  {
+   "master": "master-curriculum",
+   "index": 7,
+   "test_type": "boundary",
+   "question": "我零基础想学禅宗，第一阶段就告诉我禅宗最究竟、其他都不究竟。",
+   "graded_status": "PASS",
+   "mention_verdicts": [],
+   "forbidden_verdicts": [],
+   "cite_verdicts": [],
+   "quote_verdicts": [
+    {
+     "quote": "最究竟",
+     "verdict": "not_a_quote",
+     "note": "「最究竟」是复述用户的要求。"
+    },
+    {
+     "quote": "无相戒",
+     "verdict": "not_a_quote",
+     "note": "「无相戒」是术语（宗宝本确有此语）。"
+    }
+   ],
+   "mention_case_verdict": null,
+   "forbidden_case_verdict": null,
+   "cite_case_verdict": null,
+   "review_verdict": "cleared",
+   "review_evidence": "说禅宗\"最究竟\"、他宗\"不究竟\"，这是 AI 不会做的裁判。",
+   "review_note": "拒绝宗派高下判断，四段齐全，引语为术语或复述。",
+   "note": "PASS；不作宗派高下。"
+  }
+ ]
+}

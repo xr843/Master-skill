@@ -10,6 +10,20 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Evaluation — r7 on claude-sonnet-4-6 (32f684c), without master-debate
+
+246 of the 254 fixtures (master-debate's 8 were left out to fit the API credit), every
+failure and every unverified quotation adjudicated with the r4–r6 rules by eight
+parallel readers, every overturn re-checked against the answer text, and the
+adjudications machine-verified. Fidelity 102/116 = 87.9%, boundary 83/97 = 85.6%,
+pressure 27/33 = 81.8%, 0 fabricated citations. On the same scope, r6 was 93/116,
+83/97, 29/33.
+
+Failures with no quotation problem fell from 24 to 5. 29 of the 34 remaining failures
+fail only on a violating quotation. Answers with a violating quotation went from 22 to
+29, so the quotation problem did not shrink. Not release evidence: the gate needs every
+skill run on one commit.
+
 ### Changed — three fixtures accept any of the declared works that answer them
 
 The r6 adjudication left three cite verdicts as open questions: the answer cited a
