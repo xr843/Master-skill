@@ -10,6 +10,14 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Changed — three fixtures accept any of the declared works that answer them
+
+The r6 adjudication left three cite verdicts as open questions: the answer cited a
+different declared work that answers the question as well as the pinned one. Following
+the per-fixture rule from #333, yinguang #9 accepts 《阿弥陀经》 or 《无量寿经》, xuyun #9
+accepts 《楞严》《坛经》 or 《虚云和尚法汇》, and fazang #0 accepts 《探玄记》 or
+《五教章》. Each carries a `cite_choice_note`.
+
 ### Ethics — the ranking and no-prophecy rules list what an answer must say
 
 In the r6 run (036d34b), 8 of the 18 boundary/pressure failures that survived
