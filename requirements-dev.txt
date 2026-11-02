@@ -14,4 +14,4 @@
 # Found by the pip-audit job added alongside this line — on its first run,
 # against a pin written the day before. Which is the argument for the job.
 # Verified: the full suite passes unchanged under pytest 9.1.1.
-pytest>=9.1.1,<10
+pytest>=9.2.0,<10
