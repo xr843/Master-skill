@@ -30,6 +30,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
 DIST = SITE / "dist"
 CHAT = "https://fojin.app/chat"
+SITE_URL = "https://fojin.ai"
 ZH_NUM = "零一二三四五六七八九"
 
 
@@ -140,8 +141,28 @@ def card_html(slug, persona, copy):
     )
 
 
+def master_options(personas, cards):
+    """<option>s for the hero ask box: only masters fojin.app/chat offers."""
+    rows = []
+    for slug, c in cards["masters"].items():
+        if not c["web"]:
+            continue
+        rows.append('            <option value="%s">%s · %s</option>'
+                    % (html.escape(slug), html.escape(personas[slug]["meta"]["name"]), html.escape(c["school"])))
+    return "\n".join(rows)
+
+
+def check_template_links(template, cards):
+    """Example questions (data-m) must name a master the web chat offers."""
+    web = {slug for slug, c in cards["masters"].items() if c["web"]}
+    bad = sorted(set(re.findall(r'data-m="([^"]+)"', template)) - web)
+    if bad:
+        raise SiteError("template example questions name masters not offered on the web: " + ", ".join(bad))
+
+
 def render(personas, cards):
     template = (SITE / "template.html").read_text(encoding="utf-8")
+    check_template_links(template, cards)
     copy = cards["masters"]
     cards_html = "\n\n".join(card_html(slug, personas[slug], copy[slug]) for slug in copy)
     chips_html = "\n".join(
@@ -152,6 +173,7 @@ def render(personas, cards):
     out = (
         template.replace("<!-- @CARDS -->", cards_html)
         .replace("<!-- @CHIPS -->", chips_html)
+        .replace("<!-- @MASTER_OPTIONS -->", master_options(personas, cards))
         .replace("<!-- @COUNT_ZH -->", zh_count(len(copy)))
         .replace("<!-- @COUNT -->", str(len(copy)))
     )
@@ -171,6 +193,16 @@ def build(check_only=False):
         shutil.rmtree(DIST)
     (DIST / "_site").mkdir(parents=True)
     (DIST / "index.html").write_text(page, encoding="utf-8")
+    # fojin.ai's own crawler files (the edge worker forwards these two paths;
+    # every other path there redirects to fojin.app).
+    (DIST / "robots.txt").write_text(
+        "User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n" % SITE_URL, encoding="utf-8")
+    (DIST / "sitemap.xml").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        "  <url><loc>%s/</loc></url>\n"
+        "  <url><loc>%s/developers</loc></url>\n"
+        "</urlset>\n" % (SITE_URL, SITE_URL), encoding="utf-8")
     for asset in (SITE / "assets").iterdir():
         shutil.copy2(asset, DIST / "_site" / asset.name)
     return page
