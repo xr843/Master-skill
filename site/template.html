@@ -28,7 +28,11 @@
     src: url("/fonts/MaShanZheng-title-v2.woff2") format("woff2");
     font-display: swap;
   }
-  /* Light is the default; dark is opt-in via the header toggle (stored per
+  /* Colours are checked against WCAG AA (axe, both themes): body text >= 4.5:1
+     on every surface it sits on. --faint and --accent are the tight ones —
+     re-run the check before lightening either. Seal colours (--t-*) carry
+     white text, so they are the same dark tones in both themes.
+     Light is the default; dark is opt-in via the header toggle (stored per
      browser, applied before paint by /_site/theme.js). The light palette is a
      cool white-grey on purpose: a warm/beige one read as a fojin.app page. */
   :root {
@@ -40,8 +44,8 @@
     --border-strong: #c9ced8;
     --text: #14161b;
     --muted: #4c525e;
-    --faint: #6f7684;
-    --accent: #b5600a;
+    --faint: #626978;
+    --accent: #a35507;
     --accent-2: #8a4706;
     --accent-ink: #ffffff;
     --seal: #b3361f;
@@ -66,15 +70,11 @@
     --border-strong: #463e34;
     --text: #efe9df;
     --muted: #a99f90;
-    --faint: #7a7166;
+    --faint: #948b7d;
     --accent: #e3a548;
     --accent-2: #f2c879;
     --accent-ink: #1a1206;
     --seal: #c4452d;
-    --t-india: #d9a441;
-    --t-han: #e0663f;
-    --t-tibet: #c0445a;
-    --t-pali: #e28a2b;
     --shadow: 0 30px 80px -40px rgba(0,0,0,.6);
     --glow: radial-gradient(60% 50% at 70% 0%, rgba(227,165,72,.16), transparent 70%),
             radial-gradient(40% 40% at 10% 10%, rgba(196,69,45,.10), transparent 70%);
@@ -369,7 +369,7 @@
 
     <figure class="demo" aria-label="一次真实回答示例">
       <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:6px">/master-huineng</span></div>
-      <div class="body">
+      <div class="body" tabindex="0" role="group" aria-label="示例回答">
         <div class="q">你：顿悟和渐修有什么区别？</div>
         <div class="who">慧能大师</div>
         <p>且道：顿与渐，果是二法么？</p>
@@ -420,7 +420,7 @@
         <button role="tab" id="tab-any" aria-controls="p-any" aria-selected="false">Cursor · Gemini 等</button>
       </div>
       <div role="tabpanel" id="p-cc" aria-labelledby="tab-cc">
-        <pre><code><span class="c"># 一次装全部 21 个技能</span>
+        <pre tabindex="0"><code><span class="c"># 一次装全部 21 个技能</span>
 npx master-skill install --all
 <span class="c"># 不知道该问谁？让它推荐</span>
 npx master-skill recommend "念佛怎么念才算老实"</code></pre>
@@ -428,11 +428,11 @@ npx master-skill recommend "念佛怎么念才算老实"</code></pre>
         <p>装好后在对话里直接输入 <code>/master-huineng</code>、<code>/compare-masters</code> 等。</p>
       </div>
       <div role="tabpanel" id="p-codex" aria-labelledby="tab-codex" hidden>
-        <pre><code>codex plugin marketplace add xr843/Master-skill &amp;&amp; codex plugin add master-skill@master-skill</code></pre>
+        <pre tabindex="0"><code>codex plugin marketplace add xr843/Master-skill &amp;&amp; codex plugin add master-skill@master-skill</code></pre>
         <div class="row"><button class="copy" type="button" data-copy="codex plugin marketplace add xr843/Master-skill &amp;&amp; codex plugin add master-skill@master-skill">复制</button></div>
       </div>
       <div role="tabpanel" id="p-any" aria-labelledby="tab-any" hidden>
-        <pre><code><span class="c"># skills.sh：可装进 Claude Code、Codex、Cursor、Gemini 等。必须带 --full-depth</span>
+        <pre tabindex="0"><code><span class="c"># skills.sh：可装进 Claude Code、Codex、Cursor、Gemini 等。必须带 --full-depth</span>
 npx skills add xr843/Master-skill --full-depth</code></pre>
         <div class="row"><button class="copy" type="button" data-copy="npx skills add xr843/Master-skill --full-depth">复制</button></div>
         <p>各工具的详细步骤见 <a href="https://github.com/xr843/Master-skill/blob/main/docs/install.md">安装文档</a>。</p>
