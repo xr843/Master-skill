@@ -10,3 +10,4 @@ target/
 .DS_Store
 masters/*/
 !masters/.gitkeep
+site/dist/

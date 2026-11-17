@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>佛津 AI · 依祖师宗风解经</title>
+<meta name="description" content="<!-- @COUNT_ZH -->位印度、汉传、藏传、南传祖师的 AI 技能（Master-skill）。装进 Claude Code、Codex、Cursor 等工具，或直接在网页里用——每一条教义都检索原典、附上出处。" />
+<link rel="canonical" href="https://fojin.ai/" />
+<meta name="theme-color" content="#f7f8fa" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="佛津 AI" />
+<meta property="og:title" content="佛津 AI · 依祖师宗风解经" />
+<meta property="og:description" content="<!-- @COUNT_ZH -->位四大传统祖师的 AI 技能，每一条教义都检索原典、附上出处。" />
+<meta property="og:url" content="https://fojin.ai/" />
+<meta property="og:image" content="https://fojin.app/og-image.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<!-- Not deferred: sets data-theme before first paint so dark users get no light flash. -->
+<script src="/_site/theme.js"></script>
+<script defer src="/_site/site.js"></script>
+<script defer src="https://analytics.fojin.app/script.js" data-website-id="c757a04c-82e0-4f53-a720-830b0e1a7287"></script>
+<style>
+  @font-face {
+    font-family: "Ma Shan Zheng Title";
+    src: url("/fonts/MaShanZheng-title-v2.woff2") format("woff2");
+    font-display: swap;
+  }
+  /* Light is the default; dark is opt-in via the header toggle (stored per
+     browser, applied before paint by /_site/theme.js). The light palette is a
+     cool white-grey on purpose: a warm/beige one read as a fojin.app page. */
+  :root {
+    --bg: #f7f8fa;
+    --bg-2: #eef0f4;
+    --surface: #ffffff;
+    --surface-2: #f4f5f8;
+    --border: #e1e4ea;
+    --border-strong: #c9ced8;
+    --text: #14161b;
+    --muted: #4c525e;
+    --faint: #6f7684;
+    --accent: #b5600a;
+    --accent-2: #8a4706;
+    --accent-ink: #ffffff;
+    --seal: #b3361f;
+    --t-india: #94650a;
+    --t-han: #c0441d;
+    --t-tibet: #a2233e;
+    --t-pali: #b0570a;
+    --shadow: 0 24px 60px -32px rgba(20,22,27,.28);
+    --glow: radial-gradient(60% 50% at 70% 0%, rgba(181,96,10,.10), transparent 70%),
+            radial-gradient(40% 40% at 10% 10%, rgba(179,54,31,.06), transparent 70%);
+    --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+    --serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f0e0c;
+    --bg-2: #15130f;
+    --surface: #1b1814;
+    --surface-2: #221e19;
+    --border: #2e2923;
+    --border-strong: #463e34;
+    --text: #efe9df;
+    --muted: #a99f90;
+    --faint: #7a7166;
+    --accent: #e3a548;
+    --accent-2: #f2c879;
+    --accent-ink: #1a1206;
+    --seal: #c4452d;
+    --t-india: #d9a441;
+    --t-han: #e0663f;
+    --t-tibet: #c0445a;
+    --t-pali: #e28a2b;
+    --shadow: 0 30px 80px -40px rgba(0,0,0,.6);
+    --glow: radial-gradient(60% 50% at 70% 0%, rgba(227,165,72,.16), transparent 70%),
+            radial-gradient(40% 40% at 10% 10%, rgba(196,69,45,.10), transparent 70%);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.7 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+  /* header */
+  header.top {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  header.top .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
+  .brand { display: flex; align-items: baseline; gap: 10px; text-decoration: none; }
+  .brand .mark { font-family: "Ma Shan Zheng Title", var(--serif); font-size: 26px; color: var(--seal); line-height: 1; }
+  .brand .ai { font-weight: 700; letter-spacing: .08em; font-size: 15px; }
+  nav.links { margin-left: auto; display: flex; gap: 22px; font-size: 14px; }
+  nav.links a { text-decoration: none; color: var(--muted); }
+  nav.links a:hover { color: var(--text); }
+  @media (max-width: 640px) { nav.links .opt { display: none; } }
+  .theme-toggle {
+    display: grid; place-items: center; width: 34px; height: 34px; flex: none;
+    border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface);
+    color: var(--muted); cursor: pointer; padding: 0;
+  }
+  .theme-toggle:hover { color: var(--text); border-color: var(--accent); }
+  .theme-toggle svg { width: 17px; height: 17px; }
+  .theme-toggle .sun { display: none; }
+  :root[data-theme="dark"] .theme-toggle .sun { display: block; }
+  :root[data-theme="dark"] .theme-toggle .moon { display: none; }
+
+  /* hero */
+  .hero { background: var(--glow); border-bottom: 1px solid var(--border); }
+  .hero .wrap { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; padding-top: 72px; padding-bottom: 80px; align-items: center; }
+  @media (max-width: 900px) { .hero .wrap { grid-template-columns: 1fr; padding-top: 48px; padding-bottom: 56px; } }
+  .eyebrow { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  h1 { font-family: var(--serif); font-size: clamp(34px, 5.2vw, 56px); line-height: 1.18; margin: 14px 0 18px; letter-spacing: .01em; }
+  h1 em { font-style: normal; background: linear-gradient(90deg, var(--accent), var(--seal)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lead { color: var(--muted); font-size: 17px; max-width: 34em; margin: 0 0 28px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 15px;
+    text-decoration: none; border: 1px solid var(--border-strong); background: var(--surface);
+    cursor: pointer; color: var(--text);
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 28px; font-size: 13px; color: var(--faint); }
+  .facts b { color: var(--text); font-weight: 600; }
+
+  /* demo transcript */
+  .demo {
+    margin: 0;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .demo .bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface-2); font: 12px var(--mono); color: var(--faint); }
+  .demo .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong); }
+  .demo .body { padding: 18px 20px; font-size: 14.5px; line-height: 1.85; max-height: 430px; overflow: auto; }
+  .demo .q { color: var(--muted); margin-bottom: 10px; }
+  .demo .q code { font: 13px var(--mono); color: var(--accent); }
+  .demo .who { font-family: var(--serif); font-weight: 700; margin-bottom: 6px; }
+  .demo p { margin: 0 0 10px; }
+  .cite { display: inline-block; font: 12px var(--mono); color: var(--accent-2); background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); padding: 0 6px; border-radius: 5px; white-space: nowrap; }
+  .demo .note { font-size: 12px; color: var(--faint); padding: 10px 20px 14px; border-top: 1px dashed var(--border); }
+
+  section { padding: 76px 0; border-bottom: 1px solid var(--border); }
+  section h2 { font-family: var(--serif); font-size: clamp(26px, 3.4vw, 36px); margin: 8px 0 10px; }
+  section .sub { color: var(--muted); margin: 0 0 32px; max-width: 46em; }
+
+  /* who to ask */
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip {
+    font: inherit; font-size: 14px; padding: 8px 14px; border-radius: 999px;
+    border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); cursor: pointer;
+  }
+  .chip:hover, .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 28px 0 20px; }
+  .tab { font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 8px; border: 1px solid transparent; background: none; color: var(--muted); cursor: pointer; }
+  .tab[aria-selected="true"] { background: var(--surface); border-color: var(--border-strong); color: var(--text); }
+  .hint { font-size: 13px; color: var(--faint); min-height: 1.6em; margin: 0 0 14px; }
+
+  /* masters */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 16px; }
+  .card {
+    position: relative; display: flex; flex-direction: column;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px 20px 16px;
+    transition: opacity .2s, border-color .2s, transform .2s;
+    scroll-margin-top: 90px;
+  }
+  .card:hover { border-color: var(--border-strong); }
+  .card.dim { opacity: .28; }
+  .card.hit { border-color: var(--accent); }
+  .card .head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .seal {
+    flex: none; width: 42px; height: 42px; border-radius: 8px; display: grid; place-items: center;
+    font-family: var(--serif); font-weight: 700; font-size: 15px; color: #fff; letter-spacing: -.02em;
+    background: var(--tc, var(--seal));
+  }
+  .card .name { font-family: var(--serif); font-size: 19px; font-weight: 700; line-height: 1.3; }
+  .card .meta { font-size: 12.5px; color: var(--faint); }
+  .card .line { font-size: 14.5px; color: var(--muted); margin: 0 0 10px; }
+  .card .ask { font-size: 13px; margin: 0 0 8px; }
+  .card .ask b { color: var(--accent); font-weight: 600; }
+  .card .src { font-size: 12.5px; color: var(--faint); margin: 0 0 14px; }
+  .card .actions { margin-top: auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .card .actions a { font-size: 13.5px; font-weight: 600; color: var(--accent); text-decoration: none; }
+  .card .actions a:hover { text-decoration: underline; }
+  .card .actions .off { font-size: 12.5px; color: var(--faint); }
+  .cmd {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    font: 12.5px var(--mono); color: var(--muted); background: var(--bg-2);
+    border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; margin-top: 8px;
+  }
+  .cmd code { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .copy { font: 12px var(--sans); border: 1px solid var(--border-strong); background: var(--surface); color: var(--muted); border-radius: 6px; padding: 2px 8px; cursor: pointer; flex: none; }
+  .copy:hover { color: var(--text); border-color: var(--accent); }
+  [data-t="印度"] { --tc: var(--t-india); }
+  [data-t="汉传"] { --tc: var(--t-han); }
+  [data-t="藏传"] { --tc: var(--t-tibet); }
+  [data-t="南传"] { --tc: var(--t-pali); }
+
+  /* modes */
+  .modes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 14px; }
+  .mode { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .mode code { font: 13px var(--mono); color: var(--accent); }
+  .mode p { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+
+  /* pillars */
+  .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 860px) { .pillars { grid-template-columns: 1fr; } }
+  .pillar { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+  .pillar .k { font-size: 12px; letter-spacing: .14em; color: var(--accent); font-weight: 600; }
+  .pillar h3 { font-family: var(--serif); font-size: 20px; margin: 6px 0 8px; }
+  .pillar p { margin: 0; font-size: 14.5px; color: var(--muted); }
+
+  /* install */
+  .install { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .install [role="tablist"] { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+  .install [role="tab"] { font: inherit; font-size: 14px; padding: 12px 18px; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer; }
+  .install [role="tab"][aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+  .install [role="tabpanel"] { padding: 20px; }
+  .install pre { margin: 0; font: 13.5px/1.9 var(--mono); color: var(--text); background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; }
+  .install pre .c { color: var(--faint); }
+  .install .row { display: flex; justify-content: flex-end; margin-top: 10px; }
+  .install p { font-size: 14px; color: var(--muted); margin: 12px 0 0; }
+
+  /* ethics + footer */
+  .ethics { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 12px; }
+  .ethics div { font-size: 14px; color: var(--muted); border-left: 2px solid var(--seal); padding: 2px 0 2px 14px; }
+  .ethics b { color: var(--text); }
+  .crisis { margin-top: 22px; font-size: 13.5px; color: var(--faint); }
+  footer { padding: 40px 0 56px; font-size: 13.5px; color: var(--faint); }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+  footer .spacer { flex: 1; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .card { transition: none; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="佛津 AI 首页"><span class="mark">佛津</span><span class="ai">AI</span></a>
+    <nav class="links" aria-label="主导航">
+      <a href="#masters">祖师</a>
+      <a href="#install">安装</a>
+      <a href="/developers" class="opt">开发者</a>
+      <a href="https://github.com/xr843/Master-skill" class="opt">GitHub</a>
+      <a href="https://fojin.app">读经站</a>
+    </nav>
+    <button class="theme-toggle" type="button" aria-label="切换深色模式" title="切换深浅色">
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Master-skill · 佛津 AI</div>
+      <h1>让你的 AI，<br><em>依祖师宗风解经</em></h1>
+      <p class="lead"><!-- @COUNT_ZH -->位印度、汉传、藏传、南传祖师的 AI 技能。装进 Claude Code、Codex、Cursor 等工具，或直接在网页里用——每一条教义都检索原典、附上出处。</p>
+      <div class="cta">
+        <a class="btn primary" href="https://fojin.app/chat?utm_source=fojin.ai&amp;utm_medium=hero">在网页里试试 →</a>
+        <a class="btn" href="#install">安装到 AI 工具</a>
+      </div>
+      <div class="facts">
+        <span><b><!-- @COUNT --></b> 位祖师</span>
+        <span><b>4</b> 大传统</span>
+        <span><b>4</b> 种教学模式</span>
+        <span>开源：代码 MIT，内容 CC</span>
+      </div>
+    </div>
+
+    <figure class="demo" aria-label="一次真实回答示例">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:6px">/master-huineng</span></div>
+      <div class="body">
+        <div class="q">你：顿悟和渐修有什么区别？</div>
+        <div class="who">慧能大师</div>
+        <p>且道：顿与渐，果是二法么？</p>
+        <p>法本无顿渐，因人有利钝。经云：“不悟即佛是众生，一念悟时众生是佛”——迷悟只在一念，故立顿名 <span class="cite">《六祖坛经·般若品》T48n2008</span></p>
+        <p>然顿渐非二法。定慧尚是一体——“定是慧体，慧是定用……” <span class="cite">《六祖坛经·定慧品》T48n2008</span>，顿渐岂有两般？迷人渐修，悟人顿契，药对病施，法无高下。</p>
+        <p>更须知，六祖当年闻“应无所住而生其心”而自见本性 <span class="cite">《金刚经》T08n0235</span>。归到究竟，只问一念回光，本心现前也未？</p>
+      </div>
+      <figcaption class="note">节选自 Master-skill 2026-08-31 全量评测的真实输出（模型 deepseek-v4-flash），引文由仓库离线审计逐条解析到声明来源。AI 合成内容，不代表慧能大师亲口开示。</figcaption>
+    </figure>
+  </div>
+</div>
+
+<section id="masters">
+  <div class="wrap">
+    <div class="eyebrow"><!-- @COUNT_ZH -->位祖师</div>
+    <h2>不知道该问谁？从你的状况开始</h2>
+    <p class="sub">选一种状况，看哪几位祖师最对机；也可以按传统浏览。每位祖师只依自己声明的典籍立论。</p>
+
+    <div class="chips" role="group" aria-label="按状况推荐">
+<!-- @CHIPS -->
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="按传统浏览">
+      <button class="tab" role="tab" aria-selected="true" data-trad="">全部</button>
+      <button class="tab" role="tab" aria-selected="false" data-trad="印度">印度</button>
+      <button class="tab" role="tab" aria-selected="false" data-trad="汉传">汉传</button>
+      <button class="tab" role="tab" aria-selected="false" data-trad="藏传">藏传</button>
+      <button class="tab" role="tab" aria-selected="false" data-trad="南传">南传</button>
+    </div>
+    <p class="hint" id="hint" aria-live="polite"></p>
+
+    <div class="grid" id="grid">
+<!-- @CARDS -->
+    </div>
+  </div>
+</section>
+
+<section id="modes">
+  <div class="wrap">
+    <div class="eyebrow">教学模式</div>
+    <h2>不止一对一</h2>
+    <p class="sub">四种教学模式和一个生成器，装进终端里的 AI 工具后可用（网页版目前只有单位祖师）。</p>
+    <div class="modes">
+      <div class="mode"><code>/compare-masters</code><p>同一个问题，几位祖师并列回答，自动配对汉、藏、南传视角。</p></div>
+      <div class="mode"><code>/master-debate</code><p>就有争议的议题多轮对辩，看清各宗立场的分歧所在。</p></div>
+      <div class="mode"><code>/master-curriculum</code><p>按传统给出由浅入深的学修路径。</p></div>
+      <div class="mode"><code>/master-help</code><p>说出你的状况，推荐该问哪位祖师。</p></div>
+      <div class="mode"><code>/create-master</code><p>按同一套来源与边界规范，生成自定义的祖师技能。</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="grounded">
+  <div class="wrap">
+    <div class="eyebrow">为什么可信</div>
+    <h2>每一句，都能回到原典</h2>
+    <p class="sub">祖师技能由佛津驱动：回答之前先检索原典，回答之后可以逐条核对。</p>
+    <div class="pillars">
+      <div class="pillar"><div class="k">有来源</div><h3>只依声明的典籍</h3><p>每位祖师声明自己的来源（CBETA、BDRC、Toh、SuttaCentral、PTS），教义断言必须附原典出处。</p></div>
+      <div class="pillar"><div class="k">实时检索</div><h3>佛津原典库</h3><p>回答时实时检索佛津的原典与语义索引，附上可点开的原文链接，而不是凭模型记忆复述。</p></div>
+      <div class="pillar"><div class="k">可评测</div><h3>保真度评测</h3><p>仓库内置保真度评测与离线引文审计，每次发版都逐条检查引文能否解析到声明来源。</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="eyebrow">安装</div>
+    <h2>装进你的 AI 工具</h2>
+    <p class="sub">只是想体验，<a href="https://fojin.app/chat?utm_source=fojin.ai&amp;utm_medium=install">直接在网页里用</a>，无需安装、无需注册。</p>
+    <div class="install">
+      <div role="tablist" aria-label="安装方式">
+        <button role="tab" id="tab-cc" aria-controls="p-cc" aria-selected="true">Claude Code · OpenCode</button>
+        <button role="tab" id="tab-codex" aria-controls="p-codex" aria-selected="false">Codex CLI</button>
+        <button role="tab" id="tab-any" aria-controls="p-any" aria-selected="false">Cursor · Gemini 等</button>
+      </div>
+      <div role="tabpanel" id="p-cc" aria-labelledby="tab-cc">
+        <pre><code><span class="c"># 一次装全部 21 个技能</span>
+npx master-skill install --all
+<span class="c"># 不知道该问谁？让它推荐</span>
+npx master-skill recommend "念佛怎么念才算老实"</code></pre>
+        <div class="row"><button class="copy" type="button" data-copy="npx master-skill install --all">复制安装命令</button></div>
+        <p>装好后在对话里直接输入 <code>/master-huineng</code>、<code>/compare-masters</code> 等。</p>
+      </div>
+      <div role="tabpanel" id="p-codex" aria-labelledby="tab-codex" hidden>
+        <pre><code>codex plugin marketplace add xr843/Master-skill &amp;&amp; codex plugin add master-skill@master-skill</code></pre>
+        <div class="row"><button class="copy" type="button" data-copy="codex plugin marketplace add xr843/Master-skill &amp;&amp; codex plugin add master-skill@master-skill">复制</button></div>
+      </div>
+      <div role="tabpanel" id="p-any" aria-labelledby="tab-any" hidden>
+        <pre><code><span class="c"># skills.sh：可装进 Claude Code、Codex、Cursor、Gemini 等。必须带 --full-depth</span>
+npx skills add xr843/Master-skill --full-depth</code></pre>
+        <div class="row"><button class="copy" type="button" data-copy="npx skills add xr843/Master-skill --full-depth">复制</button></div>
+        <p>各工具的详细步骤见 <a href="https://github.com/xr843/Master-skill/blob/main/docs/install.md">安装文档</a>。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="ethics">
+  <div class="wrap">
+    <div class="eyebrow">边界</div>
+    <h2>我们守的几条线</h2>
+    <p class="sub">本项目本着对佛教传统的尊重而建立，不做教义评判，不代表任何宗派权威。详见 <a href="https://github.com/xr843/Master-skill/blob/main/ETHICS.md">ETHICS.md</a>。</p>
+    <div class="ethics">
+      <div><b>AI 合成内容。</b>所有回答都不代表祖师亲口开示或亲笔著作。</div>
+      <div><b>不传密法步骤。</b>续部修法、灌顶仪轨等只介绍历史与原理。</div>
+      <div><b>不作证果判定。</b>修证印证须由具格善知识当面鉴定。</div>
+      <div><b>仅供学习参考。</b>正式修行指导，请亲近善知识。</div>
+    </div>
+    <p class="crisis">若你正有轻生、自伤的念头，请先联系身边可信的人或心理危机热线（中国大陆 12356；其他地区见 <a href="https://findahelpline.com">findahelpline.com</a>）。AI 祖师不能代替专业帮助。</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>佛津 AI</span>
+    <a href="https://fojin.app">佛津读经站 fojin.app</a>
+    <a href="/developers">开发者：MCP 与接口</a>
+    <a href="https://github.com/xr843/Master-skill">Master-skill</a>
+    <a href="https://github.com/xr843/fojin">FoJin</a>
+    <span class="spacer"></span>
+    <span>代码 MIT · 内容 CC</span>
+  </div>
+</footer>
+</body>
+</html>
