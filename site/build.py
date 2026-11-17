@@ -115,29 +115,35 @@ def validate(personas, cards):
 
 
 def card_html(slug, persona, copy):
+    """Compact card: name, dates, one line, the first declared source, two
+    actions. The situation chips above the grid do the "who should I ask"
+    job, so 适合问 is only the card's hover hint; the full source list lives
+    in meta.json / docs/masters.md."""
     meta = persona["meta"]
     e = html.escape
     era = meta.get("era", "").replace("约", "约 ").replace("-", "–")
     trad = tradition_of(meta)
-    if copy["web"]:
-        action = '<a href="%s?master=%s&amp;utm_source=fojin.ai">依此宗风提问 →</a>' % (CHAT, e(slug))
-    else:
-        action = '<span class="off">网页版暂未上线，可在终端安装使用</span>'
+    first = sources_line(meta, limit=1)
+    more = len({short_title(x.get("title", "")) for x in meta.get("sources", [])}) > 1
     cmd = "npx master-skill install " + persona["skill"]
+    if copy["web"]:
+        ask = ('<a class="card-ask" data-master="%s" href="%s?master=%s&amp;utm_source=fojin.ai">提问 →</a>'
+               % (e(slug), CHAT, e(slug)))
+    else:
+        ask = '<span class="off">网页版暂未上线</span>'
     return (
-        '      <article class="card" id="m-{slug}" data-id="{slug}" data-t="{trad}">\n'
+        '      <article class="card" id="m-{slug}" data-id="{slug}" data-t="{trad}" title="适合问：{hint}">\n'
         '        <div class="head"><div class="seal">{seal}</div><div><div class="name">{name}</div>'
         '<div class="meta">{era} · {trad} · {school}</div></div></div>\n'
         '        <p class="line">{line}</p>\n'
-        '        <p class="ask"><b>适合问</b>　{ask}</p>\n'
-        '        <p class="src">依据：{src}</p>\n'
-        '        <div class="actions">{action}</div>\n'
-        '        <div class="cmd"><code>{cmd}</code><button class="copy" type="button">复制</button></div>\n'
+        '        <p class="src">依据：{src}{more}</p>\n'
+        '        <div class="actions">{ask}<button class="copy" type="button" data-copy="{cmd}" '
+        'data-master="{slug}">复制安装命令</button></div>\n'
         "      </article>"
     ).format(
-        slug=e(slug), trad=e(trad), seal=e(copy["seal"]), name=e(meta["name"]), era=e(era),
-        school=e(copy["school"]), line=e(copy["line"]), ask=e(copy["ask"]),
-        src=e(sources_line(meta)), action=action, cmd=e(cmd),
+        slug=e(slug), trad=e(trad), hint=e(copy["ask"]), seal=e(copy["seal"]), name=e(meta["name"]),
+        era=e(era), school=e(copy["school"]), line=e(copy["line"]), src=e(first),
+        more=" 等" if more else "", ask=ask, cmd=e(cmd),
     )
 
 

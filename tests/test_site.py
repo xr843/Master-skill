@@ -41,7 +41,7 @@ def test_every_persona_has_exactly_one_card(sources, page):
 def test_install_command_names_the_real_skill(sources, page):
     personas, _ = sources
     for slug, p in personas.items():
-        assert "npx master-skill install %s</code>" % p["skill"] in page, slug
+        assert 'data-copy="npx master-skill install %s"' % p["skill"] in page, slug
 
 
 def test_cards_show_the_declared_sources(sources, page):
@@ -54,7 +54,7 @@ def test_cards_show_the_declared_sources(sources, page):
 def test_web_links_only_for_masters_offered_on_the_web(sources, page):
     _, cards = sources
     for slug, c in cards["masters"].items():
-        linked = "/chat?master=%s&amp;" % slug in page
+        linked = "/chat?master=%s&amp;utm_source=fojin.ai\">提问" % slug in page
         assert linked == c["web"], slug
 
 
@@ -80,7 +80,8 @@ def test_scenario_with_unknown_master_fails(sources):
 
 def test_count_follows_the_catalogue(sources, page):
     personas, _ = sources
-    assert "<b>%d</b> 位祖师" % len(personas) in page
+    assert site_build.zh_count(len(personas)) + "位印度、汉传、藏传、南传祖师" in page
+    assert '"description": "Buddhist master persona skills for AI agents: %d masters' % len(personas) in page
     assert site_build.zh_count(16) == "十六"
     assert site_build.zh_count(20) == "二十"
     assert site_build.zh_count(9) == "九"
