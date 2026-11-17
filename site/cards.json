@@ -1,0 +1,183 @@
+{
+  "_comment": "Hand-written card copy for the fojin.ai home page (site/build.py). Name, dates, tradition, sources and the install command come from prebuilt/<skill>/meta.json and skill-catalog.json; only what meta.json has no field for lives here. 'web': false = not yet offered in fojin.app/chat. Order here is the order on the page.",
+  "masters": {
+    "nagarjuna": {
+      "seal": "龙树",
+      "school": "中观",
+      "line": "大乘中观奠基者，汉传尊为「八宗共祖」。立八不中道，开显缘起性空。",
+      "ask": "空性、二谛、中观",
+      "web": true
+    },
+    "kumarajiva": {
+      "seal": "罗什",
+      "school": "三论／中观",
+      "line": "中国四大译经家之一，《法华》《金刚》《维摩》《中论》通行译本皆出其手。",
+      "ask": "空性、般若、法华",
+      "web": true
+    },
+    "zhiyi": {
+      "seal": "智顗",
+      "school": "天台",
+      "line": "天台宗创始人，立五时八教判教体系。主张一念三千、三谛圆融、止观双修。",
+      "ask": "止观修法、判教、天台体系",
+      "web": true
+    },
+    "daoxuan": {
+      "seal": "道宣",
+      "school": "律宗（南山律）",
+      "line": "南山律宗之名由他而来。依《四分律》撰《行事钞》，讲戒法、戒体、戒行、戒相。",
+      "ask": "戒律、止持与作持、僧团规范",
+      "web": false
+    },
+    "xuanzang": {
+      "seal": "玄奘",
+      "school": "法相唯识",
+      "line": "西行求法十七年，译经论七十五部，创法相唯识宗，确立「五种不翻」。",
+      "ask": "唯识、名相、读经理不清逻辑",
+      "web": true
+    },
+    "huineng": {
+      "seal": "慧能",
+      "school": "禅宗六祖",
+      "line": "闻《金刚经》开悟，得五祖传法。《坛经》主张直指人心、见性成佛，开顿悟法门。",
+      "ask": "顿悟、自性、禅的入门",
+      "web": true
+    },
+    "fazang": {
+      "seal": "法藏",
+      "school": "华严",
+      "line": "华严哲学的实际创立者，以「金师子章」为武后说华严义：法界缘起、六相圆融。",
+      "ask": "华严、事事无碍、十玄门",
+      "web": true
+    },
+    "ouyi": {
+      "seal": "蕅益",
+      "school": "天台／净土",
+      "line": "明末四大高僧之一，「教宗天台，行归净土」，融通禅、教、律、净四宗。",
+      "ask": "禅净之间、跨宗派融通",
+      "web": true
+    },
+    "xuyun": {
+      "seal": "虚云",
+      "school": "禅宗五宗兼嗣",
+      "line": "一身兼嗣禅门五宗法脉，复兴六大祖庭。主张参话头、老实修行、禅净双修。",
+      "ask": "参话头、坐禅、禅堂规矩",
+      "web": true
+    },
+    "yinguang": {
+      "seal": "印光",
+      "school": "净土",
+      "line": "净土宗十三祖，近代净土复兴的核心人物。以书信开示，文字平实恳切。",
+      "ask": "念佛、信愿行、学佛无力感",
+      "web": true
+    },
+    "atisha": {
+      "seal": "阿底峡",
+      "school": "噶当",
+      "line": "1042 年入藏，著《菩提道灯论》，为藏地后弘期道次第之祖，开噶当派。",
+      "ask": "三士道、菩提心、道次第起点",
+      "web": true
+    },
+    "milarepa": {
+      "seal": "米拉",
+      "school": "噶举",
+      "line": "噶举派瑜伽士典范，依玛尔巴净罪求法，雪山闭关数十年，以道歌说法。",
+      "ask": "苦行与闭关、大手印的历史与原理",
+      "web": true
+    },
+    "tsongkhapa": {
+      "seal": "宗喀巴",
+      "school": "格鲁",
+      "line": "格鲁派创始人，立出离心、菩提心、清净见「三主要道」，著《菩提道次第广论》。",
+      "ask": "道次第、应成中观、了义不了义",
+      "web": true
+    },
+    "buddhaghosa": {
+      "seal": "觉音",
+      "school": "上座部论师",
+      "line": "上座部最有影响力的注释家。《清净道论》以戒、定、慧三学统摄禅修与教理。",
+      "ask": "清净道论、业处、七清净与观智",
+      "web": true
+    },
+    "mahasi-sayadaw": {
+      "seal": "马哈希",
+      "school": "缅甸内观",
+      "line": "以「标记法」内观闻名，以观察腹部起伏为初学所缘，依七清净培育观智。",
+      "ask": "密集内观、标记法",
+      "web": true
+    },
+    "ajahn-chah": {
+      "seal": "阿姜查",
+      "school": "泰国森林禅",
+      "line": "泰国森林禅林派禅师，以持戒、四念处与朴素生活化的教学著称。",
+      "ask": "出入息念、放下、日常中的修行",
+      "web": true
+    }
+  },
+  "scenarios": [
+    {
+      "label": "妄念纷飞坐不住",
+      "pick": [
+        "xuyun",
+        "zhiyi",
+        "ajahn-chah"
+      ]
+    },
+    {
+      "label": "读经文看不懂逻辑",
+      "pick": [
+        "xuanzang"
+      ]
+    },
+    {
+      "label": "学佛很久但无力感",
+      "pick": [
+        "yinguang"
+      ]
+    },
+    {
+      "label": "想了解空性",
+      "pick": [
+        "nagarjuna",
+        "kumarajiva",
+        "huineng",
+        "milarepa",
+        "tsongkhapa"
+      ]
+    },
+    {
+      "label": "想系统学华严、天台",
+      "pick": [
+        "fazang",
+        "zhiyi"
+      ]
+    },
+    {
+      "label": "在禅与净土之间犹豫",
+      "pick": [
+        "ouyi"
+      ]
+    },
+    {
+      "label": "想学完整的道次第",
+      "pick": [
+        "atisha",
+        "tsongkhapa"
+      ]
+    },
+    {
+      "label": "想学南传禅修",
+      "pick": [
+        "ajahn-chah",
+        "mahasi-sayadaw",
+        "buddhaghosa"
+      ]
+    },
+    {
+      "label": "戒律与僧团规范",
+      "pick": [
+        "daoxuan"
+      ]
+    }
+  ]
+}
