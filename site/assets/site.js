@@ -105,6 +105,16 @@
   }
   syncToggle();
 
+  // ---- example questions fill the hero ask box -------------------------------
+  var askQ = document.getElementById("ask-q");
+  var askM = document.getElementById("ask-m");
+  document.querySelectorAll(".try-q").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (askQ) { askQ.value = b.getAttribute("data-q") || ""; askQ.focus(); }
+      if (askM && b.getAttribute("data-m")) askM.value = b.getAttribute("data-m");
+    });
+  });
+
   // ---- install tabs ---------------------------------------------------------
   var itabs = Array.prototype.slice.call(document.querySelectorAll('.install [role="tab"]'));
   itabs.forEach(function (tab) {

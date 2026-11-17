@@ -88,3 +88,36 @@ def test_count_follows_the_catalogue(sources, page):
 
 def test_cards_json_is_valid_utf8_json():
     json.loads((ROOT / "site" / "cards.json").read_text(encoding="utf-8"))
+
+
+def test_ask_box_offers_only_web_masters(sources, page):
+    _, cards = sources
+    options = set(re.findall(r'<option value="([^"]+)">', page))
+    web = {slug for slug, c in cards["masters"].items() if c["web"]}
+    assert options == web
+
+
+def test_ask_box_submits_to_chat_with_autosend(page):
+    form = re.search(r'<form class="ask"(.*?)</form>', page, re.S).group(0)
+    assert 'action="https://fojin.app/chat"' in form
+    assert 'name="q"' in form and 'name="master"' in form
+    assert '<input type="hidden" name="send" value="1" />' in form
+
+
+def test_example_question_naming_offline_master_fails(sources):
+    _, cards = sources
+    offline = [s for s, c in cards["masters"].items() if not c["web"]]
+    if not offline:
+        pytest.skip("every master is on the web")
+    with pytest.raises(site_build.SiteError, match="not offered on the web"):
+        site_build.check_template_links('<button data-m="%s">' % offline[0], cards)
+
+
+def test_build_writes_robots_and_sitemap(tmp_path, monkeypatch):
+    monkeypatch.setattr(site_build, "DIST", tmp_path / "dist")
+    site_build.build()
+    robots = (tmp_path / "dist" / "robots.txt").read_text(encoding="utf-8")
+    assert "Sitemap: https://fojin.ai/sitemap.xml" in robots
+    sitemap = (tmp_path / "dist" / "sitemap.xml").read_text(encoding="utf-8")
+    assert "<loc>https://fojin.ai/</loc>" in sitemap
+    assert (tmp_path / "dist" / "_site" / "site.js").exists()

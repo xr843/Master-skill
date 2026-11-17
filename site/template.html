@@ -12,7 +12,10 @@
 <meta property="og:title" content="佛津 AI · 依祖师宗风解经" />
 <meta property="og:description" content="<!-- @COUNT_ZH -->位四大传统祖师的 AI 技能，每一条教义都检索原典、附上出处。" />
 <meta property="og:url" content="https://fojin.ai/" />
-<meta property="og:image" content="https://fojin.app/og-image.png" />
+<meta property="og:image" content="https://fojin.ai/_site/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="佛津 AI：让你的 AI，依祖师宗风解经" />
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <!-- Not deferred: sets data-theme before first paint so dark users get no light flash. -->
@@ -124,6 +127,28 @@
   h1 em { font-style: normal; background: linear-gradient(90deg, var(--accent), var(--seal)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .lead { color: var(--muted); font-size: 17px; max-width: 34em; margin: 0 0 28px; }
   .cta { display: flex; flex-wrap: wrap; gap: 12px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .ask {
+    background: var(--surface); border: 1px solid var(--border-strong); border-radius: 14px;
+    padding: 10px; box-shadow: var(--shadow); max-width: 36em;
+  }
+  .ask:focus-within { border-color: var(--accent); }
+  .ask input[type="text"] {
+    width: 100%; border: 0; outline: 0; background: transparent; color: var(--text);
+    font: 16px/1.6 var(--sans); padding: 8px 8px 10px;
+  }
+  .ask input[type="text"]::placeholder { color: var(--faint); }
+  .ask-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .ask select {
+    flex: 1; min-width: 0; font: 14px var(--sans); color: var(--text); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px;
+  }
+  .ask .btn { padding: 9px 18px; }
+  .try { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0 0; font-size: 13px; color: var(--faint); }
+  .try-q { font: inherit; font-size: 13px; color: var(--muted); background: none; border: 1px dashed var(--border-strong); border-radius: 999px; padding: 4px 11px; cursor: pointer; }
+  .try-q:hover { color: var(--accent); border-color: var(--accent); }
+  .ask-note { font-size: 13px; color: var(--faint); margin: 12px 0 0; }
+  .ask-note a { color: var(--muted); }
   .btn {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 15px;
@@ -246,6 +271,24 @@
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .card { transition: none; } }
 </style>
+<!-- Structured data (a data block, not executed — unaffected by the CSP). -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Master-skill · 佛津 AI",
+  "url": "https://fojin.ai/",
+  "description": "Buddhist master persona skills for AI agents: <!-- @COUNT --> masters across Indian, Chinese, Tibetan and Theravada traditions, every doctrinal claim grounded in cited canon.",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Claude Code, Codex CLI, Cursor, OpenCode, Gemini CLI",
+  "inLanguage": ["zh-CN", "en"],
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "license": "https://github.com/xr843/Master-skill/blob/main/LICENSE",
+  "codeRepository": "https://github.com/xr843/Master-skill",
+  "author": { "@type": "Organization", "name": "FoJin 佛津", "url": "https://fojin.app" }
+}
+</script>
 </head>
 <body>
 <header class="top">
@@ -272,10 +315,31 @@
       <div class="eyebrow">Master-skill · 佛津 AI</div>
       <h1>让你的 AI，<br><em>依祖师宗风解经</em></h1>
       <p class="lead"><!-- @COUNT_ZH -->位印度、汉传、藏传、南传祖师的 AI 技能。装进 Claude Code、Codex、Cursor 等工具，或直接在网页里用——每一条教义都检索原典、附上出处。</p>
-      <div class="cta">
-        <a class="btn primary" href="https://fojin.app/chat?utm_source=fojin.ai&amp;utm_medium=hero">在网页里试试 →</a>
-        <a class="btn" href="#install">安装到 AI 工具</a>
+      <!-- A plain GET form: works without JavaScript. fojin.app/chat reads
+           q + send=1 (auto-send, the visitor already pressed Enter) and
+           master (lineage; empty = general assistant). -->
+      <form class="ask" action="https://fojin.app/chat" method="get" role="search" aria-label="向祖师提问">
+        <label class="sr" for="ask-q">你的问题</label>
+        <input id="ask-q" name="q" type="text" required maxlength="500" autocomplete="off" placeholder="问一个佛学问题……" />
+        <div class="ask-row">
+          <label class="sr" for="ask-m">依哪位祖师的宗风</label>
+          <select id="ask-m" name="master">
+            <option value="">通用（不指定祖师）</option>
+<!-- @MASTER_OPTIONS -->
+          </select>
+          <input type="hidden" name="send" value="1" />
+          <input type="hidden" name="utm_source" value="fojin.ai" />
+          <input type="hidden" name="utm_medium" value="ask" />
+          <button class="btn primary" type="submit">提问 →</button>
+        </div>
+      </form>
+      <div class="try" aria-label="示例问题">
+        <span>试试：</span>
+        <button type="button" class="try-q" data-q="顿悟和渐修有什么区别？" data-m="huineng">顿悟和渐修有什么区别？</button>
+        <button type="button" class="try-q" data-q="妄念太多，坐不住怎么办？" data-m="xuyun">妄念太多，坐不住怎么办？</button>
+        <button type="button" class="try-q" data-q="念佛怎样才算老实念佛？" data-m="yinguang">念佛怎样才算老实念佛？</button>
       </div>
+      <p class="ask-note">在 fojin.app 回答，免注册，每天有免费次数。也可以 <a href="#install">把祖师装进你的 AI 工具</a>。</p>
       <div class="facts">
         <span><b><!-- @COUNT --></b> 位祖师</span>
         <span><b>4</b> 大传统</span>
