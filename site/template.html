@@ -106,6 +106,9 @@
   nav.links { margin-left: auto; display: flex; gap: 22px; font-size: 14px; }
   nav.links a { text-decoration: none; color: var(--muted); }
   nav.links a:hover { color: var(--text); }
+  nav.links a[aria-current="true"] { color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+  nav.links a { padding: 4px 0; }
+  .ext-mark { font-size: .8em; margin-left: 2px; opacity: .6; }
   @media (max-width: 640px) { nav.links .opt { display: none; } }
   .theme-toggle {
     display: grid; place-items: center; width: 34px; height: 34px; flex: none;
@@ -319,9 +322,9 @@
     <nav class="links" aria-label="主导航">
       <a href="#masters">祖师</a>
       <a href="#install">安装</a>
-      <a href="/developers" class="opt">开发者</a>
-      <a href="https://github.com/xr843/Master-skill" class="opt">GitHub</a>
-      <a href="https://fojin.app">读经站</a>
+      <a href="/developers" class="opt" title="MCP 端点、HTTP API 与命令行工具">开发者</a>
+      <a href="https://github.com/xr843/Master-skill" class="opt ext" title="Master-skill 源代码（GitHub）">GitHub<span class="ext-mark" aria-hidden="true">↗</span></a>
+      <a href="https://fojin.app" class="ext" title="佛津读经站 fojin.app：检索、阅读、对照原典">读经站<span class="ext-mark" aria-hidden="true">↗</span></a>
     </nav>
     <button class="theme-toggle" type="button" aria-label="切换深色模式" title="切换深浅色">
       <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
