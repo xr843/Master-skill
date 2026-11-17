@@ -36,6 +36,7 @@
 </p>
 
 <p align="center">
+  <a href="https://fojin.ai/"><strong>官网 fojin.ai</strong></a> ·
   <a href="#立即体验浏览器直接使用">浏览器体验</a> ·
   <a href="#声明">声明</a> ·
   <a href="#特性">特性</a> ·
