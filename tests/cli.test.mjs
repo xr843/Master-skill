@@ -1612,6 +1612,7 @@ test("install tells a first-time user what to do next", (t) => {
   assert.match(one.stdout, /Next \(Claude Code \/ OpenCode\):/);
   assert.match(one.stdout, /\/master-huineng/);
   assert.match(one.stdout, /Codex CLI and Gemini CLI do not read/);
+  assert.match(one.stdout, /https:\/\/fojin\.ai\//);
 
   const help = run(["install", "master-help", "zhiyi"], env);
   assert.match(help.stdout, /Type \/master-help/);
