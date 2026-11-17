@@ -152,6 +152,34 @@
     });
   });
 
+  // ---- header nav: mark the section in view; count clicks ------------------
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll("nav.links a"));
+  navLinks.forEach(function (a) {
+    a.addEventListener("click", function () { track("nav_click", { to: a.getAttribute("href") }); });
+  });
+  var sectionLinks = navLinks.filter(function (a) { return (a.getAttribute("href") || "").charAt(0) === "#"; });
+  if ("IntersectionObserver" in window && sectionLinks.length) {
+    var current = null;
+    var mark = function (id) {
+      if (id === current) return;
+      current = id;
+      sectionLinks.forEach(function (a) {
+        if (a.getAttribute("href") === "#" + id) a.setAttribute("aria-current", "true");
+        else a.removeAttribute("aria-current");
+      });
+    };
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) mark(e.target.id);
+        else if (e.target.id === current) mark(null);
+      });
+    }, { rootMargin: "-40% 0px -55% 0px" });
+    sectionLinks.forEach(function (a) {
+      var sec = document.querySelector(a.getAttribute("href"));
+      if (sec) io.observe(sec);
+    });
+  }
+
   // ---- install tabs ---------------------------------------------------------
   var itabs = Array.prototype.slice.call(document.querySelectorAll('.install [role="tab"]'));
   itabs.forEach(function (tab) {
