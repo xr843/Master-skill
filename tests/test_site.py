@@ -122,3 +122,50 @@ def test_build_writes_robots_and_sitemap(tmp_path, monkeypatch):
     sitemap = (tmp_path / "dist" / "sitemap.xml").read_text(encoding="utf-8")
     assert "<loc>https://fojin.ai/</loc>" in sitemap
     assert (tmp_path / "dist" / "_site" / "site.js").exists()
+
+
+# --- colour contrast (WCAG AA) -------------------------------------------
+# axe found 197 contrast failures on the live pages on 2026-11-17, all caused
+# by a handful of tokens. These pin the token pairs so a palette tweak that
+# drops below 4.5:1 fails here rather than in a visitor's eyes.
+
+def _tokens(block):
+    return dict(re.findall(r"--([a-z0-9-]+):\s*(#[0-9a-fA-F]{6})\s*;", block))
+
+
+def _luminance(hex_colour):
+    channels = [int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    lin = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
+
+
+def _contrast(a, b):
+    hi, lo = sorted((_luminance(a), _luminance(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def _themes():
+    template = (ROOT / "site" / "template.html").read_text(encoding="utf-8")
+    light = _tokens(re.search(r":root \{(.*?)\n  \}", template, re.S).group(1))
+    dark = dict(light, **_tokens(re.search(r':root\[data-theme="dark"\] \{(.*?)\n  \}', template, re.S).group(1)))
+    return {"light": light, "dark": dark}
+
+
+@pytest.mark.parametrize("theme", ["light", "dark"])
+def test_text_colours_meet_wcag_aa(theme):
+    t = _themes()[theme]
+    backgrounds = ["bg", "bg-2", "surface", "surface-2"]
+    failures = []
+    for fg in ("text", "muted", "faint", "accent"):
+        for bg in backgrounds:
+            ratio = _contrast(t[fg], t[bg])
+            if ratio < 4.5:
+                failures.append("%s on %s = %.2f" % (fg, bg, ratio))
+    for seal in ("t-india", "t-han", "t-tibet", "t-pali", "seal"):
+        ratio = _contrast("#ffffff", t[seal])
+        if seal != "seal" and ratio < 4.5:  # --seal only colours the large brand mark
+            failures.append("white on %s = %.2f" % (seal, ratio))
+    ratio = _contrast(t["accent-ink"], t["accent"])
+    if ratio < 4.5:
+        failures.append("accent-ink on accent = %.2f" % ratio)
+    assert failures == []
