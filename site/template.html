@@ -268,6 +268,28 @@
   footer a { color: var(--muted); text-decoration: none; }
   footer a:hover { color: var(--text); }
   footer .spacer { flex: 1; }
+
+  /* compact cards (2026-11-17 simplification) */
+  .card { padding: 16px 18px 14px; }
+  .card .head { margin-bottom: 8px; }
+  .card .line { margin: 0 0 6px; }
+  .card .src { margin: 0 0 12px; }
+  .card .actions { gap: 14px; }
+  .card .actions .copy { font-size: 12.5px; padding: 3px 9px; }
+  .modes-line { margin: 18px 0 0; font-size: 14px; color: var(--muted); line-height: 2; }
+  .modes-line code { font: 13px var(--mono); color: var(--accent); }
+  section.slim { padding: 28px 0; }
+  .ethics-line { margin: 0; font-size: 14px; color: var(--muted); }
+  .ethics-line b { color: var(--text); }
+  .demo .note b { color: var(--text); font-weight: 600; }
+  /* Phones: first 6 cards, then a button. Only when scripts run (.js), so
+     the full list is never stranded behind a button that cannot work. */
+  .more { display: none; margin: 16px auto 0; font: inherit; font-size: 14px; padding: 9px 18px;
+          border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); cursor: pointer; }
+  @media (max-width: 640px) {
+    .js .grid:not(.expanded) .card:nth-child(n+7) { display: none; }
+    .js .more:not([hidden]) { display: block; }
+  }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .card { transition: none; } }
 </style>
@@ -340,12 +362,6 @@
         <button type="button" class="try-q" data-q="念佛怎样才算老实念佛？" data-m="yinguang">念佛怎样才算老实念佛？</button>
       </div>
       <p class="ask-note">在 fojin.app 回答，免注册，每天有免费次数。也可以 <a href="#install">把祖师装进你的 AI 工具</a>。</p>
-      <div class="facts">
-        <span><b><!-- @COUNT --></b> 位祖师</span>
-        <span><b>4</b> 大传统</span>
-        <span><b>4</b> 种教学模式</span>
-        <span>开源：代码 MIT，内容 CC</span>
-      </div>
     </div>
 
     <figure class="demo" aria-label="一次真实回答示例">
@@ -358,7 +374,7 @@
         <p>然顿渐非二法。定慧尚是一体——“定是慧体，慧是定用……” <span class="cite">《六祖坛经·定慧品》T48n2008</span>，顿渐岂有两般？迷人渐修，悟人顿契，药对病施，法无高下。</p>
         <p>更须知，六祖当年闻“应无所住而生其心”而自见本性 <span class="cite">《金刚经》T08n0235</span>。归到究竟，只问一念回光，本心现前也未？</p>
       </div>
-      <figcaption class="note">节选自 Master-skill 2026-08-31 全量评测的真实输出（模型 deepseek-v4-flash），引文由仓库离线审计逐条解析到声明来源。AI 合成内容，不代表慧能大师亲口开示。</figcaption>
+      <figcaption class="note"><b>为什么可信：</b>回答之前先检索佛津原典，每条教义附经号，可逐条核对；仓库内置保真度评测与离线引文审计。上面节选自 2026-08-31 全量评测的真实输出（模型 deepseek-v4-flash）。AI 合成内容，不代表祖师亲口开示。</figcaption>
     </figure>
   </div>
 </div>
@@ -367,7 +383,7 @@
   <div class="wrap">
     <div class="eyebrow"><!-- @COUNT_ZH -->位祖师</div>
     <h2>不知道该问谁？从你的状况开始</h2>
-    <p class="sub">选一种状况，看哪几位祖师最对机；也可以按传统浏览。每位祖师只依自己声明的典籍立论。</p>
+    <p class="sub">选一种状况，看哪几位祖师最对机；也可以按传统浏览。</p>
 
     <div class="chips" role="group" aria-label="按状况推荐">
 <!-- @CHIPS -->
@@ -385,34 +401,7 @@
     <div class="grid" id="grid">
 <!-- @CARDS -->
     </div>
-  </div>
-</section>
-
-<section id="modes">
-  <div class="wrap">
-    <div class="eyebrow">教学模式</div>
-    <h2>不止一对一</h2>
-    <p class="sub">四种教学模式和一个生成器，装进终端里的 AI 工具后可用（网页版目前只有单位祖师）。</p>
-    <div class="modes">
-      <div class="mode"><code>/compare-masters</code><p>同一个问题，几位祖师并列回答，自动配对汉、藏、南传视角。</p></div>
-      <div class="mode"><code>/master-debate</code><p>就有争议的议题多轮对辩，看清各宗立场的分歧所在。</p></div>
-      <div class="mode"><code>/master-curriculum</code><p>按传统给出由浅入深的学修路径。</p></div>
-      <div class="mode"><code>/master-help</code><p>说出你的状况，推荐该问哪位祖师。</p></div>
-      <div class="mode"><code>/create-master</code><p>按同一套来源与边界规范，生成自定义的祖师技能。</p></div>
-    </div>
-  </div>
-</section>
-
-<section id="grounded">
-  <div class="wrap">
-    <div class="eyebrow">为什么可信</div>
-    <h2>每一句，都能回到原典</h2>
-    <p class="sub">祖师技能由佛津驱动：回答之前先检索原典，回答之后可以逐条核对。</p>
-    <div class="pillars">
-      <div class="pillar"><div class="k">有来源</div><h3>只依声明的典籍</h3><p>每位祖师声明自己的来源（CBETA、BDRC、Toh、SuttaCentral、PTS），教义断言必须附原典出处。</p></div>
-      <div class="pillar"><div class="k">实时检索</div><h3>佛津原典库</h3><p>回答时实时检索佛津的原典与语义索引，附上可点开的原文链接，而不是凭模型记忆复述。</p></div>
-      <div class="pillar"><div class="k">可评测</div><h3>保真度评测</h3><p>仓库内置保真度评测与离线引文审计，每次发版都逐条检查引文能否解析到声明来源。</p></div>
-    </div>
+    <button type="button" class="more" id="more" hidden>展开全部 <!-- @COUNT --> 位祖师</button>
   </div>
 </section>
 
@@ -446,20 +435,13 @@ npx skills add xr843/Master-skill --full-depth</code></pre>
         <p>各工具的详细步骤见 <a href="https://github.com/xr843/Master-skill/blob/main/docs/install.md">安装文档</a>。</p>
       </div>
     </div>
+    <p class="modes-line">装好后还能用：<code>/compare-masters</code> 多祖师并列对比 · <code>/master-debate</code> 祖师辩论 · <code>/master-curriculum</code> 学修路径 · <code>/master-help</code> 我该问谁 · <code>/create-master</code> 自定义祖师</p>
   </div>
 </section>
 
-<section id="ethics">
+<section id="ethics" class="slim">
   <div class="wrap">
-    <div class="eyebrow">边界</div>
-    <h2>我们守的几条线</h2>
-    <p class="sub">本项目本着对佛教传统的尊重而建立，不做教义评判，不代表任何宗派权威。详见 <a href="https://github.com/xr843/Master-skill/blob/main/ETHICS.md">ETHICS.md</a>。</p>
-    <div class="ethics">
-      <div><b>AI 合成内容。</b>所有回答都不代表祖师亲口开示或亲笔著作。</div>
-      <div><b>不传密法步骤。</b>续部修法、灌顶仪轨等只介绍历史与原理。</div>
-      <div><b>不作证果判定。</b>修证印证须由具格善知识当面鉴定。</div>
-      <div><b>仅供学习参考。</b>正式修行指导，请亲近善知识。</div>
-    </div>
+    <p class="ethics-line"><b>边界：</b>所有回答均为 AI 合成内容，不代表祖师亲口开示；不传授密法具体修法步骤，不作证果判定；仅供学习参考，正式修行请亲近善知识。详见 <a href="https://github.com/xr843/Master-skill/blob/main/ETHICS.md">ETHICS.md</a>。</p>
     <p class="crisis">若你正有轻生、自伤的念头，请先联系身边可信的人或心理危机热线（中国大陆 12356；其他地区见 <a href="https://findahelpline.com">findahelpline.com</a>）。AI 祖师不能代替专业帮助。</p>
   </div>
 </section>

@@ -37,7 +37,23 @@
     return n ? n.textContent : "";
   }
 
+  var grid = document.getElementById("grid");
+  var more = document.getElementById("more");
+  if (more && grid) {
+    more.hidden = false;
+    more.addEventListener("click", function () {
+      grid.classList.add("expanded");
+      more.hidden = true;
+    });
+  }
+  // Any filter shows every match, not just the first six.
+  function expand() {
+    if (grid) grid.classList.add("expanded");
+    if (more) more.hidden = true;
+  }
+
   function apply(pick, trad) {
+    if (pick || trad) expand();
     var ids = pick ? pick.split(/\s+/) : null;
     var hits = [];
     cards.forEach(function (c) {
@@ -112,6 +128,27 @@
     b.addEventListener("click", function () {
       if (askQ) { askQ.value = b.getAttribute("data-q") || ""; askQ.focus(); }
       if (askM && b.getAttribute("data-m")) askM.value = b.getAttribute("data-m");
+    });
+  });
+
+  // ---- Umami: what visitors actually do here ----------------------------------
+  // ask_submit (hero box), card_ask (a card's 提问), copy_install (any copy
+  // button). Decides what the page should lead with next time it is trimmed.
+  function track(name, data) {
+    try { if (window.umami && window.umami.track) window.umami.track(name, data); } catch (e) {}
+  }
+  var askForm = document.querySelector("form.ask");
+  if (askForm) {
+    askForm.addEventListener("submit", function () {
+      track("ask_submit", { master: (askM && askM.value) || "none" });
+    });
+  }
+  document.querySelectorAll(".card-ask").forEach(function (a) {
+    a.addEventListener("click", function () { track("card_ask", { master: a.getAttribute("data-master") }); });
+  });
+  document.querySelectorAll(".copy").forEach(function (b) {
+    b.addEventListener("click", function () {
+      track("copy_install", { what: b.getAttribute("data-master") || (b.getAttribute("data-copy") || "").slice(0, 40) });
     });
   });
 
