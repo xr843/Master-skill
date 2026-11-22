@@ -21,7 +21,9 @@
 <!-- Not deferred: sets data-theme before first paint so dark users get no light flash. -->
 <script src="/_site/theme.js"></script>
 <script defer src="/_site/site.js"></script>
-<script defer src="https://analytics.fojin.app/script.js" data-website-id="c757a04c-82e0-4f53-a720-830b0e1a7287"></script>
+<!-- data-domains: only fojin.ai reports. Preview builds (*.pages.dev) and copies of
+     this page elsewhere do not write into fojin's analytics. -->
+<script defer src="https://analytics.fojin.app/script.js" data-website-id="c757a04c-82e0-4f53-a720-830b0e1a7287" data-domains="fojin.ai,www.fojin.ai"></script>
 <style>
   @font-face {
     font-family: "Ma Shan Zheng Title";
