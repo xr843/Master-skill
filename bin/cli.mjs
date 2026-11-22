@@ -718,7 +718,7 @@ function nextStepHint(installed) {
   }
   lines.push("  Codex CLI and Gemini CLI do not read ~/.claude/skills/ — see https://github.com/xr843/Master-skill/blob/main/docs/install.md.");
   // The web side of the project: every master, and asking one in the browser.
-  lines.push("  All masters, and asking them in the browser: https://fojin.ai/");
+  lines.push("  All masters, and asking them in the browser: https://fojin.ai/masters");
   return lines.join("\n");
 }
 

@@ -38,7 +38,7 @@
 </p>
 
 <p align="center">
-  <a href="https://fojin.ai/"><strong>Home: fojin.ai</strong></a> ·
+  <a href="https://fojin.ai/masters"><strong>Home: fojin.ai/masters</strong></a> ·
   <a href="#try-it-now-browser-first">Browser</a> ·
   <a href="#seriousness-statement">Statement</a> ·
   <a href="#features">Features</a> ·
