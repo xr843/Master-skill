@@ -177,3 +177,9 @@ def test_text_colours_meet_wcag_aa(theme):
     if ratio < 4.5:
         failures.append("accent-ink on accent = %.2f" % ratio)
     assert failures == []
+
+
+def test_analytics_only_reports_from_fojin_ai():
+    # copies of the page (and *.pages.dev previews) must not write into fojin's stats
+    page = site_build.build(check_only=True)
+    assert 'data-domains="fojin.ai,www.fojin.ai"' in page
