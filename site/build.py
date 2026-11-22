@@ -200,15 +200,17 @@ def build(check_only=False):
     (DIST / "_site").mkdir(parents=True)
     (DIST / "index.html").write_text(page, encoding="utf-8")
     # fojin.ai's own crawler files (the edge worker forwards these two paths;
-    # every other path there redirects to fojin.app).
+    # every other path there redirects to fojin.app). This page is served at
+    # fojin.ai/masters; fojin.ai/ is the 引文溯源 page from the FoJin repo.
     (DIST / "robots.txt").write_text(
         "User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n" % SITE_URL, encoding="utf-8")
     (DIST / "sitemap.xml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         "  <url><loc>%s/</loc></url>\n"
+        "  <url><loc>%s/masters</loc></url>\n"
         "  <url><loc>%s/developers</loc></url>\n"
-        "</urlset>\n" % (SITE_URL, SITE_URL), encoding="utf-8")
+        "</urlset>\n" % (SITE_URL, SITE_URL, SITE_URL), encoding="utf-8")
     for asset in (SITE / "assets").iterdir():
         shutil.copy2(asset, DIST / "_site" / asset.name)
     return page

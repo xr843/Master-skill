@@ -1,6 +1,6 @@
 # fojin.ai home page
 
-The page at **https://fojin.ai/** is built from this directory.
+The page at **https://fojin.ai/masters** is built from this directory. (fojin.ai/ itself is the 引文溯源 page — "does this passage come from the canon?" — served from the FoJin repository, `frontend/public/trace.html`.)
 
 ```bash
 python3 site/build.py           # -> site/dist/  (index.html + _site/*.js)
@@ -28,11 +28,11 @@ lineage (`fojin.app/chat?master=<slug>`).
    (preview builds for other branches):
    build command `python3 site/build.py`, output directory `site/dist`.
 2. **fojin.ai** is answered by the edge worker in the FoJin repository
-   (`workers/fojin-ai-edge/`). It forwards `/` and `/_site/*` to the Pages
+   (`workers/fojin-ai-edge/`). It forwards `/masters` (as the site's `/`) and `/_site/*` to the Pages
    site and keeps the domain's other jobs: the legacy service-worker
    kill-switch, `/developers` (the MCP / API portal) and the 301s that send old
    fojin.ai deep links to fojin.app. That worker also sets the page's security
    headers (CSP: no inline script — keep scripts in `site/assets/`).
 
-The page's `<link rel="canonical">` is `https://fojin.ai/`, so the
+The page's `<link rel="canonical">` is `https://fojin.ai/masters`, so the
 `*.pages.dev` address is not indexed as a second copy.

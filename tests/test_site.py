@@ -121,7 +121,15 @@ def test_build_writes_robots_and_sitemap(tmp_path, monkeypatch):
     assert "Sitemap: https://fojin.ai/sitemap.xml" in robots
     sitemap = (tmp_path / "dist" / "sitemap.xml").read_text(encoding="utf-8")
     assert "<loc>https://fojin.ai/</loc>" in sitemap
+    assert "<loc>https://fojin.ai/masters</loc>" in sitemap
     assert (tmp_path / "dist" / "_site" / "site.js").exists()
+
+
+def test_page_is_canonical_at_masters():
+    # fojin.ai/ is the 引文溯源 page now; this catalogue lives at /masters.
+    page = site_build.build(check_only=True)
+    assert '<link rel="canonical" href="https://fojin.ai/masters" />' in page
+    assert '<a href="/" title="贴一段文字，逐句核对是否出自佛经">核对出处</a>' in page
 
 
 # --- colour contrast (WCAG AA) -------------------------------------------
