@@ -193,15 +193,18 @@ jobs:
         # suppressions were deleted. The registry is empty, so this step passes
         # no --ignore at all.
         #
-        # The two unmaintained notices (RUSTSEC-2024-0436 paste,
-        # RUSTSEC-2026-0192 ttf-parser) are deliberately NOT suppressed. Neither
-        # has a fixed version in existence, but cargo-audit already scores them
-        # as warnings rather than errors, so they stay printed and stay
-        # harmless. Suppressing something that is not breaking anything only
-        # trains the eye to skip it.
+        # Unmaintained notices are deliberately NOT suppressed: cargo-audit
+        # scores them as warnings, so they stay printed and harmless.
+        # As of 2026-11-22 (RUSTSEC-2026-0592, url, fixed by url 2.5.9; yanked
+        # async-executor / clipboard-win and unsound rustix 1.1.4 also moved to
+        # fixed releases) the only ones left are zbus_names / zvariant /
+        # zvariant_derive (RUSTSEC-2026-0370..0372): merged into zbus 6, while
+        # eframe's Linux accessibility stack (accesskit_unix → zbus 5) still
+        # pins the standalone crates. They go away when egui moves to zbus 6.
+        # Suppressing something that is not breaking anything only hides it.
         #
-        # Everything that COULD be fixed was, in this same commit:
-        # event-listener 5.4.1 → 5.4.2 (!Send crossing threads) and
+        # Everything that COULD be fixed was fixed when this gate went in
+        # (2026-09): event-listener 5.4.1 → 5.4.2 (!Send crossing threads) and
         # webbrowser 1.2.1 → 1.2.4 (Unix BROWSER argument injection).
         #
         # The ids come from `desktop/audit-ignore.json`, not from this line:
