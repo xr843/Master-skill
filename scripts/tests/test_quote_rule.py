@@ -34,3 +34,21 @@ def test_teaching_modes_do_not_present_cross_critique_as_a_masters_words():
     for name in ("compare-masters", "master-debate", "master-curriculum"):
         text = (ROOT / "prebuilt" / name / "SKILL.md").read_text(encoding="utf-8")
         assert "CROSS_CRITIQUE IS OUR SYNTHESIS" in _gate(text), name
+
+
+def test_personas_say_they_are_ai():
+    """AI DISCLOSURE (2026-11-24): the main criticism of Buddhist AI 'teachers'
+    is not saying they are AI. The shared safety clause carries the rule, and
+    every persona's closing line says the answer is AI-generated, not the
+    master's own teaching."""
+    import json
+    assert "AI DISCLOSURE" in (ROOT / "prompts" / "safety_clause.md").read_text(encoding="utf-8")
+    catalog = json.loads((ROOT / "skill-catalog.json").read_text(encoding="utf-8"))
+    personas = [ROOT / s["source"] / "meta.json" for s in catalog["skills"] if s.get("kind") == "persona"]
+    assert len(personas) == 16
+    for meta in personas:
+        name = json.loads(meta.read_text(encoding="utf-8"))["name"]
+        text = (meta.parent / "SKILL.md").read_text(encoding="utf-8")
+        assert "AI DISCLOSURE" in _gate(text), meta.parent.name
+        assert "非%s本人开示" % name in text, meta.parent.name
+    assert "非{name}本人开示" in (ROOT / "tools" / "skill_writer.py").read_text(encoding="utf-8")
