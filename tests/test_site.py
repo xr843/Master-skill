@@ -196,3 +196,5 @@ def test_header_nav_matches_the_other_fojin_ai_pages():
     assert labels == ["核对出处", "祖师", "开发者", "读经站"]
     assert '<a href="/masters" aria-current="page">祖师</a>' in nav
     assert "#install" not in nav and "github.com" not in nav
+    # every section shows at every width — nothing hidden on phones (2026-11-24)
+    assert 'class="opt"' not in nav
