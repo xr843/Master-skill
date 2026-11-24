@@ -114,7 +114,15 @@
   nav.links a[aria-current="page"] { color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
   nav.links a { padding: 4px 0; white-space: nowrap; }
   .ext-mark { font-size: .8em; margin-left: 2px; opacity: .6; }
-  @media (max-width: 640px) { nav.links { gap: 16px; } nav.links .opt { display: none; } }
+  /* Phones: all four sections stay in the header (2026-11-24). Labels never wrap
+     (they used to break into stacked characters at 360px); spacing tightens so the
+     header fits 360px; anything narrower scrolls the nav row, not the page. */
+  .brand, nav.links a { white-space: nowrap; }
+  .brand { flex: none; }
+  @media (max-width: 420px) {
+    header.top .wrap { padding-left: 14px; padding-right: 14px; gap: 12px; }
+    nav.links { gap: 10px; font-size: 13px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  }
   .theme-toggle {
     display: grid; place-items: center; width: 34px; height: 34px; flex: none;
     border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface);
@@ -329,7 +337,7 @@
     <nav class="links" aria-label="主导航">
       <a href="/" title="贴一段文字，逐句核对是否出自佛经">核对出处</a>
       <a href="/masters" aria-current="page">祖师</a>
-      <a href="/developers" class="opt" title="MCP 端点、HTTP API 与命令行工具">开发者</a>
+      <a href="/developers" title="MCP 端点、HTTP API 与命令行工具">开发者</a>
       <a href="https://fojin.app" title="佛津读经站 fojin.app：检索、阅读、对照原典">读经站</a>
     </nav>
     <button class="theme-toggle" type="button" aria-label="切换深色模式" title="切换深浅色">
@@ -460,7 +468,6 @@ npx skills add xr843/Master-skill --full-depth</code></pre>
   <div class="wrap">
     <span>佛津 AI</span>
     <a href="https://fojin.app">佛津读经站 fojin.app</a>
-    <a href="/developers">开发者：MCP 与接口</a>
     <a href="https://github.com/xr843/Master-skill">Master-skill</a>
     <a href="https://github.com/xr843/fojin">FoJin</a>
     <span class="spacer"></span>
