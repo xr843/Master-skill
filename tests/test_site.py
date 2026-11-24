@@ -183,3 +183,16 @@ def test_analytics_only_reports_from_fojin_ai():
     # copies of the page (and *.pages.dev previews) must not write into fojin's stats
     page = site_build.build(check_only=True)
     assert 'data-domains="fojin.ai,www.fojin.ai"' in page
+
+
+def test_header_nav_matches_the_other_fojin_ai_pages():
+    # fojin.ai's three pages share one header: 核对出处 · 祖师 · 开发者 · 读经站, the
+    # current page always marked (2026-11-24). Here 祖师 used to be an in-page #masters
+    # anchor lit only while that section scrolled by, next to 安装 and GitHub.
+    import re
+    page = site_build.build(check_only=True)
+    nav = re.search(r'<nav class="links"[^>]*>(.*?)</nav>', page, re.S).group(1)
+    labels = re.findall(r'<a [^>]*>([^<]+)', nav)
+    assert labels == ["核对出处", "祖师", "开发者", "读经站"]
+    assert '<a href="/masters" aria-current="page">祖师</a>' in nav
+    assert "#install" not in nav and "github.com" not in nav
