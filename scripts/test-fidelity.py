@@ -35,6 +35,7 @@ from _masterpaths import resolve_master_dir
 from _fixture_identity import fixture_sha256
 from _citation_evidence import load_quote_evidence, unsupported_quotes
 from _evaluation_identity import evaluation_identity
+import _quote_verify
 from _skill_context import load_skill_context
 from verify_citations import (
     _CBETA_ID,
@@ -355,13 +356,20 @@ def aggregation_conflicts(suites: list[dict]) -> list[str]:
         for s in suites
         if s.get("model")
     }
-    if len(seen) <= 1:
-        return []
-    listed = ", ".join(f"{p}/{m}" for p, m in sorted(seen))
-    return [
-        "refusing to aggregate across instruments — these suites came from "
-        f"different models ({listed}). Report a row per model."
-    ]
+    conflicts = []
+    if len(seen) > 1:
+        listed = ", ".join(f"{p}/{m}" for p, m in sorted(seen))
+        conflicts.append(
+            "refusing to aggregate across instruments — these suites came from "
+            f"different models ({listed}). Report a row per model."
+        )
+    verify = {bool(s.get("quote_verify_tool")) for s in suites if s.get("model")}
+    if len(verify) > 1:
+        conflicts.append(
+            "refusing to aggregate across instruments — some suites ran with the "
+            f"{QUOTE_VERIFY_TOOL} tool and some without. Report them separately."
+        )
+    return conflicts
 
 
 def suite_common(
@@ -437,6 +445,8 @@ def load_tests(master_dir: Path) -> list[dict]:
 # produces: every skill directory side by side, which is what prebuilt/ is.
 # Personas do not — they carry their data in their own prompt, and giving
 # them tools would change the instrument behind every persona number.
+# (The one exception is opt-in: `--quote-verify-tool`, below, recorded as
+# its own instrument.)
 #
 # `tests/` is never readable. Every skill directory holds its own
 # `tests/fidelity.jsonl` — the questions and what the grader looks for.
@@ -489,6 +499,32 @@ _TOOL_SCHEMAS[SUBAGENT_TOOL] = {
     },
     "required": ["prompt"],
 }
+# Opt-in (`--quote-verify-tool` / FIDELITY_QUOTE_VERIFY=1): FoJin's quotation
+# check, for personas AND teaching modes. The HARD-GATE's 「引号前先核验」 rule
+# only applies when the host can make an HTTP request; without this tool an
+# eval never exercises it. A run with it is a different instrument — the
+# report says so in `quote_verify_tool` and `skill_tools`, and
+# `aggregation_conflicts` refuses to pool runs that differ on it.
+QUOTE_VERIFY_TOOL = _quote_verify.TOOL_NAME
+QUOTE_VERIFY_ENV = "FIDELITY_QUOTE_VERIFY"
+_TOOL_SCHEMAS[QUOTE_VERIFY_TOOL] = _quote_verify.SCHEMA
+_TOOL_DESCRIPTIONS[QUOTE_VERIFY_TOOL] = _quote_verify.DESCRIPTION
+
+
+def quote_verify_from_env() -> bool:
+    return os.environ.get(QUOTE_VERIFY_ENV, "").strip() == "1"
+
+
+def eval_tool_names(tools: bool, subagents: bool, quote_verify: bool = False) -> list[str]:
+    """Every tool a fixture's conversation declares, in the order sent."""
+    names = list(SKILL_TOOL_NAMES) if tools else []
+    if quote_verify:
+        names.append(QUOTE_VERIFY_TOOL)
+    if tools and subagents:
+        names.append(SUBAGENT_TOOL)
+    return names
+
+
 _SUBAGENT_REPLY_KEPT = 8_000
 _PARAGRAPH_MIN = 20
 
@@ -595,10 +631,15 @@ class SkillFiles:
 
     _INSTALLED = re.compile(r"(?:^|/)\.claude/skills/(?P<rest>.*)$")
 
-    def __init__(self, own_dir: Path, root: Path = PREBUILT_DIR):
+    def __init__(self, own_dir: Path, root: Path = PREBUILT_DIR, verifier=None):
         self.root = root.resolve()
         self.own = own_dir.resolve()
         self.log: list[dict] = []
+        # `fojin_verify_trace`, when the run enables it: calls are delegated
+        # and land in this same log, so one list says what a fixture did.
+        self.verifier = verifier
+        if verifier is not None:
+            verifier.log = self.log
         # Rounds of tool calls, counted by `converse` across the fixture —
         # the orchestrator's and its subagents' together. Reads alone do not
         # say it: one round can hold several calls.
@@ -640,6 +681,9 @@ class SkillFiles:
         return resolved
 
     def call(self, name: str, arguments: dict) -> str:
+        if self.verifier is not None and name == QUOTE_VERIFY_TOOL:
+            self.verifier.agent = self.agent
+            return self.verifier.call(name, arguments)
         path = (arguments or {}).get("path", "")
         try:
             if not isinstance(path, str):
@@ -720,6 +764,7 @@ def converse(
     budget_s: float | None = None,
     clock=None,
     subagent=None,
+    tool_names=SKILL_TOOL_NAMES,
 ):
     """Send ``body``; while the reply asks for tools, answer and resend.
 
@@ -732,12 +777,14 @@ def converse(
 
     ``subagent``, when given, declares the Task tool and is called with each
     Task call's arguments; its return value is the tool result.
+
+    ``tool_names`` are the other tools declared; ``files.call`` answers them.
     """
     import time
 
     clock = clock or time.monotonic
     started = clock()
-    names = SKILL_TOOL_NAMES + ((SUBAGENT_TOOL,) if subagent else ())
+    names = tuple(tool_names) + ((SUBAGENT_TOOL,) if subagent else ())
     body = {**body, "messages": list(body["messages"]), "tools": tool_definitions(provider, names)}
     anthropic_api = resolve_provider(provider)["api"] == "anthropic"
     rounds = 0
@@ -1486,12 +1533,14 @@ def _plan_suite(
     concurrency: int,
     request_timeout: float,
     max_retries: int,
+    quote_verify: bool = False,
 ) -> dict:
     """What a graded run would send, without sending it (`--plan`)."""
     # One request per persona fixture; file conversations have <=21 sends.
     # Task fanout per tool response is model-dependent, so no request ceiling
     # can be honestly inferred for subagent suites from the round cap alone.
-    requests_per_fixture = MAX_TOOL_ROUNDS + 1 if tools else 1
+    looped = tools or quote_verify
+    requests_per_fixture = MAX_TOOL_ROUNDS + 1 if looped else 1
     maximum_attempts = None if subagents else len(tests) * requests_per_fixture * (max_retries + 1)
     return {
         **suite_common(master_name, False, "completed", provider),
@@ -1503,16 +1552,17 @@ def _plan_suite(
                      for i, test in enumerate(tests)],
         "initial_system_utf8_bytes": len(system_prompt.encode("utf-8")),
         "initial_questions_utf8_bytes": sum(len(test["q"].encode("utf-8")) for test in tests),
-        "skill_tools": list(SKILL_TOOL_NAMES) + ([SUBAGENT_TOOL] if subagents else []) if tools else [],
+        "skill_tools": eval_tool_names(tools, subagents, quote_verify),
+        "quote_verify_tool": quote_verify,
         "max_output_tokens": max_output_tokens,
         "concurrency": min(concurrency, len(tests)),
         "request_timeout": request_timeout, "max_retries": max_retries,
-        "configured_per_fixture_ceiling_s": per_fixture_ceiling(request_timeout, max_retries, tools, subagents),
+        "configured_per_fixture_ceiling_s": per_fixture_ceiling(request_timeout, max_retries, looped, subagents),
         "request_plan": {
             "initial_requests": len(tests),
             "maximum_sdk_attempts": maximum_attempts,
             "initial_output_token_limits_sum": len(tests) * max_output_tokens,
-            "additional_calls": "model-dependent subagent fanout" if subagents else "bounded file-tool rounds" if tools else "SDK retries only",
+            "additional_calls": "model-dependent subagent fanout" if subagents else "bounded tool rounds" if looped else "SDK retries only",
         },
         "limitations": ["UTF-8 bytes are not token counts or billed input",
                         "Output limits describe initial requests, not total tool-loop output",
@@ -1589,8 +1639,14 @@ def run_tests(
     request_timeout: float = DEFAULT_REQUEST_TIMEOUT,
     max_retries: int = DEFAULT_MAX_RETRIES,
     plan: bool = False,
+    quote_verify: bool | None = None,
 ) -> dict:
-    """Run fidelity tests for a master. Returns summary."""
+    """Run fidelity tests for a master. Returns summary.
+
+    ``quote_verify`` adds `fojin_verify_trace` (None: read FIDELITY_QUOTE_VERIFY).
+    """
+    if quote_verify is None:
+        quote_verify = quote_verify_from_env()
     # 目录叫 `master-<slug>`,而公开写在 README / package.json 里的调用形式是短名
     # (`--master yinguang`)。`_masterpaths.resolve_master_dir` 正是为此存在,别的
     # 脚本都改用了,这个运行器没有 —— `npm run test:smoke` 因此从未跑通。
@@ -1648,7 +1704,7 @@ def run_tests(
     if plan:
         return _plan_suite(
             master_name, provider, model, tests, identity, system_prompt, tools, subagents,
-            max_output_tokens, concurrency, request_timeout, max_retries,
+            max_output_tokens, concurrency, request_timeout, max_retries, quote_verify,
         )
 
     api_key = os.environ.get(spec["env"])
@@ -1687,7 +1743,7 @@ def run_tests(
             sub = converse(
                 send, provider,
                 build_request(provider, model, SUBAGENT_SYSTEM_PROMPT, prompt, max_output_tokens),
-                files, on_response=record, budget_s=remaining,
+                files, on_response=record, budget_s=remaining, tool_names=loop_tools,
             )
             reply = extract_text(provider, sub)
             if extract_finish_reason(provider, sub) == "length":
@@ -1703,6 +1759,10 @@ def run_tests(
         files.log.append(entry)
         return reply
 
+    # Declared on every conversation of a fixture, subagents' included; Task
+    # is added by `converse` itself where it applies.
+    loop_tools = tuple(n for n in eval_tool_names(tools, subagents, quote_verify) if n != SUBAGENT_TOOL)
+
     def grade_one(i: int, test: dict) -> tuple[dict, bool, str]:
         """Run and grade one fixture. Pure w.r.t. the enclosing suite state.
 
@@ -1710,7 +1770,12 @@ def run_tests(
         Every failure mode is a returned value, not a raised exception, so one
         bad fixture cannot take the pool down with it.
         """
-        files = SkillFiles(master_dir) if tools else None
+        verifier = _quote_verify.QuoteVerify() if quote_verify else None
+        if tools:
+            files = SkillFiles(master_dir, verifier=verifier)
+        else:
+            # A persona with the verify tool: the same loop, one tool.
+            files = verifier
         try:
             body = build_request(
                 provider, model, system_prompt, test["q"], max_output_tokens
@@ -1723,6 +1788,7 @@ def run_tests(
                     send, provider, body, files,
                     on_response=record,
                     budget_s=budget,
+                    tool_names=loop_tools,
                     subagent=(
                         (lambda args: run_subagent(files, args, deadline, record))
                         if subagents else None
@@ -1906,9 +1972,9 @@ def run_tests(
         "inputs_stable": inputs_stable,
         # Which instrument: a teaching-mode suite graded with file tools is not
         # comparable with one graded without (every run before 2026-09-24).
-        "skill_tools": (
-            list(SKILL_TOOL_NAMES) + ([SUBAGENT_TOOL] if subagents else []) if tools else []
-        ),
+        "skill_tools": eval_tool_names(tools, subagents, quote_verify),
+        # With FoJin's quotation check or without: two instruments.
+        "quote_verify_tool": quote_verify,
         "model": model,
         "total": len(tests),
         "passed": passed,
@@ -1931,7 +1997,7 @@ def run_tests(
         "request_timeout": request_timeout,
         "max_retries": max_retries,
         "per_fixture_ceiling_s": per_fixture_ceiling(
-            request_timeout, max_retries, tools, subagents
+            request_timeout, max_retries, tools or quote_verify, subagents
         ),
         # 中断的运行必须能与完整运行区分 —— 否则一份跑了 12/211 的结果读起来
         # 和跑完的一样,正是本仓一直在修的形状。
@@ -2095,6 +2161,17 @@ def main() -> int:
         default=DEFAULT_MAX_RETRIES,
         help="SDK retries per fixture (default %(default)s)",
     )
+    parser.add_argument(
+        "--quote-verify-tool",
+        action="store_true",
+        help=(
+            f"Give every skill the {QUOTE_VERIFY_TOOL} tool, which POSTs to "
+            f"{_quote_verify.ENDPOINT} — the check the HARD-GATE requires "
+            "before a recalled sentence is quoted. Also enabled by "
+            f"{QUOTE_VERIFY_ENV}=1. A different instrument: recorded as "
+            "quote_verify_tool in the report; do not compare across it."
+        ),
+    )
     args = parser.parse_args()
 
     if args.concurrency < 1:
@@ -2141,6 +2218,7 @@ def main() -> int:
             request_timeout=args.request_timeout,
             max_retries=args.max_retries,
             plan=args.plan,
+            quote_verify=args.quote_verify_tool or quote_verify_from_env(),
         )
         all_results.append(result)
 
