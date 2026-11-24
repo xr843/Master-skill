@@ -238,6 +238,9 @@
   .card .actions a { font-size: 13.5px; font-weight: 600; color: var(--accent); text-decoration: none; }
   .card .actions a:hover { text-decoration: underline; }
   .card .actions .off { font-size: 12.5px; color: var(--faint); }
+  /* the download is the secondary action: quieter than 提问 →, still a real link */
+  .card .actions a.card-dl { font-weight: 500; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px; }
+  .card .actions a.card-dl:hover { color: var(--text); border-color: var(--accent); text-decoration: none; }
   .cmd {
     display: flex; align-items: center; gap: 8px; width: 100%;
     font: 12.5px var(--mono); color: var(--muted); background: var(--bg-2);
@@ -275,6 +278,9 @@
   .install pre .c { color: var(--faint); }
   .install .row { display: flex; justify-content: flex-end; margin-top: 10px; }
   .install p { font-size: 14px; color: var(--muted); margin: 12px 0 0; }
+  .install .steps { margin: 0; padding-left: 1.3em; font-size: 14.5px; line-height: 1.85; color: var(--text); }
+  .install .steps li + li { margin-top: 4px; }
+  .install .note { font-size: 13px; color: var(--faint); }
 
   /* ethics + footer */
   .ethics { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 12px; }
@@ -426,14 +432,27 @@
   <div class="wrap">
     <div class="eyebrow">安装</div>
     <h2>装进你的 AI 工具</h2>
-    <p class="sub">只是想体验，<a href="https://fojin.app/chat?utm_source=fojin.ai&amp;utm_medium=install">直接在网页里用</a>，无需安装、无需注册。</p>
+    <p class="sub">只是想体验，<a href="https://fojin.app/chat?utm_source=fojin.ai&amp;utm_medium=install">直接在网页里用</a>，无需安装、无需注册。想在自己的 Claude 或 Gemini 里随时问，下载对应祖师的技能包上传即可。</p>
     <div class="install">
       <div role="tablist" aria-label="安装方式">
-        <button role="tab" id="tab-cc" aria-controls="p-cc" aria-selected="true">Claude Code · OpenCode</button>
+        <button role="tab" id="tab-web" aria-controls="p-web" aria-selected="true">网页版 Claude · Gemini</button>
+        <button role="tab" id="tab-cc" aria-controls="p-cc" aria-selected="false">Claude Code · OpenCode</button>
         <button role="tab" id="tab-codex" aria-controls="p-codex" aria-selected="false">Codex CLI</button>
-        <button role="tab" id="tab-any" aria-controls="p-any" aria-selected="false">Cursor · Gemini 等</button>
+        <button role="tab" id="tab-any" aria-controls="p-any" aria-selected="false">Cursor · Gemini CLI 等</button>
       </div>
-      <div role="tabpanel" id="p-cc" aria-labelledby="tab-cc">
+      <div role="tabpanel" id="p-web" aria-labelledby="tab-web">
+        <!-- Steps from the vendors' help pages (2026-11-24): support.claude.com
+             12512180 / 12512198, support.google.com/gemini 17094296. ChatGPT
+             skills are Business/Enterprise/Edu only, so not offered yet. -->
+        <ol class="steps">
+          <li>在上方祖师卡片点「<b>下载技能包</b>」，得到一个 .zip 文件（不用解压）。</li>
+          <li><b>Claude</b>（claude.ai，免费版也可）：设置 → 功能（Capabilities），打开「代码执行与文件创建」；再到 自定义（Customize）→ 技能（Skills）→「+」→ 上传技能，选这个 .zip。</li>
+          <li><b>Gemini</b>（gemini.google.com，个人账号）：自定义（Customize）→ 技能（Skills）→ 创建 → 上传，选这个 .zip。</li>
+          <li>之后在对话里问相关问题（如「怎么参话头」），它会自动以这位祖师的教法作答并附出处；手机 App 登录同一账号也能用。</li>
+        </ol>
+        <p class="note">网页版里技能不能联网，只依据包内已核对的原典摘录作答；要实时检索全藏，用下面的终端安装或 <a href="https://fojin.app/chat?utm_source=fojin.ai&amp;utm_medium=install">fojin.app</a>。多祖师对比、辩论、学修路径三种模式目前只在终端可用。</p>
+      </div>
+      <div role="tabpanel" id="p-cc" aria-labelledby="tab-cc" hidden>
         <pre tabindex="0"><code><span class="c"># 一次装全部 21 个技能</span>
 npx master-skill install --all
 <span class="c"># 不知道该问谁？让它推荐</span>

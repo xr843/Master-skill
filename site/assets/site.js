@@ -146,6 +146,9 @@
   document.querySelectorAll(".card-ask").forEach(function (a) {
     a.addEventListener("click", function () { track("card_ask", { master: a.getAttribute("data-master") }); });
   });
+  document.querySelectorAll("a.card-dl").forEach(function (a) {
+    a.addEventListener("click", function () { track("skill_download", { master: a.getAttribute("data-master") }); });
+  });
   document.querySelectorAll(".copy").forEach(function (b) {
     b.addEventListener("click", function () {
       track("copy_install", { what: b.getAttribute("data-master") || (b.getAttribute("data-copy") || "").slice(0, 40) });
