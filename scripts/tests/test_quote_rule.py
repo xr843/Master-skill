@@ -79,3 +79,15 @@ def test_debate_rounds_carry_the_check():
     text = (ROOT / "prebuilt" / "master-debate" / "SKILL.md").read_text(encoding="utf-8")
     item = text[text.index("9. 引号只装原文"):text.index("【输出格式】")]
     assert ENDPOINT in item and "found: true" in item
+
+
+def test_verified_quotes_keep_the_declared_citation_form():
+    """Live pilot 2026-11-24 (huineng, 4 fixtures): told to cite the endpoint's
+    `cbeta_id`, the model wrote T2008 instead of the declared T48n2008, and three
+    of four answers failed on a missing citation that r7 had passed."""
+    for path in sorted((ROOT / "prebuilt").glob("*/SKILL.md")):
+        gate = _gate(path.read_text(encoding="utf-8"))
+        if VERIFY not in gate:
+            continue
+        assert "`T<册>n<经号>`" in gate, path.parent.name
+        assert "出处用返回的" not in gate, path.parent.name
