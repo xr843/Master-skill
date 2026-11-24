@@ -24,6 +24,7 @@ import json
 import re
 import shutil
 import sys
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -36,6 +37,83 @@ ZH_NUM = "零一二三四五六七八九"
 
 class SiteError(Exception):
     pass
+
+
+# ---- upload bundles (Claude.ai / Gemini app) --------------------------------
+# Since autumn 2026 ordinary chat apps take Agent Skills as an uploaded .zip:
+# claude.ai (all plans, Customize > Skills > Upload) and the Gemini app
+# (personal accounts, Customize > Skills > Upload). Our readers are there, not
+# in a terminal, so every master gets a download at /_site/skills/<skill>.zip.
+# Their rules differ from the terminal hosts':
+#   - claude.ai's help page caps `description` at 200 characters (the spec says
+#     1024; ours run 278-483). It doesn't say characters or bytes, so the upload
+#     copy gets its own short description of at most 200 UTF-8 bytes.
+#   - the zip's top folder must be named exactly like the skill.
+#   - only the spec's frontmatter keys are kept; the rest move into `metadata`
+#     (string values). meta.json, which carries the full source list, ships too.
+#   - neither app lets a skill reach the network (Gemini says so outright), so
+#     the persona falls back to its bundled excerpts — it already does that when
+#     FoJin is unreachable.
+# Teaching modes (compare / debate / curriculum) read the other masters'
+# folders and stay terminal-only.
+UPLOAD_DESC_MAX_BYTES = 200
+UPLOAD_KEEP_KEYS = ("name", "description", "license")
+UPLOAD_METADATA_KEYS = ("version", "lineage", "dates", "verified_by", "verified_at")
+ZIP_DATE = (2026, 1, 1, 0, 0, 0)  # fixed, so the same sources give the same bytes
+
+
+def upload_description(persona, copy):
+    meta = persona["meta"]
+    school = re.split(r"[（(]", copy["school"], maxsplit=1)[0]  # 律宗（南山律） -> 律宗
+    first = next((short_title(x.get("title", "")) for x in meta.get("sources", [])
+                  if short_title(x.get("title", ""))), "")
+    desc = "%s（%s）AI 学修伴读：问%s，依《%s》等原典作答并附出处。AI 依文献生成，非祖师本人。" % (
+        meta["name"], school, copy["ask"], first)
+    if len(desc.encode("utf-8")) > UPLOAD_DESC_MAX_BYTES:
+        # drop the source title before giving up
+        desc = "%s（%s）AI 学修伴读：问%s，作答附原典出处。AI 依文献生成，非祖师本人。" % (
+            meta["name"], school, copy["ask"])
+    return desc
+
+
+def upload_skill_md(text, description):
+    m = re.match(r"---\n(.*?)\n---\n", text, re.S)
+    if not m:
+        raise SiteError("SKILL.md has no frontmatter")
+    fm, body = m.group(1), text[m.end():]
+    top = {}
+    for key, val in re.findall(r"^([A-Za-z_][\w-]*):[ \t]*(.*)$", fm, re.M):
+        top[key] = val.strip()
+    lines = ["---", "name: " + top["name"], "description: " + json.dumps(description, ensure_ascii=False)]
+    if top.get("license"):
+        lines.append("license: " + top["license"])
+    meta = [(k, top[k].strip('"').strip("'")) for k in UPLOAD_METADATA_KEYS if top.get(k)]
+    if meta:
+        lines.append("metadata:")
+        lines += ["  %s: %s" % (k, json.dumps(v, ensure_ascii=False)) for k, v in meta]
+    lines.append("---")
+    return "\n".join(lines) + "\n" + body
+
+
+def upload_bundle(skill, description):
+    """Bytes of <skill>.zip: <skill>/SKILL.md (rewritten frontmatter) and the
+    rest of plugin/skills/<skill>/ as installed by the terminal hosts."""
+    src = ROOT / "plugin" / "skills" / skill
+    if not (src / "SKILL.md").is_file():
+        raise SiteError("plugin/skills/%s/SKILL.md missing (run scripts/build-plugin-bundle.py)" % skill)
+    import io
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for f in sorted(x for x in src.rglob("*") if x.is_file()):
+            rel = f.relative_to(src).as_posix()
+            data = f.read_bytes()
+            if rel == "SKILL.md":
+                data = upload_skill_md(data.decode("utf-8"), description).encode("utf-8")
+            info = zipfile.ZipInfo("%s/%s" % (skill, rel), date_time=ZIP_DATE)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o644 << 16
+            z.writestr(info, data)
+    return buf.getvalue()
 
 
 def zh_count(n):
@@ -108,6 +186,8 @@ def validate(personas, cards):
         if bad or not sc.get("pick"):
             problems.append("scenario %r picks unknown masters: %s" % (sc.get("label"), bad))
     for slug, p in personas.items():
+        if slug in copy and len(upload_description(p, copy[slug]).encode("utf-8")) > UPLOAD_DESC_MAX_BYTES:
+            problems.append("%s: upload description over %d bytes" % (slug, UPLOAD_DESC_MAX_BYTES))
         if not tradition_of(p["meta"]):
             problems.append("%s: meta.json has no tradition" % slug)
     if problems:
@@ -125,7 +205,6 @@ def card_html(slug, persona, copy):
     trad = tradition_of(meta)
     first = sources_line(meta, limit=1)
     more = len({short_title(x.get("title", "")) for x in meta.get("sources", [])}) > 1
-    cmd = "npx master-skill install " + persona["skill"]
     if copy["web"]:
         ask = ('<a class="card-ask" data-master="%s" href="%s?master=%s&amp;utm_source=fojin.ai">提问 →</a>'
                % (e(slug), CHAT, e(slug)))
@@ -137,13 +216,13 @@ def card_html(slug, persona, copy):
         '<div class="meta">{era} · {trad} · {school}</div></div></div>\n'
         '        <p class="line">{line}</p>\n'
         '        <p class="src">依据：{src}{more}</p>\n'
-        '        <div class="actions">{ask}<button class="copy" type="button" data-copy="{cmd}" '
-        'data-master="{slug}">复制安装命令</button></div>\n'
+        '        <div class="actions">{ask}<a class="card-dl" href="/_site/skills/{skill}.zip" download '
+        'data-master="{slug}" title="装进 Claude 或 Gemini 网页版：见下方「安装」">下载技能包</a></div>\n'
         "      </article>"
     ).format(
         slug=e(slug), trad=e(trad), hint=e(copy["ask"]), seal=e(copy["seal"]), name=e(meta["name"]),
         era=e(era), school=e(copy["school"]), line=e(copy["line"]), src=e(first),
-        more=" 等" if more else "", ask=ask, cmd=e(cmd),
+        more=" 等" if more else "", ask=ask, skill=e(persona["skill"]),
     )
 
 
@@ -213,6 +292,10 @@ def build(check_only=False):
         "</urlset>\n" % (SITE_URL, SITE_URL, SITE_URL), encoding="utf-8")
     for asset in (SITE / "assets").iterdir():
         shutil.copy2(asset, DIST / "_site" / asset.name)
+    (DIST / "_site" / "skills").mkdir()
+    for slug, p in personas.items():
+        (DIST / "_site" / "skills" / (p["skill"] + ".zip")).write_bytes(
+            upload_bundle(p["skill"], upload_description(p, cards["masters"][slug])))
     return page
 
 

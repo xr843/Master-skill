@@ -41,7 +41,7 @@ def test_every_persona_has_exactly_one_card(sources, page):
 def test_install_command_names_the_real_skill(sources, page):
     personas, _ = sources
     for slug, p in personas.items():
-        assert 'data-copy="npx master-skill install %s"' % p["skill"] in page, slug
+        assert 'href="/_site/skills/%s.zip" download' % p["skill"] in page, slug
 
 
 def test_cards_show_the_declared_sources(sources, page):
@@ -198,3 +198,30 @@ def test_header_nav_matches_the_other_fojin_ai_pages():
     assert "#install" not in nav and "github.com" not in nav
     # every section shows at every width — nothing hidden on phones (2026-11-24)
     assert 'class="opt"' not in nav
+
+
+
+def test_upload_bundles_fit_claude_and_gemini(tmp_path, monkeypatch):
+    # claude.ai / Gemini uploads (2026-11-24): top folder named like the skill,
+    # description <= 200 bytes (claude.ai's help page says 200; unit not stated),
+    # only spec frontmatter keys at the top level, same bytes on every build.
+    import io, re, zipfile
+    monkeypatch.setattr(site_build, "DIST", tmp_path / "dist")
+    site_build.build()
+    personas, _ = site_build.load()
+    zips = sorted((tmp_path / "dist" / "_site" / "skills").glob("*.zip"))
+    assert [z.stem for z in zips] == sorted(p["skill"] for p in personas.values())
+    for z in zips:
+        names = zipfile.ZipFile(z).namelist()
+        assert all(n.startswith(z.stem + "/") for n in names), z.name
+        md = zipfile.ZipFile(z).read(z.stem + "/SKILL.md").decode("utf-8")
+        fm = re.match(r"---\n(.*?)\n---\n", md, re.S).group(1)
+        top = re.findall(r"^([A-Za-z_][\w-]*):", fm, re.M)
+        assert set(top) <= {"name", "description", "license", "metadata"}, (z.name, top)
+        assert re.search(r"^name: %s$" % z.stem, fm, re.M)
+        desc = json.loads(re.search(r"^description: (.*)$", fm, re.M).group(1))
+        assert len(desc.encode("utf-8")) <= 200 and "非祖师本人" in desc, z.name
+        assert not any(n.endswith(("fidelity.jsonl",)) for n in names), z.name
+    first = {z.name: z.read_bytes() for z in zips}
+    site_build.build()
+    assert first == {z.name: z.read_bytes() for z in sorted((tmp_path / "dist" / "_site" / "skills").glob("*.zip"))}
