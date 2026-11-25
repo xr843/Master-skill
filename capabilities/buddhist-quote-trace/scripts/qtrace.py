@@ -307,9 +307,11 @@ def _phrases(sentence: str) -> list[str]:
     clauses = [norm_en(c) for c in re.split(r"[,;:.!?\u2014\u2013()\"\u201c\u201d]+", sentence)]
     clauses = sorted({c for c in clauses if len(c.split()) >= 3}, key=lambda c: -len(c))
     out += clauses[:4]
-    if not clauses and len(words) > 6:
-        step = max(1, (len(words) - 5) // 2)
-        out += [" ".join(words[i:i + 5]) for i in range(0, len(words) - 4, step)][:3]
+    # Windows always follow: a sentence with no inner punctuation ("For never is hatred
+    # laid to rest by hate.") still crosses a line break in the verse translation.
+    if len(words) > 5:
+        step = max(1, (len(words) - 4) // 3)
+        out += [" ".join(words[i:i + 4]) for i in range(0, len(words) - 3, step)][:4]
     return list(dict.fromkeys(p for p in out if p))
 
 

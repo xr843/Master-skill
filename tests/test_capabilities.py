@@ -366,3 +366,9 @@ def test_clauses_found_in_different_works_are_partial():
     item["result"]["segments"][1]["sources"].append({"cbeta_id": "T0001"})
     out = qtrace.trace(sentences=["万法皆空，因果不空"], opener=opener_for([("fojin.app", {"items": [item]})]), entries=[], **NO_SLEEP)
     assert out["items"][0]["verdict"] == "found" and out["items"][0]["sources"][0]["id"] == "T0001"
+
+
+def test_unpunctuated_long_sentence_still_gets_short_phrases():
+    phrases = qtrace._phrases("For never is hatred laid to rest by hate.")
+    assert phrases[0] == "for never is hatred laid to rest by hate"
+    assert any(len(p.split()) == 4 for p in phrases[1:])
