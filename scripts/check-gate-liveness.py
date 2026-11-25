@@ -188,6 +188,12 @@ ADVISORY_GATES = {
 # that triggers on `pull_request`, or be declared here with the reason it is not.
 # `check_every_gate_runs_on_a_pr` keeps this true in both directions.
 NOT_A_PR_GATE = {
+    "eval-capabilities.py": (
+        "a live evaluation of the capability skills against FoJin, SuttaCentral, CBETA "
+        "and BDRC; a pull request must not depend on four outside services. "
+        "tests/test_capabilities.py covers the code offline, and capabilities-live.yml "
+        "runs its --smoke mode weekly"
+    ),
     "check-release-fidelity.py": (
         "checks the committed runs eval/reports/v1-release.json names, which exists "
         "only once a v1.0 release is prepared; unit tests exercise it on built runs "
@@ -231,6 +237,10 @@ NOT_A_PR_GATE = {
 #   - every registered gate is selected by some workflow that runs on pull_request;
 #   - `npm test` is a bare run of the registry, not a list of its own.
 NOT_IN_GATE_REGISTRY = {
+    "eval-capabilities.py": (
+        "needs the network (see NOT_A_PR_GATE); its offline counterpart is "
+        "tests/test_capabilities.py, which the pytest gate runs"
+    ),
     "select-fidelity-smoke.py": (
         "picks which persona the CI smoke grades from job metadata — a CI scheduling "
         "helper, not a check over repository content"

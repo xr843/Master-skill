@@ -201,6 +201,7 @@ def test_split_and_detect():
     parts = qtrace.split_sentences("一切有为法，如梦幻泡影。Peace comes from within. Do not seek it without.\n放下屠刀")
     assert parts == ["一切有为法，如梦幻泡影。", "Peace comes from within.", "Do not seek it without.", "放下屠刀"]
     assert [qtrace.detect_lang(p) for p in parts] == ["zh", "en", "en", "zh"]
+    assert qtrace.split_sentences("What you think, you become. 色即是空，空即是色。") == ["What you think, you become.", "色即是空，空即是色。"]
     long = "，".join(["色即是空空即是色"] * 30)
     assert all(len(p) <= qtrace.MAX_CHARS for p in qtrace.split_sentences(long))
 

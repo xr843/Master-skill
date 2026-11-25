@@ -90,12 +90,14 @@ def split_sentences(text: str) -> list[str]:
     """Split on sentence ends (and newlines); break over-long pieces at commas."""
     text = (text or "").replace("\r", "")
     pieces = re.findall(r"[^。！？!?；;\n]+[。！？!?；;」』”’\"]*|[^\n]+$", text)
+    # English sentence ends ("…become. 色即是空") also end a piece, so mixed text splits by language.
+    pieces = [part for p in pieces for part in re.split(r"(?<=[.!?])\s+(?=[A-Z\"“\u3400-\u9fff])", p)]
     out: list[str] = []
     for piece in (p.strip() for p in pieces):
         if not piece:
             continue
         if detect_lang(piece) == "en":
-            out += [s.strip() for s in re.split(r"(?<=[.!?])\s+(?=[A-Z\"“])", piece) if s.strip()]
+            out.append(piece)
             continue
         while len(piece) > MAX_CHARS:
             cut = max(piece.rfind(sep, 0, MAX_CHARS) for sep in "，,、：:")

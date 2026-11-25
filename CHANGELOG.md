@@ -10,6 +10,14 @@ Sections marked **Ethics** track changes to `ETHICS.md`, content licensing, or b
 
 ## [Unreleased]
 
+### Added — capability skills for developers
+
+Two reusable, bilingual skills that check the texts rather than speak as a master, plus a standard-library MCP server exposing both (`mcp/master_skill_mcp.py`). See `capabilities/README.md`.
+
+- `buddhist-quote-trace`: sentence by sentence, is this in the canon? Chinese via FoJin (CBETA), English verbatim against SuttaCentral translations, both against a curated list of 38 misattributed sayings (`data/misattributions.json`, each with evidence). A failure to check is always `unverifiable`, never `not_found`; `found` requires one work to hold the whole sentence.
+- `buddhist-citation`: CBETA / SuttaCentral / BDRC / Toh ids to canonical form, title, link and existence, with a title-vs-id check.
+- Evaluation (`scripts/eval-capabilities.py`, report `eval/reports/capabilities-2aed49e.json`): quote trace 99/101 as expected, 46 sentences judged `found` and all of them canon text, 0 fakes judged `found`; citation 49/49. English verbatim checks cover Pali-canon translations only (40% of the English set is `unverifiable` by design). A weekly live smoke runs in `capabilities-live.yml`.
+
 ### Evaluation — r7 on claude-sonnet-4-6 (32f684c), without master-debate
 
 246 of the 254 fixtures (master-debate's 8 were left out to fit the API credit), every
