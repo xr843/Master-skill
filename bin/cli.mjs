@@ -15,7 +15,7 @@ const PREBUILT = path.join(PACKAGE_ROOT, "prebuilt");
 const CATALOG_PATH = path.join(PACKAGE_ROOT, "skill-catalog.json");
 const ROUTING_PATH = path.join(PACKAGE_ROOT, "routing.json");
 const SKILLS_DIR = path.join(os.homedir(), ".claude", "skills");
-const SKILL_KINDS = new Set(["persona", "teaching-mode", "generator"]);
+const SKILL_KINDS = new Set(["persona", "teaching-mode", "generator", "capability"]);
 
 // --- helpers ---
 
@@ -76,7 +76,7 @@ function loadCatalog() {
       invalidCatalog(`skills[${index}].name must be a safe non-empty string`);
     }
     if (!SKILL_KINDS.has(skill.kind)) {
-      invalidCatalog(`skills[${index}].kind must be persona, teaching-mode, or generator`);
+      invalidCatalog(`skills[${index}].kind must be persona, teaching-mode, generator, or capability`);
     }
     if (skill.requires !== undefined && (skill.kind !== "teaching-mode" || skill.requires !== "all-personas")) {
       invalidCatalog(`skills[${index}].requires must be all-personas on a teaching mode`);
@@ -602,7 +602,7 @@ function listData() {
   const categoryCounts = skills.reduce((counts, skill) => {
     counts[skill.kind] += 1;
     return counts;
-  }, { persona: 0, "teaching-mode": 0, generator: 0 });
+  }, { persona: 0, "teaching-mode": 0, generator: 0, capability: 0 });
   return {
     count: masters.length,
     skillCount: skills.length,
@@ -646,6 +646,7 @@ function cmdList({ json = false } = {}) {
   const groups = [
     ["persona", "Personas"],
     ["teaching-mode", "Teaching modes"],
+    ["capability", "Capabilities (for developers)"],
     ["generator", "Generator"],
   ];
   const nameW = Math.max(...skills.map((skill) => skill.name.length), 4);

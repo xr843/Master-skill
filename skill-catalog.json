@@ -224,6 +224,26 @@
         "LICENSE",
         "masters"
       ]
+    },
+    {
+      "name": "buddhist-quote-trace",
+      "kind": "capability",
+      "summary": "引文溯源：这句话真出自佛经吗？中文查 CBETA、英文查 SuttaCentral，附伪托语录清单 / is this quote really in the canon",
+      "source": "capabilities/buddhist-quote-trace",
+      "install_dir": "buddhist-quote-trace",
+      "aliases": [
+        "buddhist-quote-trace"
+      ]
+    },
+    {
+      "name": "buddhist-citation",
+      "kind": "capability",
+      "summary": "出处解析：经号 → 书名、链接、是否存在 / resolve CBETA, SuttaCentral, BDRC, Toh ids",
+      "source": "capabilities/buddhist-citation",
+      "install_dir": "buddhist-citation",
+      "aliases": [
+        "buddhist-citation"
+      ]
     }
   ]
 }

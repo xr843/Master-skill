@@ -81,10 +81,10 @@ const prebuiltMasters = fs
   .filter((d) => d.isDirectory())
   .map((d) => d.name);
 
-test("skill catalog declares 21 unique installable skills", () => {
+test("skill catalog declares 23 unique installable skills", () => {
   const catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, "utf8"));
   assert.equal(catalog.version, 1);
-  assert.equal(catalog.skills.length, 21);
+  assert.equal(catalog.skills.length, 23);
   const counts = catalog.skills.reduce((groups, skill) => {
     (groups[skill.kind] ||= []).push(skill);
     return groups;
@@ -92,8 +92,9 @@ test("skill catalog declares 21 unique installable skills", () => {
   assert.equal(counts.persona.length, 16);
   assert.equal(counts["teaching-mode"].length, 4);
   assert.equal(counts.generator.length, 1);
+  assert.equal(counts.capability.length, 2);
   for (const field of ["name", "source", "install_dir"]) {
-    assert.equal(new Set(catalog.skills.map((skill) => skill[field])).size, 21);
+    assert.equal(new Set(catalog.skills.map((skill) => skill[field])).size, 23);
   }
   const aliases = catalog.skills.flatMap((skill) => skill.aliases);
   assert.equal(new Set(aliases).size, aliases.length);
@@ -107,7 +108,7 @@ test("skill catalog declares 21 unique installable skills", () => {
 test("list names every prebuilt master with its description", () => {
   const { stdout, code } = run(["list"]);
   assert.equal(code, 0);
-  assert.match(stdout, /Installable skills \(21\)/);
+  assert.match(stdout, /Installable skills \(23\)/);
   for (const name of prebuiltMasters) {
     assert.ok(stdout.includes(name), `missing ${name} in list output`);
   }
@@ -122,6 +123,8 @@ test("list groups every public skill by kind", () => {
   assert.match(stdout, /Personas \(16\)/);
   assert.match(stdout, /Teaching modes \(4\)/);
   assert.match(stdout, /Generator \(1\)/);
+  assert.match(stdout, /Capabilities \(for developers\) \(2\)/);
+  assert.match(stdout, /buddhist-quote-trace/);
   assert.match(stdout, /compare-masters/);
   assert.match(stdout, /create-master/);
 });
@@ -143,11 +146,12 @@ test("list --json exposes all skills while retaining masters compatibility", () 
   assert.equal(result.code, 0);
   const payload = JSON.parse(result.stdout);
   assert.equal(payload.count, prebuiltMasters.length);
-  assert.equal(payload.skillCount, 21);
-  assert.equal(payload.skills.length, 21);
+  assert.equal(payload.skillCount, 23);
+  assert.equal(payload.skills.length, 23);
   assert.equal(payload.categoryCounts.persona, 16);
   assert.equal(payload.categoryCounts["teaching-mode"], 4);
   assert.equal(payload.categoryCounts.generator, 1);
+  assert.equal(payload.categoryCounts.capability, 2);
   assert.ok(Array.isArray(payload.masters));
 });
 
@@ -640,7 +644,7 @@ test("update --all reinstalls every master and clears stale files", (t) => {
 
   const { stdout, code } = run(["update", "--all", "--force"], env);
   assert.equal(code, 0);
-  assert.match(stdout, /Updating all 21 skills/);
+  assert.match(stdout, /Updating all 23 skills/);
   assert.ok(!fs.existsSync(stale), "stale file survived update --all");
   for (const name of prebuiltMasters) {
     assert.ok(

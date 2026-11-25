@@ -91,7 +91,8 @@ def test_the_model_reproduces_the_measurement():
     manifest["skills"] = "./prebuilt/"
     only_prebuilt = discovered_skills(ROOT, manifest)
     assert "create-master" not in only_prebuilt
-    assert len(only_prebuilt) == len(_catalog_slugs()) - 1
+    catalog = json.loads((ROOT / "skill-catalog.json").read_text(encoding="utf-8"))["skills"]
+    assert len(only_prebuilt) == sum(1 for s in catalog if s["source"].startswith("prebuilt/"))
 
 
 def test_the_plugin_exposes_every_catalog_skill():
