@@ -66,14 +66,13 @@ scripts/eval-capabilities.py   跑评测、出报告
 }
 ```
 
-`verdict` 只取以下七种：
+`verdict` 只取以下六种：
 
 | verdict | 含义 |
 |---|---|
-| `found` | 逐字见于原典（繁简、标点差异不计） |
+| `found` | 逐字见于原典（繁简、标点差异不计）；多个分句须落在同一部书里 |
 | `close` | 只差一两字 |
 | `partial` | 部分分句见于原典，其余未见 |
-| `candidate` | （英文）意思相近的候选经文，非逐字，需人核对 |
 | `not_found` | 在已收范围内未见；**未见不等于伪造**，可能是改写或出自未收录典籍 |
 | `known_misattribution` | 命中伪托清单，附理由与真实出处（若有） |
 | `unverifiable` | 没核成：断网、限流、超出收录范围（如大乘英文译本） |
@@ -106,8 +105,7 @@ scripts/eval-capabilities.py   跑评测、出报告
 **英文**：依次
 1. 伪托清单（规范化后比对）；
 2. SuttaCentral 原话搜索（`/api/search/instant`）；命中 Sujato 分段译文时取全文逐段规范化比对，逐字包含 → `found`；
-3. 关键词搜索（去停用词后取实词组合），只给 `candidate`；
-4. 都没有 → `unverifiable`（不是 `not_found`：英文只覆盖巴利经藏若干译本，查不到不能说藏经中无）。
+3. 都没有 → `unverifiable`（不是 `not_found`：英文只覆盖巴利经藏若干译本，查不到不能说藏经中无）。
 
 非 Sujato 译本（Bodhi 等有版权）只输出经号与链接，不输出译文。
 
@@ -129,3 +127,9 @@ scripts/eval-capabilities.py   跑评测、出报告
 - 英文覆盖窄：SuttaCentral 只有巴利经藏英译，大乘英文引语只能 `unverifiable`。
 - 外部开发者是否采用未验证（fojin-mcp 进官方目录后外部采用为 0）。
 - FoJin / SuttaCentral 接口变化会直接让能力失效，靠周检发现。
+
+## 实施后的调整（2026-11-25 评测之后）
+
+- **英文不给 `candidate`。** 评测里 3 条「意思相近」的候选只有 1 条指对（卡拉玛经、无我相经的改写被指到无关经文），低于 80% 的门槛，按上面的翻转条件删除。英文只判 `found` / `known_misattribution` / `unverifiable`。
+- **`found` 要求一部书装下整句。** FoJin 会把各分句分别在不同书里找到也判「见于」（「万法皆空，因果不空」整句在 CBETA 连续出现 0 次）；现在分句分属不同的书时判 `partial` 并注明。
+- **英文按分句搜。** 偈颂译文在标点处换行，SuttaCentral 搜索只在一行内匹配，所以先整句、再按逗号分号切开的分句搜，拿到经文后再逐字比整句。

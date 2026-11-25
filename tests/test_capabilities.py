@@ -302,12 +302,12 @@ def test_en_verbatim_across_segment_breaks():
     assert item["verdict"] == "found" and item["sources"][0]["id"] == "dhp1-20"
 
 
-def test_en_related_is_candidate_and_nothing_is_unverifiable():
+def test_en_without_a_verbatim_match_is_unverifiable():
     routes = [("search/instant", {"hits": [SC_HIT]}), ("api/suttas/", {"translation": {}}),
               ("bilarasuttas/", SC_SEGMENTS)]
     out = qtrace.trace(sentences=["Hatred is conquered by love alone in this world of ours."], opener=opener_for(routes),
                        entries=[], **NO_SLEEP)
-    assert out["items"][0]["verdict"] == "candidate"
+    assert out["items"][0]["verdict"] == "unverifiable" and out["items"][0]["sources"] == []
     out = qtrace.trace(sentences=["Something nobody ever wrote anywhere at all."],
                        opener=opener_for([("search/instant", {"hits": []})]), entries=[], **NO_SLEEP)
     assert out["items"][0]["verdict"] == "unverifiable"
@@ -354,3 +354,14 @@ def test_canon_outranks_the_misattribution_list():
     out = qtrace.trace(sentences=["一切有为法，如梦幻泡影"], opener=opener_for([("fojin.app", reply)]), entries=entries, **NO_SLEEP)
     assert out["items"][0]["verdict"] == "found"
     assert out["items"][0]["misattribution_conflict"]["id"] == "zh-x"
+
+
+def test_clauses_found_in_different_works_are_partial():
+    item = {"text": "万法皆空，因果不空", "result": {"verdict": "sutra", "source_class": "sutra", "segments": [
+        {"text": "万法皆空", "found": True, "sources": [{"cbeta_id": "T0001"}]},
+        {"text": "因果不空", "found": True, "sources": [{"cbeta_id": "T0002"}]}]}}
+    out = qtrace.trace(sentences=["万法皆空，因果不空"], opener=opener_for([("fojin.app", {"items": [item]})]), entries=[], **NO_SLEEP)
+    assert out["items"][0]["verdict"] == "partial" and "不同典籍" in out["items"][0]["note"]
+    item["result"]["segments"][1]["sources"].append({"cbeta_id": "T0001"})
+    out = qtrace.trace(sentences=["万法皆空，因果不空"], opener=opener_for([("fojin.app", {"items": [item]})]), entries=[], **NO_SLEEP)
+    assert out["items"][0]["verdict"] == "found" and out["items"][0]["sources"][0]["id"] == "T0001"

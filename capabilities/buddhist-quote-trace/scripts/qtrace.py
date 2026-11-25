@@ -12,7 +12,6 @@ misattributions. Output is JSON; each sentence gets exactly one verdict:
     found                 verbatim in the canon (script/punctuation differences ignored)
     close                 differs by a character or two
     partial               some clauses found, others not
-    candidate             (English) related passage, not verbatim — check by hand
     not_found             not in the searched collections; NOT proof of forgery
     known_misattribution  on the curated list; see `misattribution`
     unverifiable          not checked: network failure, rate limit, or out of scope
@@ -67,8 +66,8 @@ CLASS_NOTES = {
 }
 NOT_FOUND_NOTE = ("在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍",
                   "not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text")
-EN_SCOPE_NOTE = ("英文只核巴利经藏（SuttaCentral）的英译；大乘经典英文译本不在核验范围",
-                 "English is checked only against Pali-canon translations on SuttaCentral; Mahayana texts in English are out of scope")
+EN_SCOPE_NOTE = ("未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经",
+                 "not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity")
 
 _STOP = set("""a an the and or but of to in on at by for with from as is are was were be been being it its this that
 these those there here i you he she we they me him her us them my your his our their not no nor so if then than
@@ -207,11 +206,25 @@ def _fojin_sources(result: dict) -> list[dict]:
     return out[:5]
 
 
+def _common_works(segments: list[dict]) -> set[str]:
+    """Works every segment was found in. FoJin can find each clause of a sentence
+    in a different book (「万法皆空，因果不空」); that is not the sentence being
+    in the canon, so `found` needs one work holding all of it."""
+    sets = [{src.get("cbeta_id") for src in s.get("sources") or [] if isinstance(src, dict) and src.get("cbeta_id")}
+            for s in segments]
+    return set.intersection(*sets) if sets else set()
+
+
+SCATTERED_NOTE = ("各分句分别见于不同典籍，整句未见连续出现", "each clause is found, but in different texts — the sentence as a whole is not")
+
+
 def _zh_verdict(result: dict) -> str:
     verdict = (result or {}).get("verdict")
     segments = [s for s in (result or {}).get("segments") or [] if isinstance(s, dict)]
     if verdict in ("sutra", "not_sutra"):
-        return "found" if segments and all(s.get("found") for s in segments) else "partial"
+        if not segments or not all(s.get("found") for s in segments):
+            return "partial"
+        return "found" if _common_works(segments) else "partial"
     return {"variant": "close", "partial": "partial", "absent": "not_found"}.get(verdict, "unverifiable")
 
 
@@ -239,9 +252,17 @@ def trace_zh(sentences: list[str], *, opener=None, sleep=time.sleep, clock=time.
                 continue
             verdict = _zh_verdict(result)
             source_class = result.get("source_class")
-            item = {"text": sentence, "lang": "zh", "verdict": verdict, "source_class": source_class,
-                    "sources": _fojin_sources(result)}
-            if verdict == "not_found":
+            sources = _fojin_sources(result)
+            segments = [x for x in result.get("segments") or [] if isinstance(x, dict)]
+            if verdict == "found" and len(segments) > 1:
+                common = _common_works(segments)
+                sources = [x for x in sources if x["id"] in common] + [x for x in sources if x["id"] not in common]
+            item = {"text": sentence, "lang": "zh", "verdict": verdict, "source_class": source_class, "sources": sources}
+            scattered = (verdict == "partial" and result.get("verdict") in ("sutra", "not_sutra")
+                         and segments and all(x.get("found") for x in segments))
+            if scattered:
+                item["note"] = " / ".join(SCATTERED_NOTE)
+            elif verdict == "not_found":
                 item["note"] = " / ".join(NOT_FOUND_NOTE)
             elif source_class in CLASS_NOTES:
                 item["note"] = " / ".join(CLASS_NOTES[source_class])
@@ -275,27 +296,31 @@ def _sc_source(hit: dict, match: str) -> dict:
             "url": SC_READ.format(hit["uid"], hit["author_uid"]), "match": match}
 
 
-def _keywords(sentence: str) -> list[str]:
-    words = [w for w in norm_en(sentence).split() if w not in _STOP and len(w) > 2]
-    return sorted(dict.fromkeys(words), key=len, reverse=True)[:3]
-
-
 def _phrases(sentence: str) -> list[str]:
-    """The whole sentence, then up to three 5-word windows (translations break
-    lines mid-sentence, and the search matches within a line)."""
+    """Search phrases, best first: the whole sentence, then its clauses (verse
+    translations break lines at punctuation and the search matches within a
+    line), then 5-word windows for unpunctuated text."""
     words = norm_en(sentence).split()
     out = [" ".join(words)]
-    if len(words) > 6:
+    clauses = [norm_en(c) for c in re.split(r"[,;:.!?\u2014\u2013()\"\u201c\u201d]+", sentence)]
+    clauses = sorted({c for c in clauses if len(c.split()) >= 3}, key=lambda c: -len(c))
+    out += clauses[:4]
+    if not clauses and len(words) > 6:
         step = max(1, (len(words) - 5) // 2)
         out += [" ".join(words[i:i + 5]) for i in range(0, len(words) - 4, step)][:3]
     return list(dict.fromkeys(p for p in out if p))
 
 
 def trace_en_one(sentence: str, *, opener=None, sleep=time.sleep, clock=time.monotonic) -> dict:
+    """`found` (verbatim in a SuttaCentral translation) or `unverifiable`.
+
+    There is no English `candidate`: on the 2026-11-25 evaluation, passages that
+    merely shared wording pointed to the right sutta 1 time in 3 (the Kalama and
+    not-self paraphrases went to unrelated texts), under the design's 80% bar."""
     item = {"text": sentence, "lang": "en", "verdict": "unverifiable", "sources": []}
     target = norm_en(sentence)
     try:
-        candidates, checked = [], set()
+        checked = set()
         for phrase in _phrases(sentence):
             for hit in _sc_search(phrase, opener=opener, sleep=sleep, clock=clock)[:4]:
                 key = (hit["uid"], hit["author_uid"])
@@ -309,27 +334,10 @@ def trace_en_one(sentence: str, *, opener=None, sleep=time.sleep, clock=time.mon
                     if hit["author_uid"] not in FREE_TRANSLATORS:
                         item["note"] = "verbatim in a copyrighted translation; follow the link to read it"
                     return item
-                if phrase != target or len(target.split()) <= 6:
-                    candidates.append(_sc_source(hit, "phrase"))
             if len(checked) >= 8:
                 break
-        if not candidates:
-            words = _keywords(sentence)
-            if len(words) >= 2:
-                candidates = [_sc_source(h, "keywords") for h in _sc_search(" ".join(words), opener=opener, sleep=sleep, clock=clock)]
-        unique, seen = [], set()
-        for c in candidates:
-            if c["id"] not in seen:
-                seen.add(c["id"])
-                unique.append(c)
-        if unique:
-            item["verdict"] = "candidate"
-            item["sources"] = unique[:3]
-            item["note"] = "shares wording with these passages but is not verbatim — compare by hand"
-        else:
-            item["note"] = " / ".join(EN_SCOPE_NOTE)
+        item["note"] = " / ".join(EN_SCOPE_NOTE)
     except (urllib.error.URLError, OSError, ValueError, TimeoutError) as error:
-        item["verdict"] = "unverifiable"
         item["note"] = f"SuttaCentral not checked ({type(error).__name__}: {error})"[:300]
     return item
 

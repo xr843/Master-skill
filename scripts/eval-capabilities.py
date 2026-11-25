@@ -62,13 +62,13 @@ def eval_trace(rows: list[dict]) -> dict:
         got = item["verdict"]
         ok = got in row["expect"]
         ids = {_short(s.get("id")) for s in item.get("sources") or []}
-        source_ok = None
-        if row.get("expect_source") and got == "found":
-            source_ok = _short(row["expect_source"]) in ids
-            ok = ok and source_ok
+        # Whether the expected work is among the (at most five) works returned. Reported,
+        # not graded: the same words are often in several texts (MN 10 and DN 22, 坛经 and
+        # 传灯录), and FoJin ranks by its own order.
+        source_ok = _short(row["expect_source"]) in ids if row.get("expect_source") and got == "found" else None
         if got == "found":
             found_total += 1
-            found_ok += int("found" in row["expect"] and source_ok is not False)
+            found_ok += int("found" in row["expect"])
         if row.get("category") == "misattribution" and got == "found" and "found" not in row["expect"]:
             fakes_found += 1
         by_cat[(row["lang"], row.get("category"), ok)] += 1
@@ -88,6 +88,7 @@ def eval_trace(rows: list[dict]) -> dict:
         "found_precision": round(found_ok / found_total, 4) if found_total else None,
         "found_judged": found_total,
         "fakes_judged_found": fakes_found,
+        "expected_source_returned": f"{sum(c['source_ok'] is True for c in cases)}/{sum(c['source_ok'] is not None for c in cases)}",
         "en_unverifiable_share": round(sum(c["got"] == "unverifiable" for c in en_cases) / len(en_cases), 4) if en_cases else None,
         "by_category": categories,
         "candidates_for_review": [c for c in cases if c["got"] == "candidate"],
@@ -154,7 +155,7 @@ def main(argv=None) -> int:
     qt = report.get("quote_trace")
     if qt:
         print(f"quote-trace: {qt['ok']}/{qt['total']} as expected; found precision {qt['found_precision']} "
-              f"({qt['found_judged']} judged found); fakes judged found {qt['fakes_judged_found']}; "
+              f"({qt['found_judged']} judged found); expected work among sources {qt['expected_source_returned']}; fakes judged found {qt['fakes_judged_found']}; "
               f"English unverifiable {qt['en_unverifiable_share']}; candidates to review {len(qt['candidates_for_review'])}")
         for name, c in qt["by_category"].items():
             print(f"  {name}: {c['ok']}/{c['total']}")

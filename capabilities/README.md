@@ -36,7 +36,7 @@ python3 capabilities/buddhist-citation/scripts/bcite.py T2008 "SN 22.59" --title
 
 ## Contract
 
-`trace_quotes` gives each sentence one verdict — `found`, `close`, `partial`, `candidate`, `not_found`, `known_misattribution`, `unverifiable` — with sources and links. Two rules a consumer must keep:
+`trace_quotes` gives each sentence one verdict — `found`, `close`, `partial`, `not_found`, `known_misattribution`, `unverifiable` — with sources and links. Two rules a consumer must keep:
 
 - **`unverifiable` is not `not_found`.** A network failure, a rate limit or an out-of-scope text (e.g. Mahayana sutras in English) is never reported as "not in the canon".
 - **`not_found` is not "fake".** It means the searched collections do not contain the words; paraphrases and uncollected texts exist.

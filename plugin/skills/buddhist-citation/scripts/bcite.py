@@ -75,6 +75,13 @@ def _cjk_only(text: str) -> str:
     return "".join(ch for ch in simplify(bare) if "㐀" <= ch <= "鿿" or "豈" <= ch <= "﫿")
 
 
+def _latin_key(text: str) -> str:
+    """Fold diacritics, case, spaces and punctuation: 'Anattalakkhaṇa Sutta' -> 'anattalakkhanasutta'."""
+    import unicodedata
+    bare = unicodedata.normalize("NFKD", text or "")
+    return re.sub(r"[^a-z0-9]", "", "".join(ch for ch in bare if not unicodedata.combining(ch)).lower())
+
+
 def titles_agree(declared: str | None, actual: str | None) -> bool | None:
     """Declared title is the actual title, or an abbreviation of it (a subsequence),
     after folding traditional to simplified. None when either side has no CJK."""
@@ -94,6 +101,8 @@ def parse(citation: str) -> dict:
     """Recognise the scheme. Returns {"scheme": ..., ...}; scheme None if unknown."""
     raw = (citation or "").strip()
     compact = re.sub(r"\s+", "", raw)
+    if re.match(r"^[a-z]{1,2}\d", compact):  # t2008, x0434: CBETA ids are upper case
+        compact = compact[:2].upper() + compact[2:] if compact[1].isalpha() else compact[0].upper() + compact[1:]
     m = _CBETA_FULL.match(compact)
     if m:
         canon, vol, prefix, num, suffix = m.groups()
@@ -111,8 +120,12 @@ def parse(citation: str) -> dict:
         rid = "MW" + rid[2:] if rid[:2].upper() == "MW" else "W" + rid[1:]
         return {"scheme": "bdrc", "rid": rid}
     m = _CBETA_SHORT.match(compact)
-    if m:
+    if m and m.group(4) != "n":  # "T48n" is a volume with the number missing, not a work
         canon, prefix, num, suffix = m.groups()
+        if len(canon) == 2 and not prefix and len(num) <= 3:
+            # JB348: canon J, prefixed number B348 (prefixed numbers have 3 digits;
+            # two-letter canons such as GA, ZW, CC have 4).
+            canon, prefix = canon[0], canon[1]
         return {"scheme": "cbeta", "work": f"{canon}{prefix}{num.zfill(4 if not prefix else 3)}{suffix}"}
     return {"scheme": None}
 
@@ -204,9 +217,10 @@ def _resolve_sc(out: dict, parsed: dict, title: str | None, opener) -> dict:
         "url": SC_READ.format(canonical),
         "translations": sorted({t.get("lang") for t in entry.get("translations") or [] if t.get("lang")}),
     })
-    if title:
-        names = " ".join(x for x in (out["title"], out["pali_title"]) if x).lower()
-        out["title_matches"] = title.strip().lower() in names if re.search(r"[a-z]", title, re.I) else None
+    if title and re.search(r"[a-z]", title, re.I):
+        mine = _latin_key(title).removesuffix("sutta").removesuffix("sutra")
+        names = [_latin_key(x) for x in (out["title"], out["pali_title"], out.get("acronym")) if x]
+        out["title_matches"] = bool(mine) and any(mine in n for n in names)
     return out
 
 
@@ -243,8 +257,10 @@ def _resolve_bdrc(out: dict, parsed: dict, title: str | None, opener) -> dict:
     out["title"] = labels[0] if labels else None
     out["labels"] = labels
     if title and labels and re.search(r"[a-z]", title, re.I):
-        key = lambda s: " ".join(re.sub(r"[/_()\-]", " ", s.lower().replace("’", "'")).split())
-        out["title_matches"] = any(key(title) in key(label) for label in labels)
+        # Wylie apostrophes are often dropped ("gsung bum" for "gsung 'bum") and word
+        # order varies ("sgam po pa gsung 'bum" for "gsung 'bum/_sgam po pa/").
+        words = lambda s: set(re.sub(r"[^a-z0-9 ]", "", re.sub(r"[/_()\-]", " ", s.lower())).split())
+        out["title_matches"] = any(words(title) <= words(label) for label in labels)
     elif title:
         out["note"] = "BDRC titles are Tibetan/English; a Chinese title cannot be compared automatically"
     return out
