@@ -1,0 +1,2648 @@
+{
+ "meta": {
+  "commit": "2aed49e",
+  "run_at": "2026-11-25T13:39:46Z",
+  "engines": [
+   "buddhist-quote-trace/1",
+   "buddhist-citation/1"
+  ]
+ },
+ "quote_trace": {
+  "total": 101,
+  "ok": 99,
+  "found_precision": 1.0,
+  "found_judged": 46,
+  "fakes_judged_found": 0,
+  "expected_source_returned": "34/45",
+  "en_unverifiable_share": 0.4,
+  "by_category": {
+   "en/misattribution": {
+    "ok": 15,
+    "total": 15
+   },
+   "en/other_translation": {
+    "ok": 10,
+    "total": 10
+   },
+   "en/verbatim": {
+    "ok": 15,
+    "total": 15
+   },
+   "zh/misattribution": {
+    "ok": 10,
+    "total": 10
+   },
+   "zh/modern": {
+    "ok": 10,
+    "total": 10
+   },
+   "zh/paraphrase": {
+    "ok": 4,
+    "total": 5
+   },
+   "zh/variant": {
+    "ok": 9,
+    "total": 10
+   },
+   "zh/verbatim": {
+    "ok": 26,
+    "total": 26
+   }
+  },
+  "candidates_for_review": [],
+  "misses": [
+   {
+    "id": "zh-variant-01",
+    "lang": "zh",
+    "category": "variant",
+    "text": "应无所住而生其念",
+    "expect": [
+     "close",
+     "found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": false,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-mixed-02",
+    "lang": "zh",
+    "category": "paraphrase",
+    "text": "诸行无常，所以要珍惜眼前的每一杯咖啡",
+    "expect": [
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": false,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   }
+  ],
+  "cases": [
+   {
+    "id": "zh-verbatim-01",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "应无所住而生其心",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0235",
+     "T1510b"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-02",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "一切有为法，如梦幻泡影，如露亦如电，应作如是观",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0235",
+     "T1700",
+     "T1701"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-03",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "凡所有相，皆是虚妄。若见诸相非相，则见如来",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0235",
+     "T1566",
+     "T2016"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-04",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "是诸法空相，不生不灭，不垢不净，不增不减",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0223",
+     "T0250",
+     "T0251"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-05",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "色不异空，空不异色，色即是空，空即是色",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0220c",
+     "T0220a",
+     "T0251"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-06",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "诸佛世尊唯以一大事因缘故出现于世",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0262",
+     "T1519",
+     "T1520"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-07",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "诸行无常，是生灭法。生灭灭已，寂灭为乐",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0007",
+     "T0100",
+     "T0189"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-08",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "一切众生悉有佛性",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0120",
+     "T0270",
+     "T0374"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-09",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "诸恶莫作，诸善奉行，自净其意，是诸佛教",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0125",
+     "T0210",
+     "T0212"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-10",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "此有故彼有，此起故彼起",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0099",
+     "T0499"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-11",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "当自炽燃，炽燃于法，勿他炽燃",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0001"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-12",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "众因缘生法，我说即是无，亦为是假名，亦是中道义",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T1564",
+     "X0592",
+     "L1637"
+    ],
+    "note": null
+   },
+   {
+    "id": "zh-verbatim-13",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "不生亦不灭，不常亦不断，不一亦不异，不来亦不出",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T1564",
+     "X0245",
+     "X0586"
+    ],
+    "note": null
+   },
+   {
+    "id": "zh-verbatim-14",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "由假说我法，有种种相转",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T1585",
+     "T1586",
+     "T1710"
+    ],
+    "note": null
+   },
+   {
+    "id": "zh-verbatim-15",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "依一心法有二种门",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T1666",
+     "T1668",
+     "T1702"
+    ],
+    "note": null
+   },
+   {
+    "id": "zh-verbatim-16",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "菩提本无树，明镜亦非台，本来无一物，何处惹尘埃",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T1997",
+     "T2008",
+     "T2036"
+    ],
+    "note": "见于宗门著述（祖师语录等），不是佛经正文 / found in a school's own writings (e.g. Chan records), not in a sutra"
+   },
+   {
+    "id": "zh-verbatim-17",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "不是风动，不是旛动，仁者心动",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T2008",
+     "T2076",
+     "X1260"
+    ],
+    "note": "见于宗门著述（祖师语录等），不是佛经正文 / found in a school's own writings (e.g. Chan records), not in a sutra"
+   },
+   {
+    "id": "zh-verbatim-18",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "逢佛杀佛，逢祖杀祖",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T1985",
+     "T2005",
+     "T2077"
+    ],
+    "note": "见于宗门著述（祖师语录等），不是佛经正文 / found in a school's own writings (e.g. Chan records), not in a sutra"
+   },
+   {
+    "id": "zh-verbatim-19",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "平常心是道",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": false,
+    "sources": [
+     "T1985",
+     "T1988",
+     "T1995"
+    ],
+    "note": "见于宗门著述（祖师语录等），不是佛经正文 / found in a school's own writings (e.g. Chan records), not in a sutra"
+   },
+   {
+    "id": "zh-verbatim-20",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "日日是好日",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": false,
+    "sources": [
+     "T1988",
+     "T1993",
+     "T1997"
+    ],
+    "note": "见于宗门著述（祖师语录等），不是佛经正文 / found in a school's own writings (e.g. Chan records), not in a sutra"
+   },
+   {
+    "id": "zh-verbatim-21",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "从是西方，过十万亿佛土，有世界名曰极乐",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0366",
+     "T1758",
+     "T1762"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-22",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "随其心净，则佛土净",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0475",
+     "T1703",
+     "T1736"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-23",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "应观法界性，一切唯心造",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0279",
+     "T1736",
+     "T1738"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-24",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "知见立知，即无明本；知见无见，斯即涅槃",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T0945",
+     "T1799",
+     "T2004"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-verbatim-25",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "宁可就西而死，岂归东而生",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T2053"
+    ],
+    "note": "见于史传类文献，不是佛经正文 / found in historical / biographical works, not in a sutra"
+   },
+   {
+    "id": "zh-verbatim-26",
+    "lang": "zh",
+    "category": "verbatim",
+    "text": "狗子还有佛性也无",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": false,
+    "sources": [
+     "T1995",
+     "T2001",
+     "T2004"
+    ],
+    "note": "见于宗门著述（祖师语录等），不是佛经正文 / found in a school's own writings (e.g. Chan records), not in a sutra"
+   },
+   {
+    "id": "zh-variant-01",
+    "lang": "zh",
+    "category": "variant",
+    "text": "应无所住而生其念",
+    "expect": [
+     "close",
+     "found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": false,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-variant-02",
+    "lang": "zh",
+    "category": "variant",
+    "text": "凡所有相，皆为虚妄",
+    "expect": [
+     "close",
+     "found",
+     "partial"
+    ],
+    "got": "partial",
+    "ok": true,
+    "source_ok": null,
+    "sources": [
+     "T0235",
+     "T0674",
+     "T0187"
+    ],
+    "note": "各分句分别见于不同典籍，整句未见连续出现 / each clause is found, but in different texts — the sentence as a whole is not"
+   },
+   {
+    "id": "zh-variant-03",
+    "lang": "zh",
+    "category": "variant",
+    "text": "诸行无常，是生灭法。生灭灭已，寂静为乐",
+    "expect": [
+     "close",
+     "found",
+     "partial"
+    ],
+    "got": "partial",
+    "ok": true,
+    "source_ok": null,
+    "sources": [
+     "T0007",
+     "T0024",
+     "T0025"
+    ],
+    "note": "各分句分别见于不同典籍，整句未见连续出现 / each clause is found, but in different texts — the sentence as a whole is not"
+   },
+   {
+    "id": "zh-variant-04",
+    "lang": "zh",
+    "category": "variant",
+    "text": "菩提本无树，明镜亦无台",
+    "expect": [
+     "close",
+     "found",
+     "partial"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": false,
+    "sources": [
+     "T2003",
+     "T2007",
+     "ZW0100"
+    ],
+    "note": "见于宗门著述（祖师语录等），不是佛经正文 / found in a school's own writings (e.g. Chan records), not in a sutra"
+   },
+   {
+    "id": "zh-variant-05",
+    "lang": "zh",
+    "category": "variant",
+    "text": "随其心净，则国土净",
+    "expect": [
+     "close",
+     "found",
+     "partial"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": false,
+    "sources": [
+     "X0299"
+    ],
+    "note": "见于后世撰述，不是佛经正文 / found only in later writings, not in a sutra"
+   },
+   {
+    "id": "zh-variant-06",
+    "lang": "zh",
+    "category": "variant",
+    "text": "应观法界性，一切由心造",
+    "expect": [
+     "close",
+     "found",
+     "partial"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": false,
+    "sources": [
+     "JB174",
+     "JB311"
+    ],
+    "note": "见于后世撰述，不是佛经正文 / found only in later writings, not in a sutra"
+   },
+   {
+    "id": "zh-variant-07",
+    "lang": "zh",
+    "category": "variant",
+    "text": "众因缘生法，我说即是空",
+    "expect": [
+     "close",
+     "found",
+     "partial"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "T1564",
+     "T1824",
+     "T1859"
+    ],
+    "note": null
+   },
+   {
+    "id": "zh-variant-08",
+    "lang": "zh",
+    "category": "variant",
+    "text": "从是西方，过十万亿国土，有世界名曰极乐",
+    "expect": [
+     "close",
+     "found",
+     "partial"
+    ],
+    "got": "partial",
+    "ok": true,
+    "source_ok": null,
+    "sources": [
+     "T0366",
+     "T1755",
+     "T1757"
+    ],
+    "note": "各分句分别见于不同典籍，整句未见连续出现 / each clause is found, but in different texts — the sentence as a whole is not"
+   },
+   {
+    "id": "zh-variant-09",
+    "lang": "zh",
+    "category": "variant",
+    "text": "是诸法空相，不生不灭，不垢不净，不增不灭",
+    "expect": [
+     "close",
+     "found",
+     "partial"
+    ],
+    "got": "partial",
+    "ok": true,
+    "source_ok": null,
+    "sources": [
+     "T0220c",
+     "T0220a",
+     "T0223"
+    ],
+    "note": "各分句分别见于不同典籍，整句未见连续出现 / each clause is found, but in different texts — the sentence as a whole is not"
+   },
+   {
+    "id": "zh-variant-10",
+    "lang": "zh",
+    "category": "variant",
+    "text": "一切有为法，如梦幻泡影，如露亦如电，应做如是观",
+    "expect": [
+     "close",
+     "found",
+     "partial"
+    ],
+    "got": "partial",
+    "ok": true,
+    "source_ok": null,
+    "sources": [
+     "T0235",
+     "T0613",
+     "T1700"
+    ],
+    "note": null
+   },
+   {
+    "id": "zh-modern-01",
+    "lang": "zh",
+    "category": "modern",
+    "text": "放下执念，才能遇见更好的自己",
+    "expect": [
+     "not_found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-modern-02",
+    "lang": "zh",
+    "category": "modern",
+    "text": "人生就是一场修行，修的是一颗平常心",
+    "expect": [
+     "not_found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-modern-03",
+    "lang": "zh",
+    "category": "modern",
+    "text": "你所执着的，终将成为困住你的枷锁",
+    "expect": [
+     "not_found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-modern-04",
+    "lang": "zh",
+    "category": "modern",
+    "text": "真正的修行不在寺庙，而在柴米油盐之间",
+    "expect": [
+     "not_found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-modern-05",
+    "lang": "zh",
+    "category": "modern",
+    "text": "每一次呼吸，都是与当下的一次重逢",
+    "expect": [
+     "not_found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-modern-06",
+    "lang": "zh",
+    "category": "modern",
+    "text": "烦恼来自比较，快乐源于知足",
+    "expect": [
+     "not_found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-modern-07",
+    "lang": "zh",
+    "category": "modern",
+    "text": "原谅别人，其实是放过自己",
+    "expect": [
+     "not_found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-modern-08",
+    "lang": "zh",
+    "category": "modern",
+    "text": "善良是一种选择，慈悲是一种能力",
+    "expect": [
+     "not_found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-modern-09",
+    "lang": "zh",
+    "category": "modern",
+    "text": "学会感恩身边的每一个人，就是在积累福报",
+    "expect": [
+     "not_found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-modern-10",
+    "lang": "zh",
+    "category": "modern",
+    "text": "心静了，世界就安静了",
+    "expect": [
+     "not_found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-misattr-01",
+    "lang": "zh",
+    "category": "misattribution",
+    "text": "宁起有见如须弥山，不起空见如芥子许",
+    "expect": [
+     "known_misattribution",
+     "found"
+    ],
+    "got": "known_misattribution",
+    "ok": true,
+    "source_ok": null,
+    "sources": [
+     "T1799",
+     "T1826",
+     "T1963"
+    ],
+    "note": "见于注疏（对经论的解释），不是佛经正文 / found in a commentary on a sutra or treatise, not in the sutra itself"
+   },
+   {
+    "id": "zh-misattr-02",
+    "lang": "zh",
+    "category": "misattribution",
+    "text": "放下屠刀，立地成佛",
+    "expect": [
+     "known_misattribution",
+     "found"
+    ],
+    "got": "known_misattribution",
+    "ok": true,
+    "source_ok": null,
+    "sources": [
+     "X0434",
+     "X0614",
+     "X0648"
+    ],
+    "note": "见于后世撰述，不是佛经正文 / found only in later writings, not in a sutra"
+   },
+   {
+    "id": "zh-misattr-03",
+    "lang": "zh",
+    "category": "misattribution",
+    "text": "苦海无边，回头是岸",
+    "expect": [
+     "known_misattribution",
+     "found"
+    ],
+    "got": "known_misattribution",
+    "ok": true,
+    "source_ok": null,
+    "sources": [
+     "X1319",
+     "JB096",
+     "JB246"
+    ],
+    "note": "见于后世撰述，不是佛经正文 / found only in later writings, not in a sutra"
+   },
+   {
+    "id": "zh-misattr-04",
+    "lang": "zh",
+    "category": "misattribution",
+    "text": "地狱未空，誓不成佛",
+    "expect": [
+     "known_misattribution",
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": null,
+    "sources": [
+     "T1320",
+     "X0367",
+     "X0475"
+    ],
+    "note": "见于经律论正文 / found in the sutras / vinaya / treatises"
+   },
+   {
+    "id": "zh-misattr-05",
+    "lang": "zh",
+    "category": "misattribution",
+    "text": "一花一世界，一叶一菩提",
+    "expect": [
+     "known_misattribution",
+     "not_found",
+     "partial"
+    ],
+    "got": "known_misattribution",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-misattr-06",
+    "lang": "zh",
+    "category": "misattribution",
+    "text": "酒肉穿肠过，佛祖心中留",
+    "expect": [
+     "known_misattribution",
+     "not_found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-misattr-07",
+    "lang": "zh",
+    "category": "misattribution",
+    "text": "万法皆空，因果不空",
+    "expect": [
+     "known_misattribution",
+     "not_found",
+     "partial"
+    ],
+    "got": "partial",
+    "ok": true,
+    "source_ok": null,
+    "sources": [
+     "T1512",
+     "T1963",
+     "T1973"
+    ],
+    "note": "各分句分别见于不同典籍，整句未见连续出现 / each clause is found, but in different texts — the sentence as a whole is not"
+   },
+   {
+    "id": "zh-misattr-08",
+    "lang": "zh",
+    "category": "misattribution",
+    "text": "前世五百次的回眸，才换来今生的一次擦肩而过",
+    "expect": [
+     "known_misattribution",
+     "not_found",
+     "partial"
+    ],
+    "got": "known_misattribution",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-misattr-09",
+    "lang": "zh",
+    "category": "misattribution",
+    "text": "心若不动，风又奈何；你若不伤，岁月无恙",
+    "expect": [
+     "known_misattribution",
+     "not_found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-misattr-10",
+    "lang": "zh",
+    "category": "misattribution",
+    "text": "一念天堂，一念地狱",
+    "expect": [
+     "known_misattribution",
+     "not_found",
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-mixed-01",
+    "lang": "zh",
+    "category": "paraphrase",
+    "text": "应无所住而生其心，便是不被手机牵着走",
+    "expect": [
+     "partial"
+    ],
+    "got": "partial",
+    "ok": true,
+    "source_ok": null,
+    "sources": [
+     "T0235",
+     "T1510b"
+    ],
+    "note": null
+   },
+   {
+    "id": "zh-mixed-02",
+    "lang": "zh",
+    "category": "paraphrase",
+    "text": "诸行无常，所以要珍惜眼前的每一杯咖啡",
+    "expect": [
+     "partial"
+    ],
+    "got": "not_found",
+    "ok": false,
+    "source_ok": null,
+    "sources": [],
+    "note": "在已收典籍中未见；未见不等于伪造，可能是改写或出自未收录的典籍 / not in the searched collections; not proof of forgery — it may be a paraphrase or from an uncollected text"
+   },
+   {
+    "id": "zh-mixed-03",
+    "lang": "zh",
+    "category": "paraphrase",
+    "text": "一切有为法，如梦幻泡影，人生不必太较真",
+    "expect": [
+     "partial"
+    ],
+    "got": "partial",
+    "ok": true,
+    "source_ok": null,
+    "sources": [
+     "T0235",
+     "T0613",
+     "T1699"
+    ],
+    "note": null
+   },
+   {
+    "id": "zh-mixed-04",
+    "lang": "zh",
+    "category": "paraphrase",
+    "text": "色即是空，空即是色，爱情也是如此",
+    "expect": [
+     "partial"
+    ],
+    "got": "partial",
+    "ok": true,
+    "source_ok": null,
+    "sources": [
+     "T0220c",
+     "T0220a",
+     "T0223"
+    ],
+    "note": null
+   },
+   {
+    "id": "zh-mixed-05",
+    "lang": "zh",
+    "category": "paraphrase",
+    "text": "凡所有相，皆是虚妄，唯有善良永恒",
+    "expect": [
+     "partial"
+    ],
+    "got": "partial",
+    "ok": true,
+    "source_ok": null,
+    "sources": [
+     "T0235",
+     "T1515",
+     "T1566"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-01",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "Intention is the leader of things; intention is first, they’re made by intention.",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "dhp1-20"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-02",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "For never is hatred laid to rest by hate, it’s laid to rest by love: this is an ancient teaching.",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "dhp1-20"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-03",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "If with corrupt intent you speak or act, suffering follows you, like a wheel, the ox’s foot.",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "dhp1-20"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-04",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "Heedfulness is the state free of death; heedlessness is the state of death.",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "dhp21-32"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-05",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "Not to do any evil; to embrace the good; to purify one’s mind: this is the instruction of the Buddhas.",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "dhp179-196"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-06",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "Mendicants, these two extremes should not be cultivated by one gone forth.",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "sn56.11"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-07",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "Now this is the noble truth of suffering. Rebirth is suffering; old age is suffering; illness is suffering; death is suffering; being coupled with the disliked is suffering; separation from the liked is suffering; not getting what you wish for is suffering. In brief, the five grasping aggregates are suffering.",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "sn56.11"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-08",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "Mendicants, the four kinds of mindfulness meditation are the path to convergence. They are in order to purify sentient beings, to get past sorrow and crying, to make an end of pain and sadness, to discover the system, and to realize extinguishment.",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": false,
+    "sources": [
+     "dn22"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-09",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "Just mindful, they breathe in. Mindful, they breathe out.",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": false,
+    "sources": [
+     "an10.60"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-10",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "But when you know for yourselves: ‘These things are unskillful, blameworthy, criticized by sensible people, and when you undertake them, they lead to harm and suffering’, then you should give them up.",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": false,
+    "sources": [
+     "an3.66"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-11",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "Mendicants, form is not-self. For if form were self, it wouldn’t lead to affliction. And you could compel form: ‘May my form be like this! May it not be like that!’",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "sn22.59"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-12",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "Even as a mother would protect with her life her child, her only child, so too for all creatures unfold a boundless heart.",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": false,
+    "sources": [
+     "kp9"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-13",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "Conditions fall apart. Persist with diligence.",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "dn16"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-14",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "So Ānanda, live as your own island, your own refuge, with no other refuge. Let the teaching be your island and your refuge, with no other refuge.",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": true,
+    "sources": [
+     "dn16"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-verbatim-15",
+    "lang": "en",
+    "category": "verbatim",
+    "text": "Good friends, companions, and associates are the whole of the spiritual life.",
+    "expect": [
+     "found"
+    ],
+    "got": "found",
+    "ok": true,
+    "source_ok": false,
+    "sources": [
+     "sn3.18"
+    ],
+    "note": null
+   },
+   {
+    "id": "en-other-01",
+    "lang": "en",
+    "category": "other_translation",
+    "text": "The mind comes before everything; all things are led by the mind and shaped by the mind.",
+    "expect": [
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-other-02",
+    "lang": "en",
+    "category": "other_translation",
+    "text": "Hatred is never ended by more hatred; only kindness brings it to an end, and this law is eternal.",
+    "expect": [
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-other-03",
+    "lang": "en",
+    "category": "other_translation",
+    "text": "Avoid all wrongdoing, cultivate what is wholesome, and cleanse your own mind: this is what all Buddhas teach.",
+    "expect": [
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-other-04",
+    "lang": "en",
+    "category": "other_translation",
+    "text": "There is a middle path that avoids both chasing sensual pleasure and tormenting the body, and it leads to calm and awakening.",
+    "expect": [
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-other-05",
+    "lang": "en",
+    "category": "other_translation",
+    "text": "The four foundations of mindfulness are the direct way for the purification of beings and the overcoming of sorrow and grief.",
+    "expect": [
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-other-06",
+    "lang": "en",
+    "category": "other_translation",
+    "text": "Do not accept something just because it is reported, traditional, or found in scripture; when you see for yourself that it leads to harm, let it go.",
+    "expect": [
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-other-07",
+    "lang": "en",
+    "category": "other_translation",
+    "text": "The body is not the self; if it were, it would not fall ill, and we could order it to be this way or that.",
+    "expect": [
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-other-08",
+    "lang": "en",
+    "category": "other_translation",
+    "text": "Just as a mother would guard her only child at the risk of her own life, so should one cultivate a limitless heart toward all living beings.",
+    "expect": [
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-other-09",
+    "lang": "en",
+    "category": "other_translation",
+    "text": "All compounded things are subject to decay; strive on with heedfulness.",
+    "expect": [
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-other-10",
+    "lang": "en",
+    "category": "other_translation",
+    "text": "Admirable friendship is not half of the holy life; it is actually the whole of the holy life.",
+    "expect": [
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-fake-01",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "Holding on to anger is like drinking poison and expecting the other person to die.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "known_misattribution",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": null
+   },
+   {
+    "id": "en-fake-02",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "Peace comes from within. Do not seek it without.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "known_misattribution",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": null
+   },
+   {
+    "id": "en-fake-03",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "The mind is everything. What you think you become.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "known_misattribution",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": null
+   },
+   {
+    "id": "en-fake-04",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "You yourself, as much as anybody in the entire universe, deserve your love and affection.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "known_misattribution",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": null
+   },
+   {
+    "id": "en-fake-05",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "In the end, only three things matter: how much you loved, how gently you lived, and how gracefully you let go of things not meant for you.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "known_misattribution",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": null
+   },
+   {
+    "id": "en-fake-06",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "If you light a lamp for someone else, it will also brighten your own path.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-fake-07",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "There is no path to happiness: happiness is the path.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "known_misattribution",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": null
+   },
+   {
+    "id": "en-fake-08",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "Thousands of candles can be lighted from a single candle, and the life of the candle will not be shortened. Happiness never decreases by being shared.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "known_misattribution",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": null
+   },
+   {
+    "id": "en-fake-09",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "Believe nothing, no matter where you read it, or who said it, no matter if I have said it, unless it agrees with your own reason and your own common sense.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "known_misattribution",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": null
+   },
+   {
+    "id": "en-fake-10",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "When the student is ready, the teacher will appear.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-fake-11",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "Each morning we are born again. What we do today is what matters most.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-fake-12",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "Your work is to discover your world and then with all your heart give yourself to it.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-fake-13",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "The trouble is, you think you have time.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   },
+   {
+    "id": "en-fake-14",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "Pain is inevitable. Suffering is optional.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "known_misattribution",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": null
+   },
+   {
+    "id": "en-fake-15",
+    "lang": "en",
+    "category": "misattribution",
+    "text": "Everything that has a beginning has an ending. Make your peace with that and all will be well.",
+    "expect": [
+     "known_misattribution",
+     "unverifiable"
+    ],
+    "got": "unverifiable",
+    "ok": true,
+    "source_ok": null,
+    "sources": [],
+    "note": "未在 SuttaCentral 的巴利经藏英译中逐字找到；英文改写、其他译本措辞与大乘经典英译都在核验范围之外，不能据此说它不是佛经 / not found verbatim in the Pali-canon translations on SuttaCentral; paraphrases, other wordings and Mahayana texts in English are out of scope, so this says nothing about authenticity"
+   }
+  ]
+ },
+ "citation": {
+  "total": 49,
+  "ok": 49,
+  "misses": [],
+  "cases": [
+   {
+    "id": "cbeta-01",
+    "citation": "T48n2008",
+    "title": "六祖大师法宝坛经",
+    "got": {
+     "exists": true,
+     "canonical": "T48n2008",
+     "title": "六祖大師法寶壇經",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-02",
+    "citation": "T2008",
+    "title": null,
+    "got": {
+     "exists": true,
+     "canonical": "T48n2008",
+     "title": "六祖大師法寶壇經",
+     "title_matches": null,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-03",
+    "citation": "T0235",
+    "title": "金刚般若波罗蜜经",
+    "got": {
+     "exists": true,
+     "canonical": "T08n0235",
+     "title": "金剛般若波羅蜜經",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-04",
+    "citation": "T235",
+    "title": null,
+    "got": {
+     "exists": true,
+     "canonical": "T08n0235",
+     "title": "金剛般若波羅蜜經",
+     "title_matches": null,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-05",
+    "citation": "X0434",
+    "title": null,
+    "got": {
+     "exists": true,
+     "canonical": "X22n0434",
+     "title": "阿彌陀經直解正行",
+     "title_matches": null,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-06",
+    "citation": "X0434",
+    "title": "五灯会元",
+    "got": {
+     "exists": true,
+     "canonical": "X22n0434",
+     "title": "阿彌陀經直解正行",
+     "title_matches": false,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-07",
+    "citation": "J36nB348",
+    "title": null,
+    "got": {
+     "exists": true,
+     "canonical": "J36nB348",
+     "title": "靈峰蕅益大師宗論",
+     "title_matches": null,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-08",
+    "citation": "JB348",
+    "title": "灵峰蕅益大师宗论",
+    "got": {
+     "exists": true,
+     "canonical": "J36nB348",
+     "title": "靈峰蕅益大師宗論",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-09",
+    "citation": "T9999",
+    "title": null,
+    "got": {
+     "exists": false,
+     "canonical": null,
+     "title": null,
+     "title_matches": null,
+     "note": "CBETA has no work T9999"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-10",
+    "citation": "X9999",
+    "title": null,
+    "got": {
+     "exists": false,
+     "canonical": null,
+     "title": null,
+     "title_matches": null,
+     "note": "CBETA has no work X9999"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-11",
+    "citation": "T0251",
+    "title": "般若波罗蜜多心经",
+    "got": {
+     "exists": true,
+     "canonical": "T08n0251",
+     "title": "般若波羅蜜多心經",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-12",
+    "citation": "T0262",
+    "title": "金刚经",
+    "got": {
+     "exists": true,
+     "canonical": "T09n0262",
+     "title": "妙法蓮華經",
+     "title_matches": false,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-13",
+    "citation": "X1565",
+    "title": "五灯会元",
+    "got": {
+     "exists": true,
+     "canonical": "X80n1565",
+     "title": "五燈會元",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-14",
+    "citation": "T48n2005",
+    "title": "无门关",
+    "got": {
+     "exists": true,
+     "canonical": "T48n2005",
+     "title": "無門關",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-15",
+    "citation": "t2008",
+    "title": null,
+    "got": {
+     "exists": true,
+     "canonical": "T48n2008",
+     "title": "六祖大師法寶壇經",
+     "title_matches": null,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-16",
+    "citation": "T2076",
+    "title": "景德传灯录",
+    "got": {
+     "exists": true,
+     "canonical": "T51n2076",
+     "title": "景德傳燈錄",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-17",
+    "citation": "B0130",
+    "title": null,
+    "got": {
+     "exists": true,
+     "canonical": "B23n0130",
+     "title": "靈峰宗論（部分資料暫採他本）",
+     "title_matches": null,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "cbeta-18",
+    "citation": "T1564",
+    "title": "中论",
+    "got": {
+     "exists": true,
+     "canonical": "T30n1564",
+     "title": "中論",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-01",
+    "citation": "SN 22.59",
+    "title": "Anattalakkhaṇa Sutta",
+    "got": {
+     "exists": true,
+     "canonical": "sn22.59",
+     "title": "The Characteristic of Not-Self",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-02",
+    "citation": "MN 10",
+    "title": "Satipatthana Sutta",
+    "got": {
+     "exists": true,
+     "canonical": "mn10",
+     "title": "The Discourse on Mindfulness Meditation",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-03",
+    "citation": "AN 3.65",
+    "title": null,
+    "got": {
+     "exists": true,
+     "canonical": "an3.65",
+     "title": "With the Kālāmas of Kesamutta",
+     "title_matches": null,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-04",
+    "citation": "AN 3.65",
+    "title": "Kesamutti Sutta",
+    "got": {
+     "exists": true,
+     "canonical": "an3.65",
+     "title": "With the Kālāmas of Kesamutta",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-05",
+    "citation": "DN 16",
+    "title": "Mahaparinibbana Sutta",
+    "got": {
+     "exists": true,
+     "canonical": "dn16",
+     "title": "The Great Discourse on the Buddha’s Extinguishment",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-06",
+    "citation": "Dhp 5",
+    "title": null,
+    "got": {
+     "exists": true,
+     "canonical": "dhp1-20",
+     "title": "1. Pairs",
+     "title_matches": null,
+     "note": "dhp5 is inside the range dhp1-20"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-07",
+    "citation": "Dhp 183",
+    "title": null,
+    "got": {
+     "exists": true,
+     "canonical": "dhp179-196",
+     "title": "14. The Buddhas",
+     "title_matches": null,
+     "note": "dhp183 is inside the range dhp179-196"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-08",
+    "citation": "Dhp 21",
+    "title": null,
+    "got": {
+     "exists": true,
+     "canonical": "dhp21-32",
+     "title": "2. Diligence",
+     "title_matches": null,
+     "note": "dhp21 is inside the range dhp21-32"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-09",
+    "citation": "Snp 1.8",
+    "title": "Metta Sutta",
+    "got": {
+     "exists": true,
+     "canonical": "snp1.8",
+     "title": "The Discourse on Love",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-10",
+    "citation": "SN 56.11",
+    "title": null,
+    "got": {
+     "exists": true,
+     "canonical": "sn56.11",
+     "title": "Rolling Forth the Wheel of Dhamma",
+     "title_matches": null,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-11",
+    "citation": "SN 99.99",
+    "title": null,
+    "got": {
+     "exists": false,
+     "canonical": null,
+     "title": null,
+     "title_matches": null,
+     "note": "SuttaCentral has no text sn99.99"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-12",
+    "citation": "MN 200",
+    "title": null,
+    "got": {
+     "exists": false,
+     "canonical": null,
+     "title": null,
+     "title_matches": null,
+     "note": "SuttaCentral has no text mn200"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-13",
+    "citation": "DN 35",
+    "title": null,
+    "got": {
+     "exists": false,
+     "canonical": null,
+     "title": null,
+     "title_matches": null,
+     "note": "SuttaCentral has no text dn35"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-14",
+    "citation": "MN 21",
+    "title": "Satipatthana Sutta",
+    "got": {
+     "exists": true,
+     "canonical": "mn21",
+     "title": "The Simile of the Saw",
+     "title_matches": false,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-15",
+    "citation": "sn22.59",
+    "title": null,
+    "got": {
+     "exists": true,
+     "canonical": "sn22.59",
+     "title": "The Characteristic of Not-Self",
+     "title_matches": null,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-16",
+    "citation": "SN22.59",
+    "title": null,
+    "got": {
+     "exists": true,
+     "canonical": "sn22.59",
+     "title": "The Characteristic of Not-Self",
+     "title_matches": null,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "sc-17",
+    "citation": "Dhp 999",
+    "title": null,
+    "got": {
+     "exists": false,
+     "canonical": null,
+     "title": null,
+     "title_matches": null,
+     "note": "SuttaCentral has no text dhp999"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "bdrc-01",
+    "citation": "W22272",
+    "title": "米拉日巴道歌",
+    "got": {
+     "exists": true,
+     "canonical": "W22272",
+     "title": "gsung 'bum/_tsong kha pa/ (sku 'bum par ma/)",
+     "title_matches": null,
+     "note": "BDRC titles are Tibetan/English; a Chinese title cannot be compared automatically"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "bdrc-02",
+    "citation": "W22272",
+    "title": null,
+    "got": {
+     "exists": true,
+     "canonical": "W22272",
+     "title": "gsung 'bum/_tsong kha pa/ (sku 'bum par ma/)",
+     "title_matches": null,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "bdrc-03",
+    "citation": "W1KG14334",
+    "title": null,
+    "got": {
+     "exists": false,
+     "canonical": null,
+     "title": null,
+     "title_matches": null,
+     "note": "BDRC has no resource W1KG14334"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "bdrc-04",
+    "citation": "W23439",
+    "title": "sgam po pa gsung 'bum",
+    "got": {
+     "exists": true,
+     "canonical": "W23439",
+     "title": "gsung 'bum/_sgam po pa/",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "bdrc-05",
+    "citation": "W22272",
+    "title": "tsong kha pa gsung 'bum",
+    "got": {
+     "exists": true,
+     "canonical": "W22272",
+     "title": "gsung 'bum/_tsong kha pa/ (sku 'bum par ma/)",
+     "title_matches": true,
+     "note": null
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "toh-01",
+    "citation": "Toh 3871",
+    "title": null,
+    "got": {
+     "exists": null,
+     "canonical": "Toh 3871",
+     "title": null,
+     "title_matches": null,
+     "note": "Tohoku numbers are not verified online; the 84000 link may be an untranslated stub"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "toh-02",
+    "citation": "Toh 3871",
+    "title": "入菩萨行论",
+    "got": {
+     "exists": null,
+     "canonical": "Toh 3871",
+     "title": null,
+     "title_matches": null,
+     "note": "Tohoku numbers are not verified online; the 84000 link may be an untranslated stub"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "bad-01",
+    "citation": "",
+    "title": null,
+    "got": {
+     "exists": null,
+     "canonical": null,
+     "title": null,
+     "title_matches": null,
+     "note": "unrecognised citation format"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "bad-02",
+    "citation": "hello world",
+    "title": null,
+    "got": {
+     "exists": null,
+     "canonical": null,
+     "title": null,
+     "title_matches": null,
+     "note": "unrecognised citation format"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "bad-03",
+    "citation": "T48n",
+    "title": null,
+    "got": {
+     "exists": null,
+     "canonical": null,
+     "title": null,
+     "title_matches": null,
+     "note": "unrecognised citation format"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "bad-04",
+    "citation": "SN",
+    "title": null,
+    "got": {
+     "exists": null,
+     "canonical": null,
+     "title": null,
+     "title_matches": null,
+     "note": "unrecognised citation format"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "bad-05",
+    "citation": "金刚经第三品",
+    "title": null,
+    "got": {
+     "exists": null,
+     "canonical": null,
+     "title": null,
+     "title_matches": null,
+     "note": "unrecognised citation format"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "bad-06",
+    "citation": "12345",
+    "title": null,
+    "got": {
+     "exists": null,
+     "canonical": null,
+     "title": null,
+     "title_matches": null,
+     "note": "unrecognised citation format"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   },
+   {
+    "id": "bad-07",
+    "citation": "W",
+    "title": null,
+    "got": {
+     "exists": null,
+     "canonical": null,
+     "title": null,
+     "title_matches": null,
+     "note": "unrecognised citation format"
+    },
+    "checks": {
+     "exists": true,
+     "canonical": true,
+     "title_matches": true
+    },
+    "ok": true
+   }
+  ]
+ }
+}
