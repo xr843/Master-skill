@@ -227,6 +227,21 @@ These are **keyword and citation-string coverage checks, not doctrinal correctne
 
 ---
 
+## Capability Skills for Developers
+
+Besides the personas, Master-skill ships two **reusable Buddhist capability skills** any agent can call, in Chinese or English, with a fixed JSON contract:
+
+| skill | what it does |
+|---|---|
+| `buddhist-quote-trace` | Is this quote really in the canon? Chinese via CBETA (FoJin), English via SuttaCentral, plus a curated list of fake "Buddha quotes" |
+| `buddhist-citation` | Resolve `T48n2008`, `SN 22.59`, `W22272`, `Toh 3871` to title and link; flags ids that do not exist or belong to another work |
+
+```bash
+npx master-skill install buddhist-quote-trace buddhist-citation
+```
+
+Also available as an MCP server (`mcp/master_skill_mcp.py`, standard library only). See [capabilities/README.md](capabilities/README.md).
+
 ## Developer Installation
 
 > 👤 **Just want to try it?** Use [fojin.app/chat](https://fojin.app/chat) — no install needed.

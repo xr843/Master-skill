@@ -1,0 +1,26 @@
+name: Capabilities live check
+
+# buddhist-quote-trace and buddhist-citation call FoJin, SuttaCentral, CBETA
+# and BDRC at run time. The unit tests replay recorded replies, so they stay
+# green when one of those services changes its API; this weekly job asks the
+# real services a few questions whose answers must not change.
+
+on:
+  schedule:
+    - cron: '30 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.11'
+      - name: Live smoke (standard library only, no install step)
+        run: python3 scripts/eval-capabilities.py --smoke

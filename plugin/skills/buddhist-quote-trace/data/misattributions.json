@@ -1,0 +1,786 @@
+{
+  "version": 1,
+  "license": "CC-BY-SA-4.0",
+  "_comment": "Curated list of popular sayings wrongly credited to the Buddha or to Buddhist scripture. Explanations are original prose; evidence lists the sources actually checked on verified_on. status: misattributed = not from the canon/teacher credited; paraphrase = loosely based on a real passage whose wording differs; later_saying = found only in later Chinese Buddhist or folk literature. CBETA ids are canon work numbers; SuttaCentral ids are sutta uids.",
+  "entries": [
+    {
+      "id": "en-hot-coal",
+      "lang": "en",
+      "text": "Holding on to anger is like grasping a hot coal with the intent of throwing it at someone else; you are the one who gets burned.",
+      "variants": [
+        "Holding on to anger is like grasping a hot coal with the intent of harming another; you end up getting burned.",
+        "Anger is like a hot coal: you are the one who gets burned."
+      ],
+      "status": "misattributed",
+      "attributed_to": "the Buddha",
+      "actual_source": {
+        "collection": "other",
+        "id": "Vism IX.23",
+        "title": "Visuddhimagga (Buddhaghosa, 5th c.), ch. IX §23",
+        "url": "https://quoteinvestigator.com/2018/06/18/hot/"
+      },
+      "explanation_en": "No sutta contains this simile. The nearest source is a commentator, Buddhaghosa, whose Visuddhimagga compares an angry person to someone who picks up a burning ember or excrement to strike another and soils or burns himself first; the modern one-liner is a loose reworking of that, credited to the Buddha.",
+      "explanation_zh": "经藏里没有这个比喻。最接近的是五世纪注释家觉音《清净道论》第九品：生气的人好比抓起火炭或粪便去打人，先烧伤、弄脏的是自己。流行的这句话是对它的松散改写，却被安到了佛陀名下。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/holding-on-to-anger-is-like-grasping-a-hot-coal-with-the-intent-of-harming-another-you-end-up-getting-burned/",
+        "https://quoteinvestigator.com/2018/06/18/hot/",
+        "https://suttacentral.net/api/search/instant?limit=8&language=en&query=hot%20coal%20anger"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-deserve-your-love",
+      "lang": "en",
+      "text": "You yourself, as much as anybody in the entire universe, deserve your love and affection.",
+      "variants": [],
+      "status": "paraphrase",
+      "attributed_to": "the Buddha",
+      "actual_source": {
+        "collection": "SuttaCentral",
+        "id": "ud5.1",
+        "title": "Udāna 5.1 Who is More Dear? (parallel SN 3.8 With Queen Mallikā)",
+        "url": "https://suttacentral.net/ud5.1/en/sujato"
+      },
+      "explanation_en": "The wording comes from Sharon Salzberg (Lovingkindness, 1995; an earlier version in 1989), who presented it as the Buddha's idea. The underlying verse (Ud 5.1 / SN 3.8) says that searching everywhere one finds no one dearer than oneself, and since others feel the same, one should not harm them - its point is restraint toward others, not self-love.",
+      "explanation_zh": "这句话的措辞来自莎朗·莎兹伯格 1995 年的《慈爱》（1989 年已有雏形），她把它当作佛陀的意思转述。所本的偈子（《自说》5.1、《相应部》3.8）说：遍寻十方找不到比自己更可爱的人，别人也一样爱惜自己，所以不应伤害他人——重点是推己及人，而不是爱自己。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/you-yourself-as-much-as-anybody-in-the-entire-universe-deserve-your-love-and-affection/",
+        "https://suttacentral.net/api/bilarasuttas/ud5.1/sujato?lang=en",
+        "https://suttacentral.net/api/search/instant?limit=8&language=en&query=dearer%20than%20oneself",
+        "https://suttacentral.net/api/search/instant?limit=8&language=en&query=deserve%20your%20love%20and%20affection"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-peace-comes-from-within",
+      "lang": "en",
+      "text": "Peace comes from within. Do not seek it without.",
+      "variants": [],
+      "status": "misattributed",
+      "attributed_to": "the Buddha",
+      "actual_source": null,
+      "explanation_en": "The saying is not found in any Buddhist scripture; similar English wording was in circulation in the 19th and early 20th centuries with no Buddhist link, and the Buddha attribution only shows up in mid-20th-century quotation books. A verse in Sutta Nipāta 4.14 about a monk who is settled inside and does not seek peace from another shares the theme but is not its source.",
+      "explanation_zh": "任何佛典里都找不到这句话；类似的英文说法在十九世纪、二十世纪初就已流传，与佛教无关，直到二十世纪中叶的格言集才开始挂上佛陀之名。《经集》4.14 有“内心安住、不向他处求安宁”的偈子，主题相近，但不是它的出处。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/peace-comes-from-within-do-not-seek-it-without/",
+        "https://suttacentral.net/api/bilarasuttas/snp4.14/sujato?lang=en",
+        "https://suttacentral.net/api/search/instant?limit=8&language=en&query=peace%20comes%20from%20within"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-what-you-think-you-become",
+      "lang": "en",
+      "text": "What you think, you become.",
+      "variants": [
+        "The mind is everything. What you think you become.",
+        "All that we are is the result of what we have thought."
+      ],
+      "status": "misattributed",
+      "attributed_to": "the Buddha",
+      "actual_source": null,
+      "explanation_en": "The fuller form 'The mind is everything; what you think, you become' already appears in Ralph Waldo Trine's New Thought book In Tune with the Infinite (1897). Free renderings of Dhammapada verse 1 ('we become what we think') helped it pass as Buddhist, but the Pali verse says mind leads and suffering or happiness follow one's intentions, not that we turn into our thoughts; MN 19 on habitual thinking is only a thematic cousin.",
+      "explanation_zh": "“心即一切，所思即所成”这一完整说法，最早见于 1897 年新思想运动作家特赖恩的《与无限合拍》。《法句经》第一偈的一些意译（“我们成为所想的”）让它看起来像佛语，但巴利原偈说的是意念为先导、苦乐随意念而来，并没有“想什么就变成什么”；《中部》第 19 经讲常想之事成为心的倾向，只是主题相近。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/what-you-think-you-become/",
+        "https://suttacentral.net/api/bilarasuttas/dhp1-20/sujato?lang=en",
+        "https://suttacentral.net/api/bilarasuttas/mn19/sujato?lang=en"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-three-things-cannot-be-hidden",
+      "lang": "en",
+      "text": "Three things cannot be long hidden: the sun, the moon, and the truth.",
+      "variants": [
+        "Three things can not hide for long: the Moon, the Sun and the Truth."
+      ],
+      "status": "paraphrase",
+      "attributed_to": "the Buddha",
+      "actual_source": {
+        "collection": "SuttaCentral",
+        "id": "an3.131",
+        "title": "AN 3.131 Under Cover (Paṭicchanna Sutta)",
+        "url": "https://suttacentral.net/an3.131/en/sujato"
+      },
+      "explanation_en": "AN 3.131 is real, but it contrasts three things carried under cover (veiled brides, brahmin hymns, wrong view) with three that shine in the open (moon, sun, and the Realized One's teaching and training). The popular line drops that contrast and turns the Buddha's open teaching into a general claim that truth will come out; its wording tracks an early-20th-century English paraphrase rather than the sutta.",
+      "explanation_zh": "《增支部》3.131 确有其经，但它对比的是三种“遮掩而行”的事（蒙面新娘、婆罗门咒语、邪见）和三种“公开照耀”的事（月、日、如来所说法与律）。流行句删去了这层对比，把“如来之法公开而不秘传”改成了“真相终会大白”的泛论，措辞来自二十世纪初的英文转述，而非经文本身。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/three-things-cannot-be-long-hidden-the-sun-the-moon-and-the-truth/",
+        "https://suttacentral.net/api/bilarasuttas/an3.131/sujato?lang=en"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-only-three-things-matter",
+      "lang": "en",
+      "text": "In the end, only three things matter: how much you loved, how gently you lived, and how gracefully you let go of things not meant for you.",
+      "variants": [
+        "In the end, just three things matter: how well we have lived, how well we have loved, how well we have learned to let go."
+      ],
+      "status": "misattributed",
+      "attributed_to": "the Buddha",
+      "actual_source": null,
+      "explanation_en": "This is a reworked version of a line in Jack Kornfield's Buddha's Little Instruction Book, which asked how well you loved, how fully you lived and how deeply you let go. Someone turned the questions into a statement, changed the adjectives and credited the Buddha; no Pali text lists these three as the only things that matter.",
+      "explanation_zh": "这是由杰克·康菲尔德《佛陀小教诲书》中一句话改写而来，原文是三个问句：爱得多好、活得多充分、放下得多深。后人把问句改成断言、换了形容词，再挂到佛陀名下；巴利经典中没有把这三件事列为“唯一重要”的段落。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/in-the-end-only-three-things-matter/"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-believe-nothing",
+      "lang": "en",
+      "text": "Believe nothing, no matter where you read it, or who said it, no matter if I have said it, unless it agrees with your own reason and your own common sense.",
+      "variants": [
+        "Do not believe in anything simply because you have heard it."
+      ],
+      "status": "paraphrase",
+      "attributed_to": "the Buddha (Kālāma Sutta)",
+      "actual_source": {
+        "collection": "SuttaCentral",
+        "id": "an3.65",
+        "title": "AN 3.65 With the Kālāmas (Kesamutti / Kālāma Sutta)",
+        "url": "https://suttacentral.net/an3.65/en/sujato"
+      },
+      "explanation_en": "The Kālāma Sutta does warn against accepting teachings on the strength of tradition, scripture or a respected teacher, but it equally warns against relying on logic and inference. Its test is whether a practice, once undertaken, leads to harm or welfare as recognised by the wise - so the popular version, which makes personal reason the final judge, inverts part of the advice.",
+      "explanation_zh": "《羯腊摩经》确实劝人不要因为传承、经典或尊敬的老师就接受某种说法，但同样劝人不要只凭推理、推论。它的检验标准是：一种做法实际施行后，是带来损害还是利益、是否为智者所呵责。流行版本把“自己的理性与常识”当最终裁判，恰好把经文的一部分意思弄反了。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/believe-nothing-no-matter-where-you-read-it/",
+        "https://accesstoinsight.org/lib/authors/thanissaro/lostinquotation.html",
+        "https://suttacentral.net/api/bilarasuttas/an3.65/sujato?lang=en"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-thousands-of-candles",
+      "lang": "en",
+      "text": "Thousands of candles can be lighted from a single candle, and the life of the candle will not be shortened. Happiness never decreases by being shared.",
+      "variants": [
+        "Thousands of candles can be lit from a single candle."
+      ],
+      "status": "paraphrase",
+      "attributed_to": "the Buddha",
+      "actual_source": {
+        "collection": "CBETA",
+        "id": "T0784",
+        "title": "四十二章經 (Sutra of Forty-two Sections) §10",
+        "url": "https://cbetaonline.dila.edu.tw/zh/T17n0784_p0722b27"
+      },
+      "explanation_en": "The image goes back to the Sutra of Forty-two Sections: merit from rejoicing in another's giving is like a torch from which hundreds of people light their own torches while the first flame stays undiminished. The modern version swaps the torch for a candle, drops the teaching on rejoicing in merit and adds a line about happiness that is not in the text.",
+      "explanation_zh": "这个意象出自《四十二章经》：随喜他人布施的福德，就像一支火炬，成百上千人各自来引火去，原来的火并不减少。现代版本把火炬换成蜡烛，丢掉了“随喜功德”的主题，又加上一句经中没有的“快乐分享不会减少”。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/thousands-of-candles-can-be-lighted-from-a-single-candle-and-the-life-of-the-single-candle-will-not-be-shortened-happiness-never-decreases-by-being-shared/",
+        "https://cbdata.dila.edu.tw/stable/juans?work=T0784&juan=1"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-punished-by-anger",
+      "lang": "en",
+      "text": "You will not be punished for your anger, you will be punished by your anger.",
+      "variants": [],
+      "status": "misattributed",
+      "attributed_to": "the Buddha",
+      "actual_source": null,
+      "explanation_en": "No scripture has this sentence. It traces to Eknath Easwaran's 1993 commentary on the Bhagavad Gita, where he summed up the Buddhist view of anger and karma as 'we are punished by our anger'; a 1994 self-help book appears to have turned that summary into a direct quotation.",
+      "explanation_zh": "经典里没有这句话。它可追溯到伊克纳斯·伊斯瓦兰 1993 年的《薄伽梵歌》讲解：他把佛教对嗔恚与业的看法概括为“我们被自己的愤怒所惩罚”；1994 年的一本自助书似乎把这句概括改成了直接引语。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/you-will-not-be-punished-for-your-anger-you-will-be-punished-by-your-anger/",
+        "https://suttacentral.net/api/search/instant?limit=8&language=en&query=punished%20by%20your%20anger"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-anger-drinking-poison",
+      "lang": "en",
+      "text": "Holding onto anger is like drinking poison and expecting the other person to die.",
+      "variants": [
+        "Resentment is like drinking poison and waiting for the other person to die."
+      ],
+      "status": "misattributed",
+      "attributed_to": "the Buddha",
+      "actual_source": null,
+      "explanation_en": "This comes out of English-language Christian and twelve-step literature, not Buddhism: a precursor idea appears in Emmet Fox's writing on the Sermon on the Mount, and the polished one-liner shows up in recovery sources in the early 1990s. It is credited at random to the Buddha, Pema Chödrön, Nelson Mandela and others.",
+      "explanation_zh": "这句话出自英语世界的基督教与戒酒互助会（十二步）文献，而非佛教：埃米特·福克斯讲《登山宝训》时已有类似意思，九十年代初的戒瘾读物里出现了现在这种精炼说法。它被随意安给佛陀、佩玛·丘卓、曼德拉等人。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/holding-onto-anger-is-like-drinking-poison/"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-mind-pure-surroundings",
+      "lang": "en",
+      "text": "If a man's mind becomes pure, his surroundings will also become pure.",
+      "variants": [],
+      "status": "paraphrase",
+      "attributed_to": "the Buddha",
+      "actual_source": {
+        "collection": "CBETA",
+        "id": "T0475",
+        "title": "維摩詰所說經 卷1 佛國品 (Vimalakīrti Sūtra)",
+        "url": "https://cbetaonline.dila.edu.tw/zh/T14n0475_p0538c05"
+      },
+      "explanation_en": "The English line comes from the modern compilation The Teaching of Buddha (Bukkyō Dendō Kyōkai), not from an early text. Its likely basis is the Mahāyāna Vimalakīrti Sūtra, where the Buddha tells Ratnākara that a bodhisattva who wants a pure land should purify the mind, for as the mind is purified the buddha-land becomes pure; the popular version generalises this into a statement about anyone's surroundings.",
+      "explanation_zh": "这句英文出自现代编纂的《佛教圣典》（佛教传道协会），不是早期经文。其底本应是大乘《维摩诘经·佛国品》：佛告宝积，菩萨欲得净土当净其心，随其心净则佛土净。流行句把“佛土”泛化成任何人的“周遭环境”，意思已经变了。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/if-a-mans-mind-becomes-pure/",
+        "https://cbdata.dila.edu.tw/stable/juans?work=T0475&juan=1"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-rule-your-mind",
+      "lang": "en",
+      "text": "Rule your mind or it will rule you.",
+      "variants": [],
+      "status": "misattributed",
+      "attributed_to": "the Buddha",
+      "actual_source": {
+        "collection": "other",
+        "id": null,
+        "title": "Horace, Epistles I.2 ('animum rege, qui nisi paret, imperat')",
+        "url": "https://fakebuddhaquotes.com/rule-your-mind-or-it-will-rule-you-2/"
+      },
+      "explanation_en": "This is the Roman poet Horace, writing to Lollius Maximus that you must rule your mind, which commands unless it obeys. The compact English form began as an index summary in a 1920s quotation dictionary and later drifted onto the Buddha.",
+      "explanation_zh": "这是古罗马诗人贺拉斯写给洛利乌斯的书信：要驾驭你的心，它若不服从就会反过来统治你。简短的英文说法源自二十年代一本引语辞典的索引摘要，后来被移到了佛陀名下。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/rule-your-mind-or-it-will-rule-you-2/"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-body-good-health-duty",
+      "lang": "en",
+      "text": "To keep the body in good health is a duty, otherwise we shall not be able to keep our mind strong and clear.",
+      "variants": [],
+      "status": "misattributed",
+      "attributed_to": "the Buddha",
+      "actual_source": {
+        "collection": "other",
+        "id": null,
+        "title": "Paul Carus, The Gospel of Buddha (1894), 'The Sermon at Benares'",
+        "url": "https://fakebuddhaquotes.com/to-keep-the-body-in-good-health-is-a-duty/"
+      },
+      "explanation_en": "The sentence is from Paul Carus's The Gospel of Buddha (1894), a retelling that its author admitted rendered some passages freely and added others of his own. It is not in the Pali first sermon or any other scripture.",
+      "explanation_zh": "这句话出自保罗·卡鲁斯 1894 年的《佛陀的福音》，作者自己承认书中有些段落是自由意译、有些是他自己添加的。巴利初转法轮经及其他经典中都没有这句。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/to-keep-the-body-in-good-health-is-a-duty/"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-no-path-to-happiness",
+      "lang": "en",
+      "text": "There is no path to happiness: happiness is the path.",
+      "variants": [
+        "There is no way to happiness. Happiness is the way."
+      ],
+      "status": "misattributed",
+      "attributed_to": "the Buddha",
+      "actual_source": null,
+      "explanation_en": "The earliest known appearance is in Paul Ferrini's The Wisdom of the Self (1992), where he credits the idea to a friend; it echoes the pacifist slogan 'there is no way to peace, peace is the way'. Nothing like it occurs in Buddhist scripture.",
+      "explanation_zh": "已知最早见于保罗·费里尼 1992 年的《自我的智慧》，他说这话出自一位朋友；句式模仿和平主义口号“没有通往和平的路，和平本身就是路”。佛典里没有类似的话。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/there-is-no-path-to-happiness-happiness-is-the-path/",
+        "https://suttacentral.net/api/search/instant?limit=8&language=en&query=happiness%20is%20the%20path"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-do-not-dwell-in-past",
+      "lang": "en",
+      "text": "Do not dwell in the past, do not dream of the future, concentrate the mind on the present moment.",
+      "variants": [],
+      "status": "paraphrase",
+      "attributed_to": "the Buddha",
+      "actual_source": {
+        "collection": "SuttaCentral",
+        "id": "mn131",
+        "title": "MN 131 One Fine Night (Bhaddekaratta Sutta)",
+        "url": "https://suttacentral.net/mn131/en/sujato"
+      },
+      "explanation_en": "The first two clauses loosely echo the Bhaddekaratta verses (MN 131): do not run back to the past or anticipate the future. But the sutta goes on to discern whatever is present with insight, not simply to concentrate on 'the moment'; the exact wording comes from a 1930s Japanese-published English anthology, The Teaching of Buddha.",
+      "explanation_zh": "前两句大致对应《中部》131《贤善一夜经》的偈子：不追忆过去、不期待未来。但经文接着讲的是对当下诸法如实观察，而非单纯“专注当下”。这个英文措辞来自三十年代日本出版的英文选集《佛教圣典》。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/do-not-dwell-in-the-past-do-not-dream-of-the-future/",
+        "https://suttacentral.net/api/bilarasuttas/mn131/sujato?lang=en"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-work-out-your-own-salvation",
+      "lang": "en",
+      "text": "Work out your own salvation. Do not depend on others.",
+      "variants": [
+        "Be a lamp unto yourself. Work out your liberation with diligence."
+      ],
+      "status": "paraphrase",
+      "attributed_to": "the Buddha",
+      "actual_source": {
+        "collection": "SuttaCentral",
+        "id": "dn16",
+        "title": "DN 16 The Great Discourse on the Buddha's Extinguishment (Mahāparinibbāna Sutta)",
+        "url": "https://suttacentral.net/dn16/en/sujato"
+      },
+      "explanation_en": "It blends two genuine moments of DN 16 - the advice to be one's own island and refuge, and the last words 'appamādena sampādetha' (persist with diligence) - through Victorian renderings that echoed Philippians 2:12. The exact sentence surfaces in a 1961 book quoting D. T. Suzuki, apparently from memory.",
+      "explanation_zh": "它把《长部》16《大般涅槃经》里两处真实内容——“以自己为洲、为依靠”和最后遗言“不放逸而精进”——经由带有《腓立比书》2:12 色彩的维多利亚时代译法揉在了一起。这个确切句子出现在 1961 年一本引用铃木大拙访谈的书里，似是凭记忆转述。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/work-out-your-own-salvation-do-not-depend-on-others/",
+        "https://suttacentral.net/api/bilarasuttas/dn16/sujato?lang=en"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-pain-inevitable",
+      "lang": "en",
+      "text": "Pain is inevitable, suffering is optional.",
+      "variants": [],
+      "status": "misattributed",
+      "attributed_to": "the Buddha",
+      "actual_source": null,
+      "explanation_en": "No Buddhist text has this line; its earliest known printed attribution is a 1983 recovery-movement meditation book, with an earlier 'misery is optional' variant from 1959, so it most likely comes from twelve-step circles. The idea resembles the Buddha's 'two darts' simile (SN 36.6), but the saying is not a translation of it.",
+      "explanation_zh": "佛典中没有这句话；目前能找到的最早署名出处是 1983 年戒瘾互助圈的一本每日默想书，1959 年还有“痛苦是可选的”早期变体，所以多半出自十二步康复圈子。意思与《相应部》36.6“第二支箭”的譬喻相近，但并不是它的译文。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/pain-is-inevitable-suffering-is-optional/"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-chaos-inherent",
+      "lang": "en",
+      "text": "Chaos is inherent in all compounded things. Strive on with diligence.",
+      "variants": [],
+      "status": "paraphrase",
+      "attributed_to": "the Buddha",
+      "actual_source": {
+        "collection": "SuttaCentral",
+        "id": "dn16",
+        "title": "DN 16 Mahāparinibbāna Sutta (last words: vayadhammā saṅkhārā, appamādena sampādetha)",
+        "url": "https://suttacentral.net/dn16/en/sujato"
+      },
+      "explanation_en": "These are the Buddha's last words in DN 16, but mistranslated: the Pali says conditioned things are subject to decay or falling apart, and an 1881 English version already read 'decay is inherent in all component things'. Swapping 'decay' for 'chaos' changes the teaching from impermanence to disorder.",
+      "explanation_zh": "这是《大般涅槃经》里佛陀的最后遗言，但译错了：巴利原文说诸行是会坏灭的，1881 年的英译已作“衰坏是一切和合之物所固有的”。把“衰坏”换成“混乱”，就把无常的教导改成了“无序”。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/chaos-is-inherent-in-all-compounded-things-strive-on-with-diligence/",
+        "https://suttacentral.net/api/bilarasuttas/dn16/sujato?lang=en"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-never-respond-to-rudeness",
+      "lang": "en",
+      "text": "Never respond to rudeness. When people are rude to you, they reveal who they are, not who you are.",
+      "variants": [],
+      "status": "misattributed",
+      "attributed_to": "the Buddha",
+      "actual_source": null,
+      "explanation_en": "There is no scriptural source and no printed source at all has been found; the earliest known instance is a 2014 web graphic, and it spreads mainly through image-sharing sites.",
+      "explanation_zh": "没有经典出处，连纸本出处都没找到；已知最早是 2014 年网络上的一张配图，主要靠图片分享网站流传。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/never-respond-to-rudeness/"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-judge-nothing",
+      "lang": "en",
+      "text": "Judge nothing, you will be happy. Forgive everything, you will be happier. Love everything, you will be happiest.",
+      "variants": [],
+      "status": "misattributed",
+      "attributed_to": "the Buddha",
+      "actual_source": {
+        "collection": "other",
+        "id": null,
+        "title": "Sri Chinmoy, Happiness (Agni Press, 1994), poem 'Forgiveness'",
+        "url": "https://fakebuddhaquotes.com/judge-nothing-you-will-be-happy/"
+      },
+      "explanation_en": "This is stitched together from a poem by the Indian-born teacher Sri Chinmoy, published in 1994. The Dhammapada actually praises judging carefully and impartially, not refraining from judgment.",
+      "explanation_zh": "这是由印度出生的灵修导师室利·秦默伊 1994 年出版的一首诗拼成的。《法句经》实际上称赞的是审慎、公正地判断，而不是什么都不判断。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/judge-nothing-you-will-be-happy/"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-world-one-family",
+      "lang": "en",
+      "text": "To those in whom love dwells, the whole world is but one family.",
+      "variants": [],
+      "status": "misattributed",
+      "attributed_to": "the Buddha",
+      "actual_source": {
+        "collection": "other",
+        "id": null,
+        "title": "Mahā Upaniṣad 6.72 / Hitopadeśa ('vasudhaiva kuṭumbakam')",
+        "url": "https://fakebuddhaquotes.com/to-those-in-whom-love-dwells-the-whole-world-is-but-one-family/"
+      },
+      "explanation_en": "The saying is the Sanskrit maxim 'vasudhaiva kuṭumbakam' from the Mahā Upaniṣad, also quoted in the Hitopadeśa fable collection; English versions of this wording were printed in the 19th century without any Buddhist link. It acquired the Buddha's name only in the 20th century.",
+      "explanation_zh": "这句话是梵文格言“天下一家”（vasudhaiva kuṭumbakam），出自《大奥义书》，寓言集《嘉言集》也引用过；十九世纪的英文译本就已有这种措辞，与佛教无关，到二十世纪才被挂上佛陀之名。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/to-those-in-whom-love-dwells-the-whole-world-is-but-one-family/"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-life-is-suffering",
+      "lang": "en",
+      "text": "Life is suffering.",
+      "variants": [],
+      "status": "paraphrase",
+      "attributed_to": "the Buddha",
+      "actual_source": {
+        "collection": "SuttaCentral",
+        "id": "sn56.11",
+        "title": "SN 56.11 Rolling Forth the Wheel of Dhamma (first noble truth)",
+        "url": "https://suttacentral.net/sn56.11/en/sujato"
+      },
+      "explanation_en": "The first noble truth in SN 56.11 lists specific forms of dukkha - birth, ageing, sickness, death, separation from the loved, not getting what one wants - summed up as the five aggregates of clinging. It locates suffering within experience; the slogan 'life is suffering' collapses that into a blanket statement the sutta never makes.",
+      "explanation_zh": "《相应部》56.11 的苦谛列举的是具体的苦：生、老、病、死、爱别离、求不得……总结为五取蕴是苦。它说的是生命中有苦，而“人生就是苦”这句口号把它压成了经文从没说过的全称判断。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/life-is-suffering/",
+        "https://suttacentral.net/api/bilarasuttas/sn56.11/sujato?lang=en"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "en-generous-heart",
+      "lang": "en",
+      "text": "A generous heart, kind speech, and a life of service and compassion are the things which renew humanity.",
+      "variants": [],
+      "status": "misattributed",
+      "attributed_to": "the Buddha",
+      "actual_source": null,
+      "explanation_en": "The earliest known source is a 2001 book on the 'Golden Rule' whose author's own source is unknown. Its first parts faintly recall the Buddhist ways of supporting others (giving, kind speech, helpful conduct) listed in the Sigālaka Sutta, but 'renew humanity' and the sentence as a whole have no scriptural counterpart.",
+      "explanation_zh": "已知最早见于 2001 年一本宣扬“金律”的书，作者自己的来源不明。前半与《长部》31《教授尸伽罗经》所列四摄中的布施、爱语、利行略有呼应，但“使人类更新”以及整句话在经典中都找不到对应。",
+      "evidence": [
+        "https://fakebuddhaquotes.com/fake-buddha-quote-a-generous-heart-kind-speech-and-a-life-of-service-and-compassion-are-the-things-that-renew-humanity/"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-ning-qi-you-jian",
+      "lang": "zh",
+      "text": "宁起有见如须弥山，不起空见如芥子许",
+      "variants": [
+        "宁可起有见如须弥山，不可起空见如芥子许"
+      ],
+      "status": "misattributed",
+      "attributed_to": "龙树《大智度论》",
+      "actual_source": {
+        "collection": "CBETA",
+        "id": "T0310",
+        "title": "大寶積經 卷112（普明菩薩會）",
+        "url": "https://cbetaonline.dila.edu.tw/zh/T11n0310_p0634a14"
+      },
+      "explanation_en": "This wording is not in the Mahāprajñāpāramitā-śāstra (Dazhidu lun). It circulates in Tang-Song commentaries such as T1736 and T1799; the canonical passage behind it is in the Mahāratnakūṭa, fascicle 112, which says it is better to raise a self-view as big as Mount Sumeru than to become arrogant through a view of emptiness - different wording, and 'existence-view' is not what the sutra says.",
+      "explanation_zh": "《大智度论》里没有这句话。它流传于唐宋注疏（如 T1736 澄观《随疏演义钞》、T1799《首楞严义疏注经》）；背后的经文在《大宝积经》卷112：「宁起我见积若须弥，非以空见起增上慢」——措辞不同，经中说的是“我见”而非“有见”。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (2026-11-25: verdict not_sutra, source_class commentary)",
+        "https://cbdata.dila.edu.tw/stable/juans?work=T0310&juan=112",
+        "https://cbdata.dila.edu.tw/stable/search?q=寧起有見"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-fang-xia-tu-dao",
+      "lang": "zh",
+      "text": "放下屠刀，立地成佛",
+      "variants": [],
+      "status": "later_saying",
+      "attributed_to": "佛陀 / 佛经",
+      "actual_source": {
+        "collection": "CBETA",
+        "id": "X0434",
+        "title": "阿彌陀經直解正行 等（宋以后禅籍）",
+        "url": "https://cbetaonline.dila.edu.tw/zh/X22n0434_p0933b18"
+      },
+      "explanation_en": "No sutra contains this phrase. It grows out of the Chan story of the butcher Guang'e who 'put down his knife' and declared himself one of the thousand buddhas (already in Dahui's Song-dynasty recorded sayings, T1998A), and the four-character couplet appears only in later Chan and Pure Land writings.",
+      "explanation_zh": "经律中没有这句话。它源自禅门“广额屠儿放下屠刀，云我是千佛一数”的公案（宋代《大慧普觉禅师语录》T1998A 已见），对仗的八字成句只见于此后的禅宗、净土著述，如卍续藏 X0434。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (verdict not_sutra, source_class later)",
+        "https://cbdata.dila.edu.tw/stable/juans?work=T1998A&juan=28",
+        "https://cbdata.dila.edu.tw/stable/search?q=放下屠刀"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-yi-hua-yi-shi-jie",
+      "lang": "zh",
+      "text": "一花一世界，一叶一菩提",
+      "variants": [
+        "一花一世界，一叶一如来"
+      ],
+      "status": "misattributed",
+      "attributed_to": "佛经（常称出自《华严经》）",
+      "actual_source": null,
+      "explanation_en": "Neither line is in the Avataṃsaka or any other sutra. 'One flower, one world' with 'one leaf, one tathāgata' turns up only in Qing-dynasty Chan recorded sayings (e.g. J33 JB284), and 'one leaf, one bodhi' does not occur anywhere in CBETA - it is a modern variant.",
+      "explanation_zh": "《华严经》及其他经典都没有这两句。「一花一世界，一叶一如来」只见于清代禅师语录（如嘉兴藏 JB284），「一叶一菩提」在 CBETA 全藏中一处也没有，是现代流行的改写。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (一花一世界: not_sutra/later; 一叶一菩提: absent)",
+        "https://cbdata.dila.edu.tw/stable/search?q=一花一世界",
+        "https://cbdata.dila.edu.tw/stable/search?q=一葉一菩提"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-jing-you-xin-sheng",
+      "lang": "zh",
+      "text": "境由心生",
+      "variants": [
+        "相由心生，境随心转"
+      ],
+      "status": "later_saying",
+      "attributed_to": "佛陀 / 佛经",
+      "actual_source": {
+        "collection": "CBETA",
+        "id": "X0262",
+        "title": "圓覺經句釋正白 卷2（清）",
+        "url": "https://cbetaonline.dila.edu.tw/zh/X10n0262_p0675b15"
+      },
+      "explanation_en": "Often quoted as 'the Buddha said', but the four-character phrase occurs only once in the whole CBETA corpus, in a Qing-dynasty commentary on the Sutra of Perfect Enlightenment. The idea is common in Mahāyāna, but this wording is not a sutra line.",
+      "explanation_zh": "常被说成“佛说”，但这四个字在 CBETA 全藏里只出现一次，在清代的《圆觉经句释正白》中。“万法唯心”的意思大乘经论里常见，但这一措辞不是经文。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (verdict not_sutra, source_class later)",
+        "https://cbdata.dila.edu.tw/stable/search?q=境由心生"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-fo-du-you-yuan-ren",
+      "lang": "zh",
+      "text": "佛度有缘人",
+      "variants": [
+        "佛渡有缘人",
+        "药医不死病，佛度有缘人"
+      ],
+      "status": "later_saying",
+      "attributed_to": "佛陀 / 佛经",
+      "actual_source": {
+        "collection": "CBETA",
+        "id": "X1194",
+        "title": "淨土極信錄（清）",
+        "url": "https://cbetaonline.dila.edu.tw/zh/X62n1194_p0543a23"
+      },
+      "explanation_en": "A folk proverb usually paired with 'medicine cures only the curable'. In CBETA it appears only in Ming-Qing popular and Pure Land works, never in a sutra.",
+      "explanation_zh": "民间俗语，常与“药医不死病”连用。在 CBETA 中只见于明清通俗与净土著作（如《净土极信录》），没有出现在任何经律论中。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (verdict not_sutra, source_class later)",
+        "https://cbdata.dila.edu.tw/stable/search?q=佛度有緣人"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-ku-hai-wu-bian",
+      "lang": "zh",
+      "text": "苦海无边，回头是岸",
+      "variants": [],
+      "status": "later_saying",
+      "attributed_to": "佛陀 / 佛经",
+      "actual_source": {
+        "collection": "CBETA",
+        "id": "X1319",
+        "title": "御選語錄 卷19（清）",
+        "url": "https://cbetaonline.dila.edu.tw/zh/X68n1319_p0747b21"
+      },
+      "explanation_en": "A popular saying found in Ming-Qing Chan records and temple gazetteers; even the Yongzheng emperor's anthology introduces it as 'the ancients say', i.e. a proverb. It is not a sutra sentence.",
+      "explanation_zh": "明清禅宗语录与山志中常见的俗语；雍正《御选语录》引用时也只说“古人道”，可见是成语而非经文。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (verdict not_sutra, source_class later)",
+        "https://cbdata.dila.edu.tw/stable/search?q=苦海無邊"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-pu-sa-wei-yin",
+      "lang": "zh",
+      "text": "菩萨畏因，众生畏果",
+      "variants": [],
+      "status": "later_saying",
+      "attributed_to": "佛经",
+      "actual_source": null,
+      "explanation_en": "Widely presented as a scriptural line, but it appears in CBETA only in Republican-era writings (e.g. Taixu's collected works), quoted there as a common saying. No sutra or treatise contains it.",
+      "explanation_zh": "常被当作经文引用，但在 CBETA 中只见于民国著作（如《太虚大师全书》），而且是作为俗语引用的。经律论中都没有。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (verdict absent)",
+        "https://cbdata.dila.edu.tw/stable/search?q=菩薩畏因"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-qian-shi-yin",
+      "lang": "zh",
+      "text": "欲知前世因，今生受者是；欲知后世果，今生作者是",
+      "variants": [
+        "欲知前世因，今生受者是；欲知来世果，今生作者是"
+      ],
+      "status": "later_saying",
+      "attributed_to": "佛陀（流通本《三世因果经》）",
+      "actual_source": {
+        "collection": "CBETA",
+        "id": "T2117",
+        "title": "三教平心論（元）",
+        "url": "https://cbetaonline.dila.edu.tw/zh/T52n2117_p0785c01"
+      },
+      "explanation_en": "The verse is circulated as the Buddha's words from a 'Sutra of Cause and Effect in the Three Times', but that text is not in the canon. In CBETA the lines are first found in the Yuan-dynasty Sanjiao pingxin lun, introduced as a saying, and later in Ming works; no translated sutra contains them.",
+      "explanation_zh": "这几句常被当作《三世因果经》中的佛语流通，但该经不在藏经之内。CBETA 中最早见于元代《三教平心论》（作“故曰”引述），其后见于明代著作；没有任何译经包含它。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (verdict not_sutra, source_class later)",
+        "https://cbdata.dila.edu.tw/stable/search?q=欲知前世因"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-wu-bai-ci-hui-mou",
+      "lang": "zh",
+      "text": "前世五百次的回眸，才换来今生的一次擦肩而过",
+      "variants": [
+        "前世五百次回眸，换得今生一次擦肩而过"
+      ],
+      "status": "misattributed",
+      "attributed_to": "佛经 / 佛说",
+      "actual_source": null,
+      "explanation_en": "A modern romantic saying presented as Buddhist; neither half appears anywhere in CBETA. It has no basis in any canonical text.",
+      "explanation_zh": "现代流行的情感语录，被包装成佛经；两句在 CBETA 中都查不到，没有任何经典依据。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (verdict absent)"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-di-yu-bu-kong",
+      "lang": "zh",
+      "text": "地狱不空，誓不成佛",
+      "variants": [
+        "地狱不空，誓不成佛；众生度尽，方证菩提"
+      ],
+      "status": "paraphrase",
+      "attributed_to": "地藏菩萨 /《地藏菩萨本愿经》",
+      "actual_source": {
+        "collection": "CBETA",
+        "id": "T0412",
+        "title": "地藏菩薩本願經 卷上",
+        "url": "https://cbetaonline.dila.edu.tw/zh/T13n0412_p0778b16"
+      },
+      "explanation_en": "The Kṣitigarbha Sutra contains no such sentence; its vows say he will save all suffering beings by every means and only then attain buddhahood himself. The eight-character slogan appears only in later ritual and Chan texts (Ming-Qing), summarising that vow.",
+      "explanation_zh": "《地藏经》中没有这句话；经中发愿是尽未来际广设方便、令罪苦众生尽得解脱，「而我自身方成佛道」。八字口号只见于明清以后的忏仪、禅籍，是对此愿的概括。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (verdict not_sutra, source_class later)",
+        "https://cbdata.dila.edu.tw/stable/juans?work=T0412&juan=1",
+        "https://cbdata.dila.edu.tw/stable/search?q=地獄不空"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-wo-bu-ru-di-yu",
+      "lang": "zh",
+      "text": "我不入地狱，谁入地狱",
+      "variants": [],
+      "status": "later_saying",
+      "attributed_to": "地藏菩萨 / 佛陀",
+      "actual_source": null,
+      "explanation_en": "Not in the Kṣitigarbha Sutra or any sutra. In CBETA the phrase occurs as a quoted slogan only in Republican-era works (a Nanputuo temple gazetteer, Taixu's writings); an apparent hit in the Nirvana Sutra is a different sentence about not falling into hell.",
+      "explanation_zh": "《地藏经》及其他经典中都没有。CBETA 中只在民国著作（《厦门南普陀寺志》、太虚著作）里作为口号出现；《大般涅槃经》里的命中是“不入地狱，汝云何入”，意思完全不同。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (verdict not_sutra, source_class later)",
+        "https://cbdata.dila.edu.tw/stable/search?q=我不入地獄"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-xin-jing-guo-tu-jing",
+      "lang": "zh",
+      "text": "心净则国土净",
+      "variants": [
+        "心净则佛土净"
+      ],
+      "status": "paraphrase",
+      "attributed_to": "佛陀 /《维摩诘经》",
+      "actual_source": {
+        "collection": "CBETA",
+        "id": "T0475",
+        "title": "維摩詰所說經 卷1 佛國品",
+        "url": "https://cbetaonline.dila.edu.tw/zh/T14n0475_p0538c05"
+      },
+      "explanation_en": "The Vimalakīrti Sūtra says a bodhisattva who wants a pure land should purify the mind, 'as the mind is pure, the buddha-land is pure'. The shortened 'mind pure, land pure' is a later commentarial summary (first in a Song Pure Land work), not the sutra's wording.",
+      "explanation_zh": "《维摩诘经》原文是「若菩萨欲得净土，当净其心；随其心净，则佛土净」。「心净则国土净」是后世的概括（CBETA 最早见于宋代《乐邦遗稿》），不是经文措辞。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (verdict not_sutra, source_class later)",
+        "https://cbdata.dila.edu.tw/stable/juans?work=T0475&juan=1",
+        "https://cbdata.dila.edu.tw/stable/search?q=心淨則國土淨"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-yi-jie-wei-shi",
+      "lang": "zh",
+      "text": "以戒为师",
+      "variants": [
+        "佛陀遗教：以戒为师"
+      ],
+      "status": "paraphrase",
+      "attributed_to": "佛陀遗教 /《佛遗教经》",
+      "actual_source": {
+        "collection": "CBETA",
+        "id": "T0389",
+        "title": "佛垂般涅槃略說教誡經（遺教經）",
+        "url": "https://cbetaonline.dila.edu.tw/zh/T12n0389_p1110c21"
+      },
+      "explanation_en": "The Buddha's last instruction in the Yijiao jing says to honour the prātimokṣa precepts after his passing, 'know that this is your great teacher'. The four-character 'take the precepts as teacher' is how Chinese commentators from Zhiyi onward summarised it; it does not occur in any sutra.",
+      "explanation_zh": "《佛遗教经》原文是：于我灭后当尊重珍敬波罗提木叉……「当知此则是汝大师」。「以戒为师」四字是智顗以后中国注疏家的概括，经律中没有这四个字。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (verdict not_sutra, source_class commentary)",
+        "https://cbdata.dila.edu.tw/stable/juans?work=T0389&juan=1",
+        "https://cbdata.dila.edu.tw/stable/search?q=以戒為師"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-ru-lai-zhi-hui-de-xiang",
+      "lang": "zh",
+      "text": "一切众生皆具如来智慧德相，但以妄想执着不能证得",
+      "variants": [
+        "奇哉！奇哉！一切众生皆具如来智慧德相"
+      ],
+      "status": "paraphrase",
+      "attributed_to": "佛陀成道时所说 /《华严经》",
+      "actual_source": {
+        "collection": "CBETA",
+        "id": "T0279",
+        "title": "大方廣佛華嚴經（八十卷）卷51 如來出現品",
+        "url": "https://cbetaonline.dila.edu.tw/zh/T10n0279_p0272c05"
+      },
+      "explanation_en": "The Avataṃsaka passage says there is not a single being that does not possess the Tathāgata's wisdom, only they fail to realise it because of deluded, inverted clinging. The popular form with 'wisdom and virtuous marks' is a Chinese commentarial restatement attested from the Tang (e.g. Zongmi's T1884) and common in Chan literature; the version with the exclamation 'how wonderful!' spoken at the moment of awakening appears only from the Ming.",
+      "explanation_zh": "《华严经·如来出现品》原文是「无一众生而不具有如来智慧，但以妄想颠倒执著而不证得」。流行的“皆具如来智慧德相”是中国注疏的转述，唐代已见（如宗密 T1884《注华严法界观门》），后在禅籍中盛行；加上“奇哉奇哉”作为成道感叹的版本明代以后才出现。都不是经文原话。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (verdict not_sutra, source_class later)",
+        "https://cbdata.dila.edu.tw/stable/juans?work=T0279&juan=51",
+        "https://cbdata.dila.edu.tw/stable/search?q=如來智慧德相",
+        "https://cbdata.dila.edu.tw/stable/search?q=奇哉奇哉一切眾生皆具如來智慧德相"
+      ],
+      "verified_on": "2026-11-25"
+    },
+    {
+      "id": "zh-yi-qie-fa-de-cheng-yu-ren",
+      "lang": "zh",
+      "text": "一切法得成于忍",
+      "variants": [],
+      "status": "paraphrase",
+      "attributed_to": "佛陀 /《金刚经》",
+      "actual_source": {
+        "collection": "CBETA",
+        "id": "T0235",
+        "title": "金剛般若波羅蜜經",
+        "url": "https://cbetaonline.dila.edu.tw/zh/T08n0235_p0752a27"
+      },
+      "explanation_en": "The Diamond Sutra says a bodhisattva who knows that all dharmas are without self 'attains to acceptance' (de cheng yu ren). Dropping 'without self' turns a statement about insight into non-self into a maxim that everything is achieved through patience; the shortened form appears nowhere in CBETA.",
+      "explanation_zh": "《金刚经》原文是「若复有人知一切法无我，得成于忍」。删掉“无我”二字后，讲证悟无我的“忍”被改成了“凡事靠忍耐成就”的格言；这个省略形式在 CBETA 中一处也没有。",
+      "evidence": [
+        "https://fojin.app/api/verify/trace (verdict absent)",
+        "https://cbdata.dila.edu.tw/stable/juans?work=T0235&juan=1",
+        "https://cbdata.dila.edu.tw/stable/search?q=一切法得成於忍"
+      ],
+      "verified_on": "2026-11-25"
+    }
+  ]
+}

@@ -63,6 +63,8 @@
   "files": [
     "bin/",
     "prebuilt/",
+    "capabilities/",
+    "mcp/",
     "scripts/",
     "hooks/",
     ".claude-plugin/",
@@ -104,6 +106,7 @@
     "!scripts/validate-section-references.py",
     "!scripts/validate-self-audit-sources.py",
     "!scripts/verify-adjudication.py",
+    "!scripts/eval-capabilities.py",
     "!hooks/tests",
     "!**/__pycache__",
     "!**/*.pyc"

@@ -26,7 +26,8 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 
 # Everything an installed user or the 3.9 job can reach. hooks/ is included
 # because session_start.py runs on whatever python3 the host provides.
-SCANNED_DIRS = ("tools", "scripts", "hooks")
+SCANNED_DIRS = ("tools", "scripts", "hooks", "mcp",
+                "capabilities/buddhist-quote-trace/scripts", "capabilities/buddhist-citation/scripts")
 
 
 def _modules() -> list[Path]:

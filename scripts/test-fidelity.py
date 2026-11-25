@@ -535,7 +535,7 @@ def load_skill_catalog() -> list[dict]:
         for field in ("name", "install_dir", "kind"):
             if not isinstance(skill.get(field), str) or not skill[field].strip():
                 raise ValueError(f"Invalid skill catalog entry {index}: expected nonempty {field}")
-        if skill["kind"] not in {"persona", "teaching-mode", "generator"}:
+        if skill["kind"] not in {"persona", "teaching-mode", "generator", "capability"}:
             raise ValueError(f"Invalid skill catalog entry {index}: unsupported kind")
         if skill["name"] in names or skill["install_dir"] in directories:
             raise ValueError(f"Invalid skill catalog entry {index}: duplicate name or install_dir")

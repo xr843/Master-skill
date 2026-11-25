@@ -57,7 +57,7 @@ def test_bundle_exposes_every_catalog_skill():
     manifest = json.loads((BUNDLE / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     found = manifest_tests.discovered_skills(BUNDLE, manifest)
     assert found == manifest_tests._catalog_slugs()
-    assert len(found) == 21
+    assert len(found) == 23
 
 
 def test_committed_bundle_is_in_sync():

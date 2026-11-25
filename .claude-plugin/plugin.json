@@ -11,7 +11,8 @@
   "license": "MIT AND CC-BY-NC-SA-4.0 AND CC-BY-4.0",
   "skills": [
     "./",
-    "./prebuilt/"
+    "./prebuilt/",
+    "./capabilities/"
   ],
   "keywords": [
     "buddhism",

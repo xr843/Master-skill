@@ -211,6 +211,21 @@ Anthropic 上更早还有一次 2026-08-18 的部分运行（84 / 211 条，因�
 
 ---
 
+## 给开发者的能力模块
+
+除了祖师人设，Master-skill 还提供两个**可复用的佛学能力 skill**，任何 AI agent 都能调用，中英文通用，输出固定 JSON：
+
+| skill | 用途 |
+|---|---|
+| `buddhist-quote-trace` | 引文溯源：这句话真出自佛经吗？中文查 CBETA（经 FoJin），英文查 SuttaCentral，并比对伪托语录清单 |
+| `buddhist-citation` | 出处解析：`T48n2008`、`SN 22.59`、`W22272` 是哪部书、是否存在、书名对不对得上 |
+
+```bash
+npx master-skill install buddhist-quote-trace buddhist-citation
+```
+
+也可以作为 MCP 服务接入（`mcp/master_skill_mcp.py`，只用 Python 标准库）。详见 [capabilities/README.md](capabilities/README.md)。
+
 ## 开发者安装
 
 > 👤 **只是想体验？** 直接用 [fojin.app/chat](https://fojin.app/chat)，无需安装。
